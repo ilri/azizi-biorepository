@@ -1,0 +1,96 @@
+2013-09-27 12:02:58: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-09-27 12:03:07: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => 0Wimbledon1
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-09-27 12:03:07: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:10:09: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => 0Wimbledon1
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 1
+)
+
+
+2013-09-27 12:10:09: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:10:09: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:10:09: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:10:27: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-09-27 12:11:00: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => 0Wimbledon1
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-09-27 12:11:00: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:11:00: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:11:00: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+

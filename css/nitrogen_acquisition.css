@@ -1,0 +1,183 @@
+root {
+    display: block;
+}
+
+html{
+	overflow: -moz-scrollbars-vertical;
+}
+
+body {
+    font-family:Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    font-size: 76%;
+    color: #000000;
+    background-color:#f1f1f1;
+}
+
+-moz-any-link:focus {
+  border: none;
+}
+
+input[type='text'], input[type='password']{
+   border-color: #CDCDCD;
+   border-style: inset;
+   -moz-border-radius: 3px;
+   -webkit-border-radius: 4px;
+   border-radius: 4px;
+   padding: 1px 0px;
+   border-width: 2px;
+   box-shadow: none;
+   margin: 3px 0px;
+}
+
+#addinfo, #top_tip{
+   margin: 2px 5px;
+   min-height: 20px;
+   width: max-content;
+   padding: 2px;
+   text-align: center;
+}
+
+#addinfo{
+   border: none;
+}
+
+#avid_header{
+   padding:0px;
+   text-align: center;
+   margin: 5px;
+   height: 142px;
+   vertical-align: middle;
+   border-bottom:1px gray solid;
+   background-image: url("../images/bannerbiotech.jpg");
+}
+
+#footer_links{
+   text-align:center;
+   margin: 10px;
+}
+
+#nitrogen_acquisition{
+   width: 920px;
+   margin: 3px auto;
+   border: 1px solid gray;
+}
+
+#footer{
+   height: 30px;
+   border: 1px solid gray;
+   width: 850px;
+   font-size:.8em;
+   font-weight: bold;
+   text-align: right;
+   padding: 4px 15px 0px 2px;
+   vertical-align:middle;
+   background-color: #804051;
+   margin: 2px;
+}
+
+#avid_footer{
+   height: auto;
+   border: 1px solid gray;
+   font-size: 1em;
+   text-align: right;
+   padding: 5px;
+   margin: 4px;
+   vertical-align:middle;
+   background-color: #804051;
+}
+
+#generate fieldset td{
+   font-size: 76%;
+}
+
+#generate fieldset .label{
+   font-weight: bold;
+}
+
+#generate #general, #generate #sequence, #generate #info{
+   float: left;
+   margin: 2px 4px;
+}
+
+#generate #general{
+
+}
+
+#generate #sequence{
+   max-width: 200px
+}
+
+#generate #info{
+   max-width: 200px
+}
+
+#generate {
+   margin-left: auto;
+   margin-right: auto;
+   width: 90%;
+}
+
+#mainField {
+   margin-left: auto;
+   margin-right: auto;
+   width: 70%;
+}
+
+.links{
+   text-align: center;
+   margin: 4px 2px;
+}
+
+#projectId img, #requesterId img{
+   margin: 2px;
+}
+
+#notification_box{
+	text-align: right;
+	margin-left: 50%;
+	font-size: 13px;
+	font-weight: bold;
+   top: 35px;
+   z-index:999;
+   width:435px;
+   position: fixed;
+}
+
+#notification_box span{
+	background-color: #CCFF99;
+}
+
+/* Login Page*/
+#login{
+   margin: 2px auto;
+   width: 450px;
+   text-align: center;
+   margin-top: 60px;
+}
+
+#login table{
+   margin: 5px auto;
+}
+
+#login #login_page{
+}
+
+#login_page .top{
+   height: 25px;
+   font-weight: bold;
+   font-size: 1.5em;
+   text-align: center;
+}
+
+#login_page .buttons{
+   padding: 3px;
+}
+/* Login Page*/
+
+#whoisme {
+    font-style: italic;
+    text-align: right;
+    margin: 1px 10px 1px 0px;
+}
