@@ -94,3 +94,1311 @@ Array
 )
 
 
+2013-09-27 12:31:25: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-09-27 12:31:25: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:31:25: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:32:55: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-09-27 12:32:55: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:32:55: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:35:38: :
+Debug: Post User request: 
+Array
+(
+    [user] => Joshua
+    [date] => 07-08-2012
+    [amount] => 3
+    [project] => TIITA
+    [chargeCode] => TIITA-051
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:35:38: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:35:38: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:36:43: :
+Debug: Post User request: 
+Array
+(
+    [user] => Arthur
+    [date] => 08-08-2012
+    [amount] => 6
+    [project] => TIITA
+    [chargeCode] => TIITA-041
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:36:43: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:36:43: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:39:00: :
+Debug: Post User request: 
+Array
+(
+    [user] => Donfagsiteli
+    [date] => 08-08-2012
+    [amount] => 2
+    [project] => BC01
+    [chargeCode] => BC01-NB0-SWE-010
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:39:00: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:39:01: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:39:35: :
+Debug: Post User request: 
+Array
+(
+    [user] => Sarah
+    [date] => 08-08-2012
+    [amount] => 1
+    [project] => TIITA
+    [chargeCode] => TIITA-044
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:39:35: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:39:35: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:40:10: :
+Debug: Post User request: 
+Array
+(
+    [user] => Donfagsiteli
+    [date] => 09-08-2012
+    [amount] => 3
+    [project] => BC01
+    [chargeCode] => BC01-NB0-SWE-010
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:40:11: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:40:11: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:40:50: :
+Debug: Post User request: 
+Array
+(
+    [user] => Anne
+    [date] => 09-08-2012
+    [amount] => 3
+    [project] => TIITA
+    [chargeCode] => TIITA-051
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:40:50: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:40:50: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:42:04: :
+Debug: Post User request: 
+Array
+(
+    [user] => Bridgit
+    [date] => 10-08-2012
+    [amount] => 3
+    [project] => TCIMM
+    [chargeCode] => TCIMM-1T-02
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:42:04: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:42:04: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:42:39: :
+Debug: Post User request: 
+Array
+(
+    [user] => Cecile Annie
+    [date] => 10-08-2012
+    [amount] => 3
+    [project] => BC01
+    [chargeCode] => BC01-NB0-SWE-010
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:42:39: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:42:39: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:43:18: :
+Debug: Post User request: 
+Array
+(
+    [user] => James Mbora
+    [date] => 12-08-2012
+    [amount] => 2
+    [project] => BC01
+    [chargeCode] => BC01-NB0-SWE-010
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:43:18: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:43:18: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:43:44: :
+Debug: Post User request: 
+Array
+(
+    [user] => Joshua
+    [date] => 14-08-2012
+    [amount] => 3
+    [project] => TIITA
+    [chargeCode] => TIITA-051
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:43:45: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:43:45: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:44:10: :
+Debug: Post User request: 
+Array
+(
+    [user] => Anne
+    [date] => 14-08-2012
+    [amount] => 3
+    [project] => TIITA
+    [chargeCode] => TIITA-051
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:44:10: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:44:10: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:44:40: :
+Debug: Post User request: 
+Array
+(
+    [user] => Esther
+    [date] => 15-08-2012
+    [amount] => 3
+    [project] => TIITA
+    [chargeCode] => TIITA-044
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:44:40: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:44:41: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:48:21: :
+Debug: Post User request: 
+Array
+(
+    [user] => Donfagsiteli
+    [date] => 09-08-2012
+    [amount] => 2
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01003
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:48:21: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:48:22: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:49:09: :
+Debug: Post User request: 
+Array
+(
+    [user] => Donfagsiteli
+    [date] => 09-08-2012
+    [amount] => 3
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01003
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:49:09: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:49:09: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:50:03: :
+Debug: Post User request: 
+Array
+(
+    [user] => Cecile Annie
+    [date] => 10-08-2012
+    [amount] => 3
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01015
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:50:04: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:50:04: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:50:55: :
+Debug: Post User request: 
+Array
+(
+    [user] => Cecile Annie
+    [date] => 16-08-2012
+    [amount] => 3
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01015
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:50:55: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:50:55: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:51:42: :
+Debug: Post User request: 
+Array
+(
+    [user] => Dora
+    [date] => 16-08-2012
+    [amount] => 1
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-1009
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:51:43: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:51:43: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:52:28: :
+Debug: Post User request: 
+Array
+(
+    [user] => Moses Njahira
+    [date] => 17-08-2012
+    [amount] => 10
+    [project] => Beca
+    [chargeCode] => Beca-12
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:52:28: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:52:28: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:52:56: :
+Debug: Post User request: 
+Array
+(
+    [user] => Anne
+    [date] => 17-08-2012
+    [amount] => 13
+    [project] => TIITA
+    [chargeCode] => TIITA-051
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:52:56: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:52:56: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:54:06: :
+Debug: Post User request: 
+Array
+(
+    [user] => Jacky
+    [date] => 21-08-2012
+    [amount] => 1
+    [project] => TCIMMYT
+    [chargeCode] => TCIMMYT-02
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:54:06: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:54:06: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:55:22: :
+Debug: Post User request: 
+Array
+(
+    [user] => Benius Tukahinua
+    [date] => 22-08-2012
+    [amount] => 1
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01001
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:55:22: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:55:22: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:55:58: :
+Debug: Post User request: 
+Array
+(
+    [user] => Cecile Annie
+    [date] => 22-08-2012
+    [amount] => 3
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01015
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:55:58: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:55:58: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:56:41: :
+Debug: Post User request: 
+Array
+(
+    [user] => Francis
+    [date] => 22-08-2012
+    [amount] => 2
+    [project] => BC02
+    [chargeCode] => BC02-SERVIC
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:56:42: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:56:42: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:58:17: :
+Debug: Post User request: 
+Array
+(
+    [user] => Charity Muteti
+    [date] => 23-08-2012
+    [amount] => 10
+    [project] => BT03
+    [chargeCode] => BT03-NB0-HP1001
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:58:17: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:58:17: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:58:56: :
+Debug: Post User request: 
+Array
+(
+    [user] => Sarah
+    [date] => 23-08-2012
+    [amount] => 3
+    [project] => TIITA
+    [chargeCode] => TIITA-044
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:58:57: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:58:57: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 12:59:28: :
+Debug: Post User request: 
+Array
+(
+    [user] => Ren Mburu
+    [date] => 24-08-2012
+    [amount] => 3
+    [project] => TIITA
+    [chargeCode] => TIITA-044
+    [submitButton] => Request
+)
+
+
+2013-09-27 12:59:28: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 12:59:28: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:00:11: :
+Debug: Post User request: 
+Array
+(
+    [user] => Bridgit
+    [date] => 24-08-2012
+    [amount] => 2
+    [project] => TCIMMYT
+    [chargeCode] => TCIMMYT-02
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:00:11: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:00:11: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:01:05: :
+Debug: Post User request: 
+Array
+(
+    [user] => Tony Maritim
+    [date] => 24-08-2012
+    [amount] => 5
+    [project] => Beca
+    [chargeCode] => Beca-46
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:01:05: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:01:05: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:01:55: :
+Debug: Post User request: 
+Array
+(
+    [user] => Benius Tukahinua
+    [date] => 27-08-2012
+    [amount] => 1
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01001
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:01:55: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:01:55: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:02:50: :
+Debug: Post User request: 
+Array
+(
+    [user] => Teddy Amuga
+    [date] => 28-08-2012
+    [amount] => 35
+    [project] => TIITA
+    [chargeCode] => TIITA-041
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:02:50: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:02:50: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:03:19: :
+Debug: Post User request: 
+Array
+(
+    [user] => Benius Tukahinua
+    [date] => 28-08-2012
+    [amount] => 1
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01001
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:03:19: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:03:19: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:03:56: :
+Debug: Post User request: 
+Array
+(
+    [user] => Benius Tukahinua
+    [date] => 29-08-2012
+    [amount] => 1
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01001
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:03:56: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:03:56: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:05:05: :
+Debug: Post User request: 
+Array
+(
+    [user] => Quinata Bukani
+    [date] => 29-08-2012
+    [amount] => 3
+    [project] => Cip Beca
+    [chargeCode] => Cip Beca
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:05:05: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:05:06: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:05:37: :
+Debug: Post User request: 
+Array
+(
+    [user] => Benius Tukahinua
+    [date] => 31-08-2012
+    [amount] => 1
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01001
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:05:38: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:05:38: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:06:18: :
+Debug: Post User request: 
+Array
+(
+    [user] => Maureen
+    [date] => 02-09-2012
+    [amount] => 3
+    [project] => TCIMMYT
+    [chargeCode] => TCIMMYT-02
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:06:19: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:06:19: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:06:59: :
+Debug: Post User request: 
+Array
+(
+    [user] => Benius Tukahinua
+    [date] => 04-09-2012
+    [amount] => 2
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01001
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:06:59: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:06:59: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:07:24: :
+Debug: Post User request: 
+Array
+(
+    [user] => Quinata Bukani
+    [date] => 05-09-2012
+    [amount] => 3
+    [project] => Cip Beca
+    [chargeCode] => Cip Beca
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:07:24: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:07:24: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:09:02: :
+Debug: Post User request: 
+Array
+(
+    [user] => Quinata Bukani
+    [date] => 06-09-2012
+    [amount] => 1
+    [project] => Cip Beca
+    [chargeCode] => Cip Beca
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:09:02: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:09:02: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:10:21: :
+Debug: Post User request: 
+Array
+(
+    [user] => James Wainaina
+    [date] => 06-09-2012
+    [amount] => 3
+    [project] => BC01
+    [chargeCode] => BC01-NB0-ATL
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:10:21: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:10:21: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:11:08: :
+Debug: Post User request: 
+Array
+(
+    [user] => Dora
+    [date] => 06-09-2012
+    [amount] => 6
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-1009
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:11:08: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:11:08: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:11:51: :
+Debug: Post User request: 
+Array
+(
+    [user] => Eric
+    [date] => 06-09-2012
+    [amount] => 1
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-1004
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:11:51: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:11:51: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-09-27 13:13:16: :
+Debug: Post User request: 
+Array
+(
+    [user] => Benius Tukahinua
+    [date] => 07-09-2012
+    [amount] => 2
+    [project] => BC01, COR
+    [chargeCode] => BC01-NB0-SWE-010, COR-SWE-01001
+    [submitButton] => Request
+)
+
+
+2013-09-27 13:13:16: :
+Debug: select a.id from misc_db.users as a
+               inner join misc_db.user_levels as b on a.user_level=b.id WHERE a.login='jrogena' AND psswd=sha1(concat(a.salt,'b47b56538f435f468936f14c68cff8c5')) AND a.allowed=1
+
+2013-09-27 13:13:16: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
