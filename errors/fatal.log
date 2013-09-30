@@ -8,3 +8,8 @@ Fatal: There was an error while fetching data from the database.
 MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
 Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
 
+2013-09-30 10:50:21: :
+Fatal: There was an error while fetching data from the acquisitions table.
+MySQL Error and String: (1054) Unknown column 'acquisitions' in 'field list'
+Last Query: SELECT acquisitions FROM acquisitions FOR UPDATE
+

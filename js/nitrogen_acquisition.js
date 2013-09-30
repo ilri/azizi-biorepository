@@ -63,5 +63,36 @@ var NAcquisition = {
          return false;
       }
       return true;
+   },
+   
+   changeAmountApproved: function(com, grid) {
+      if(com === 'Change Amount Approved'){
+         $(".trSelected", grid).each(function () {
+            var id = $(this).attr('id');
+            id = id.substring(id.lastIndexOf('row')+3);
+            $("#dialog-modal").dialog({
+               modal: true,
+               draggable: true,
+               resizable: false,
+               position: ['center','center'],
+               show: 'blind',
+               hide: 'blind',
+               width: 400,
+               dialogClass: 'ui-dialog-osx',
+               buttons: {
+                  "Change": function() {
+                     if($("#newAmountApproved").val()!==""){
+                        //TODO: add logic for changing column value from server
+                        $.post("index.php?page=acquisition&do=setAmountApproved", {
+                           rowID:id,
+                           amountApproved:$("#newAmountApproved").val()
+                        }, function(){$("#past_requests").flexReload(); });
+                        $(this).dialog("close");
+                     }
+                  }
+               }
+            });
+         });
+      }
    }
 };

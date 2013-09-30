@@ -88,6 +88,8 @@ class NAcquisition extends Dbase {
          $this->submitAcquisitionRequest ();
       elseif (OPTIONS_REQUESTED_MODULE == 'acquisition' && OPTIONS_REQUESTED_SUB_MODULE == 'fetch') 
          $this->fetchRequestHistory ();
+      elseif (OPTIONS_REQUESTED_MODULE == 'acquisition' && OPTIONS_REQUESTED_SUB_MODULE == 'setAmountApproved')
+         $this->setAmountApproved ();
       elseif (OPTIONS_REQUESTED_MODULE == 'logout') {
          $this->Dbase->LogOut();
          $this->LoginPage();
@@ -186,6 +188,9 @@ class NAcquisition extends Dbase {
    </form>
    <div id="past_requests">&nbsp;</div>
 </div>
+<div id="dialog-modal" title="Change the amount approved" style="display: none;">
+   <table><tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr></table>
+</div>
 <script type="text/javascript">
    $("#past_requests").flexigrid({
       url: "mod_ajax.php?page=acquisition&do=fetch",
@@ -203,6 +208,9 @@ class NAcquisition extends Dbase {
          {display: 'Charge Code', name : 'charge_code'}
       ],
       sortname : 'date',
+      buttons : [
+         {name: 'Change Amount Approved', bclass: 'edit', onpress : NAcquisition.changeAmountApproved}
+      ],
       sortorder : 'desc',
       usepager : true,
       title : 'Past Transfers',
@@ -424,6 +432,14 @@ class NAcquisition extends Dbase {
       );
       
       die(json_encode($response));
+   }
+   
+   private function setAmountApproved() {
+      //$this->Dbase->query = "UPDATE `acquisitions` SET `acquisitions`.`acquisitions` = {$_POST['amountApproved']} WHERE `acquisitions`.`id` = {$_POST['rowID']}";
+      //$this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
+      if($_SESSION['user_type']==="Super Administrator"){
+         $this->Dbase->UpdateRecords("acquisitions",array("amount_appr"),array($_POST['amountApproved']),"id",$_POST['rowID']);
+      }
    }
    
    private function ADAuthenticate($username, $password) {
