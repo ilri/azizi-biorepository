@@ -86,7 +86,10 @@ var NAcquisition = {
                         $.post("index.php?page=acquisition&do=setAmountApproved", {
                            rowID:id,
                            amountApproved:$("#newAmountApproved").val()
-                        }, function(){$("#past_requests").flexReload(); });
+                        }, function(){
+                           $("#past_requests").flexReload();
+                           $("#newAmountApproved").val("");
+                        });
                         $(this).dialog("close");
                      }
                   }

@@ -345,9 +345,9 @@ class NAcquisition extends Dbase {
       $userID = $this->addUserIfNotExists($_POST['user']);
       $projectID = $this->addProjectIfNotExists($_POST['project'], $_POST['chargeCode']);
       if($userID !==0 && $projectID !== 0){
-         $cols = array("user_id","project_id","date","amount_req");
+         $cols = array("user_id","project_id","date","amount_req","added_by");
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
-         $colVals = array($userID, $projectID,$date->format("Y-m-d"),$_POST['amount']);
+         $colVals = array($userID, $projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username']);
          $res = $this->Dbase->InsertData("acquisitions",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
@@ -395,10 +395,18 @@ class NAcquisition extends Dbase {
    
    private function fetchRequestHistory() {
       //check if search criterial provided
-      if($_POST['query'] != "") 
+      if($_POST['query'] != "") {
          $criteria = "WHERE {$_POST['qtype']} LIKE '%{$_POST['query']}%";
-      else
+         if($_SESSION['user_type'] !== "Super Administrator"){
+            $criteria = $criteria." AND a.`added_by` = '{$_SESSION['username']}'";
+         }
+      }
+      else {
          $criteria = "";
+         if($_SESSION['user_type'] !== "Super Administrator"){
+            $criteria = $criteria."WHERE a.`added_by` = '{$_SESSION['username']}'";
+         }
+      }
       
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
       $query = "SELECT a.*, b.name AS project, b.`charge_code`, c.name AS username".
