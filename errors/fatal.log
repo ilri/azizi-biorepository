@@ -13,3 +13,9 @@ Fatal: There was an error while fetching data from the acquisitions table.
 MySQL Error and String: (1054) Unknown column 'acquisitions' in 'field list'
 Last Query: SELECT acquisitions FROM acquisitions FOR UPDATE
 
+2013-09-30 17:09:48: :
+Fatal: 
+
+2013-09-30 17:10:17: :
+Fatal: 
+

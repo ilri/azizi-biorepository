@@ -274,6 +274,7 @@ class NAcquisition extends Dbase {
             $_SESSION['user_type'] = $res['user_type'];
             $_SESSION['user_id'] = $res['user_id'];
             $_SESSION['password'] = $password;
+            $_SESSION['unhashedPW'] = $unHashedPW;
             $_SESSION['username'] = $username;
             $this->HomePage();
             return;
@@ -447,6 +448,7 @@ class NAcquisition extends Dbase {
       //$this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
       if($_SESSION['user_type']==="Super Administrator"){
          $this->Dbase->UpdateRecords("acquisitions",array("amount_appr"),array($_POST['amountApproved']),"id",$_POST['rowID']);
+         $this->generateInvoice($_POST['rowID']);
       }
    }
    
@@ -472,10 +474,110 @@ class NAcquisition extends Dbase {
                   return "Connected successfully to the AD server, but there was an error while searching the AD!";
                }
                $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
-               print_r($ldapAttributes["title"]);
                return 0;
             } else {
                return "There was an error while binding user '$username' to the AD server!";
+            }
+         }
+      }
+   }
+   
+   private function generateInvoice($rowID){
+      $this->Dbase->query = "SELECT `a`.*, b.name AS username FROM `acquisitions` AS a INNER JOIN users AS b ON a.`user_id`=b.id WHERE a.id = $rowID";
+      $res = $this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
+      if($res !==1) {
+         $date = $res[0]['date'];
+         $amount = $res[0]['amount_appr'];
+         $unitPrice = 2.3;
+         $requestedBY = strtoupper($res[0]['username']);
+         $hash = md5($date.$amount.$unitPrice.$requestedBY);
+         $pageName = $hash.".php";
+         $ldapUser = $res[0]['added_by'];
+         $pageText = "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
+<html>
+   <head>
+      <title>Invoice</title>
+      <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'> 
+   </head>
+   <body style='font-family:Open Sans,sans-serif'>
+      <div style='position: absolute; top: 10px; left: 20px; width: 500px'>
+         <img src='../images/WTPlogo.jpg' style='width: 100px; height: 100px;'/>
+         <h1 style='position: absolute; top: 20px; left: 120px;'>ILRI Biorepository</h1>
+      </div>
+      <div style='position: absolute; top: 30px; left: 600px; text-align: right; width: 300px;'>
+         <h2>Invoice</h2>
+         <h4>Invoice no : " . $rowID . "</h4>
+      </div>
+      <div style='position: absolute; top: 150px; left: 50px;'>
+         <p style='font-weight: bold;'>Lab 2<br/>P.O. Box 30709<br/>Nairobi 00100, KENYA.</p>
+      </div>
+      <div style='position: absolute; top: 280px; left: 50px;'>
+         <p>INTERNATIONAL LIVESTOCK RESEARCH INSTITUTE<br/><br/>" . $requestedBY . "<br/>P.O. BOX 30709<br/>NAIROBI<br/>00100<br/>KENYA</p>
+      </div>
+      <div style='position: absolute; top: 260px; left: 650px'>
+         <table border='2' bordercolor = '000000'>
+            <tr><td style='width: 120px;'>Date:</td><td style='width: 200px;'>" . $date . "</td></tr>
+            <tr><td>Contact: </td><td>Absolomon Kihara</td></tr>
+            <tr><td>Telephone: </td><td>+254 20 422 3000</td></tr>
+            <tr><td>Email: </td><td>a.kihara@cgiar.org</td></tr>
+         </table>
+      </div>
+      <div style='position: absolute; top: 500px; left: 80px; width: 800px;'>
+         <table>
+            <tr>
+               <th width='550' height='30' style='text-align: left;'>Description</th><th width='250'>Quantity</th><th width='250'>Unit Price</th><th width='250'>Net Price</th>
+            </tr>
+            <tr>
+               <td>Nitrogen</td><td style='text-align: center;'>" . $amount . " (KGs)</td><td style='text-align: center;'>$unitPrice</td><td style='text-align: center;'>$" . ($unitPrice * $amount) . "</td>
+            </tr>
+            <tr><td height='40' colspan='3' style='text-align: right'>Total Amount Due</td><td style='text-align: center;'> $" . ($unitPrice * $amount) . "</td></tr>
+         </table>
+      </div>
+   </body>
+</html>";
+         file_put_contents("./generated_pages/".$pageName, $pageText);
+         shell_exec(Config::$wkhtmltopdf." http://".$_SERVER['HTTP_HOST'].Config::$baseURI."generated_pages/".$pageName." /tmp/".$hash.".pdf");
+         unlink("./generated_pages/".$pageName);
+         copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
+         unlink("/tmp/".$hash.".pdf");
+         $this->sendEmail("http://".$_SERVER['HTTP_HOST'].Config::$baseURI."generated_pages/".$hash.".pdf", $ldapUser, $date);
+      }
+   }
+   
+   private function sendEmail($pdfURL, $ldapUser, $date) {
+      $reciever = $this->getEmailAddress($ldapUser);
+      $emailSubject = "Invoice for Nitrogen requested on ".$date;
+      $message = "Hi ".$ldapUser.",\n Your request for Nitrogen has been approved. To view the invoice go to ".$pdfURL." . This is an auto-generated email, please do not reply to it.";
+      $headers = "From: noreply@cgiar.org";
+      $headers = $headers."\n Cc: ".Config::$managerEmail;
+      mail($reciever, $emailSubject, $message, $headers);
+   }
+   
+   private function getEmailAddress($username) {
+      $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
+      if (!$ldapConnection) {
+         return 0;
+      } else {
+         $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
+         if (!$ldapConnection)
+            return 0;
+         else {
+            if (ldap_bind($ldapConnection, $_SESSION['username']."@ilri.cgiarad.org", $_SESSION['unhashedPW'])) {
+               ldap_set_option($ldapConnection, LDAP_OPT_REFERRALS, 0);
+               ldap_set_option($ldapConnection, LDAP_OPT_PROTOCOL_VERSION, 3);
+               $ldapSr = ldap_search($ldapConnection, 'ou=ILRI Kenya,dc=ilri,dc=cgiarad,dc=org', "(sAMAccountName=$username)", array('mail'));
+               if (!$ldapSr) {
+                  $this->CreateLogEntry('', 'fatal');
+                  return 0;
+               }
+               $entry1 = ldap_first_entry($ldapConnection, $ldapSr);
+               if (!$entry1) {
+                  return 0;
+               }
+               $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
+               return $ldapAttributes['mail'][0];
+            } else {
+               return 0;
             }
          }
       }
