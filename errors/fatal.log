@@ -658,3 +658,13 @@ Fatal: There was an error while fetching data from the database.
 MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
 Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
 
+2013-10-02 14:21:34: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1064) You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''TIITA-044''' at line 1
+Last Query: SELECT id FROM projects WHERE projects.`charge_code` = 'TIITA-044''
+
+2013-10-02 14:21:34: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1064) You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''TIITA-044''' at line 1
+Last Query: SELECT id FROM projects WHERE projects.`charge_code` = 'TIITA-044''
+

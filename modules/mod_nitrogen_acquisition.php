@@ -161,8 +161,8 @@ class NAcquisition extends Dbase {
          <fieldset>
             <legend>Add a Request</legend>
                <table id="mainField">
-                  <tr><td class="label">Name</td><td><input type="text" name="user" id="user" value=""/></td></tr>
-                  <tr><td class="label">Date of Request</td><td><input type="text" name="date" id="date" value=""/></td></tr>
+                  <tr><td class="label">Name</td><td><input type="text" name="user" id="user" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>"/></td></tr>
+                  <tr><td class="label">Date of Request</td><td><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>"/></td></tr>
                   <script>
                      $(function() {
                         $( "#date" ).datepicker({maxDate: '0', dateFormat: 'dd-mm-yy'});
