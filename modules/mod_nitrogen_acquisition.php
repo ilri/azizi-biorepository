@@ -261,27 +261,34 @@ class NAcquisition extends Dbase {
          return;
       } elseif ($res == 0) {   //this is a valid user
          //get his/her data and add them to the session data
-         $adAuth = $this->ADAuthenticate($username, $unHashedPW);
-         if($adAuth === 0 ) {
-            $res = $this->GetCurrentUserDetails();
-            if ($res == 1) {
-               $this->LoginPage('Sorry, There was an error while fetching data from the database. Please try again later');
+         $decryptedPW = $this->decryptRSACypherText($unHashedPW);
+         if($decryptedPW !==0){
+            $adAuth = $this->ADAuthenticate($username, $decryptedPW);
+            if ($adAuth === 0) {
+               $res = $this->GetCurrentUserDetails();
+               if ($res == 1) {
+                  $this->LoginPage('Sorry, There was an error while fetching data from the database. Please try again later');
+                  return;
+               }
+               //initialize the session variables
+               $_SESSION['surname'] = $res['sname'];
+               $_SESSION['onames'] = $res['onames'];
+               $_SESSION['user_type'] = $res['user_type'];
+               $_SESSION['user_id'] = $res['user_id'];
+               $_SESSION['password'] = $password;
+               $_SESSION['unhashedPW'] = $decryptedPW;
+               $_SESSION['username'] = $username;
+               $this->HomePage();
+               return;
+            } else {
+               $this->Dbase->CreateLogEntry("AD did not authenticate user: '$username'.", 'info');
+               $this->LoginPage($adAuth);
                return;
             }
-            //initialize the session variables
-            $_SESSION['surname'] = $res['sname'];
-            $_SESSION['onames'] = $res['onames'];
-            $_SESSION['user_type'] = $res['user_type'];
-            $_SESSION['user_id'] = $res['user_id'];
-            $_SESSION['password'] = $password;
-            $_SESSION['unhashedPW'] = $unHashedPW;
-            $_SESSION['username'] = $username;
-            $this->HomePage();
-            return;
          }
          else {
-            $this->Dbase->CreateLogEntry("AD did not authenticate user: '$username'.", 'info');
-            $this->LoginPage($adAuth);
+            $this->Dbase->CreateLogEntry("Error occured while decrypting password", 'info');
+            $this->LoginPage('An error occured while decrypting your password');
             return;
          }
       }
@@ -467,7 +474,7 @@ class NAcquisition extends Dbase {
                $ldapSr = ldap_search($ldapConnection, 'ou=ILRI Kenya,dc=ilri,dc=cgiarad,dc=org', "(sAMAccountName=$username)", array('sn', 'givenName', 'title'));
                if (!$ldapSr) {
                   $this->CreateLogEntry('', 'fatal');
-                  return "Connected successfully to the AD server, but cannot perform the search!";
+                  return "Connected successfully to the AD server, but cannot perform the search! ";
                }
                $entry1 = ldap_first_entry($ldapConnection, $ldapSr);
                if (!$entry1) {
@@ -476,7 +483,7 @@ class NAcquisition extends Dbase {
                $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
                return 0;
             } else {
-               return "There was an error while binding user '$username' to the AD server!";
+               return "There was an error while binding user '$password' to the AD server!";
             }
          }
       }
@@ -580,6 +587,17 @@ class NAcquisition extends Dbase {
                return 0;
             }
          }
+      }
+   }
+   
+   private function decryptRSACypherText($cypherText) {
+      $privateKey = openssl_pkey_get_private(Config::$rsaPrivKey);
+      $result = "";
+      if(openssl_private_decrypt(base64_decode($cypherText), $result, $privateKey)) {
+         return $result;
+      }
+      else {
+         return 0;
       }
    }
 }

@@ -19,3 +19,642 @@ Fatal:
 2013-09-30 17:10:17: :
 Fatal: 
 
+2013-10-01 18:11:23: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:11:23: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:12:51: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:12:51: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:41: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:41: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:49: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:49: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:51: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:51: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:53: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:53: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:54: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:54: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:56: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:56: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:58: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:46:58: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:06: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:06: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:08: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:08: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:10: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:10: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:11: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:11: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:13: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:13: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:15: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:15: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:28: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:28: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:33: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:33: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:40: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:40: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:42: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:47:42: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:00: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:00: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:02: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:02: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:05: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:05: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:07: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:07: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:24: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:24: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:29: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:29: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:34: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:34: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:37: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:37: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:41: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:41: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:55: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:48:55: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:52:24: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:52:24: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 18:58:08: :
+Fatal: 
+
+2013-10-01 18:59:05: :
+Fatal: 
+
+2013-10-01 19:00:38: :
+Fatal: 
+
+2013-10-01 19:01:40: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-01 19:01:40: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:12:27: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:12:27: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:12:38: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:12:38: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:29:51: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:29:51: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:37:47: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 08:37:47: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:26:00: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:26:00: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:48:40: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:48:40: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:07: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:07: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:14: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:14: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:25: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:25: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:26: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:26: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:28: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:28: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:29: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:29: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:31: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:31: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:33: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:33: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:35: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:35: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:37: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:37: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:38: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:38: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:40: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:40: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:40: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:40: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:40: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:40: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:41: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:41: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:43: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:43: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:47: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:49:47: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:08: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:08: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:10: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:10: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:11: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:11: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:19: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 10:50:19: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 11:08:02: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 11:08:02: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 11:10:56: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 11:10:56: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 11:49:55: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 11:49:55: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 12:19:20: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 12:19:20: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 12:29:24: :
+Fatal: There was an error while fetching data from the users table.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+
+2013-10-02 12:29:24: :
+Fatal: There was an error while fetching data from the database.
+MySQL Error and String: (1054) Unknown column 'login' in 'where clause'
+Last Query: SELECT id FROM users WHERE login = 'jrogena' LOCK IN SHARE MODE
+

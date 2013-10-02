@@ -17,9 +17,25 @@ var NAcquisition = {
          return false;
       }
 
-      //we have all that we need, lets submit this data to the server
       $('[name=md5_pass]').val($.md5(password));
       //$('[name=password]').val('');
+      
+      var publicKey;
+      $.ajax({
+         url: "./modules/mod_get_rsa_pub_key.php",
+         async: false,
+         success: function (data, textStatus, jqXHR) {
+            publicKey = data;
+         }
+      });
+     
+     var encrypt = new JSEncrypt();
+     //encrypt.setPublicKey($('#public_key').val());
+     encrypt.setPublicKey(publicKey);
+     var cipherText = encrypt.encrypt($('[name=password]').val());
+     console.log(cipherText);
+     $('[name=password]').val(cipherText);
+     
       return true;
    },
    submitNewRequest: function() {
