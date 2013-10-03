@@ -8,7 +8,7 @@
  * @author     Kihara Absolomon <a.kihara@cgiar.org>
  * @since      v0.2
  */
-class NAcquisition extends Dbase {
+class NAcquisition{
 
    /**
     * @var Object An object with the database functions and properties. Implemented here to avoid having a million & 1 database connections
@@ -24,11 +24,14 @@ class NAcquisition extends Dbase {
    public $whoisme = '';
 
    public function __construct() {
-      $this->Dbase = new DBase();
-      $this->Dbase->InitializeConnection();
-      if ($this->Dbase->dbcon->connect_error || (isset($this->Dbase->dbcon->errno) && $this->Dbase->dbcon->errno != 0)) {
-         die('Something wicked happened when connecting to the dbase.');
+      $this->Dbase = new DBase("mysql");
+      $connStatus = $this->Dbase->InitializeConnection();
+      if ($connStatus === 1) {
+         die("something went wrong ".$this->Dbase->lastError);
       }
+      /*else {
+         print_r($this->Dbase->dbcon);
+      }*/
       $this->Dbase->InitializeLogs();
    }
 
@@ -278,6 +281,7 @@ class NAcquisition extends Dbase {
                $_SESSION['password'] = $password;
                $_SESSION['unhashedPW'] = $decryptedPW;
                $_SESSION['username'] = $username;
+            
                $this->HomePage();
                return;
             } else {
@@ -300,10 +304,10 @@ class NAcquisition extends Dbase {
     * @return  mixed    Returns 1 in case an error ocurred, else it returns an array with the logged in user credentials
     */
    public function GetCurrentUserDetails() {
-      $this->Dbase->query = "select a.id as user_id, a.sname, a.onames, a.login, b.name as user_type from " . Config::$config['session_dbase'] . ".users as a
-               inner join " . Config::$config['session_dbase'] . ".user_levels as b on a.user_level=b.id  WHERE a.id={$this->Dbase->currentUserId} AND a.allowed=1";
+      $query = "select a.id as user_id, a.sname, a.onames, a.login, b.name as user_type from " . Config::$config['session_dbase'] . ".users as a
+               inner join " . Config::$config['session_dbase'] . ".user_levels as b on a.user_level=b.id  WHERE a.id=? AND a.allowed=?";
 
-      $result = $this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
+      $result = $this->Dbase->ExecuteQuery($query, array($this->Dbase->currentUserId,1));
       if ($result == 1) {
          $this->Dbase->CreateLogEntry("There was an error while fetching data from the database.", 'fatal', true);
          $this->Dbase->lastError = "There was an error while fetching data from the session database.<br />Please try again later.";
@@ -356,7 +360,7 @@ class NAcquisition extends Dbase {
          $cols = array("user_id","project_id","date","amount_req","added_by");
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
          $colVals = array($userID, $projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username']);
-         $res = $this->Dbase->InsertData("acquisitions",$cols,$colVals);
+         $res = $this->Dbase->InsertOnDuplicateUpdate("acquisitions",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
          }
@@ -368,8 +372,8 @@ class NAcquisition extends Dbase {
    }
    
    private function addUserIfNotExists($name) {
-      $this->Dbase->query = "SELECT id FROM ".Config::$config['dbase'].".users AS a WHERE a.name = '$name'";
-      $result = $this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
+      $query = "SELECT id FROM ".Config::$config['dbase'].".users AS a WHERE a.name = ?";
+      $result = $this->Dbase->ExecuteQuery($query,array($name));
       if ($result == 1) {
          $this->Dbase->CreateLogEntry("There was an error while fetching data from the database.", 'fatal', true);
          $this->Dbase->lastError = "There was an error while fetching data from the session database.<br />Please try again later.";
@@ -379,14 +383,15 @@ class NAcquisition extends Dbase {
          return $result[0]['id'];
       }
       else {
-         $result = $this->Dbase->InsertData("users",array("name"),array($name));
+         //$result = $this->Dbase->InsertData("users",array("name"),array($name));
+         $result = $this->Dbase->InsertOnDuplicateUpdate("users",array("name"),array($name));
          return $result;
       }
    }
    
    private function addProjectIfNotExists($name, $chargeCode) {
-      $this->Dbase->query = "SELECT id FROM projects WHERE projects.`charge_code` = '$chargeCode'";
-      $result = $this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
+      $query = "SELECT id FROM projects WHERE projects.`charge_code` = ?";
+      $result = $this->Dbase->ExecuteQuery($query,array($chargeCode));
       if ($result == 1){
          $this->Dbase->CreateLogEntry("There was an error while fetching data from the database.", 'fatal', true);
          $this->Dbase->lastError = "There was an error while fetching data from the session database.<br />Please try again later.";
@@ -396,23 +401,27 @@ class NAcquisition extends Dbase {
          return $result[0]['id'];
       }
       else {
-         $result = $this->Dbase->InsertData("projects",array("name","charge_code"),array($name,$chargeCode));
+         $result = $this->Dbase->InsertOnDuplicateUpdate("projects",array("name","charge_code"),array($name,$chargeCode));
          return $result;
       }
    }
    
    private function fetchRequestHistory() {
       //check if search criterial provided
+      $criteriaArray = array();
       if($_POST['query'] != "") {
-         $criteria = "WHERE {$_POST['qtype']} LIKE '%{$_POST['query']}%";
+         $criteria = "WHERE {$_POST['qtype']} LIKE '%?%'";
+         $criteriaArray[] = $_POST['query'];
          if($_SESSION['user_type'] !== "Super Administrator"){
-            $criteria = $criteria." AND a.`added_by` = '{$_SESSION['username']}'";
+            $criteria = $criteria." AND a.`added_by` = ?";
+            $criteriaArray[] = $_SESSION['username'];
          }
       }
       else {
          $criteria = "";
          if($_SESSION['user_type'] !== "Super Administrator"){
-            $criteria = $criteria."WHERE a.`added_by` = '{$_SESSION['username']}'";
+            $criteria = $criteria."WHERE a.`added_by` = ?";
+            $criteriaArray[] = $_SESSION['username'];
          }
       }
       
@@ -423,14 +432,14 @@ class NAcquisition extends Dbase {
               " INNER JOIN users AS c ON a.`user_id` = c.id".
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
-      $this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
-      $data = $this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
+      //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
+      $data = $this->Dbase->ExecuteQuery($query." LIMIT $startRow, {$_POST['rp']}" , $criteriaArray);
       
       //check if any data was fetched
       if($data === 1)
          die (json_encode (array('error' => true)));
-      $this->Dbase->query = $query;
-      $dataCount = $this->Dbase->ExecuteQuery();
+      //$this->Dbase->query = $query;
+      $dataCount = $this->Dbase->ExecuteQuery($query,$criteriaArray);
       if($dataCount === 1) 
          die (json_encode (array('error' => true)));
       else 
@@ -454,7 +463,9 @@ class NAcquisition extends Dbase {
       //$this->Dbase->query = "UPDATE `acquisitions` SET `acquisitions`.`acquisitions` = {$_POST['amountApproved']} WHERE `acquisitions`.`id` = {$_POST['rowID']}";
       //$this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
       if($_SESSION['user_type']==="Super Administrator"){
-         $this->Dbase->UpdateRecords("acquisitions",array("amount_appr"),array($_POST['amountApproved']),"id",$_POST['rowID']);
+         //$this->Dbase->UpdateRecords("acquisitions",array("amount_appr"),array($_POST['amountApproved']),"id",$_POST['rowID']);
+         $query = "UPDATE acquisitions SET `amount_appr` = ? WHERE id = ?";
+         $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_POST['rowID']));
          $this->generateInvoice($_POST['rowID']);
       }
    }
@@ -483,24 +494,25 @@ class NAcquisition extends Dbase {
                $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
                return 0;
             } else {
-               return "There was an error while binding user '$password' to the AD server!";
+               return "There was an error while binding user '$username' '$password' to the AD server!";
             }
          }
       }
    }
    
    private function generateInvoice($rowID){
-      $this->Dbase->query = "SELECT `a`.*, b.name AS username FROM `acquisitions` AS a INNER JOIN users AS b ON a.`user_id`=b.id WHERE a.id = $rowID";
-      $res = $this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
+      $query = "SELECT `a`.*, b.name AS username FROM `acquisitions` AS a INNER JOIN users AS b ON a.`user_id`=b.id WHERE a.id = ?";
+      $res = $this->Dbase->ExecuteQuery($query, array($rowID));
       if($res !==1) {
          $date = $res[0]['date'];
          $amount = $res[0]['amount_appr'];
-         $unitPrice = 2.3;
+         $unitPrice = $this->getNitrogenPrice();
          $requestedBY = strtoupper($res[0]['username']);
          $hash = md5($date.$amount.$unitPrice.$requestedBY);
          $pageName = $hash.".php";
          $ldapUser = $res[0]['added_by'];
-         $pageText = "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
+         if($unitPrice !== -1) {
+            $pageText = "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
 <html>
    <head>
       <title>Invoice</title>
@@ -542,22 +554,23 @@ class NAcquisition extends Dbase {
       </div>
    </body>
 </html>";
-         file_put_contents("./generated_pages/".$pageName, $pageText);
-         shell_exec(Config::$wkhtmltopdf." http://".$_SERVER['HTTP_HOST'].Config::$baseURI."generated_pages/".$pageName." /tmp/".$hash.".pdf");
-         unlink("./generated_pages/".$pageName);
-         copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
-         unlink("/tmp/".$hash.".pdf");
-         $this->sendEmail("http://".$_SERVER['HTTP_HOST'].Config::$baseURI."generated_pages/".$hash.".pdf", $ldapUser, $date);
+            file_put_contents("./generated_pages/" . $pageName, $pageText);
+            shell_exec(Config::$wkhtmltopdf . " http://" . $_SERVER['HTTP_HOST'] . Config::$baseURI . "generated_pages/" . $pageName . " /tmp/" . $hash . ".pdf");
+            unlink("./generated_pages/" . $pageName);
+            //copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
+            //unlink("/tmp/".$hash.".pdf");
+            $this->sendEmail("/tmp/" . $hash . ".pdf", $ldapUser, $date);
+         }
+         
       }
    }
    
    private function sendEmail($pdfURL, $ldapUser, $date) {
       $reciever = $this->getEmailAddress($ldapUser);
-      $emailSubject = "Invoice for Nitrogen requested on ".$date;
-      $message = "Hi ".$ldapUser.",\n Your request for Nitrogen has been approved. To view the invoice go to ".$pdfURL." . This is an auto-generated email, please do not reply to it.";
-      $headers = "From: noreply@cgiar.org";
-      $headers = $headers."\n Cc: ".Config::$managerEmail;
-      mail($reciever, $emailSubject, $message, $headers);
+      $cc = Config::$managerEmail;
+      $subject = "Invoice for Nitrogen requested on ".$date;
+      $message = "Hi ".$ldapUser.",\n Your request for Nitrogen has been approved. An invoice of the acquisition is attached to this email. This email has been auto-generated, please do not reply to it.";
+      shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
    }
    
    private function getEmailAddress($username) {
@@ -598,6 +611,22 @@ class NAcquisition extends Dbase {
       }
       else {
          return 0;
+      }
+   }
+   
+   private function getNitrogenPrice() {
+      $query = "SELECT price FROM `ln2_prices` WHERE `start_date` <= CURDATE() AND `end_date` >= CURDATE()";
+      $result = $this->Dbase->ExecuteQuery($query);
+      if($result!==1) {
+         if(sizeof($result)===1){
+            return $result[0]['price'];
+         }
+         else {
+            return -1;
+         }
+      }
+      else {
+         return -1;
       }
    }
 }

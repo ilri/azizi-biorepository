@@ -124,6 +124,7 @@ var NAcquisition = {
                            rowID:id,
                            amountApproved:$("#newAmountApproved").val()
                         }, function(){
+                           console.log("response recieved, email should have been sent");
                            $("#past_requests").flexReload();
                            $("#newAmountApproved").val("");
                         });

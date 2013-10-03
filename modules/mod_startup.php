@@ -18,7 +18,7 @@ define('OPTIONS_COMMON_FOLDER_PATH', '../common/');
 
 require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_general_v0.6.php';
 require_once 'nitrogen_acq_config';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_objectbased_dbase_v0.8.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'dbmodules/mod_objectbased_dbase_v1.1.php';
 require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_messages_v0.1.php';
 
 //setting the date settings
@@ -53,7 +53,7 @@ $NAcquisition = new NAcquisition();
 
 session_save_path(Config::$config['dbase']);
 session_name('labels_printer');
-$NAcquisition->SessionStart();
+$NAcquisition->Dbase->SessionStart();
 
 $NAcquisition->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
 
