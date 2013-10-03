@@ -93,6 +93,8 @@ class NAcquisition{
          $this->fetchRequestHistory ();
       elseif (OPTIONS_REQUESTED_MODULE == 'acquisition' && OPTIONS_REQUESTED_SUB_MODULE == 'setAmountApproved')
          $this->setAmountApproved ();
+      elseif (OPTIONS_REQUESTED_MODULE == 'acquisition' && OPTIONS_REQUESTED_SUB_MODULE == 'getProjects')
+         $this->getProjects ();
       elseif (OPTIONS_REQUESTED_MODULE == 'logout') {
          $this->Dbase->LogOut();
          $this->LoginPage();
@@ -147,6 +149,14 @@ class NAcquisition{
     */
    private function HomePage($addinfo = '') {
       $this->WhoIsMe();
+      
+      $projects = $this->getProjects();
+      $chargeCodes = array();
+      $chargeCodesWP = array();
+      foreach ($projects as $currentP) {
+         $chargeCodes[] = $currentP['charge_code'];
+         $chargeCodesWP[$currentP['charge_code']] = $currentP['name'];
+      }
 
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
       echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.form.js' /></script>";
@@ -176,8 +186,27 @@ class NAcquisition{
                         <fieldset>
                            <legend>Project</legend>
                            <table>
-                              <tr><td class="label">Project</td><td><input type="text" name="project" id="project" value=""/></td>
+                              <tr><td class="label">Project</td><td><input type="text" name="project" id="project" value="" disabled="true"/></td>
                                  <td class="label">Charge Code</td><td><input type="text" name="chargeCode" id="chargeCode" value=""/></td></tr>
+                              <script>
+                                 $(function (){
+                                    var chargeCodes = <?php echo json_encode($chargeCodes);?>;
+                                    for(var i = 0; i < chargeCodes.length; i++) {
+                                       if(chargeCodes[i] === null) {
+                                          chargeCodes.splice(i, 1);
+                                          i--;
+                                       }
+                                    }
+                                    $("#chargeCode").autocomplete({
+                                       source: chargeCodes,
+                                       minLength: 2,
+                                       select: function (event, ui) {
+                                          var value = ui.item.value;
+                                          $("#project").val(projects[value]);
+                                       }
+                                    });
+                                 });
+                              </script>
                            </table>
                         </fieldset>
                   </td></tr>
@@ -355,7 +384,7 @@ class NAcquisition{
    private function submitAcquisitionRequest() {
       $message = "";
       $userID = $this->addUserIfNotExists($_POST['user']);
-      $projectID = $this->addProjectIfNotExists($_POST['project'], $_POST['chargeCode']);
+      $projectID = $this->getProjectID($_POST['chargeCode']);
       if($userID !==0 && $projectID !== 0){
          $cols = array("user_id","project_id","date","amount_req","added_by");
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
@@ -364,6 +393,9 @@ class NAcquisition{
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
          }
+      }
+      else if($projectID === 0) {
+         $message = "Unable to add the last request. Enter a valid charge code";
       }
       else {
          $message = "Unable to add the last request. Try again later";
@@ -389,7 +421,7 @@ class NAcquisition{
       }
    }
    
-   private function addProjectIfNotExists($name, $chargeCode) {
+   private function getProjectID($chargeCode) {
       $query = "SELECT id FROM projects WHERE projects.`charge_code` = ?";
       $result = $this->Dbase->ExecuteQuery($query,array($chargeCode));
       if ($result == 1){
@@ -401,8 +433,7 @@ class NAcquisition{
          return $result[0]['id'];
       }
       else {
-         $result = $this->Dbase->InsertOnDuplicateUpdate("projects",array("name","charge_code"),array($name,$chargeCode));
-         return $result;
+         return 0;
       }
    }
    
@@ -628,6 +659,12 @@ class NAcquisition{
       else {
          return -1;
       }
+   }
+   
+   private function  getProjects() {
+      $query = "SELECT * FROM projects";
+      $result = $this->Dbase->ExecuteQuery($query);
+      return $result;
    }
 }
 ?>

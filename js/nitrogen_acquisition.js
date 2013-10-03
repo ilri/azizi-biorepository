@@ -88,11 +88,11 @@ var NAcquisition = {
          return false;
       }
       
-      if($("#project").val() === "") {
+      /*if($("#project").val() === "") {
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the project', error:true});
          $("#project").focus();
          return false;
-      }
+      }*/
       
       if($("#chargeCode").val() === "") {
          Notification.show({create:true, hide:true, updateText:false, text:"Please enter the project's charge code", error:true});
@@ -135,5 +135,17 @@ var NAcquisition = {
             });
          });
       }
+   },
+   
+   fetchProjects: function() {
+      var json;
+      $.ajax({
+         url: "index.php?page=acquisition&do=getProjects",
+         async: false,
+         success: function (data, textStatus, jqXHR) {
+            json = eval(data);
+         }
+      });
+      return json;
    }
 };
