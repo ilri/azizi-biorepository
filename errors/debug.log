@@ -3553,3 +3553,23 @@ Array
 )
 
 
+2013-10-03 20:05:02: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-03 20:05:02: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+

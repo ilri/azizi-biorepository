@@ -191,6 +191,7 @@ class NAcquisition{
                               <script>
                                  $(function (){
                                     var chargeCodes = <?php echo json_encode($chargeCodes);?>;
+                                    var projects = <?php echo json_encode($chargeCodesWP);?>;
                                     for(var i = 0; i < chargeCodes.length; i++) {
                                        if(chargeCodes[i] === null) {
                                           chargeCodes.splice(i, 1);
