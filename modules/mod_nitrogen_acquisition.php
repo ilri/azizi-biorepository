@@ -267,7 +267,7 @@ class NAcquisition{
       $password = $_POST['md5_pass'];
       $unHashedPW = $_POST['password'];
       //check if we have the user have specified the credentials
-      if ($username == '' || $password == '') {
+      /*if ($username == '' || $password == '') {
          if ($username == '')
             $this->LoginPage("Incorrect login credentials. Please specify a username to log in to the system.");
          elseif ($password == '')
@@ -325,6 +325,43 @@ class NAcquisition{
             $this->LoginPage('An error occured while decrypting your password');
             return;
          }
+      }*/
+      //get his/her data and add them to the session data
+      $decryptedPW = $this->decryptRSACypherText($unHashedPW);
+      if ($decryptedPW !== 0) {
+         $adAuth = $this->Dbase->ADAuthenticate($username, $decryptedPW);
+         if ($adAuth === 0) {
+            $res = $this->GetCurrentUserDetails($username);
+            if ($res == 1) {
+               $this->LoginPage('Sorry, There was an error while fetching data from the database. Please try again later');
+               return;
+            }
+            //initialize the session variables
+            //$_SESSION['surname'] = $res['sname'];
+            //$_SESSION['onames'] = $res['onames'];
+            $_SESSION['user_type'] = $res['user_type'];
+            $_SESSION['user_id'] = $res['user_id'];
+            $_SESSION['password'] = $password;
+            $_SESSION['unhashedPW'] = $decryptedPW;
+            //$_SESSION['username'] = $username;
+
+            $this->HomePage();
+            return;
+         }
+         else if($adAuth === 1) {
+            $this->Dbase->CreateLogEntry("AD did not authenticate user: '$username'.", 'info');
+            $this->LoginPage("AD did not authenticate user: '$username'.");
+            return;
+         }
+         else {
+            $this->Dbase->CreateLogEntry("AD did not authenticate user: '$username'.", 'info');
+            $this->LoginPage($adAuth);
+            return;
+         }
+      } else {
+         $this->Dbase->CreateLogEntry("Error occured while decrypting password", 'info');
+         $this->LoginPage('An error occured while decrypting your password');
+         return;
       }
    }
 
@@ -333,11 +370,11 @@ class NAcquisition{
     *
     * @return  mixed    Returns 1 in case an error ocurred, else it returns an array with the logged in user credentials
     */
-   public function GetCurrentUserDetails() {
+   public function GetCurrentUserDetails($username) {
       $query = "select a.id as user_id, a.sname, a.onames, a.login, b.name as user_type from " . Config::$config['session_dbase'] . ".users as a
-               inner join " . Config::$config['session_dbase'] . ".user_levels as b on a.user_level=b.id  WHERE a.id=? AND a.allowed=?";
+               inner join " . Config::$config['session_dbase'] . ".user_levels as b on a.user_level=b.id  WHERE a.login=? AND a.allowed=?";
 
-      $result = $this->Dbase->ExecuteQuery($query, array($this->Dbase->currentUserId,1));
+      $result = $this->Dbase->ExecuteQuery($query, array($username,1));
       if ($result == 1) {
          $this->Dbase->CreateLogEntry("There was an error while fetching data from the database.", 'fatal', true);
          $this->Dbase->lastError = "There was an error while fetching data from the session database.<br />Please try again later.";
@@ -503,7 +540,7 @@ class NAcquisition{
       }
    }
    
-   private function ADAuthenticate($username, $password) {
+   /*private function ADAuthenticate($username, $password) {
       $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
       if (!$ldapConnection) {
          return "Could not connect to the AD server!";
@@ -531,7 +568,7 @@ class NAcquisition{
             }
          }
       }
-   }
+   }*/
    
    private function generateInvoice($rowID){
       $query = "SELECT `a`.*, b.name AS username FROM `acquisitions` AS a INNER JOIN users AS b ON a.`user_id`=b.id WHERE a.id = ?";

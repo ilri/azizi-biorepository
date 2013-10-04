@@ -74,3 +74,12 @@ Fatal: There was an error while adding/replacing data to the 'acquisitions' tabl
 MySQL Error and String: () 
 Last Query: INSERT INTO acquisitions(user_id, project_id, date, amount_req, added_by) VALUES('', '80', '2013-10-03', '2', 'jrogena') ON DUPLICATE KEY UPDATE  user_id='', project_id='80', date='2013-10-03', amount_req='2', added_by='jrogena'
 
+2013-10-04 10:32:48: :
+Fatal: There was an error while binding user 'jrogena' to the AD server!
+
+2013-10-04 10:33:01: :
+Fatal: There was an error while binding user 'jrogena' to the AD server!
+
+2013-10-04 10:39:42: :
+Fatal: There was an error while binding user 'jrogena' to the AD server!
+
