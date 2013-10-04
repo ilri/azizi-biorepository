@@ -260,7 +260,7 @@ class NAcquisition{
    }
 
    /**
-    * Validates the user credentials as received from the client
+    * Validates the user credentials as received from the client. Validation is soley done using LDAP
     */
    public function ValidateUser() {
       $username = $_POST['username'];
@@ -419,6 +419,9 @@ class NAcquisition{
       return 0;
    }
    
+   /**
+    * Submits Nitrogen Acquisition Request to database
+    */
    private function submitAcquisitionRequest() {
       $message = "";
       $userID = $this->addUserIfNotExists($_POST['user']);
@@ -441,6 +444,11 @@ class NAcquisition{
       $this->HomePage($message);
    }
    
+   /**
+    * Adds the specified name to the database if it does not already exist
+    * @param   string   $name     
+    * @return  int      Returns the id of the row with the name or 0 if an error occured
+    */
    private function addUserIfNotExists($name) {
       $query = "SELECT id FROM ".Config::$config['dbase'].".users AS a WHERE a.name = ?";
       $result = $this->Dbase->ExecuteQuery($query,array($name));
@@ -459,6 +467,11 @@ class NAcquisition{
       }
    }
    
+   /**
+    * Gets the project ID corresponding to the specified charge code
+    * @param   string   $chargeCode   The charge code for which the wanted project corresponds to 
+    * @return int       Returns the project ID or 0 if and error occures during execution
+    */
    private function getProjectID($chargeCode) {
       $query = "SELECT id FROM projects WHERE projects.`charge_code` = ?";
       $result = $this->Dbase->ExecuteQuery($query,array($chargeCode));
@@ -475,6 +488,9 @@ class NAcquisition{
       }
    }
    
+   /**
+    * Fetches the requisitons in the database and formats these the way flexigrid likes it
+    */
    private function fetchRequestHistory() {
       //check if search criterial provided
       $criteriaArray = array();
@@ -528,6 +544,9 @@ class NAcquisition{
       die(json_encode($response));
    }
    
+   /**
+    * Sets the amount of nitrogen just approved for a requisition
+    */
    private function setAmountApproved() {
       if($_SESSION['user_type']==="Super Administrator"){
         $query = "SELECT `amount_appr` FROM acquisitions WHERE id = ?";
@@ -570,6 +589,10 @@ class NAcquisition{
       }
    }*/
    
+   /**
+    * Generates an invoice correspinding to a requisition
+    * @param   int   $rowID   ID of the requisition
+    */
    private function generateInvoice($rowID){
       $query = "SELECT `a`.*, b.name AS username FROM `acquisitions` AS a INNER JOIN users AS b ON a.`user_id`=b.id WHERE a.id = ?";
       $res = $this->Dbase->ExecuteQuery($query, array($rowID));
@@ -636,6 +659,14 @@ class NAcquisition{
       }
    }
    
+   /**
+    * Sends email to specified LDAP user
+    * 
+    * @param   string   $pdfURL     Location where the attachement has been cached
+    * @param   string   $ldapUser   LDAP username of the user to be sent to an email
+    * @param   string   $date       The date the requisition waas made
+    * @param   string   $name       Name of the reciever
+    */
    private function sendEmail($pdfURL, $ldapUser, $date, $name) {
       $reciever = $this->getEmailAddress($ldapUser);
       $cc = Config::$managerEmail;
@@ -645,6 +676,13 @@ class NAcquisition{
       unlink($pdfURL);
    }
    
+   /**
+    * Gets the email address corresponding to the LDAP username specified
+    * 
+    * @param   string   $username   LDAP username corresponding to the email address to be searched
+    * 
+    * @return  mixed    Returns 0 if an error occures durind execution or the email address corresponding to the email address
+    */
    private function getEmailAddress($username) {
       $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
       if (!$ldapConnection) {
@@ -675,6 +713,13 @@ class NAcquisition{
       }
    }
    
+   /**
+    * Decrypt the specified cyphertext using the systems private key. Decryption is done using RSA
+    * 
+    * @param   string      $cypherText    The cypher text to be decrypted
+    * 
+    * @return  string|int  Returns 0 if an error occures or the decrypted text
+    */
    private function decryptRSACypherText($cypherText) {
       $privateKey = openssl_pkey_get_private(Config::$rsaPrivKey);
       $result = "";
@@ -686,6 +731,11 @@ class NAcquisition{
       }
    }
    
+   /**
+    * Gets the price of nitrogen from the database that is valid for today
+    * 
+    * @return  float    Returns -1 if an error occures or the price of nitrogen
+    */
    private function getNitrogenPrice() {
       $query = "SELECT price FROM `ln2_prices` WHERE `start_date` <= CURDATE() AND `end_date` >= CURDATE()";
       $result = $this->Dbase->ExecuteQuery($query);
@@ -702,6 +752,11 @@ class NAcquisition{
       }
    }
    
+   /**
+    * Returns all the projects in the database in a associative array
+    * 
+    * @return  assoc array   The fetched projects 
+    */
    private function  getProjects() {
       $query = "SELECT * FROM projects";
       $result = $this->Dbase->ExecuteQuery($query);
