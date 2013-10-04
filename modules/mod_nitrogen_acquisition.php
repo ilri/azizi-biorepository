@@ -492,13 +492,14 @@ class NAcquisition{
    }
    
    private function setAmountApproved() {
-      //$this->Dbase->query = "UPDATE `acquisitions` SET `acquisitions`.`acquisitions` = {$_POST['amountApproved']} WHERE `acquisitions`.`id` = {$_POST['rowID']}";
-      //$this->Dbase->ExecuteQuery(MYSQLI_ASSOC);
       if($_SESSION['user_type']==="Super Administrator"){
-         //$this->Dbase->UpdateRecords("acquisitions",array("amount_appr"),array($_POST['amountApproved']),"id",$_POST['rowID']);
-         $query = "UPDATE acquisitions SET `amount_appr` = ? WHERE id = ?";
-         $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_POST['rowID']));
-         $this->generateInvoice($_POST['rowID']);
+        $query = "SELECT `amount_appr` FROM acquisitions WHERE id = ?";
+        $result = $this->Dbase->ExecuteQuery($query,array($_POST['rowID']));
+        if(sizeof($result) === 1 && is_null($result[0]['amount_appr'])) {
+           $query = "UPDATE acquisitions SET `amount_appr` = ? WHERE id = ?";
+           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_POST['rowID']));
+           $this->generateInvoice($_POST['rowID']);
+        }
       }
    }
    
@@ -526,7 +527,7 @@ class NAcquisition{
                $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
                return 0;
             } else {
-               return "There was an error while binding user '$username' '$password' to the AD server!";
+               return "There was an error while binding user '$username' to the AD server!";
             }
          }
       }
