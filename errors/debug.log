@@ -3809,3 +3809,121 @@ Array
 )
 
 
+2013-10-04 09:46:55: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 09:47:06: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => coaw1R4myXXde9zGbW9xTg7pQzwjV4Tqr9Vi1qcN57J3V/tnRf+EYrAcHMpPOTxJHIyPsnW9Fw5SphSbnSkBDB/EHz01iRZO7T4k0Dre7m4rZsGBZGfdHmT/rPw4IxH+kD4S2oEIWy8/AWeaMcbwodJMmyIvtQqX5vfym0HBgZo=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 09:47:06: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => false
+    [md5_pass] => c7b9cb3464b02b4f7fad473d15d7011e
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 09:47:16: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => jeSRuANnUSUkw4pWP6eu57AvLRnIK8pEdYIA+bDF7NreLIMo6u4Bk/DuEmsxJ2Zno4fcoV/8kk3617eT99tYI73tXf2PkB78z73yjXle0+7RMcrBMGj+RFEgXsJLxq1p3USh62tQrwBke2WL2jCFCRBo6dGIyfbml1/So52JiJ4=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 1
+)
+
+
+2013-10-04 09:47:17: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 09:50:26: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 09:50:27: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 09:50:34: :
+Debug: Post User request: 
+Array
+(
+    [rowID] => 20
+    [amountApproved] => 10
+)
+
+
+2013-10-04 09:50:50: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 10:01:48: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 10:01:50: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+

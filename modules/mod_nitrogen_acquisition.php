@@ -541,6 +541,7 @@ class NAcquisition{
          $amount = $res[0]['amount_appr'];
          $unitPrice = $this->getNitrogenPrice();
          $requestedBY = strtoupper($res[0]['username']);
+         $name = $res[0]['username'];
          $hash = md5($date.$amount.$unitPrice.$requestedBY);
          $pageName = $hash.".php";
          $ldapUser = $res[0]['added_by'];
@@ -592,17 +593,17 @@ class NAcquisition{
             unlink("./generated_pages/" . $pageName);
             //copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
             //unlink("/tmp/".$hash.".pdf");
-            $this->sendEmail("/tmp/" . $hash . ".pdf", $ldapUser, $date);
+            $this->sendEmail("/tmp/" . $hash . ".pdf", $ldapUser, $date, $name);
          }
          
       }
    }
    
-   private function sendEmail($pdfURL, $ldapUser, $date) {
+   private function sendEmail($pdfURL, $ldapUser, $date, $name) {
       $reciever = $this->getEmailAddress($ldapUser);
       $cc = Config::$managerEmail;
       $subject = "Invoice for Nitrogen requested on ".$date;
-      $message = "Hi ".$ldapUser.",\n Your request for Nitrogen has been approved. An invoice of the acquisition is attached to this email. This email has been auto-generated, please do not reply to it.";
+      $message = "Hi ".$name.",\n Your request for Nitrogen has been approved. An invoice of the acquisition is attached to this email. This email has been auto-generated, please do not reply to it.";
       shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
    }
    
