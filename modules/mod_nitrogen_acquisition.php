@@ -167,7 +167,7 @@ class NAcquisition{
       
       ?>
 <div id='home'>
-   <h3>Nitrogen Acquisition Requests</h3>
+   <h3>Nitrogen Requests</h3>
    <?php echo $addinfo?>
    <form enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=acquisition&do=request" onsubmit="return NAcquisition.submitNewRequest();" >
       <div id="generate">
@@ -246,7 +246,7 @@ class NAcquisition{
       ],
       sortorder : 'desc',
       usepager : true,
-      title : 'Past Transfers',
+      title : 'Past Requests',
       useRp : true,
       rp : 10,
       showTableToggleBtn: false,
