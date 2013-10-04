@@ -77,3 +77,9 @@ Info: AD did not authenticate user: 'jrogena'.
 2013-10-04 10:39:42: :
 Info: AD did not authenticate user: 'jrogena'.
 
+2013-10-04 12:41:40: :
+Info: Error occured while decrypting password
+
+2013-10-04 13:26:37: :
+Info: AD did not authenticate user: 'jrogena'.
+

@@ -52,7 +52,7 @@ require_once 'mod_nitrogen_acquisition.php';
 $NAcquisition = new NAcquisition();
 
 session_save_path(Config::$config['dbase']);
-session_name('labels_printer');
+session_name('nitrogen_acquisition');
 $NAcquisition->Dbase->SessionStart();
 
 $NAcquisition->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');

@@ -74,12 +74,12 @@ class NAcquisition{
                }
             }
          } else {
-            if (OPTIONS_REQUEST_TYPE == 'ajax')
+            /*if (OPTIONS_REQUEST_TYPE == 'ajax')
                die('-1' . OPTIONS_MSSG_INVALID_SESSION);
             else {
                $this->LoginPage(OPTIONS_MSSG_INVALID_SESSION);
                return;
-            }
+            }*/
          }
       }
 
@@ -241,9 +241,11 @@ class NAcquisition{
          {display: 'Charge Code', name : 'charge_code'}
       ],
       sortname : 'date',
-      buttons : [
-         {name: 'Change Amount Approved', bclass: 'edit', onpress : NAcquisition.changeAmountApproved}
-      ],
+      <?php
+         if(isset($_SESSION['user_type']) && $_SESSION['user_type'] === "Super Administrator") {
+            echo "buttons : [{name: 'Change Amount Approved', bclass: 'edit', onpress : NAcquisition.changeAmountApproved}],";
+         }
+      ?>
       sortorder : 'desc',
       usepager : true,
       title : 'Past Requests',
@@ -390,27 +392,6 @@ class NAcquisition{
     * @return integer   Returns 1 incase of an error or the person has wrong credentials, else returns 0
     */
    public function WhoIsMe() {
-      if (OPTIONS_REQUEST_TYPE == 'ajax' || in_array(OPTIONS_REQUESTED_MODULE, array('logout')) || $this->Dbase->session['error'] || $this->Dbase->session['timeout'] || !isset($_SESSION['user_id'])) {
-         $this->footerLinks = '';      //clear the footer links
-//         echo '<pre>'. print_r($_SESSION, true) .'</pre>';
-         return 0;
-      }
-
-      //before displaying the current user, lets confirm that the user credentials are ok and the session is not expired
-      $res = $this->Dbase->ConfirmUser($_SESSION['username'], $_SESSION['password']);
-      if ($res == 1) {
-         if (OPTIONS_REQUEST_TYPE == 'ajax')
-            die('-1Error! There was an error while authenticating the user.');
-         else
-            $this->LoginPage('Error! There was an error while authenticating the user.');
-         return 1;
-      }
-      elseif ($res == 2) {
-         if (OPTIONS_REQUEST_TYPE == 'ajax')
-            die('-1Sorry, You do not have enough privileges to access the system.');
-         $this->LoginPage('Sorry, You do not have enough privileges to access the system.');
-         return 1;
-      }
       if (OPTIONS_REQUEST_TYPE == 'ajax')
          return;
       //display the credentials of the person who is logged in
@@ -497,14 +478,14 @@ class NAcquisition{
       if($_POST['query'] != "") {
          $criteria = "WHERE {$_POST['qtype']} LIKE '%?%'";
          $criteriaArray[] = $_POST['query'];
-         if($_SESSION['user_type'] !== "Super Administrator"){
+         if(!isset($_SESSION['user_type'])||$_SESSION['user_type'] !== "Super Administrator"){
             $criteria = $criteria." AND a.`added_by` = ?";
             $criteriaArray[] = $_SESSION['username'];
          }
       }
       else {
          $criteria = "";
-         if($_SESSION['user_type'] !== "Super Administrator"){
+         if(!isset($_SESSION['user_type'])||$_SESSION['user_type'] !== "Super Administrator"){
             $criteria = $criteria."WHERE a.`added_by` = ?";
             $criteriaArray[] = $_SESSION['username'];
          }

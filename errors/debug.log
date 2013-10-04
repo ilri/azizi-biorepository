@@ -4271,3 +4271,1286 @@ Array
 )
 
 
+2013-10-04 12:40:02: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 12:40:09: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => tv65FtewEN1Hp3reiHZPKYFA3QE7Hy9Pdrs+uDcKNngIeicfPck3jpE7Y6jCiefvZUaAHXrVTNaFx08hkyIh6z95uUqSJbGo0uAQGmbVZ74l/EDTjtQ0uAOu6HuSJX3J/2weu7SxVHFak0wrd/h8beI5OXJBslgLs1HhDkPvHpc=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 12:40:10: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 12:41:07: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 12:41:08: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 12:41:09: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 12:41:14: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => ma5VR2lS97j0ZLPTMLtgAWXfL8h8oyESEAeacCvsataCFmXouaNUD6R6HBa98j+/q5GM5wCgk8I2T2tYNTXSc20k5Tw7/Hj5bjJTAlhdnJHywpunXMwxhX34RZB1q86PEG0B3qjBDOfV+zvnAB8CAm5W6gnmAxH85WarnGzVprg=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 12:41:14: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 12:41:40: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 12:41:48: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => GJSJ0CaB6HtdfZUjM5TURzcdbrAIZThxA2yNoe++0mDBAhOseC7WJuVnizkQTGsoqXOJvUqp4QlO6MjCFmbhelHmtIW8KvsFMseEQTkJFIxiSwghHcVcBxSTw0SOMOMunxOtKhuph+Muq7d2KA7q8isgOo0YvONYASBaSUTXv6U=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 12:41:48: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 12:42:03: :
+Debug: Post User request: 
+Array
+(
+    [user] => Jason Rogena
+    [date] => 04-10-2013
+    [amount] => 10
+    [chargeCode] => BMG007A
+    [submitButton] => Request
+)
+
+
+2013-10-04 12:42:30: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => j/iBeVzP8LmenzRVMg09iUF3FyEmBL+tdYiQ3vwvyNq0ii7qpiNnNbAL9HYUexBdwRxxOInJXUWM+e3ofvcsxIzArzQf7vx5GbMDTqqrXmaqdKCc4yKDzD9yb8Bf1YppgQZidwTWuIUZwMqslKqMCFsycavQf0Fr7JoocGBeBKk=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 12:42:30: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:23:45: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:23:50: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => QzFjT7qeKcDE/Ya8WffR4tMJz10OmqZD8BuypR38BjWlTm/vmiz0fY4vTuTQCO6fbmbTSxABa4Nd53TGIsQkTaKyGHhm+UlxpIY7bYJas1S9oWN+b/vufX1CNg/vRfUKwy3kNh42z749wPmWN4YGr88CMYRdJJShwMtNOa/e5Jc=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 13:23:50: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:26:23: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:26:23: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:26:27: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:26:37: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => Nzfh9Awk5IvKkNDsaOQFhvMYqZwlusrL+Lu3JnmBIDpur6GdHpF1wUzzx9jdCo1yvD9fkDucC5vE1bCexb0IXEVTCsP+y2MO2aedyvi765YcOMoLPeVeo4E/iBLpRVKlGx9NJCPRVI8SIXdVClKnFsrthcBFomMV6NnZNiN5g50=
+    [md5_pass] => 60ebfef4a5984f56bfc3029049f45166
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 13:26:43: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => O8y3EmBikw3/jP+JXQQaEi3kemQJchO09K6nlzI9iscDrSzo3cgS0rvJj+Yg9V/7phY4XGpfq+KoHrdZkBQLBpcbOTK5M1aIHIdKoR3rUVVjs0VphLVumB4zIhmWefNizDppPQCFhmGw091A9ntBBKlL7B5puTg/bU2oQRGevog=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 1
+)
+
+
+2013-10-04 13:26:44: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:26:48: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:33:18: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => dturCcZizSjaH4KUrzLHD07QTtbFeoQhHu6Odm5/FNkU7Wi3VOw8XwEFdxAicXIGbSpYsLjW54CStS2EhwN9ewd7MuTX8M0Cc7PgzgPkEz7UWkwJbYnlsugXIGX6s9DARcMnZPOtccNQ1FHmNgjvsUywVkoUYgP9fjCnqoXBB18=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 13:33:18: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:33:24: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:33:24: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:09: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:09: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:12: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:12: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:13: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:13: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:14: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:14: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:14: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:14: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:16: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:17: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:43: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:43: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:51: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:40:52: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:40:54: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:41:00: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => i98QpHu792XQcb0EAc1vBrrLBbz3mvSAqEA3HOi9sEXaTx6nbWjnnk+7EdVKeV+tNBe26/SrrDLagDbzatOJPhO3dYFCqdVR13aOoLhVZ54HpFS+ME+Y2lORdH2Tom9LY0SD7pYCTTIVaxhIDHUIViS881uSqtjZc8Qg3wrLxz0=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 13:41:00: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:41:15: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => i98QpHu792XQcb0EAc1vBrrLBbz3mvSAqEA3HOi9sEXaTx6nbWjnnk+7EdVKeV+tNBe26/SrrDLagDbzatOJPhO3dYFCqdVR13aOoLhVZ54HpFS+ME+Y2lORdH2Tom9LY0SD7pYCTTIVaxhIDHUIViS881uSqtjZc8Qg3wrLxz0=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 13:41:15: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:41:38: :
+Debug: Post User request: 
+Array
+(
+    [user] => Jason Rogena
+    [date] => 04-10-2013
+    [amount] => 2
+    [chargeCode] => BMG007A
+    [submitButton] => Request
+)
+
+
+2013-10-04 13:41:38: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:42:31: :
+Debug: Post User request: 
+Array
+(
+    [user] => Jason Rogena
+    [date] => 04-10-2013
+    [amount] => 455
+    [chargeCode] => BMG007A
+    [submitButton] => Request
+)
+
+
+2013-10-04 13:42:31: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:07: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:07: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:10: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:10: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:11: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:11: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:11: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:12: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:12: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:12: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:12: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:13: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:13: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:13: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:17: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:18: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:31: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:31: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:33: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:33: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:36: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:36: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:38: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:38: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:41: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:41: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:47:42: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:47:43: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:48:16: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:48:16: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 13:48:19: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 13:48:19: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:16:08: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:16:08: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:18:43: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:18:58: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:19:04: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:19:09: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => YTm2gi6P4/1jxXp2Irul717MCJChB99XoxqEDwHyVM6QF7ipOd7ygPHK67HwEqDlD3LaEHRrOAgc05jetOnS3ERzczojvUVfw9uTf1bJK29R9+C9VuicYbdLxpKk+4GnR3vjaTac9oxkO5+jJFhK6OePZVm9SKVOMhaR80tFcJM=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 14:19:09: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:19:37: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:19:38: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:19:40: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:19:47: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => kCflwjknTlBVokL+Bfq8S+jtXEuuR8ILrTM8jL+Qn2b15aUOnMquolqi8wHhPkCbH1N0FfJ9BJAmcdRdRXU3xy86lxyO3mBjyrkyACjMiO56ZHPaIjPeTfNbjPV8nrx0ELK+U/84jPPtkuJtb6OHqn7/DQjxwVpVDNIIpgg7kCg=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 14:19:47: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:19:57: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:20:00: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:20:06: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => nv8kwPSe0aZ/apG4ruArDDxamYlelFZuVK1Iw6BO+UfII6m5e41aHSTsZl7UJvlwDbMBWGzgARZUr6haWDSlXIKK9SKl6qUHNuyTMkOWnY1ueSY2uwT9S+n+N1ElTiGdZqrBB3IRqx+cTl3drF39VddrUYaMX/lu1BwAnhX1QLY=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 14:20:07: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:21:52: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:24:13: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:24:13: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:24:59: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:25:00: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:25:15: :
+Debug: Post User request: 
+Array
+(
+    [user] => Jason Rogena
+    [date] => 04-10-2013
+    [amount] => 10
+    [chargeCode] => KAR001B
+    [submitButton] => Request
+)
+
+
+2013-10-04 14:25:15: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:25:57: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:26:02: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => Z0tkvKSdjRxC/UcgGdpwn83yM3P5KrSX9ffvwENuCJgkEhV0vHYMblXF41O9W7jOzj9nwgfDphd+cpWz0Ra+/sq0NPUti82U/RfXq9Xk8BK+HvyMKtLHv96XcfmZAQvvqIh1+4EkSVbcVKcdRcmz2S8aLaPmfgo4+vS8+xDNzAE=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 14:26:02: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:26:19: :
+Debug: Post User request: 
+Array
+(
+    [rowID] => 27
+    [amountApproved] => 20
+)
+
+
+2013-10-04 14:26:19: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:34:13: :
+Debug: Post User request: 
+Array
+(
+    [rowID] => 27
+    [amountApproved] => 10
+)
+
+
+2013-10-04 14:34:13: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:39:07: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:39:07: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:39:14: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:39:18: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => KQSzKN3LkDUEhj6k2v9EtbZzPclWE1RnRd4RFRCOpRmzW9srBh0FnBIXkch+jjy3wr/xYMvpMnwtzgkyp10TK5e6mbBCxk1P6EsaGeGkrpuB5DHk6tUJ4PHFxtZasTo1SQJJJL773h2Wjgut+TBEZfEuqIYMoNaCxYzLfkFs6/I=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 14:39:18: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 14:39:27: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 14:39:31: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => Ij9eFQbdo5cH1GIYdnE7LZ3WAaupjqzNqQIivXL0NKrqraYROfxD2POTQsWbuoEIUfYHaRJRBMbNJwsFvnNe4MDnDlHG3d4ab2GxfAHpJS7Q3tPs5tU/qqR7l+IFL50OYHwiZBA8ERsd+FMIh1G3IVXVlwj2ycmZ8/wxF1vYuf0=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 14:39:31: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
