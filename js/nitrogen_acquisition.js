@@ -103,7 +103,7 @@ var NAcquisition = {
    },
    
    changeAmountApproved: function(com, grid) {
-      if(com === 'Change Amount Approved'){
+      if(com === 'Set Amount Approved'){
          $(".trSelected", grid).each(function () {
             var id = $(this).attr('id');
             id = id.substring(id.lastIndexOf('row')+3);
@@ -117,7 +117,7 @@ var NAcquisition = {
                width: 400,
                dialogClass: 'ui-dialog-osx',
                buttons: {
-                  "Change": function() {
+                  "Set": function() {
                      if($("#newAmountApproved").val()!==""){
                         //TODO: add logic for changing column value from server
                         $.post("index.php?page=acquisition&do=setAmountApproved", {

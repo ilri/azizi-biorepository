@@ -221,7 +221,7 @@ class NAcquisition{
    </form>
    <div id="past_requests">&nbsp;</div>
 </div>
-<div id="dialog-modal" title="Change the amount approved" style="display: none;">
+<div id="dialog-modal" title="Set the amount approved" style="display: none;">
    <table><tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr></table>
 </div>
 <script type="text/javascript">
@@ -243,7 +243,7 @@ class NAcquisition{
       sortname : 'date',
       <?php
          if(isset($_SESSION['user_type']) && $_SESSION['user_type'] === "Super Administrator") {
-            echo "buttons : [{name: 'Change Amount Approved', bclass: 'edit', onpress : NAcquisition.changeAmountApproved}],";
+            echo "buttons : [{name: 'Set Amount Approved', bclass: 'edit', onpress : NAcquisition.changeAmountApproved}],";
          }
       ?>
       sortorder : 'desc',
