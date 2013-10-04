@@ -4106,3 +4106,89 @@ Array
 )
 
 
+2013-10-04 10:41:39: :
+Debug: Post User request: 
+Array
+(
+    [user] => Jason Rogena
+    [date] => 04-10-2013
+    [amount] => 10
+    [chargeCode] => ESP004E
+    [submitButton] => Request
+)
+
+
+2013-10-04 10:41:39: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 10:41:53: :
+Debug: Post User request: 
+Array
+(
+    [rowID] => 24
+    [amountApproved] => 10
+)
+
+
+2013-10-04 10:42:02: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+
+2013-10-04 10:47:44: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 10:49:04: :
+Debug: Post User request: 
+Array
+(
+)
+
+
+2013-10-04 10:49:21: :
+Debug: Post User request: 
+Array
+(
+    [username] => jrogena
+    [password] => bDYvUU9Ncm1opmsRvF6bQCmxxk5vZKWfeqKhaB4ndpYuGf+yLKpbBqYmJYWAUJmugbB/lOc69NtCJjAYdCDVIKjWIsqCumV8ViNExNeoPh6AjL+dt4EEnrtHQGrJwJbt2PxPtK02o6N+cD4J3k5dD5S68XQRQZWQsQq4eYAT8Bk=
+    [md5_pass] => b47b56538f435f468936f14c68cff8c5
+    [login] => Log In
+    [count] => 0
+)
+
+
+2013-10-04 10:49:21: :
+Debug: Post User request: 
+Array
+(
+    [page] => 1
+    [rp] => 10
+    [sortname] => date
+    [sortorder] => desc
+    [query] => 
+    [qtype] => username
+)
+
+

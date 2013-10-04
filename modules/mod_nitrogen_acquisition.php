@@ -110,7 +110,7 @@ class NAcquisition{
       $count = (!isset($_POST['count'])) ? 0 : $_POST['count'] + 1;
       $hidden = "<input type='hidden' name='count' value='$count' />";
       if ($addinfo == '')
-         $addinfo = 'Please enter your username and password to access the Label Printing System.';
+         $addinfo = 'Please enter your ILRI username and password to access this System.';
       if (OPTIONS_REQUEST_TYPE == 'normal')
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.md5.js'></script>";
       if ($count == Config::$psswdSettings['maxNoofTries']) {
