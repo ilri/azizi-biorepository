@@ -605,6 +605,7 @@ class NAcquisition{
       $subject = "Invoice for Nitrogen requested on ".$date;
       $message = "Hi ".$name.",\n Your request for Nitrogen has been approved. An invoice of the acquisition is attached to this email. This email has been auto-generated, please do not reply to it.";
       shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
+      unlink($pdfURL);
    }
    
    private function getEmailAddress($username) {
