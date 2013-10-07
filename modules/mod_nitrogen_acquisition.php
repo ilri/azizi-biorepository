@@ -6,6 +6,7 @@
  * @category   AVID
  * @package    NAcquisition
  * @author     Kihara Absolomon <a.kihara@cgiar.org>
+ * @author     Jason Rogena <j.rogena@cgiar.org>
  * @since      v0.2
  */
 class NAcquisition{
