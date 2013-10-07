@@ -6,7 +6,7 @@
 <html>
    <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-      <title>Nitrogen Acquisition System</title>
+      <title>Nitrogen Requisition System</title>
       <link rel='stylesheet' type='text/css' href='css/nitrogen_acquisition.css'>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-1.7.1.min.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery.form.js'></script>
@@ -20,7 +20,7 @@
       <div id='nitrogen_acquisition'>
          <div id='avid_header'>&nbsp;</div>
          <?php $NAcquisition->TrafficController(); ?>
-         <div id='avid_footer'>ILRI - Nitrogen Acquisition System</div>
+         <div id='avid_footer'>ILRI - Nitrogen Requisition System</div>
       </div>
    </body>
 </body>

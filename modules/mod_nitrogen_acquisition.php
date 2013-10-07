@@ -186,7 +186,7 @@ class NAcquisition{
                         <fieldset>
                            <legend>Project</legend>
                            <table>
-                              <tr><td class="label">Project</td><td><input type="text" name="project" id="project" value="" disabled="true"/></td>
+                              <tr><td class="label">Project</td><td><input type="text" name="project" id="project" value="" disabled="true" size="50"/></td>
                                  <td class="label">Charge Code</td><td><input type="text" name="chargeCode" id="chargeCode" value=""/></td></tr>
                               <script>
                                  $(function (){
