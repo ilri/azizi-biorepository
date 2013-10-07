@@ -1,42 +1,40 @@
 <!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
-<html>
+<html style='color: #333333;'>
    <head>
       <title>Invoice</title>
-      <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'> 
+      <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+      <style type='text/css'>
+         .invoiceTable td, .invoiceTable th {
+            border: 1px solid #333333;
+         }
+      </style>
    </head>
    <body style='font-family:Open Sans,sans-serif'>
-      <div style='position: absolute; top: 10px; left: 20px; width: 500px'>
+      <div style='position: absolute; top: 10px; left: 250px; width: 450px'>
          <img src='../images/WTPlogo.jpg' style='width: 100px; height: 100px;'/>
          <h1 style='position: absolute; top: 20px; left: 120px;'>ILRI Biorepository</h1>
       </div>
-      <div style='position: absolute; top: 30px; left: 600px; text-align: right; width: 300px;'>
-         <h2>Invoice</h2>
-         <h4>Invoice no : <?php echo $_GET['row_no'];?></h4>
+      <div style='position: absolute; top: 95px; left: 325px;'>
+         <p style='font-size: 13px;'>Proper sample storage with high quality metadata</p>
       </div>
-      <div style='position: absolute; top: 150px; left: 50px;'>
-         <p style='font-weight: bold;'>Lab 2<br/>P.O. Box 30709<br/>Nairobi 00100, KENYA.</p>
+      <div style='position: absolute; top: 30px; left: 700px; text-align: right; width: 300px;'>
+         <h6>Invoice <?php echo $_GET['row_no'];?></h6>
+         <h6><?php echo $_GET['date'].', '.$_GET['time'];?></h6>
       </div>
-      <div style='position: absolute; top: 280px; left: 50px;'>
-         <p>INTERNATIONAL LIVESTOCK RESEARCH INSTITUTE<br/><br/>ACCOUNTS PAYABLE<br/>P.O. BOX 30709<br/>NAIROBI<br/>00100<br/>KENYA</p>
-      </div>
-      <div style='position: absolute; top: 260px; left: 650px'>
-         <table border='2' bordercolor = '000000'>
-            <tr><td style='width: 120px;'>Date:</td><td style='width: 200px;'><?php echo $_GET['date'];?></td></tr>
-            <tr><td>Contact: </td><td>Absolomon Kihara</td></tr>
-            <tr><td>Telephone: </td><td>+254 20 422 3000</td></tr>
-            <tr><td>Email: </td><td>a.kihara@cgiar.org</td></tr>
+      
+      <div style='position: absolute; top: 200px; left: 100px; width: 800px;'>
+         <table cellpadding='1' style='border: 1px solid #333333; border-collapse: collapse;' class='invoiceTable'>
+            <tr style='background-color: #b0b6f1;'>
+               <th width='550' height='40' style='text-align: left; padding-left: 20px;'>Description</th><th width='250'>Quantity</th><th width='250'>Unit Price</th><th width='250'>Net Price</th>
+            </tr>
+            <tr style='background-color: #e0e1ec;'>
+               <td style='padding-left: 35px;' height='30'>Nitrogen</td><td style='text-align: center;'><?php echo $_GET['amount'].' (KGs)';?></td><td style='text-align: center;'><?php echo '$'.$_GET['unit_price'];?></td><td style='text-align: center;'><?php echo '$'.$_GET['unit_price']*$_GET['amount'];?></td>
+            </tr>
+            <tr style='color: #b475ad;'><td height='40' colspan='3' style='text-align: right; padding-right: 20px;'>Total Amount</td><td style='text-align: center;'><?php echo '$'.$_GET['unit_price']*$_GET['amount'];?></td></tr>
          </table>
       </div>
-      <div style='position: absolute; top: 500px; left: 80px; width: 800px;'>
-         <table>
-            <tr>
-               <th width='550' height='30' style='text-align: left;'>Description</th><th width='250'>Quantity</th><th width='250'>Unit Price</th><th width='250'>Net Price</th>
-            </tr>
-            <tr>
-               <td>Nitrogen</td><td style='text-align: center;'><?php echo $_GET['amount'].' (KGs)';?></td><td style='text-align: center;'><?php echo '$'.$_GET['unit_price'];?></td><td style='text-align: center;'><?php echo '$'.$_GET['unit_price']*$_GET['amount'];?></td>
-            </tr>
-            <tr><td height='40' colspan='3' style='text-align: right'>Total Amount Due</td><td style='text-align: center;'><?php echo '$'.$_GET['unit_price']*$_GET['amount'];?></td></tr>
-         </table>
+      <div style='position: absolute; top: 1400px; left: 700px; text-align: right; width: 300px;'>
+         <p>Page 1 of 1</p>
       </div>
    </body>
 </html>
