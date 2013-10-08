@@ -86,3 +86,13 @@ Fatal: There was an error while binding user 'jrogena' to the AD server!
 2013-10-04 13:26:37: :
 Fatal: There was an error while binding user 'jrogena' to the AD server!
 
+2013-10-08 09:50:10: :
+Fatal: There was an error while fetching data from the 'acquisitions' table.
+MySQL Error and String: () 
+Last Query: SELECT user_id,project_id,date,amount_req,added_by FROM acquisitions FOR UPDATE
+
+2013-10-08 09:50:55: :
+Fatal: There was an error while fetching data from the 'acquisitions' table.
+MySQL Error and String: () 
+Last Query: SELECT user_id,project_id,date,amount_req,added_by FROM acquisitions FOR UPDATE
+

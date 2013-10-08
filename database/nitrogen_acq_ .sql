@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Oct 03, 2013 at 08:02 PM
+-- Generation Time: Oct 08, 2013 at 09:56 AM
 -- Server version: 5.5.32-0ubuntu0.13.04.1
 -- PHP Version: 5.4.9-4ubuntu2.3
 
@@ -28,23 +28,29 @@ SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `acquisitions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
   `project_id` int(11) NOT NULL,
   `date` date NOT NULL,
   `amount_req` float NOT NULL,
   `amount_appr` float DEFAULT NULL,
   `added_by` varchar(100) NOT NULL,
+  `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`,`project_id`),
+  KEY `user_id` (`project_id`),
   KEY `project_id` (`project_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=21 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=68 ;
 
 --
 -- Dumping data for table `acquisitions`
 --
 
-INSERT INTO `acquisitions` (`id`, `user_id`, `project_id`, `date`, `amount_req`, `amount_appr`, `added_by`) VALUES
-(20, 117, 4130, '2013-10-03', 10, NULL, 'jrogena');
+INSERT INTO `acquisitions` (`id`, `project_id`, `date`, `amount_req`, `amount_appr`, `added_by`, `date_added`) VALUES
+(61, 4928, '2013-10-08', 2, 2, 'jrogena', '2013-10-08 05:10:26'),
+(62, 4928, '2013-10-08', 2, 2, 'jrogena', '2013-10-08 05:11:45'),
+(63, 4223, '2013-10-08', 3, 3, 'jrogena', '2013-10-08 05:17:21'),
+(64, 4928, '2013-10-08', 2, 2, 'jrogena', '2013-10-08 05:44:52'),
+(65, 4928, '2013-10-08', 5, 3, 'jrogena', '2013-10-08 06:25:02'),
+(66, 4928, '2013-10-08', 35, 4, 'jrogena', '2013-10-08 06:30:55'),
+(67, 4928, '2013-10-08', 10, 10, 'jrogena', '2013-10-08 06:54:07');
 
 -- --------------------------------------------------------
 
@@ -893,25 +899,6 @@ INSERT INTO `projects` (`id`, `name`, `charge_code`) VALUES
 (4934, '''Genebank - Analytical Services''', 'RU21'),
 (4935, '''Genebank - Analytical Serv HSU''', 'RU22');
 
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
-
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=118 ;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `name`) VALUES
-(117, 'Jason Rogena');
-
 --
 -- Constraints for dumped tables
 --
@@ -920,7 +907,6 @@ INSERT INTO `users` (`id`, `name`) VALUES
 -- Constraints for table `acquisitions`
 --
 ALTER TABLE `acquisitions`
-  ADD CONSTRAINT `acquisitions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `acquisitions_ibfk_2` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON UPDATE CASCADE;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

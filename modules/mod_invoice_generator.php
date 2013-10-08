@@ -21,7 +21,9 @@
          <h6>Invoice <?php echo $_GET['row_no'];?></h6>
          <h6><?php echo $_GET['date'].', '.$_GET['time'];?></h6>
       </div>
-      
+      <div style='position: absolute; top: 280px; left: 50px;'>
+         <p>To </p>
+      </div>
       <div style='position: absolute; top: 200px; left: 100px; width: 800px;'>
          <table cellpadding='1' style='border: 1px solid #333333; border-collapse: collapse;' class='invoiceTable'>
             <tr style='background-color: #b0b6f1;'>
