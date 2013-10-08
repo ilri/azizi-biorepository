@@ -411,9 +411,10 @@ class NAcquisition{
       //$userID = $this->addUserIfNotExists($_POST['user']);
       $projectID = $this->getProjectID($_POST['chargeCode']);
       if($projectID !== 0){
-         $cols = array("project_id","date","amount_req","added_by");
+         $cols = array("project_id","date","amount_req","added_by","ldap_name");
+         $ldapName = $this->getUserFullName($_SESSION['username']);
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
-         $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username']);
+         $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
          $res = $this->Dbase->InsertOnDuplicateUpdate("acquisitions",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
@@ -493,8 +494,7 @@ class NAcquisition{
       //reformat rows fetched from first query
       $rows = array();
       foreach ($data as $row) {
-         $fullName = $this->getUserFullName($row['added_by']);
-         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $fullName,"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
+         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
       }
       $response = array(
           'total' => $dataCount,
@@ -563,7 +563,7 @@ class NAcquisition{
          $time = date('h:i A');
          $amount = $res[0]['amount_appr'];
          $unitPrice = $this->getNitrogenPrice();
-         $name = $this->getUserFullName($res[0]['added_by']);
+         $name = $res[0]['ldap_name'];
          $requestedBY = strtoupper($name);
          $hash = md5($date.$amount.$unitPrice.$requestedBY);
          $pageName = $hash.".php";
