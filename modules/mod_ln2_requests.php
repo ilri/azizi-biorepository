@@ -157,7 +157,7 @@ class Ln2Requests extends Repository{
       $projectID = $this->getProjectID($_POST['chargeCode']);
       if($projectID !== 0){
          $cols = array("project_id","date","amount_req","added_by","ldap_name");
-         $ldapName = $this->getUserFullName($_SESSION['username']);
+         $ldapName = $this->Dbase->getUserFullName($_SESSION['username']);
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
          $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
          $res = $this->Dbase->InsertOnDuplicateUpdate("acquisitions",$cols,$colVals);
@@ -314,8 +314,8 @@ class Ln2Requests extends Repository{
          $pageName = $hash.".php";
          $ldapUser = $res[0]['added_by'];
          $chargeCode = $res[0]['charge_code'];
-         $email = $this->getEmailAddress($ldapUser);
-         $userTitle = $this->getUserTitle($ldapUser);
+         $email = $this->Dbase->getEmailAddress($ldapUser);
+         $userTitle = $this->Dbase->getUserTitle($ldapUser);
          if($unitPrice !== -1) {
             $pageText = "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
 <html style='color: #333333;'>
@@ -342,17 +342,12 @@ class Ln2Requests extends Repository{
          <p style='font-size: 14px;'>Invoice: #".$rowID."<br/>
          ".$today.", ".$time."</p>
       </div>
-<<<<<<< HEAD:modules/mod_ln2_requests.php
-
-      <div style='position: absolute; top: 300px; left: 120px; width: 800px;'>
-=======
-
+      
       <div style='position: absolute; top: 180px; left: 80px;'>
          <p>To ".$name.",<br />".$email.",<br />".$userTitle.".</p>
       </div>
 
       <div style='position: absolute; top: 310px; left: 100px; width: 800px;'>
->>>>>>> origin/master:modules/mod_nitrogen_acquisition.php
          <table cellpadding='1' style='border: 1px solid #333333; border-collapse: collapse;' class='invoiceTable'>
             <tr style='background-color: #b0b6f1;'>
                <th width='550' height='40' style='text-align: left; padding-left: 20px;'>Description</th><th width='220'>Charge code</th><th width='220'>Quantity</th><th width='220'>Unit Price</th><th width='220'>Net Price</th>
@@ -395,103 +390,6 @@ class Ln2Requests extends Repository{
       $message = "Hi ".$name.",\n\nYour request for Nitrogen has been approved. An invoice of the acquisition is attached to this email. \n\nThis email has been auto-generated, please do not reply to it. For any additional information/clarification, please get in touch with Sammy Kemei, s.kemei@cgiar.org";
       shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
       unlink($pdfURL);
-   }
-
-   /**
-    * Gets the email address corresponding to the LDAP username specified
-    *
-    * @param   string   $username   LDAP username corresponding to the email address to be searched
-    *
-    * @return  mixed    Returns 0 if an error occures durind execution or the email address corresponding to the email address
-    */
-   private function getEmailAddress($username) {
-      $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
-      if (!$ldapConnection) {
-         return 0;
-      } else {
-         $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
-         if (!$ldapConnection)
-            return 0;
-         else {
-            if (ldap_bind($ldapConnection, $_SESSION['username']."@ilri.cgiarad.org", $_SESSION['unhashedPW'])) {
-               ldap_set_option($ldapConnection, LDAP_OPT_REFERRALS, 0);
-               ldap_set_option($ldapConnection, LDAP_OPT_PROTOCOL_VERSION, 3);
-               $ldapSr = ldap_search($ldapConnection, 'ou=ILRI Kenya,dc=ilri,dc=cgiarad,dc=org', "(sAMAccountName=$username)", array('mail'));
-               if (!$ldapSr) {
-                  $this->CreateLogEntry('', 'fatal');
-                  return 0;
-               }
-               $entry1 = ldap_first_entry($ldapConnection, $ldapSr);
-               if (!$entry1) {
-                  return 0;
-               }
-               $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
-               return $ldapAttributes['mail'][0];
-            } else {
-               return 0;
-            }
-         }
-      }
-   }
-
-   private function getUserTitle($username) {
-      $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
-      if (!$ldapConnection) {
-         return 0;
-      } else {
-         $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
-         if (!$ldapConnection)
-            return 0;
-         else {
-            if (ldap_bind($ldapConnection, $_SESSION['username']."@ilri.cgiarad.org", $_SESSION['unhashedPW'])) {
-               ldap_set_option($ldapConnection, LDAP_OPT_REFERRALS, 0);
-               ldap_set_option($ldapConnection, LDAP_OPT_PROTOCOL_VERSION, 3);
-               $ldapSr = ldap_search($ldapConnection, 'ou=ILRI Kenya,dc=ilri,dc=cgiarad,dc=org', "(sAMAccountName=$username)", array('title'));
-               if (!$ldapSr) {
-                  $this->CreateLogEntry('', 'fatal');
-                  return 0;
-               }
-               $entry1 = ldap_first_entry($ldapConnection, $ldapSr);
-               if (!$entry1) {
-                  return 0;
-               }
-               $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
-               return $ldapAttributes['title'][0];
-            } else {
-               return 0;
-            }
-         }
-      }
-   }
-
-   private function getUserFullName($username) {
-      $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
-      if (!$ldapConnection) {
-         return 0;
-      } else {
-         $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
-         if (!$ldapConnection)
-            return 0;
-         else {
-            if (ldap_bind($ldapConnection, $_SESSION['username']."@ilri.cgiarad.org", $_SESSION['unhashedPW'])) {
-               ldap_set_option($ldapConnection, LDAP_OPT_REFERRALS, 0);
-               ldap_set_option($ldapConnection, LDAP_OPT_PROTOCOL_VERSION, 3);
-               $ldapSr = ldap_search($ldapConnection, 'ou=ILRI Kenya,dc=ilri,dc=cgiarad,dc=org', "(sAMAccountName=$username)", array('sn', 'givenName'));
-               if (!$ldapSr) {
-                  $this->CreateLogEntry('', 'fatal');
-                  return 0;
-               }
-               $entry1 = ldap_first_entry($ldapConnection, $ldapSr);
-               if (!$entry1) {
-                  return 0;
-               }
-               $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
-               return $ldapAttributes['givenName'][0]." ".$ldapAttributes['sn'][0];
-            } else {
-               return 0;
-            }
-         }
-      }
    }
 
    /**
