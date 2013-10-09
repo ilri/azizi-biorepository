@@ -1,4 +1,4 @@
 <?php
-require_once 'nitrogen_acq_config';
+require_once 'repository_config';
 die (Config::$rsaPubKey);
 ?>

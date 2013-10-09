@@ -58,7 +58,10 @@ input[type='text'], input[type='password']{
    margin: 10px;
 }
 
-#nitrogen_acquisition{
+#home, #whoisme{
+   width: 920px;
+}
+#repository{
    width: 920px;
    margin: 3px auto;
    border: 1px solid gray;

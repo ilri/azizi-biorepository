@@ -6,21 +6,21 @@
 <html>
    <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-      <title>Nitrogen Requisition System</title>
-      <link rel='stylesheet' type='text/css' href='css/nitrogen_acquisition.css'>
+      <title>Azizi Biorepository</title>
+      <link rel='stylesheet' type='text/css' href='css/repository.css'>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-1.7.1.min.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery.form.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery.json.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>common_v0.3.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>notification.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jsencrypt.min.js'></script>
-      <script type='text/javascript' src='js/nitrogen_acquisition.js'></script>
+      <script type='text/javascript' src='js/azizi.js'></script>
    </head>
    <body>
-      <div id='nitrogen_acquisition'>
+      <div id='repository'>
          <div id='avid_header'>&nbsp;</div>
-         <?php $NAcquisition->TrafficController(); ?>
-         <div id='avid_footer'>ILRI - Nitrogen Requisition System</div>
+         <?php $Repository->TrafficController(); ?>
+         <div id='avid_footer'>Azizi Biorepository</div>
       </div>
    </body>
 </body>

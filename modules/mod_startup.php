@@ -14,10 +14,11 @@
  * @author Kihara Absolomon <a.kihara@cgiar.org>
  * @since v0.2
  */
+
 define('OPTIONS_COMMON_FOLDER_PATH', '../common/');
 
 require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_general_v0.6.php';
-require_once 'nitrogen_acq_config';
+require_once 'repository_config';
 require_once OPTIONS_COMMON_FOLDER_PATH . 'dbmodules/mod_objectbased_dbase_v1.1.php';
 require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_messages_v0.1.php';
 
@@ -48,15 +49,15 @@ $t = pathinfo($_SERVER['SCRIPT_FILENAME']);
 $requestType = ($t['basename'] == 'mod_ajax.php') ? 'ajax' : 'normal';
 define('OPTIONS_REQUEST_TYPE', $requestType);
 
-require_once 'mod_nitrogen_acquisition.php';
-$NAcquisition = new NAcquisition();
+require_once 'mod_repository_general.php';
+$Repository = new Repository();
 
 session_save_path(Config::$config['dbase']);
-session_name('nitrogen_acquisition');
-$NAcquisition->Dbase->SessionStart();
+session_name('repository');
+$Repository->Dbase->SessionStart();
 
-$NAcquisition->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
+//$Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
 
-if(Config::$downloadFile) $NAcquisition->TrafficController();
+if(Config::$downloadFile) $Repository->TrafficController();
 
 ?>

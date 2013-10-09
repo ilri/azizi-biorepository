@@ -1,5 +1,4 @@
 <?php
-require_once 'modules/mod_startup.php';
-
-$NAcquisition->TrafficController();
+   require_once 'modules/mod_startup.php';
+   $Repository->TrafficController();
 ?>
