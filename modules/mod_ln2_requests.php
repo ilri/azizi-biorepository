@@ -61,7 +61,7 @@ class Ln2Requests extends Repository{
          <fieldset>
             <legend>Add a Request</legend>
                <table id="mainField">
-                  <tr><td class="label">Name</td><td><input type="text" name="user" id="user" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>"/></td></tr>
+                  <tr><td class="label">Name</td><td><input type="text" name="user" id="user" disabled="true" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>"/></td></tr>
                   <tr><td class="label">Date of Request</td><td><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>"/></td></tr>
                   <script>
                      $(function() {
@@ -153,12 +153,13 @@ class Ln2Requests extends Repository{
     */
    private function submitAcquisitionRequest() {
       $message = "";
-      $userID = $this->addUserIfNotExists($_POST['user']);
+      //$userID = $this->addUserIfNotExists($_POST['user']);
       $projectID = $this->getProjectID($_POST['chargeCode']);
-      if($userID !==0 && $projectID !== 0){
-         $cols = array("user_id","project_id","date","amount_req","added_by");
+      if($projectID !== 0){
+         $cols = array("project_id","date","amount_req","added_by","ldap_name");
+         $ldapName = $this->getUserFullName($_SESSION['username']);
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
-         $colVals = array($userID, $projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username']);
+         $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
          $res = $this->Dbase->InsertOnDuplicateUpdate("acquisitions",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
@@ -171,29 +172,6 @@ class Ln2Requests extends Repository{
          $message = "Unable to add the last request. Try again later";
       }
       $this->HomePage($message);
-   }
-
-   /**
-    * Adds the specified name to the database if it does not already exist
-    * @param   string   $name
-    * @return  int      Returns the id of the row with the name or 0 if an error occured
-    */
-   private function addUserIfNotExists($name) {
-      $query = "SELECT id FROM ".Config::$config['dbase'].".users AS a WHERE a.name = ?";
-      $result = $this->Dbase->ExecuteQuery($query,array($name));
-      if ($result == 1) {
-         $this->Dbase->CreateLogEntry("There was an error while fetching data from the database.", 'fatal', true);
-         $this->Dbase->lastError = "There was an error while fetching data from the session database.<br />Please try again later.";
-         return 0;
-      }
-      else if(sizeof($result)>0){
-         return $result[0]['id'];
-      }
-      else {
-         //$result = $this->Dbase->InsertData("users",array("name"),array($name));
-         $result = $this->Dbase->InsertOnDuplicateUpdate("users",array("name"),array($name));
-         return $result;
-      }
    }
 
    /**
@@ -240,10 +218,9 @@ class Ln2Requests extends Repository{
       }
 
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
-      $query = "SELECT a.*, b.name AS project, b.`charge_code`, c.name AS username".
+      $query = "SELECT a.*, b.name AS project, b.`charge_code`".
               " FROM acquisitions AS a".
               " INNER JOIN projects AS b ON a.`project_id` = b.id".
-              " INNER JOIN users AS c ON a.`user_id` = c.id".
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
@@ -262,7 +239,7 @@ class Ln2Requests extends Repository{
       //reformat rows fetched from first query
       $rows = array();
       foreach ($data as $row) {
-         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['username'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
+         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
       }
       $response = array(
           'total' => $dataCount,
@@ -323,7 +300,7 @@ class Ln2Requests extends Repository{
     * @param   int   $rowID   ID of the requisition
     */
    private function generateInvoice($rowID){
-      $query = "SELECT `a`.*, b.name AS username FROM `acquisitions` AS a INNER JOIN users AS b ON a.`user_id`=b.id WHERE a.id = ?";
+      $query = "SELECT `a`.*, c.`charge_code` FROM `acquisitions` AS a INNER JOIN projects AS c ON a.`project_id` = c.id WHERE a.id = ?";
       $res = $this->Dbase->ExecuteQuery($query, array($rowID));
       if($res !==1) {
          $date = $res[0]['date'];
@@ -331,11 +308,14 @@ class Ln2Requests extends Repository{
          $time = date('h:i A');
          $amount = $res[0]['amount_appr'];
          $unitPrice = $this->getNitrogenPrice();
-         $requestedBY = strtoupper($res[0]['username']);
-         $name = $res[0]['username'];
+         $name = $res[0]['ldap_name'];
+         $requestedBY = strtoupper($name);
          $hash = md5($date.$amount.$unitPrice.$requestedBY);
          $pageName = $hash.".php";
          $ldapUser = $res[0]['added_by'];
+         $chargeCode = $res[0]['charge_code'];
+         $email = $this->getEmailAddress($ldapUser);
+         $userTitle = $this->getUserTitle($ldapUser);
          if($unitPrice !== -1) {
             $pageText = "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
 <html style='color: #333333;'>
@@ -362,16 +342,25 @@ class Ln2Requests extends Repository{
          <p style='font-size: 14px;'>Invoice: #".$rowID."<br/>
          ".$today.", ".$time."</p>
       </div>
+<<<<<<< HEAD:modules/mod_ln2_requests.php
 
       <div style='position: absolute; top: 300px; left: 120px; width: 800px;'>
+=======
+
+      <div style='position: absolute; top: 180px; left: 80px;'>
+         <p>To ".$name.",<br />".$email.",<br />".$userTitle.".</p>
+      </div>
+
+      <div style='position: absolute; top: 310px; left: 100px; width: 800px;'>
+>>>>>>> origin/master:modules/mod_nitrogen_acquisition.php
          <table cellpadding='1' style='border: 1px solid #333333; border-collapse: collapse;' class='invoiceTable'>
             <tr style='background-color: #b0b6f1;'>
-               <th width='550' height='40' style='text-align: left; padding-left: 20px;'>Description</th><th width='250'>Quantity</th><th width='250'>Unit Price</th><th width='250'>Net Price</th>
+               <th width='550' height='40' style='text-align: left; padding-left: 20px;'>Description</th><th width='220'>Charge code</th><th width='220'>Quantity</th><th width='220'>Unit Price</th><th width='220'>Net Price</th>
             </tr>
             <tr style='background-color: #e0e1ec;'>
-               <td style='padding-left: 35px;' height='30'>Liquid Nitrogen</td><td style='text-align: center;'>".$amount." (KGs)</td><td style='text-align: center;'>".$unitPrice."</td><td style='text-align: center;'>".($unitPrice*$amount)." USD </td>
+               <td style='padding-left: 35px;' height='30'>Liquid Nitrogen</td><td style='text-align: center;'>".$chargeCode."</td><td style='text-align: center;'>".$amount." (KGs)</td><td style='text-align: center;'>".$unitPrice."</td><td style='text-align: center;'>".($unitPrice*$amount)." USD </td>
             </tr>
-            <tr style='font-weight:bold;'><td height='40' colspan='3' style='text-align: right; padding-right: 20px;'>Total Amount</td><td style='text-align: center;'>".($unitPrice*$amount)." USD </td></tr>
+            <tr style='font-weight:bold;'><td height='40' colspan='4' style='text-align: right; padding-right: 20px;'>Total Amount</td><td style='text-align: center;'>".($unitPrice*$amount)." USD </td></tr>
          </table>
       </div>
       <div style='position: absolute; top: 1370px; left: 700px; text-align: right; width: 300px;'>
@@ -385,7 +374,7 @@ class Ln2Requests extends Repository{
             unlink("./generated_pages/" . $pageName);
             //copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
             //unlink("/tmp/".$hash.".pdf");
-            $this->sendEmail("'/tmp/" . $pdfName . ".pdf'", $ldapUser, $date, $name);
+            $this->sendEmail("'/tmp/" . $pdfName . ".pdf'", $email, $date, $name);
          }
 
       }
@@ -399,8 +388,8 @@ class Ln2Requests extends Repository{
     * @param   string   $date       The date the requisition waas made
     * @param   string   $name       Name of the reciever
     */
-   private function sendEmail($pdfURL, $ldapUser, $date, $name) {
-      $reciever = $this->getEmailAddress($ldapUser);
+   private function sendEmail($pdfURL, $reciever, $date, $name) {
+      //$reciever = $this->getEmailAddress($ldapUser);
       $cc = Config::$managerEmail;
       $subject = "Invoice for Nitrogen requested on ".$date;
       $message = "Hi ".$name.",\n\nYour request for Nitrogen has been approved. An invoice of the acquisition is attached to this email. \n\nThis email has been auto-generated, please do not reply to it. For any additional information/clarification, please get in touch with Sammy Kemei, s.kemei@cgiar.org";
@@ -438,6 +427,66 @@ class Ln2Requests extends Repository{
                }
                $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
                return $ldapAttributes['mail'][0];
+            } else {
+               return 0;
+            }
+         }
+      }
+   }
+
+   private function getUserTitle($username) {
+      $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
+      if (!$ldapConnection) {
+         return 0;
+      } else {
+         $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
+         if (!$ldapConnection)
+            return 0;
+         else {
+            if (ldap_bind($ldapConnection, $_SESSION['username']."@ilri.cgiarad.org", $_SESSION['unhashedPW'])) {
+               ldap_set_option($ldapConnection, LDAP_OPT_REFERRALS, 0);
+               ldap_set_option($ldapConnection, LDAP_OPT_PROTOCOL_VERSION, 3);
+               $ldapSr = ldap_search($ldapConnection, 'ou=ILRI Kenya,dc=ilri,dc=cgiarad,dc=org', "(sAMAccountName=$username)", array('title'));
+               if (!$ldapSr) {
+                  $this->CreateLogEntry('', 'fatal');
+                  return 0;
+               }
+               $entry1 = ldap_first_entry($ldapConnection, $ldapSr);
+               if (!$entry1) {
+                  return 0;
+               }
+               $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
+               return $ldapAttributes['title'][0];
+            } else {
+               return 0;
+            }
+         }
+      }
+   }
+
+   private function getUserFullName($username) {
+      $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
+      if (!$ldapConnection) {
+         return 0;
+      } else {
+         $ldapConnection = ldap_connect("ilrikead01.ilri.cgiarad.org");
+         if (!$ldapConnection)
+            return 0;
+         else {
+            if (ldap_bind($ldapConnection, $_SESSION['username']."@ilri.cgiarad.org", $_SESSION['unhashedPW'])) {
+               ldap_set_option($ldapConnection, LDAP_OPT_REFERRALS, 0);
+               ldap_set_option($ldapConnection, LDAP_OPT_PROTOCOL_VERSION, 3);
+               $ldapSr = ldap_search($ldapConnection, 'ou=ILRI Kenya,dc=ilri,dc=cgiarad,dc=org', "(sAMAccountName=$username)", array('sn', 'givenName'));
+               if (!$ldapSr) {
+                  $this->CreateLogEntry('', 'fatal');
+                  return 0;
+               }
+               $entry1 = ldap_first_entry($ldapConnection, $ldapSr);
+               if (!$entry1) {
+                  return 0;
+               }
+               $ldapAttributes = ldap_get_attributes($ldapConnection, $entry1);
+               return $ldapAttributes['givenName'][0]." ".$ldapAttributes['sn'][0];
             } else {
                return 0;
             }
