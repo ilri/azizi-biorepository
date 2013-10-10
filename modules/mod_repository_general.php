@@ -151,6 +151,11 @@ class Repository extends DBase{
          $Ln2 = new Ln2Requests($this->Dbase);
          $Ln2->TrafficController();
       }
+      elseif(OPTIONS_REQUESTED_MODULE == 'odk_parser'){
+         require_once 'mod_parse_odk.php';
+         $ParseODK = new ParseODK();
+         $ParseODK->TrafficController();
+      }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
          $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
@@ -228,6 +233,12 @@ class Repository extends DBase{
     * @param   string   $userType   The user type we want to create links for
     */
    private function HomeLinks($userType){
+       //fetch all keys in $modules
+      $allModules = array_keys(Config::$modules);
+      foreach ($allModules as $currentModuleName) {
+         if(isset(Config::$modules[$currentModuleName]['']) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))
+            echo "<li><a href='?page=".$currentModuleName."'>".Config::$modules[$currentModuleName]['']."</a></li>";
+      }
 ?>
    <li><a href='?page=users&do=browse'>More</a></li>
 <?php

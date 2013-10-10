@@ -1,0 +1,209 @@
+<?php
+/**
+ * ChangeLog
+ *
+ * Version 0.2
+ * 2011-08-09 Kihara Absolomon <a.kihara@cgiar.org>
+ */
+
+/**
+ * This is the main configuration file for the label printing system
+ *
+ * @category   Configuration
+ * @package    DBase
+ * @author     Kihara Absolomon <a.kihara@cgiar.org>
+ * @since      v0.2
+ */
+
+class Config{
+   /**
+    * @var array  An array holding the logging settings for the system
+    */
+   static public $logSettings = array(
+      'logErrors' => true,
+      'logFileDir' => 'errors',        //the directory where the log files will be created. If not set no logs will be created
+      'logFileSize' => '10',           //error log file in MB
+      'combined' => false,             //whether to combine all log messages in one file or create separate files for each log level. might be good for production env
+      'workingDir' => '/',
+      'loglevel' => 'extensive'       //The level of logging that the system will do
+   );
+
+   /**
+    * @var array  An array defining the various levels of logs
+    */
+   static public $logLevels = array(
+      'debug' => array('Debug:', 'debug.log'),              //Debugging information
+      'info' => array('Info:', 'info.log'),                  //Information entry on what the system is doing
+      'warning' => array('Warning:', 'warnings.log'),       //Doing something which is not meant to be done
+      'error' => array('Error:', 'errors.log'),
+      'audit' => array('', 'audit_trail.log'),
+      'fatal' => array('Fatal:', 'fatal.log')
+   );
+
+
+   /**
+    * @var array  An array that holds the connection settings used to connect to the database
+    */
+   static public $config = array(
+      'user' => 'root',                  //username to use to connect to the dbase
+      'pass' => 'jason',           //password of the defined user
+      'dbase' => 'misc_db',                      //database name
+      'dbloc' => 'localhost',               //database location
+      'session_dbase' => 'misc_db',              //the table in the database which has the sessions
+      'ldapHost' => 'ilrikead01.ilri.cgiarad.org'
+   );
+
+   /**
+    * @var  array An array with the uploads configuration settings
+    */
+   static public $uploads = array(
+      'destinationFolder' => 'temp/',        //where uploads will finally be saved
+      'sizeLimit' => 10485760                 //max file size in bytes
+   );
+
+   static public $contact=" Please contact the system administrator.";
+
+   /**
+    * @var  integer  In minutes, the time between...fuck timeout in minutes...if u cant understand this, then u r a ...
+    */
+   static public $timeout = 30;
+
+   static public $userNameSettings = array(
+      'minLength' => 4,           //The minimum length of users passwords
+      'alphaChars' => true,        //Require alpha characters
+      'numericChars' => true,         //Require numeric characters
+      'specialChars' => true         //require special characters
+   );
+
+   static public $curUser;
+
+   /**
+    * @var  array    An array with the settings of how a password will be handled
+    */
+   static public $psswdSettings=array(
+      'changeOnLogin' => true,
+      'useSalt' => true,
+      'default' => 'done',
+      'maxNoofTries' => 5,       //The maximum number of times that the user can attempt to unsuccessfully log in before the account is disabled
+      'minLength' => 5,           //The minimum length of users passwords
+      'alphaChars' => true,        //Require alpha characters
+      'numericChars' => true,         //Require numeric characters
+      'specialChars' => true         //require special characters
+   );
+
+   /**
+    * @var  array    An array with the modules that we have the download option
+    */
+   static public $downloadableModules = array('labels');
+
+   /**
+    * @var  array    An array with the sub modules that we have the download option
+    */
+   static public $downloadableSubModules = array('generate');
+
+   /**
+    * @var  boolean  A flag to determine whether we want to download a file or not
+    */
+   static public $downloadFile = false;
+
+
+   static public $baseURI = "/repository/NitrogenRequisition/";
+   static public $wkhtmltopdf = "/bin/wkhtmltopdf";
+   static public $managerEmail = "a.kihara@cgiar.org";
+   static public $muttConfig = "/opt/mutt/.muttrc";
+   static public $muttBinary = "/usr/bin/mutt";
+
+   static public $rsaPubKeyOld = "-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDmMA1Osg3vhhYKoHcs3F/jbHTm
+ItJLpyNcqpTp0wkSCqqHvs+bzg9kC4454xKOgiESYdci2L3quQYVzBBMHOvTMiih
+9SBYZoZnFMIs4mFQtH4TsqcriUhK7hwJWCL35skE7Y9kj1SBfVxh4KkdBsHQG7J9
+hdZ50UeJnhrYryCZQwIDAQAB
+-----END PUBLIC KEY-----";
+
+   static public $rsaPubKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDmMA1Osg3vhhYKoHcs3F/jbHTmItJLpyNcqpTp0wkSCqqHvs+bzg9kC4454xKOgiESYdci2L3quQYVzBBMHOvTMiih9SBYZoZnFMIs4mFQtH4TsqcriUhK7hwJWCL35skE7Y9kj1SBfVxh4KkdBsHQG7J9hdZ50UeJnhrYryCZQwIDAQAB";
+
+   static public $rsaPrivKey = "-----BEGIN RSA PRIVATE KEY-----
+MIICWwIBAAKBgQDmMA1Osg3vhhYKoHcs3F/jbHTmItJLpyNcqpTp0wkSCqqHvs+b
+zg9kC4454xKOgiESYdci2L3quQYVzBBMHOvTMiih9SBYZoZnFMIs4mFQtH4Tsqcr
+iUhK7hwJWCL35skE7Y9kj1SBfVxh4KkdBsHQG7J9hdZ50UeJnhrYryCZQwIDAQAB
+AoGARj49oVkmdYRmb4G+PFtXi5AKMDxKDjoHyXxoit4Sc4X7ugbZVcNQ4QfBtBp+
+DCzbqL9gpkqb0ef6WmZ2RrPAppL+l/CYUOYiAa6r30U+ZjI6u8VLrwMHMlC4ymAa
+yzUmiLXc1T5Sj2bbf7qu7EgEjldzCU5xvrjyBWxXbF1AwZECQQD5hKpLPFm701c2
+BlKdiKGG0sqYSXzK942OAsbdXg/lzIhASojOcSDcNzfcOAP7DNMPCxzDmOdL81g7
+T602i0WZAkEA7CrV+E3WQyF1AxSc7UGAyytHdtG0ItybokoXxylFp2+xzqVmRGeM
+L0jlYMOzaM7hK2iu/XfqYCVz+6Xl6p9nOwJAFdausPcPQ4kz0N6szGzw9kPsx3dn
+HLyd/xfvH+Djs1E7e6UKZEcygRO0J+ofLxHoRyDJ27S+Sb96sXY/ys5VwQJAYMjl
+S49KodRSSeLmtOzFRX4FGZKzSh4ywf2vZPVrEEVcDx4FnT76Wl57cn6BRhCSguGx
+5TqBmMmAkL7aTJ7rBQJAeF7nvcyPaNoSZoTzKukTAVjDPEpciWmPldzdj4d1GH95
+a4ioqHw568c+rYX74lPbrbE/FQiJ+xK5ZgBtReEiaA==
+-----END RSA PRIVATE KEY-----";
+
+   /**
+    *
+    * @var  array    An array with the requested actions names
+    */
+   static public $actions_aka = array(
+      'add' => 'add',
+      'fetch_order_details' => 'order results',
+      'update' => 'update',
+      'list' => 'list',
+      'test_details' => 'test details',
+      'list_analyser_tests' => 'list',
+      'log_results' => 'add results',
+      'save_tests' => 'save tests',
+      'delete_tests' => 'delete tests',
+      'toggleStatus' => 'update status',
+      'ordered_tests' => 'ordered tests',
+      'patient_groups' => 'patient groups listing',
+      'fetch_ln2_transfers' => 'fetch_ln2_transfers',
+      'submit_ln2_transfer' => 'submit_ln2_transfer',
+      'fetch_printed_label' => 'fetch_printed_labels',
+      'generate_labels' => 'generate_labels'
+   );
+
+
+   /**
+    * @var  array    An array that defines the permissions to the modules and functionality within the modules
+    *
+    * It has an hierarchial design. The top most key is the module aka. It is an nested array where the keys are the different user groups who have access
+    * to the particular module. The corresponding array is a list of the different functions that the user groups are allowed within this particular module
+    */
+   static public $userPermissions = array(
+       'ln2_requests' => array('allowed_groups' => array()),
+       'ln2_transfers' => array('allowed_groups'=> array('Super Administrator'),'fetch_ln2_transfers' => array('Super Administrator' => ''),'submit_ln2_transfer' => array('Super Administrator' => '')),
+       'labels' => array('allowed_groups' => array('Super Administrator'),'fetch_printed_labels' => array('Super Administrator' => ''),'generate_labels' => array('Super Administrator' => '')),
+       'odk_parser' => array('allowed_groups' => array('Super Administrator'))
+   );
+
+   /**
+    * @var  array    An array of the modules which have open access. They can be accessed by all the users
+    */
+   static public $freeAreas = array('home', 'logout', 'login', '', 'change_credits', 'ln2_requests');
+
+   /**
+    * @var  array An array with the different modules of the system and their aliases
+    */
+   static public $modules = array(
+      'settings' => array(
+         'add' => 'Request LN2',
+         '' => 'Sample Registration',
+         'sample_reg' => 'Sample Registration',
+         'cd4_reports' => 'Laboratory Tests',
+         'print_label' => 'Print Label',
+         'browse' => 'Sample Registration'
+      ),
+      'ln2_requests' => array(),
+      'ln2_transfers' => array(
+         '' => 'Add Liquid Nitrogen Transfer',
+         'fetch_ln2_transfers' => 'Fetch Past Liquid Nitrogen Transfers',
+         'submit_ln2_transfer' => 'submit_ln2_transfer'
+      ),
+      'labels' => array(
+         '' => 'Labels Printing',
+         'generate_labels' => 'generate_labels',
+         'fetch_printed_labels' => 'fetch_printed_labels'
+      ),
+      'odk_parser' => array('' => 'Parse ODK Files')
+   );
+}
+?>
