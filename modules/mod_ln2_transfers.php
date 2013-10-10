@@ -37,8 +37,8 @@ class LN2Transferer extends Repository{
       }
       
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
-      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'submit') $this->submitNitrogenTrasfer ();
-      else if (OPTIONS_REQUESTED_SUB_MODULE == 'fetch') $this->fetchTransferHistory ();
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'submit_ln2_transfer') $this->submitNitrogenTrasfer ();
+      else if (OPTIONS_REQUESTED_SUB_MODULE == 'fetch_ln2_transfers') $this->fetchTransferHistory ();
    }
 
    /**
@@ -52,7 +52,7 @@ class LN2Transferer extends Repository{
 <div id='home'>
    <h3>Nitrogen Transfer</h3>
    <?php echo $addinfo?>
-   <form enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=ln2_transfers&do=submit" onsubmit="return LN2Transferer.submitNewTransfer();" >
+   <form enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=ln2_transfers&do=submit_ln2_transfer" onsubmit="return LN2Transferer.submitNewTransfer();" >
       <div id="generate">
          <fieldset>
             <legend>Add a new Transfer</legend>
@@ -107,7 +107,7 @@ class LN2Transferer extends Repository{
 </div>
 <script type="text/javascript">
    $("#past_transfers").flexigrid({
-      url: "mod_ajax.php?page=ln2_transfers&do=fetch",
+      url: "mod_ajax.php?page=ln2_transfers&do=fetch_ln2_transfers",
       dataType: 'json',
       colModel : [
          {display: 'Date', name: 'date', width: 100, sortable: true, align: 'center'},
@@ -144,7 +144,7 @@ class LN2Transferer extends Repository{
       $cols = array("date","user","pb_transfer","pa_transfer","pressure_loss");
       $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
       $colVals = array($date->format("Y-m-d"), $_POST['technician'], $_POST["pBeforeTransfer"], $_POST["pAfterTransfer"], $_POST["pressureLoss"]);
-      $res = $this->Dbase->InsertOnDuplicateUpdate("transfers",$cols,$colVals);
+      $res = $this->Dbase->InsertOnDuplicateUpdate("ln2_transfers",$cols,$colVals);
       if($res === 0) {
          $message = "Unable to add the last nitrogen transfer. Try again later";
       }
@@ -165,8 +165,8 @@ class LN2Transferer extends Repository{
          $criteria = "";
       
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
-      $query = "SELECT transfers.*".
-              " FROM `transfers`".
+      $query = "SELECT `ln2_transfers`.*".
+              " FROM `ln2_transfers`".
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
       $query2 = $query." LIMIT $startRow, {$_POST['rp']}";
