@@ -151,6 +151,11 @@ class Repository extends DBase{
          $Ln2 = new Ln2Requests($this->Dbase);
          $Ln2->TrafficController();
       }
+      elseif(OPTIONS_REQUESTED_MODULE == 'labels'){
+         require_once './mod_label_printing.php';
+         $LabelsPrinter = new LabelPrinter($this->Dbase);
+         $LabelsPrinter->TrafficController();
+      }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
          $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
