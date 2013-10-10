@@ -40,8 +40,8 @@ class LabelPrinter extends Repository{
       }
       
       if(OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
-      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'generate') $this->GenerateLabels();
-      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'fetch') $this->FetchPrintedLabels();
+      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'generate_labels') $this->GenerateLabels();
+      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'fetch_printed_labels') $this->FetchPrintedLabels();
    }
 
    /**
@@ -101,7 +101,7 @@ class LabelPrinter extends Repository{
 <div id='home'>
   <h3>Printing Labels</h3>
   <?php echo $addinfo; ?>
-   <form enctype="multipart/form-data" name="upload" action="index.php?page=labels&do=generate" method="POST" onSubmit="LabelPrinter.generateLabels();">
+   <form enctype="multipart/form-data" name="upload" action="index.php?page=labels&do=generate_labels" method="POST" onSubmit="LabelPrinter.generateLabels();">
     <input type="hidden" value="10240000" name="MAX_FILE_SIZE"/>
      <div id='generate'>
        <fieldset>
@@ -161,7 +161,7 @@ class LabelPrinter extends Repository{
       Main.prefix = <?php echo json_encode($prefix); ?>;
 
       $("#printed_labels").flexigrid({
-         url: 'mod_ajax.php?page=labels&do=fetch',
+         url: 'mod_ajax.php?page=labels&do=fetch_printed_labels',
          dataType: 'json',
          colModel : [
             {display: 'Date', name : 'date', width : 120, sortable : true, align: 'left'},
