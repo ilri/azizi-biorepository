@@ -151,6 +151,11 @@ class Repository extends DBase{
          $Ln2 = new Ln2Requests($this->Dbase);
          $Ln2->TrafficController();
       }
+      elseif(OPTIONS_REQUESTED_MODULE == 'ln2_transfers'){
+         require_once './mod_ln2_transfers.php';
+         $Ln2Transfers = new LN2Transferer($this->Dbase);
+         $Ln2Transfers->TrafficController();
+      }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
          $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
