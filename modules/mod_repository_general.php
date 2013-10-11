@@ -234,10 +234,10 @@ class Repository extends DBase{
     */
    private function HomeLinks($userType){
        //fetch all keys in $modules
-      $allModules = array_keys(Config::$modules);
+      $allModules = array_keys(Config::$userPermissions);
       foreach ($allModules as $currentModuleName) {
-         if(isset(Config::$modules[$currentModuleName]['']) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))
-            echo "<li><a href='?page=".$currentModuleName."'>".Config::$modules[$currentModuleName]['']."</a></li>";
+         if(isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))
+            echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
       }
 ?>
    <li><a href='?page=users&do=browse'>More</a></li>
