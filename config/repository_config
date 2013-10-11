@@ -155,8 +155,13 @@ a4ioqHw568c+rYX74lPbrbE/FQiJ+xK5ZgBtReEiaA==
       'toggleStatus' => 'update status',
       'ordered_tests' => 'ordered tests',
       'patient_groups' => 'patient groups listing',
-      'fetch_ln2_transfers' => 'fetch_ln2_transfers',
-      'submit_ln2_transfer' => 'submit_ln2_transfer'
+      'fetch_ln2_transfers' => 'fetch liquid nitrogen transfers',
+      'submit_ln2_transfer' => 'submit a liquid nitrogen transfer',
+      'fetch_printed_label' => 'Fetch printed labels',
+      'generate_labels' => 'generate labels',
+      'ln2_transfers' => 'Liquid Nitrogen Transfers',
+      'labels' => 'Labels Printing',
+      'odk_parser' => 'Parse ODK Files'
    );
 
 
@@ -167,8 +172,12 @@ a4ioqHw568c+rYX74lPbrbE/FQiJ+xK5ZgBtReEiaA==
     * to the particular module. The corresponding array is a list of the different functions that the user groups are allowed within this particular module
     */
    static public $userPermissions = array(
-       'ln2_requests' => array('allowed_groups' => array()),
+       'ln2_requests' => array(
+		'allowed_groups' => array()
+	),
        'ln2_transfers' => array('allowed_groups'=> array('Super Administrator'),'fetch_ln2_transfers' => array('Super Administrator' => ''),'submit_ln2_transfer' => array('Super Administrator' => '')),
+       'labels' => array('allowed_groups' => array('Super Administrator'),'fetch_printed_labels' => array('Super Administrator' => ''),'generate_labels' => array('Super Administrator' => '')),
+       'odk_parser' => array('allowed_groups' => array('Super Administrator'))
    );
 
    /**
@@ -188,12 +197,7 @@ a4ioqHw568c+rYX74lPbrbE/FQiJ+xK5ZgBtReEiaA==
          'print_label' => 'Print Label',
          'browse' => 'Sample Registration'
       ),
-      'ln2_requests' => array(),
-      'ln2_transfers' => array(
-         '' => 'Add Liquid Nitrogen Transfer',
-         'fetch_ln2_transfers' => 'Fetch Past Liquid Nitrogen Transfers',
-         'submit_ln2_transfer' => 'submit_ln2_transfer'
-      )
+      'ln2_requests' => array()
    );
 }
 ?>
