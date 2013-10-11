@@ -27,40 +27,16 @@ class ParseODK extends Repository{
    
    private function HomePage() {
       ?>
+      <h3 id="odk_heading">ODK Parser</h3>
       <form class="form-horizontal">
-         <div class="control-group">
-            <label class="control-label" for="name">Full Name</label>
-            <div class="controls">
-               <input type="text" id="name" name="name"/>
-            </div>
-         </div>
-         <div class="control-group">
-            <label class="control-label" for="email">Email Address</label>
-            <div class="controls">
-               <input type="text" id="email" name="email"/>
-            </div>
-         </div>
-         <div class="control-group">
-            <label class="control-label" for="file_name">Name the Excel file to be generated</label>
-            <div class="controls">
-               <input type="text" id="file_name" name="file_name"/>
-            </div>
-         </div>
-         <div class="controls">
-            <label class="control-label" for="json_file">JSON File</label>
-            <div class="controls">
-               <input id="json_file" name="json_file" type="file"/>
-            </div>
-         </div>
-         <div class="controls">
-            <label class="control-label" for="xml_file">XML File</label>
-            <div class="controls">
-               <input id="xml_file" name="xml_file" type="file"/>
-            </div>
-         </div>
-         <div class="controls">
-            <button id="generate_b" name="generate_b" onclick="return false;" class="btn-primary">Generate</button>
-         </div>
+         <table id="odk_table">
+            <tr><td>Full Name</td><td><input type="text" id="name" name="name"/></td></tr>
+            <tr><td>Email Address</td><td><input type="text" id="email" name="email"/></td></tr>
+            <tr><td>Name the Excel file to be generated</td><td><input type="text" id="file_name" name="file_name"/></td></tr>
+            <tr><td>JSON File</td><td><input id="json_file" name="json_file" type="file"/></td></tr>
+            <tr><td>XML File</td><td><input id="xml_file" name="xml_file" type="file"/></td></tr>
+            <tr><td colspan="2" style="text-align: right;"><button id="generate_b" name="generate_b" onclick="return false;" class="btn-primary">Generate</button></td></tr>
+         </table>
       </form>
       <script>
          $(document).ready( function() {

@@ -184,3 +184,18 @@ input[type='text'], input[type='password']{
     text-align: right;
     margin: 1px 10px 1px 0px;
 }
+#odk_table {
+   margin: 0 auto;
+   border-collapse: separate;
+   border-spacing: 20px 5px;
+   padding-top: 30px;
+}
+#odk_table td{
+   height: 30px;
+}
+#odk_table input {
+   height: 25px;
+}
+#odk_heading {
+   padding-left: 80px;
+}

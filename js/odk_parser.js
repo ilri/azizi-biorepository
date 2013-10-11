@@ -68,28 +68,35 @@ Parse.prototype.sendToServer = function () {
 
 Parse.prototype.validateInput = function () {
    var emailRegex = /\S+@\S+\.\S+/;
+   
    if(window.parse.name === undefined || window.parse.name.length === 0) {
-      console.log("Name undefined");
+      Notification.show({create:true, hide:true, updateText:false, text:'Please enter Your name', error:true});
+      $("#name").focus();
       return false;
    }
    if(window.parse.email === undefined || window.parse.email.length === 0) {
-      console.log("emali is undefined");
+      Notification.show({create:true, hide:true, updateText:false, text:'Please enter your email address', error:true});
+      $("#email").focus();
       return false;
    }
    else if(emailRegex.test(window.parse.email) === false) {
-      console.log("invalid email");
+      Notification.show({create:true, hide:true, updateText:false, text:'The email you entered is invalid', error:true});
+      $("#email").focus();
       return false;
    }
    if(window.parse.fileName === undefined || window.parse.fileName.length === 0) {
-      console.log("file name undefined");
+       Notification.show({create:true, hide:true, updateText:false, text:'Please enter the excel file name', error:true});
+      $("#file_name").focus();
       return false;
    }
    if($("#json_file").val() === undefined || $("#json_file").val().length === 0) {
-      console.log("undefined json file");
+      Notification.show({create:true, hide:true, updateText:false, text:'Please select the JSON file to be parsed', error:true});
+      $("#json_file").focus();
       return false;
    }
    if($("#xml_file").val() === undefined || $("#xml_file").val().length === 0) {
-      console.log("undefined xml file");
+       Notification.show({create:true, hide:true, updateText:false, text:'Please select the XML file to be parsed', error:true});
+      $("#xml_file").focus();
       return false;
    }
    return true;
@@ -101,7 +108,9 @@ Parse.prototype.validateJson = function (jsonString) {
      
    }
    catch (error) {
-      alert("The JSON file provided is invalid");
+      //alert("The JSON file provided is invalid");
+      Notification.show({create:true, hide:true, updateText:false, text:'The JSON file you provided is invalid', error:true});
+      $("#json_file").focus();
       return false;
    }
    return true;
