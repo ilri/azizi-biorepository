@@ -237,7 +237,7 @@ class LabelPrinter extends Repository{
                return;
             }
          }
-         $data['comments'] = $this->Dbase->dbcon->real_escape_string($_POST['comments']);
+         //$data['comments'] = $this->Dbase->dbcon->real_escape_string($_POST['comments']);
          $data['project'] = $_POST['project'];
          $data['requester'] = $_POST['requester'];
       }
