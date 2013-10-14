@@ -353,7 +353,7 @@ class Ln2Requests extends Repository{
                <th width='550' height='40' style='text-align: left; padding-left: 20px;'>Description</th><th width='220'>Charge code</th><th width='220'>Quantity</th><th width='220'>Unit Price</th><th width='220'>Net Price</th>
             </tr>
             <tr style='background-color: #e0e1ec;'>
-               <td style='padding-left: 35px;' height='30'>Liquid Nitrogen</td><td style='text-align: center;'>".$chargeCode."</td><td style='text-align: center;'>".$amount." (Litres)</td><td style='text-align: center;'>".$unitPrice."</td><td style='text-align: center;'>".($unitPrice*$amount)." USD </td>
+               <td style='padding-left: 35px;' height='30'>Liquid Nitrogen</td><td style='text-align: center;'>".$chargeCode."</td><td style='text-align: center;'>".$amount." (KGs)</td><td style='text-align: center;'>".$unitPrice."</td><td style='text-align: center;'>".($unitPrice*$amount)." USD </td>
             </tr>
             <tr style='font-weight:bold;'><td height='40' colspan='4' style='text-align: right; padding-right: 20px;'>Total Amount</td><td style='text-align: center;'>".($unitPrice*$amount)." USD </td></tr>
          </table>
