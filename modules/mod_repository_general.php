@@ -156,6 +156,11 @@ class Repository extends DBase{
          $ParseODK = new ParseODK();
          $ParseODK->TrafficController();
       }
+      elseif(OPTIONS_REQUESTED_MODULE == 'labels'){
+         require_once 'mod_label_printing.php';
+         $LabelsPrinter = new LabelPrinter($this->Dbase);
+         $LabelsPrinter->TrafficController();
+      }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
          $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
@@ -233,7 +238,7 @@ class Repository extends DBase{
     * @param   string   $userType   The user type we want to create links for
     */
    private function HomeLinks($userType){
-       //fetch all keys in $modules
+      //fetch all keys in $modules
       $allModules = array_keys(Config::$userPermissions);
       foreach ($allModules as $currentModuleName) {
          if(isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))
