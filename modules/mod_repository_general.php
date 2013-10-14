@@ -161,6 +161,11 @@ class Repository extends DBase{
          $LabelsPrinter = new LabelPrinter($this->Dbase);
          $LabelsPrinter->TrafficController();
       }
+      elseif(OPTIONS_REQUESTED_MODULE == 'ln2_transfers'){
+         require_once 'mod_ln2_transfers.php';
+         $Ln2Transfers = new LN2Transferer($this->Dbase);
+         $Ln2Transfers->TrafficController();
+      }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
          $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
@@ -238,16 +243,12 @@ class Repository extends DBase{
     * @param   string   $userType   The user type we want to create links for
     */
    private function HomeLinks($userType){
-      //fetch all keys in $modules
+      //fetch all keys in $userPermissions
       $allModules = array_keys(Config::$userPermissions);
       foreach ($allModules as $currentModuleName) {
          if(isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))
             echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
       }
-?>
-   <li><a href='?page=users&do=browse'>More</a></li>
-<?php
-
    }
 
    /**
