@@ -112,6 +112,7 @@ class Ln2Requests extends Repository{
    <table><tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr></table>
 </div>
 <script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
    $("#past_requests").flexigrid({
       url: "mod_ajax.php?page=acquisition&do=fetch",
       dataType: 'json',

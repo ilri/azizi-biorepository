@@ -234,11 +234,14 @@ input[type='text'], input[type='password']{
 }
 /* Login Page*/
 
-#whoisme {
+#whoisme{
     font-style: italic;
-    text-align: right;
     margin: 1px 10px 1px 0px;
 }
+
+#whoisme .user{ float: right; }
+#whoisme .back{ padding-left: 10px; text-align: left; }
+
 #odk_table {
    margin: 0 auto;
    border-collapse: separate;

@@ -278,7 +278,7 @@ class Repository extends DBase{
       if (OPTIONS_REQUEST_TYPE == 'ajax') return;
       //display the credentials of the person who is logged in
       Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_type']}";
-      echo "<div id='whoisme'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a></div>";
+      echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a></span></div>";
       return 0;
    }
 

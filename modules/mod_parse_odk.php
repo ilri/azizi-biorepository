@@ -10,10 +10,10 @@
  * @since      v0.2
  */
 class ParseODK extends Repository{
-   
+
    public function __construct() {
    }
-   
+
    public function TrafficController() {
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/odk_parser.js'></script>";
@@ -21,10 +21,10 @@ class ParseODK extends Repository{
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bootstrap/js/bootstrap.js' /></script>";
          echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."bootstrap/css/bootstrap.css'/>";
       }
-      
+
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
    }
-   
+
    private function HomePage() {
       ?>
       <h3 id="odk_heading">ODK Parser</h3>
@@ -40,12 +40,9 @@ class ParseODK extends Repository{
       </form>
       <script>
          $(document).ready( function() {
-         $("#generate_b").click(function ()
-            {
-               var parser = new Parse();
-            });
+            $("#generate_b").click(function (){ var parser = new Parse(); });
          });
-		   
+         $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
       </script>
       <?php
    }

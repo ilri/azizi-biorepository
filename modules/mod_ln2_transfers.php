@@ -46,8 +46,6 @@ class LN2Transferer extends Repository{
     */
    private function HomePage($addinfo = '') {
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
-
-
       ?>
 <div id='home'>
    <h3>Nitrogen Transfer</h3>
@@ -106,6 +104,7 @@ class LN2Transferer extends Repository{
    <div id="past_transfers">&nbsp;</div>
 </div>
 <script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
    $("#past_transfers").flexigrid({
       url: "mod_ajax.php?page=ln2_transfers&do=fetch_ln2_transfers",
       dataType: 'json',

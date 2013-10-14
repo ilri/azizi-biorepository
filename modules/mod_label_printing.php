@@ -159,6 +159,7 @@ class LabelPrinter extends Repository{
       Main.projects = <?php echo json_encode($projects); ?>;
       Main.users = <?php echo json_encode($users); ?>;
       Main.prefix = <?php echo json_encode($prefix); ?>;
+      $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
 
       $("#printed_labels").flexigrid({
          url: 'mod_ajax.php?page=labels&do=fetch_printed_labels',

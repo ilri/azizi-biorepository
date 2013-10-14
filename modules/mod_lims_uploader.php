@@ -95,6 +95,7 @@ class LimsUploader{
    $('#sample_sheet').click(LimsUploader.sampleSheet);
    $('#download').click(LimsUploader.downloadSampleSheet);
    $('#uploading_panel').click(LimsUploader.uploadingPanel);
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
 </script>
 <?php
    }
