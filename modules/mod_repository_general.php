@@ -2,17 +2,10 @@
 /**
  * This module will have the general functions that appertains to the system
  *
- * @category   Lis
+ * @category   Repository
  * @package    Main
- * @author     Kihara Absolomon <soloincc@movert.co.ke>
+ * @author     Kihara Absolomon <a.kihara@cgiar.org>
  * @since      v0.1
- *
- * @todo    Implement Batch printing of sample labels
- * @todo    The patient id is a unique id across the whole of KNH
- * @todo    The main labels should be printed
- * @todo    The aliquot labels are printed on demand by the technologist
- * @todo    Daily workload report based on the status of the tests, how many are in progress, completed
- * @todo    Encrypt patient names
  */
 class Repository extends DBase{
 
@@ -69,7 +62,8 @@ class Repository extends DBase{
          $this->whoisme = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_level']}";
       }
       if(OPTIONS_REQUESTED_MODULE == 'logout'){
-         $this->Dbase->LogOut(); $this->Dbase->session['restart'] = true;
+         $this->Dbase->LogOut();
+         $this->Dbase->session['restart'] = true;
       }
       if(!Config::$downloadFile && ($this->Dbase->session['error'] || $this->Dbase->session['timeout'])){
          if(OPTIONS_REQUEST_TYPE == 'normal'){
@@ -78,11 +72,10 @@ class Repository extends DBase{
          }
          elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . $this->Dbase->session['message']);
       }
-//      echo '<pre>'. print_r($_SESSION, true) .'</pre>';
+
       if(!isset($_SESSION['user_id']) && !in_array(OPTIONS_REQUESTED_MODULE, array('login', 'logout', ''))){
          if(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' .OPTIONS_MSSG_INVALID_SESSION);
          else{
-//            echo '<pre>'. print_r(debug_backtrace(), true) .'</pre>';
             $this->LoginPage(OPTIONS_MSSG_INVALID_SESSION);
             return;
          }
@@ -165,6 +158,11 @@ class Repository extends DBase{
          require_once 'mod_ln2_transfers.php';
          $Ln2Transfers = new LN2Transferer($this->Dbase);
          $Ln2Transfers->TrafficController();
+      }
+      elseif(OPTIONS_REQUESTED_MODULE == 'lims_uploader'){
+         require_once 'mod_lims_uploader.php';
+         $LimsUploader = new LimsUploader($this->Dbase);
+         $LimsUploader->TrafficController();
       }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
@@ -436,6 +434,20 @@ class Repository extends DBase{
    <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.filter.js"></script>
    <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
 <?php
+   }
+
+   /**
+    * Converts a numeric position to a position that can be used by LabCollector
+    *
+    * @param   integer  $position   The numeric position that we want to convert
+    * @param   integer  $rack_size  The size of the tray in question.
+    * @return  string   Returns the converted position that LC is comfortable with
+    */
+   public function NumericPosition2LCPosition($position, $rack_size){
+      $sideLen = sqrt($rack_size);
+      if($position % $sideLen == 0) $box_detail = chr(64+floor($position/$sideLen)).$sideLen;
+      else $box_detail = chr(65+floor($position/$sideLen)).$position%$sideLen;
+      return $box_detail;
    }
 }
 ?>

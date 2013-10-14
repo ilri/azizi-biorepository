@@ -3,9 +3,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/var/www/repository/modules/mod_startup.php</file>
+            <file>file:/var/www/repository/modules/mod_samples.php</file>
+            <file>file:/var/www/repository/js/lims_uploader.js</file>
+            <file>file:/var/www/repository/css/repository.css</file>
+            <file>file:/var/www/repository/modules/mod_lims_uploader.php</file>
             <file>file:/var/www/repository/modules/mod_repository_general.php</file>
-            <file>file:/var/www/repository/modules/mod_ln2_requests.php</file>
         </group>
     </open-files>
 </project-private>

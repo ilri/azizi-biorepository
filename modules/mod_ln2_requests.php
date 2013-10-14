@@ -1,5 +1,4 @@
 <?php
-
 /**
  * The main class of the system. All other classes inherit from this main one
  *
@@ -9,6 +8,7 @@
  * @author     Jason Rogena <j.rogena@cgiar.org>
  * @since      v0.2
  */
+
 class Ln2Requests extends Repository{
 
    public $Dbase;
@@ -342,7 +342,7 @@ class Ln2Requests extends Repository{
          <p style='font-size: 14px;'>Invoice: #".$rowID."<br/>
          ".$today.", ".$time."</p>
       </div>
-      
+
       <div style='position: absolute; top: 180px; left: 80px;'>
          <p>To ".$name.",<br />".$email.",<br />".$userTitle.".</p>
       </div>

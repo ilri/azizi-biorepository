@@ -3,14 +3,6 @@
  * This is the worker who is never recognised. Includes all the necessary files. Initializes a session if need be. Processes the main GET or POST
  * elements and includes necessary files. Calls the necessary functions/methods
  *
- * @author Kihara Absolomon <soloincc@movert.co.ke>
- * @since v0.1
- */
-
-/**
- * This is the worker who is never recognised. Includes all the necessary files. Initializes a session if need be. Processes the main GET or POST
- * elements and includes necessary files. Calls the necessary functions/methods
- *
  * @author Kihara Absolomon <a.kihara@cgiar.org>
  * @since v0.2
  */
@@ -30,6 +22,7 @@ $paging = (isset($_GET['page']) && $_GET['page']!='') ? $_GET['page'] : '';
 $sub_module = (isset($_GET['do']) && $_GET['do']!='') ? $_GET['do'] : '';
 $action = (isset($_POST['action']) && $_POST['action']!='') ? $_POST['action'] : '';
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : '';
+if($action == '' && (isset($_GET['action']) && $_GET['action']!='')) $action = $_GET['action'];
 
 /**
  * @var string    What the user wants

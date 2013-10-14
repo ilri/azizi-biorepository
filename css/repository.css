@@ -137,6 +137,60 @@ input[type='text'], input[type='password']{
    margin: 2px;
 }
 
+#main #top{
+   text-align: center;
+   border-bottom: 1px dotted black;
+   padding: 5px 0px;
+}
+
+#uhondo #left_panel{
+   width: 210px;
+   float: left;
+}
+
+#uhondo #left_panel img{
+   margin: 0px 3px;
+   cursor: pointer;
+}
+
+#uhondo #right_panel{
+   border-left: 1px solid black;
+   width: 690px;
+   min-height: 50px;
+   max-height: 600px;
+   overflow: auto;
+   margin: 5px 5px 5px 175px;
+   padding: 5px;
+}
+
+#right_panel #sheet{
+   max-height: 510px;
+   overflow: auto;
+   width: 680px;
+}
+
+#addinfo{
+   font-weight: bold;
+}
+
+.links, #upload, .instructions{
+   text-align: center;
+}
+
+.error{
+   color: red;
+   text-align: center;
+   font-size: 0.9em;
+}
+
+#credits{
+   width: 400px;
+   margin: 2px auto;
+   text-align: center;
+   font-size: 0.9em;
+}
+
+/* Notification message*/
 #notification_box{
 	text-align: right;
 	margin-left: 50%;
@@ -151,6 +205,7 @@ input[type='text'], input[type='password']{
 #notification_box span{
 	background-color: #CCFF99;
 }
+/* Notification message*/
 
 /* Login Page*/
 #login{
@@ -199,3 +254,4 @@ input[type='text'], input[type='password']{
 #odk_heading {
    padding-left: 80px;
 }
+.center{ text-align: center; }
