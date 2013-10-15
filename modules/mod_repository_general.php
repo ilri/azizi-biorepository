@@ -73,7 +73,7 @@ class Repository extends DBase{
          elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . $this->Dbase->session['message']);
       }
 
-      if(!isset($_SESSION['user_id']) && !in_array(OPTIONS_REQUESTED_MODULE, array('login', 'logout', ''))){
+      if(!isset($_SESSION['user_id']) && !isset($_SESSION['username']) && !in_array(OPTIONS_REQUESTED_MODULE, array('login', 'logout', ''))){
          if(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' .OPTIONS_MSSG_INVALID_SESSION);
          else{
             $this->LoginPage(OPTIONS_MSSG_INVALID_SESSION);
@@ -244,7 +244,7 @@ class Repository extends DBase{
       //fetch all keys in $userPermissions
       $allModules = array_keys(Config::$userPermissions);
       foreach ($allModules as $currentModuleName) {
-         if(isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))
+         if(isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && (in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups'])))
             echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
       }
    }
@@ -266,6 +266,14 @@ class Repository extends DBase{
             $this->Dbase->CreateLogEntry("There was an error while authenticating the user: '$username'.", 'info');
             $this->LoginPage('There was an error while logging in. Please try again or contact the system administrator');
             return;
+         }
+         else if($adAuth === 4){
+            $this->Dbase->CreateLogEntry("'$username' tried to log in while the account was still disabled", 'info');
+            $this->LoginPage('Your account has beed disabled. Please contact the system administrator');
+            return;
+         }
+         else if(is_string($adAuth)){
+            
          }
    }
 
