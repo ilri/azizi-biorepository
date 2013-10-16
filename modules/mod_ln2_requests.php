@@ -389,7 +389,8 @@ class Ln2Requests extends Repository{
       $cc = Config::$managerEmail;
       $subject = "Invoice for Nitrogen requested on ".$date;
       $message = "Hi ".$name.",\n\nYour request for Nitrogen has been approved. An invoice of the acquisition is attached to this email. \n\nThis email has been auto-generated, please do not reply to it. For any additional information/clarification, please get in touch with Sammy Kemei, s.kemei@cgiar.org";
-      shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
+      //shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
+      shell_exec('echo "'.$message.'"|mailx -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -r '.Config::$repositoryMailAdd.' '.$reciever);
       unlink($pdfURL);
    }
 
