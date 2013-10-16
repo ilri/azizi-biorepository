@@ -220,8 +220,8 @@ class Ln2Requests extends Repository{
 
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
       $query = "SELECT a.*, b.name AS project, b.`charge_code`".
-              " FROM acquisitions AS a".
-              " INNER JOIN projects AS b ON a.`project_id` = b.id".
+              " FROM ln2_acquisitions AS a".
+              " INNER JOIN ln2_chargecodes AS b ON a.`project_id` = b.id".
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
