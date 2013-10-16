@@ -81,7 +81,7 @@ var Ln2Requests = {
                   "Set": function() {
                      if($("#newAmountApproved").val()!==""){
                         //TODO: add logic for changing column value from server
-                        $.post("index.php?page=acquisition&do=setAmountApproved", {
+                        $.post("index.php?page=ln2_requests&do=setAmountApproved", {
                            rowID:id,
                            amountApproved:$("#newAmountApproved").val()
                         }, function(){
@@ -101,7 +101,7 @@ var Ln2Requests = {
    fetchProjects: function() {
       var json;
       $.ajax({
-         url: "index.php?page=acquisition&do=getProjects",
+         url: "index.php?page=ln2_requests&do=getProjects",
          async: false,
          success: function (data, textStatus, jqXHR) {
             json = eval(data);
