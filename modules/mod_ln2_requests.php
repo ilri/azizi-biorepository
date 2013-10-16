@@ -130,7 +130,7 @@ class Ln2Requests extends Repository{
       ],
       sortname : 'date',
       <?php
-         if(isset($_SESSION['user_type']) && $_SESSION['user_type'] === "Super Administrator") {
+         if(isset($_SESSION['username']) && in_array(($_SESSION['username'],Config::$ln2_request_managers)) {
             echo "buttons : [{name: 'Set Amount Approved', bclass: 'edit', onpress : Ln2Requests.changeAmountApproved}],";
          }
       ?>
@@ -256,10 +256,10 @@ class Ln2Requests extends Repository{
     */
    private function setAmountApproved() {
       if($_SESSION['user_type']==="Super Administrator"){
-        $query = "SELECT `amount_appr` FROM acquisitions WHERE id = ?";
+        $query = "SELECT `amount_appr` FROM ln2_acquisitions WHERE id = ?";
         $result = $this->Dbase->ExecuteQuery($query,array($_POST['rowID']));
         if(sizeof($result) === 1 && is_null($result[0]['amount_appr'])) {
-           $query = "UPDATE acquisitions SET `amount_appr` = ? WHERE id = ?";
+           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ? WHERE id = ?";
            $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_POST['rowID']));
            $this->generateInvoice($_POST['rowID']);
         }
@@ -301,7 +301,7 @@ class Ln2Requests extends Repository{
     * @param   int   $rowID   ID of the requisition
     */
    private function generateInvoice($rowID){
-      $query = "SELECT `a`.*, c.`charge_code` FROM `acquisitions` AS a INNER JOIN projects AS c ON a.`project_id` = c.id WHERE a.id = ?";
+      $query = "SELECT `a`.*, c.`charge_code` FROM `ln2_acquisitions` AS a INNER JOIN `ln2_chargecodes` AS c ON a.`project_id` = c.id WHERE a.id = ?";
       $res = $this->Dbase->ExecuteQuery($query, array($rowID));
       if($res !==1) {
          $date = $res[0]['date'];
