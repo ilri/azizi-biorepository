@@ -130,7 +130,7 @@ class Ln2Requests extends Repository{
       ],
       sortname : 'date',
       <?php
-         if(isset($_SESSION['username']) && in_array(($_SESSION['username'],Config::$ln2_request_managers)) {
+         if(isset($_SESSION['username']) && in_array($_SESSION['username'],Config::$ln2_request_managers)) {
             echo "buttons : [{name: 'Set Amount Approved', bclass: 'edit', onpress : Ln2Requests.changeAmountApproved}],";
          }
       ?>
