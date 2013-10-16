@@ -205,14 +205,14 @@ class Ln2Requests extends Repository{
       if($_POST['query'] != "") {
          $criteria = "WHERE {$_POST['qtype']} LIKE '%?%'";
          $criteriaArray[] = $_POST['query'];
-         if(!isset($_SESSION['user_type'])||$_SESSION['user_type'] !== "Super Administrator"){
+         if(!in_array($_SESSION['username'],Config::$ln2_request_managers)) {
             $criteria = $criteria." AND a.`added_by` = ?";
             $criteriaArray[] = $_SESSION['username'];
          }
       }
       else {
          $criteria = "";
-         if(!isset($_SESSION['user_type'])||$_SESSION['user_type'] !== "Super Administrator"){
+         if(!in_array($_SESSION['username'],Config::$ln2_request_managers)) {
             $criteria = $criteria."WHERE a.`added_by` = ?";
             $criteriaArray[] = $_SESSION['username'];
          }
@@ -255,7 +255,7 @@ class Ln2Requests extends Repository{
     * Sets the amount of nitrogen just approved for a requisition
     */
    private function setAmountApproved() {
-      if($_SESSION['user_type']==="Super Administrator"){
+      if(in_array($_SESSION['username'],Config::$ln2_request_managers)) {
         $query = "SELECT `amount_appr` FROM ln2_acquisitions WHERE id = ?";
         $result = $this->Dbase->ExecuteQuery($query,array($_POST['rowID']));
         if(sizeof($result) === 1 && is_null($result[0]['amount_appr'])) {
