@@ -161,7 +161,7 @@ class Ln2Requests extends Repository{
          $ldapName = $this->Dbase->getUserFullName($_SESSION['username']);
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
          $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
-         $res = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['dbase'].'.'."ln2_acquisitions",$cols,$colVals);
+         $res = $this->Dbase->InsertOnDuplicateUpdate("ln2_acquisitions",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
          }
