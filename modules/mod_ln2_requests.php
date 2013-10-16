@@ -181,7 +181,7 @@ class Ln2Requests extends Repository{
     * @return int       Returns the project ID or 0 if and error occures during execution
     */
    private function getProjectID($chargeCode) {
-      $query = "SELECT id FROM ln2_charcgecodes WHERE charge_code = ?";
+      $query = "SELECT id FROM ln2_chargecodes WHERE charge_code = ?";
       $result = $this->Dbase->ExecuteQuery($query,array($chargeCode));
       if ($result == 1){
          $this->Dbase->CreateLogEntry("There was an error while fetching data from the database.", 'fatal', true);
