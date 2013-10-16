@@ -114,7 +114,7 @@ class Ln2Requests extends Repository{
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
    $("#past_requests").flexigrid({
-      url: "mod_ajax.php?page=acquisition&do=fetch",
+      url: "mod_ajax.php?page=ln2_requests&do=fetch",
       dataType: 'json',
       colModel : [
          {display: 'Date', name: 'date', width: 100, sortable: true, align: 'center'},

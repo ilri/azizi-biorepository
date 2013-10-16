@@ -89,7 +89,7 @@ class Repository extends DBase{
             $this->Dbase->CreateLogEntry("Denied Access: The user '{$_SESSION['username']}'({$_SESSION['user_type']}) was denied access to ". OPTIONS_REQUESTED_MODULE .' module.', 'debug');
             $this->Dbase->CreateLogEntry('Access Denied: The user '. Config::$curUser .' was denied access to '. OPTIONS_REQUESTED_MODULE .' module.', 'audit');
             if(!in_array(OPTIONS_REQUESTED_MODULE, array_keys(Config::$userPermissions))){
-               if(OPTIONS_REQUEST_TYPE == 'ajax') die('-1'. OPTIONS_MSSG_UNKNOWN_MOUDLE);
+               if(OPTIONS_REQUEST_TYPE == 'ajax') die('-1'. OPTIONS_MSSG_UNKNOWN_MODULE);
                else $this->RepositoryHomePage(OPTIONS_MSSG_UNKNOWN_MODULE);
                return;
             }
