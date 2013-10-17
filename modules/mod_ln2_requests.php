@@ -366,7 +366,7 @@ class Ln2Requests extends Repository{
 </html>";
             file_put_contents("./generated_pages/" . $pageName, $pageText);
             $pdfName = "Azizi Invoice ".$rowID;
-            shell_exec(Config::$wkhtmltopdf . " http://" . $_SERVER['HTTP_HOST'] . Config::$baseURI . "generated_pages/" . $pageName . " '/tmp/" . $pdfName . ".pdf'");
+            shell_exec(Config::$xvfb ." ". Config::$wkhtmltopdf . " http://" . $_SERVER['HTTP_HOST'] . Config::$baseURI . "generated_pages/" . $pageName . " '/tmp/" . $pdfName . ".pdf'");
             unlink("./generated_pages/" . $pageName);
             //copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
             //unlink("/tmp/".$hash.".pdf");
