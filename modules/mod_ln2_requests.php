@@ -405,7 +405,7 @@ class Ln2Requests extends Repository{
     * @return  float    Returns -1 if an error occures or the price of nitrogen
     */
    private function getNitrogenPrice() {
-      $query = "SELECT price FROM `ln2_prices` WHERE `start_date` <= CURDATE() AND `end_date` >= CURDATE()";
+      $query = "SELECT price FROM `ln2_prices` WHERE `start_date` <= CURDATE()";
       $result = $this->Dbase->ExecuteQuery($query);
       if($result!==1) {
          if(sizeof($result)===1){
