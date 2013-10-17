@@ -369,6 +369,9 @@ class Ln2Requests extends Repository{
       </div>
    </body>
 </html>";
+            if(!file_exists('./generated_pages')){
+               mkdir('./generated_pages', 0777, true);
+            }
             file_put_contents("./generated_pages/" . $pageName, $pageText);
             $pdfName = "Azizi Invoice ".$rowID;
             shell_exec(Config::$xvfb ." ". Config::$wkhtmltopdf . " http://" . $_SERVER['HTTP_HOST'] . Config::$baseURI . "generated_pages/" . $pageName . " '/tmp/" . $pdfName . ".pdf'");
