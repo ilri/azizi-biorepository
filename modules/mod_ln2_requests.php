@@ -68,7 +68,7 @@ class Ln2Requests extends Repository{
                         $( "#date" ).datepicker({maxDate: '0', dateFormat: 'dd-mm-yy'});
                      });
                   </script>
-                  <tr><td class="label">Amount of Nitrogen (KGs)</td><td><input type="text" name="amount" id="amount" value="" size="4"/></td></tr>
+                  <tr><td class="label">Amount of Nitrogen (Litres)</td><td><input type="text" name="amount" id="amount" value="" size="4"/></td></tr>
                   <tr><td colspan="2">
                         <fieldset>
                            <legend>Project</legend>
