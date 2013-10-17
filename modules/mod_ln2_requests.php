@@ -264,8 +264,8 @@ class Ln2Requests extends Repository{
         $query = "SELECT `amount_appr` FROM ln2_acquisitions WHERE id = ?";
         $result = $this->Dbase->ExecuteQuery($query,array($_POST['rowID']));
         if(sizeof($result) === 1 && is_null($result[0]['amount_appr'])) {
-           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ? WHERE id = ?";
-           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_POST['rowID']));
+           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ?, `apprvd_by` = ? WHERE id = ?";
+           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_SESSION['username'],$_POST['rowID']));
            $this->generateInvoice($_POST['rowID']);
         }
       }
