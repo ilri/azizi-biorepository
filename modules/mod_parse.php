@@ -96,6 +96,10 @@ class Parser {
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');
       
       include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
+      $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_discISAM;
+      $cacheSettings = array( 'dir' => '/var/www/html/repository/tmp');
+      PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings);
+      
       $this->phpExcel = new PHPExcel();
       $this->setExcelMetaData();
       
@@ -255,7 +259,7 @@ class Parser {
       }
       
       //add all keys and respective values to row
-      if(sizeof($keys) == sizeof($values) && sizeof($value) > 0) {
+      if(sizeof($keys) == sizeof($values) && sizeof($values) > 0) {
       
          //echo 'adding columns from here<br/>';
          $this->logHandler->log(4, $this->TAG, 'adding columns from here');
@@ -284,6 +288,13 @@ class Parser {
                   $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", $this->convertKeyToValue($keys[$index]));
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
                }
+	       
+               if(!is_array($values[$index])){
+                  $exploded = explode(" ",$values[$index]);
+                  if(sizeof($exploded)>1){
+                     $values[$index]=$exploded;
+                  }
+	       }
 
                if (!is_array($values[$index])) {
                   //echo 'value of '.$keys[$index].' is '.$values[$index].'<br/>';
@@ -293,7 +304,7 @@ class Parser {
                      $values[$index] = $this->downloadImage($values[$index]);
                   }
                   
-                  if($values[$index]== "") {
+                  if(strlen($values[$index]) === 0) {
                      $values[$index] = "NULL";
                   }
                   $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->convertKeyToValue($values[$index]));
@@ -338,15 +349,17 @@ class Parser {
          //echo 'adding row with only one column since json object is just string<br/>';
          $this->logHandler->log(4, $this->TAG, 'adding row with only one column since json object is just string');
          $columnExisted = TRUE;
-         if(!in_array($this->allColumnNames[$parentKey], "values")) {
+
+            $this->logHandler->log(1, $this->TAG, 'testing -- values --- ' . print_r($this->allColumnNames[$parentKey], true));
+         if(!in_array($this->allColumnNames[$parentKey],$jsonObject)) {
             $columnExisted = FALSE;
             //echo 'pushing values to allColumnNames array for ' . $parentKey . '<br/>';
             $this->logHandler->log(4, $this->TAG, 'pushing values to allColumnNames array for ' . $parentKey);
             //array_push($this->allColumnNames[$parentKey], $keys[$index]);
-            $this->allColumnNames[$parentKey][sizeof($this->allColumnNames[$parentKey])] = 'values';
+            $this->allColumnNames[$parentKey][sizeof($this->allColumnNames[$parentKey])] = $jsonObject;
          }
 
-         $columnName = $this->getColumnName($parentKey, 'values');
+         $columnName = $this->getColumnName($parentKey, $jsonObject);
          if ($columnExisted == FALSE) {
             $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
          }
@@ -373,7 +386,8 @@ class Parser {
       $this->logHandler->log(3, $this->TAG, 'checking if '.$url.' is image before starting download');
       
       //only supported in PHP 5.4+
-      $contentType = get_headers($url, 1)["Content-Type"];
+      $contentType = get_headers($url, 1);
+      $contentType = $contentType["Content-Type"];
       //echo 'content type is '.$contentType."<br/>";
       $this->logHandler->log(4, $this->TAG, 'content type is '.$contentType);
       if(strpos($contentType, 'image')!==NULL) {
@@ -485,7 +499,7 @@ class Parser {
       $this->jsonObject = json_decode($jsonString, TRUE);
       $this->logHandler->log(4, $this->TAG, 'json object is '.print_r($this->jsonObject,TRUE));
       if($this->jsonObject === NULL){
-         $this->logHandler->log(1, $this->TAG, 'unable to parse the json object in post request, exiting');
+         $this->logHandler->log(1, $this->TAG, 'unable to parse the json object in post request, exiting' . json_last_error());
          die();
       }
    }
@@ -511,7 +525,10 @@ class Parser {
             $valuePref = strpos($subStrings[$count], "<value>");
             $valueSuf = strpos($subStrings[$count], "</value>");
             $value = substr($subStrings[$count], $valuePref + 7, ($valueSuf - $valuePref) - 7);
-
+            
+            $value = str_replace("&lt;", "<", $value);
+            $value = str_replace("&gt;", ">", $value);
+            
             $this->xmlValues[$id] = $value;
             $count++;
          } 
@@ -526,6 +543,7 @@ class Parser {
    private function sendZipURL($zipName) {
       $this->logHandler->log(3, $this->TAG, 'sending email to '.$_POST['email']);
       $url = "http://".$_SERVER['HTTP_HOST'].$this->rootDirURI.$zipName;
+      $this->logHandler->log(3, $this->TAG, 'url to zip file is  '.$url);
       $emailSubject = "ODK Parser finished generating ".$_POST['fileName'];
       $message = "Hi ".$_POST['creator'].",\nODK Parser has finished generating ".$_POST['fileName'].".xlsx. You can download the file along with its companion images as a zip file from the following link ".$url." . This is an auto-generated email, please do not reply to it.";
       //$headers = "From: noreply@cgiar.org";

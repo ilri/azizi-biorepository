@@ -28,8 +28,16 @@ Parse.prototype.readFile = function (file, output) {
    fileReader.onload = function(e) {
       var validOutput = false;
      if(output === "json") {
-        validOutput = window.parse.validateJson(e.target.result);
-        window.parse.jsonText = e.target.result;
+        var jsonString = e.target.result;
+        jsonString = jsonString.split("}{").join("},{");
+        //jsonString = jsonString.replace(/(\r\n|\n|\r)/gm, ""); //remove all line breaks
+        if(jsonString.indexOf("[") !== 0){
+            //console.log("no opening and closing square brackets");
+            var opener = "[";
+            jsonString = opener.concat(jsonString, "]");
+        }
+        validOutput = window.parse.validateJson(jsonString);
+        window.parse.jsonText = jsonString;
      }
      else if(output === "xml") {
         window.parse.xmlText = e.target.result;
@@ -105,7 +113,6 @@ Parse.prototype.validateInput = function () {
 Parse.prototype.validateJson = function (jsonString) {
    try {
      var jsonObject = JSON.parse(jsonString);
-     
    }
    catch (error) {
       //alert("The JSON file provided is invalid");
