@@ -95,14 +95,6 @@ class Parser {
       
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');
       
-      include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
-      $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_discISAM;
-      $cacheSettings = array( 'dir' => '/var/www/html/repository/tmp');
-      PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings);
-      
-      $this->phpExcel = new PHPExcel();
-      $this->setExcelMetaData();
-      
       //init other vars
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
@@ -121,12 +113,37 @@ class Parser {
       //parse json String
       $this->parseJson();
       $this->loadXML();
+
+      include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
+      $jsonWidth = $this->array_depth($this->jsonObject);
+      $this->logHandler->log(3, $this->TAG, 'Width of json is '.$jsonWidth);
+      $this->logHandler->log(3, $this->TAG, 'Length of json is '.count($this->jsonObject));
+
+      $jsonComplexity = count($this->jsonObject) * $jsonWidth;
+      if($jsonComplexity > 500) {
+         $this->logHandler->log(3, $this->TAG, 'Json appears to be complex ('.$jsonComplexity.'), excel sheet cells will be cached on disk');
+         if(!file_exists($this->ROOT.'tmp')){
+            mkdir($this->ROOT.'tmp', 0777, true);
+         }
+         $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_discISAM;
+         $cacheSettings = array( 'dir' => $this->ROOT.'tmp');
+         PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings); 
+      }
+      else{
+         $this->logHandler->log(3, $this->TAG, 'Json is not complex ('.$jsonComplexity.'), excel sheets will not be cached on disk');
+      }
+            
+      $this->phpExcel = new PHPExcel();
+      $this->setExcelMetaData();
       
       //process all responses
       $mainSheetKey = "main_sheet";
-      
+     
+      $currMainSheetItem = 1; 
       foreach($this->jsonObject as $currentJsonObject) {
+         $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$currMainSheetItem.' of '.count($this->jsonObject));
          $this->createSheetRow($currentJsonObject, $mainSheetKey);
+         $currMainSheetItem++;
       }
       
       //save the excel object
@@ -162,7 +179,7 @@ class Parser {
    }
    
    private function getColumnName($parentKey, $key){//a maximum of 676 (26*26) columns
-      $this->logHandler->log(3, $this->TAG, 'getting column name corresponding to '.$key);
+      //$this->logHandler->log(3, $this->TAG, 'getting column name corresponding to '.$key);
       $columnNames = array("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z");
       $indexOfKey = array_search($key, $this->allColumnNames[$parentKey]);
       $x = intval($indexOfKey/26) -1;
@@ -235,7 +252,7 @@ class Parser {
       
       //set name of parent cell as first cell in row if is set
       if ($parentCellName != NULL) {
-         if (!in_array($this->allColumnNames[$parentKey], "Parent_Cell")) {
+         if (!in_array("Parent_Cell", $this->allColumnNames[$parentKey])) {
             //echo 'pushing Parent_Cell to allColumnNames array for ' . $parentKey . '<br/>';
             $this->logHandler->log(4, $this->TAG, 'pushing Parent_Cell to allColumnNames array for ' . $parentKey);
             array_push($this->allColumnNames[$parentKey], "Parent_Cell");
@@ -266,7 +283,7 @@ class Parser {
          for($index = 0; $index < sizeof($keys); $index++) {
             //add key to allColumns array
             $columnExisted = TRUE;
-            if(!in_array($this->allColumnNames[$parentKey], $keys[$index])) {
+            if(!in_array($keys[$index], $this->allColumnNames[$parentKey])) {
                $columnExisted = FALSE;
                //echo 'pushing '.$keys[$index].' to allColumnNames array for '.$parentKey.'<br/>';
                $this->logHandler->log(4, $this->TAG, 'pushing '.$keys[$index].' to allColumnNames array for '.$parentKey);
@@ -345,39 +362,10 @@ class Parser {
             
          }
       }
-      else {//probably means the jsonObject is just a string
-         //echo 'adding row with only one column since json object is just string<br/>';
-         $this->logHandler->log(4, $this->TAG, 'adding row with only one column since json object is just string');
-         $columnExisted = TRUE;
-
-            $this->logHandler->log(1, $this->TAG, 'testing -- values --- ' . print_r($this->allColumnNames[$parentKey], true));
-         if(!in_array($this->allColumnNames[$parentKey],$jsonObject)) {
-            $columnExisted = FALSE;
-            //echo 'pushing values to allColumnNames array for ' . $parentKey . '<br/>';
-            $this->logHandler->log(4, $this->TAG, 'pushing values to allColumnNames array for ' . $parentKey);
-            //array_push($this->allColumnNames[$parentKey], $keys[$index]);
-            $this->allColumnNames[$parentKey][sizeof($this->allColumnNames[$parentKey])] = $jsonObject;
-         }
-
-         $columnName = $this->getColumnName($parentKey, $jsonObject);
-         if ($columnExisted == FALSE) {
-            $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
-         }
-         
-         if ($columnName != FALSE) {
-            
-            if(filter_var($jsonObject, FILTER_VALIDATE_URL)) {
-               $jsonObject = $this->downloadImage($jsonObject);
-            }
-            
-            if($jsonObject == "") {
-               $jsonObject = "NULL";
-            }
-            
-            $cellName = $columnName . $rowName;
-            $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentKey]);
-            $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->convertKeyToValue($jsonObject));
-         }
+      else {
+         //means the jsonObject is just a string, this is bad, just kill the process
+         $this->logHandler->log(1, $this->TAG, 'jsonobject provided to createSheetRow is a string ('.$jsonObject.'). This should not have happened. Killing process');
+         exit(0);
       }
       $this->nextRowName[$parentKey]++;
    }
@@ -552,6 +540,21 @@ class Parser {
       shell_exec('echo "'.$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$emailSubject.'" -- '.$_POST['email']);
    }
    
+  private function array_depth($array) {
+       $max_depth = 1;
+       
+       foreach ($array as $value) {
+           if (is_array($value)) {
+               $depth = $this->array_depth($value) + 1;
+
+               if ($depth > $max_depth) {
+                   $max_depth = $depth;
+               }
+           }
+       }
+       return $max_depth;
+   } 
+   
    function isJson($json) {
       $keys = array_keys($json);
       if(sizeof($keys)>0){
@@ -561,6 +564,7 @@ class Parser {
          return FALSE;
       }
    }
+    
 }
 
 $obj = new Parser();

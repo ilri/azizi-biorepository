@@ -187,7 +187,7 @@ sub printLabels{
 ######################################################################
 sub getConfig{
 	my %barcodeParams;
-	my $barcodeConfig = "/etc/php5/include/labelsConfig.txt";
+	my $barcodeConfig = "/usr/share/php/include/labelsConfig.txt";
 	#my $barcodeConfig = "labelConfig.txt";
 	open (CONFIG_FH, $barcodeConfig ) || die "Cannot open $barcodeConfig $!:";
 	while(<CONFIG_FH>){
