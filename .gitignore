@@ -1,6 +1,7 @@
-nbproject
+nbproject/
 errors
 temp
 database
 .muttrc
 uploads
+config/repository_config
