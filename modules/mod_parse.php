@@ -201,13 +201,13 @@ class Parser {
       if($x>=0){
          $columnName = $columnNames[$x];
       }
-      if($y<26){
+      if($y<26 && $indexOfKey>=26){
          $columnName = $columnName.$columnNames[$y];
          //echo 'returned from getcolumn name '.$columnName.'<br/>';
          $this->logHandler->log(4, $this->TAG, 'returned from getcolumn name '.$columnName);
          return $columnName;
       }
-      if($z<26){
+      if($z<26 && $indexOfKey>=26*26){
           $columnName = $columnName.$columnNames[$z];
       }
       
