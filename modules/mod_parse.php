@@ -339,7 +339,13 @@ class Parser {
                
                //Add title to column
                if($columnExisted === FALSE){
-                  $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", $this->convertKeyToValue($keys[$index]));
+                  if($this->parseType==="viewing"){
+                      $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", $this->convertKeyToValue($keys[$index]));
+                  }
+                  else{
+                      $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", $keys[$index]);
+                  }
+                  
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
                }
 	       
@@ -415,7 +421,7 @@ class Parser {
                                 $newColumnName = $this->getColumnName($parentKey, $newKey);
                                 if($columnExisted === FALSE){
                                     $this->phpExcel->getActiveSheet()->getColumnDimension($newColumnName)->setAutoSize(true);
-                                    $this->phpExcel->getActiveSheet()->setCellValue($newColumnName."1", $newColumnName);
+                                    $this->phpExcel->getActiveSheet()->setCellValue($newColumnName."1", $newKey);
                                     $this->phpExcel->getActiveSheet()->getStyle($newColumnName."1")->getFont()->setBold(TRUE);
                                 }
                                 $newCellName = $newColumnName.$rowName;
