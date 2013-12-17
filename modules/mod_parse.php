@@ -350,12 +350,12 @@ class Parser {
                }
 	       
                //fix for bug in json file were multi select answers are sparated by spaces
-               if(!is_array($values[$index])){
+               /*if(!is_array($values[$index])){
                   $exploded = explode(" ",$values[$index]);
                   if(sizeof($exploded)>1){
                      $values[$index]=$exploded;
                   }
-	       }
+	       }*/
                //end of fix
 
                if (!is_array($values[$index])) {
