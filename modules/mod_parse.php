@@ -85,6 +85,11 @@ class Parser {
     */
    private $rootDirURI;
    
+   /**
+    * @var string      Type of output. Can either be 'analysis' or 'viewing' 
+    */
+   private $parseType;
+   
    public function __construct() {
       //load settings
       $this->loadSettings();
@@ -96,6 +101,7 @@ class Parser {
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');
       
       //init other vars
+      $this->parseType = $_POST['parse_type'];
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
       $this->nextRowName = array();
@@ -139,10 +145,15 @@ class Parser {
       //process all responses
       $mainSheetKey = "main_sheet";
      
-      $currMainSheetItem = 1; 
+      $currMainSheetItem = 0; 
       foreach($this->jsonObject as $currentJsonObject) {
          $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$currMainSheetItem.' of '.count($this->jsonObject));
-         $this->createSheetRow($currentJsonObject, $mainSheetKey);
+         if($this->parseType === "viewing"){
+             $this->createSheetRow($currentJsonObject, $mainSheetKey);
+         }
+         else{
+             $this->createSheetRow($currentJsonObject, $mainSheetKey, NULL, $currMainSheetItem);
+         }
          $currMainSheetItem++;
       }
       
@@ -197,7 +208,7 @@ class Parser {
       
    }
    
-   private function createSheetRow($jsonObject, $parentKey, $parentCellName = NULL) {
+   private function createSheetRow($jsonObject, $parentKey, $parentCellName = NULL, $rowIndex = -1) {
       $this->logHandler->log(3, $this->TAG, 'creating a new sheet row in '.$parentKey);
       //check if sheet for parent key exists
       $sheetArrayKeys = array_keys($this->sheetIndexes);
@@ -250,6 +261,29 @@ class Parser {
       //echo 'row name is '.$rowName.'<br/>';
       $this->logHandler->log(4, $this->TAG, 'row name is '.$rowName);
       
+      //set Primary_ID as first cell in row if required
+      if($rowIndex !== -1){
+          if(!in_array("Primary_ID", $this->allColumnNames[$parentKey])){
+              $this->logHandler->log(4, $this->TAG, 'pushing Primary_ID to allColumnNames array for ' . $parentKey);
+              array_push($this->allColumnNames[$parentKey], "Primary_ID");
+          }
+          
+          $columnName = $this->getColumnName($parentKey, "Primary_ID");
+          if($columnName !== FALSE){
+              if($isNewSheet === TRUE){
+                  $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", "Primary ID");
+                  $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
+              }
+              $cellName = $columnName . $rowName;
+              $this->phpExcel->getActiveSheet()->setCellValue($cellName, $rowIndex);
+              $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
+          }else {
+            //echo 'column name for Parent_Cell not found<br/>';
+            $this->logHandler->log(2, $this->TAG, 'column name for Primary_ID not found '.print_r($this->allColumnNames[$parentCellName],TRUE));
+            //print_r($this->allColumnNames[$parentCellName]);
+         }
+      }
+      
       //set name of parent cell as first cell in row if is set
       if ($parentCellName != NULL) {
          if (!in_array("Parent_Cell", $this->allColumnNames[$parentKey])) {
@@ -283,6 +317,8 @@ class Parser {
          for($index = 0; $index < sizeof($keys); $index++) {
             //add key to allColumns array
             $columnExisted = TRUE;
+            
+            //check of columnName ($keys[$index]) existed in allColumnNames[parentKey] add add it if it does not
             if(!in_array($keys[$index], $this->allColumnNames[$parentKey])) {
                $columnExisted = FALSE;
                //echo 'pushing '.$keys[$index].' to allColumnNames array for '.$parentKey.'<br/>';
@@ -293,25 +329,28 @@ class Parser {
             }
             
             $columnName = $this->getColumnName($parentKey, $keys[$index]);
-            if($columnExisted == FALSE) {
+            if($columnExisted === FALSE) {
                $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
             }
             
-            if ($columnName != FALSE) {
+            if ($columnName !== FALSE) {
                $cellName = $columnName . $rowName;
                $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentKey]);
                
+               //Add title to column
                if($columnExisted === FALSE){
                   $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", $this->convertKeyToValue($keys[$index]));
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
                }
 	       
+               //fix for bug in json file were multi select answers are sparated by spaces
                if(!is_array($values[$index])){
                   $exploded = explode(" ",$values[$index]);
                   if(sizeof($exploded)>1){
                      $values[$index]=$exploded;
                   }
 	       }
+               //end of fix
 
                if (!is_array($values[$index])) {
                   //echo 'value of '.$keys[$index].' is '.$values[$index].'<br/>';
@@ -324,26 +363,66 @@ class Parser {
                   if(strlen($values[$index]) === 0) {
                      $values[$index] = "NULL";
                   }
-                  $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->convertKeyToValue($values[$index]));
+                  
+                  //if output data is meant for easy viewing, convert values[index] to its respective string (parsed from xml file) else just save the code as is
+                  if($this->parseType === "viewing"){
+                      $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->convertKeyToValue($values[$index]));
+                  }
+                  else{
+                      $this->phpExcel->getActiveSheet()->setCellValue($cellName, $values[$index]);
+                  }
                } 
-               else {//if values is an array
+               else {//if values[index] is an array
+                  
+                  //check if values[index] is empty. If not continue processing
                   if (sizeof($values[$index]) > 0) {
                      $this->logHandler->log(4, $this->TAG, 'value of '.$keys[$index].' is an array');
                      
+                     //check if elements of values[index] are valid json objects
                      $testChild = $values[$index][0];
                      if ($this->isJson($testChild) === TRUE) {
                         $this->phpExcel->getActiveSheet()->setCellValue($cellName, "Check " . $keys[$index] . " sheet");
                         foreach ($values[$index] as $childJsonObject) {
-                           $this->createSheetRow($childJsonObject, $keys[$index], $parentKey . " (" . $cellName . ")");
+                           if($this->parseType === "viewing"){
+                               $this->createSheetRow($childJsonObject, $keys[$index], $parentKey . " (" . $cellName . ")");
+                           }
+                           else{
+                               $this->createSheetRow($childJsonObject, $keys[$index], $rowName);
+                           }
                         }
                      }
-                     else{
-                        $commaSeparatedString = "";
-                        foreach ($values[$index] as $childString){
-                           if($commaSeparatedString === "") $commaSeparatedString = $this->convertKeyToValue ($childString);
-                           else $commaSeparatedString = $commaSeparatedString . ", " . $this->convertKeyToValue ($childString);
+                     else{//means that the array contains multiple select values
+                        if($this->parseType === "viewing"){
+                            $commaSeparatedString = "";
+                            foreach ($values[$index] as $childString){
+                               if($commaSeparatedString === "") $commaSeparatedString = $this->convertKeyToValue ($childString);
+                               else $commaSeparatedString = $commaSeparatedString . ", " . $this->convertKeyToValue ($childString);
+                            }
+                            $this->phpExcel->getActiveSheet()->setCellValue($cellName, $commaSeparatedString);
                         }
-                        $this->phpExcel->getActiveSheet()->setCellValue($cellName, $commaSeparatedString);
+                        else{
+                            $this->phpExcel->getActiveSheet()->setCellValue($cellName, "NULL");
+                            foreach($values[$index] as $childString){
+                                $columnExisted = TRUE;
+                                $newKey = $keys[$index]."-".$childString;
+                                if(!in_array($newKey, $this->allColumnNames[$parentKey])){
+                                    $columnExisted = FALSE;
+                                    
+                                    $this->logHandler->log(4, $this->TAG, 'pushing '.$newKey.' to allColumnNames array for '.$parentKey);
+                                    array_push($this->allColumnNames[$parentKey], $newKey);
+                                }
+                                
+                                $newColumnName = $this->getColumnName($parentKey, $newKey);
+                                if($columnExisted === FALSE){
+                                    $this->phpExcel->getActiveSheet()->getColumnDimension($newColumnName)->setAutoSize(true);
+                                    $this->phpExcel->getActiveSheet()->setCellValue($newColumnName."1", $newColumnName);
+                                    $this->phpExcel->getActiveSheet()->getStyle($newColumnName."1")->getFont()->setBold(TRUE);
+                                }
+                                $newCellName = $newColumnName.$rowName;
+                                $this->phpExcel->getActiveSheet()->setCellValue($newCellName, "1");
+                            }
+                        }
+                        
                      }
                         
                   }
