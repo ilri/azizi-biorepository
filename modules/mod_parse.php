@@ -195,6 +195,8 @@ class Parser {
       $indexOfKey = array_search($key, $this->allColumnNames[$parentKey]);
       $x = intval($indexOfKey/26) -1;
       $y = fmod($indexOfKey, 26);
+      $z = fmod($indexOfKey, 26*26);
+      $this->logHandler->log(3, $this->TAG, 'z = '.$z);
       $columnName = "";
       if($x>=0){
          $columnName = $columnNames[$x];
@@ -204,6 +206,9 @@ class Parser {
          //echo 'returned from getcolumn name '.$columnName.'<br/>';
          $this->logHandler->log(4, $this->TAG, 'returned from getcolumn name '.$columnName);
          return $columnName;
+      }
+      if($z<26){
+          $columnName = $columnName.$columnNames[$z];
       }
       
    }
