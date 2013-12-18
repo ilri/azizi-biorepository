@@ -452,6 +452,8 @@ class Parser {
                      $values[$index] = $this->downloadImage($values[$index]);
                   }
                   
+                  $values[$index] = formatTime($values[$index]);//format values[index] if it is time
+                  
                   if(strlen($values[$index]) === 0) {
                      $values[$index] = "NULL";
                   }
@@ -656,6 +658,19 @@ class Parser {
       else {
          return $key;
       }
+   }
+   
+   private function formatTime($timeString){
+       //check if string is time
+       if(preg_match("/([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\.([0-9]{3})(\+[0-9]{2})/i", $timeString) === 1){
+           $timeFragments = array();
+           preg_match_all("/([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\.([0-9]{3})(\+[0-9]{2})/i", $timeString, $timeFragments);
+           $formatedTime = $timeFragments[4].":".$timeFragments[5].":".$timeFragments[6]." ".$timeFragments[3]."-".$timeFragments[2]."-".$timeFragments[1]." ".$timeFragments[8]." GMT";
+           return $formatedTime;
+       }
+       else{
+           return $timeString;
+       }
    }
    
    private function parseJson() {
