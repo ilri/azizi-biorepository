@@ -643,7 +643,13 @@ class Parser {
    private function loadXML() {
       $this->logHandler->log(3, $this->TAG, 'parsing xml obtained from post');
       //$this->xmlString = file_get_contents($this->ROOT . "animals.xml");
-      $this->xmlString = $_POST['xmlString'];
+      $tmpXMLString = $_POST['xmlString'];
+      
+      //replace all the ascii codes with the real sh*t
+      $tmpXMLString = str_replace("&lt;", "<", $tmpXMLString);
+      $tmpXMLString = str_replace("&gt;", ">", $tmpXMLString);
+      $tmpXMLString = str_replace("&#61;", "=", $tmpXMLString);
+      $this->xmlString = $tmpXMLString;
       
       $matches = array();//temp var for inserting regex matches
       
