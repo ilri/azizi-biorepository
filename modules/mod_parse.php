@@ -168,6 +168,7 @@ class Parser {
       }
       
       //save the excel object
+      $this->logHandler->log(3, $this->TAG, 'saving the excel file as '.$_POST['fileName'].'.xlsx');
       if(!file_exists($this->downloadDir)){
          mkdir($this->downloadDir,0777,true);
       }
@@ -446,7 +447,8 @@ class Parser {
                         $this->phpExcel->getActiveSheet()->setCellValue($cellName, "Check " . $keys[$index] . " sheet");
                         foreach ($values[$index] as $childJsonObject) {
                            
-                           $this->createSheetRow($childJsonObject, $keys[$index], $this->odkInstance."_".$rowName);//NOTE that this is wher the createSheetRow function calls itself
+                            $this->createSheetRow($childJsonObject, $keys[$index], $this->odkInstance."_".$rowName);//NOTE that this is wher the createSheetRow function calls itself
+                           
                         }
                      }
                      else{//means that the array contains multiple select values
