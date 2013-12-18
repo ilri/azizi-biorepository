@@ -704,7 +704,7 @@ class Parser {
       $barcodeManualURLS = array();
       for($i = 0; $i < sizeof($barcodeURLS); $i++){
           //get respective manual input corresponding to barcode input
-          preg_match_all("/<bind\s+nodeset\s*=\s*[\"'](.+)[\"']\s+type\s*=\s*[\"']string[\"'].+relevant\s*=\s*[\"']\s*".str_replace("/", "\/", $barcodeURLS[$i])."\s*=\s*''\s*[\"']/i", $this->xmlString, $matches);
+          preg_match_all("/<bind\s+nodeset\s*=\s*[\"'](.+)[\"']\s+type\s*=\s*[\"']string[\"'].+relevant\s*=\s*[\"']\s*".str_replace("/", "\/", $barcodeURLS[$i])."\s*=\s*[\"']{2}/i", $this->xmlString, $matches);
           $barcodeManualURLS[$i] = $matches[1][0];
       }
       
@@ -712,16 +712,13 @@ class Parser {
       $this->manualBCs = array();
       //get just the id of the barcode input urls eg bsr in /dgea2/bsr
       for($i = 0; $i < sizeof($barcodeURLS); $i++){
-          preg_match_all("/.+/([a-z0-9_\-]+)$/i",$barcodeURLS[$i],$matches);
+          preg_match_all("/.+\/([a-z0-9_\-]+)$/i",$barcodeURLS[$i],$matches);
           $this->scannedBCs[$i] = $matches[1][0];
       }
       for($i = 0; $i < sizeof($barcodeManualURLS); $i++){
-          preg_match_all("/.+/([a-z0-9_\-]+)$/i",$barcodeManualURLS[$i],$matches);
+          preg_match_all("/.+\/([a-z0-9_\-]+)$/i",$barcodeManualURLS[$i],$matches);
           $this->manualBCs[$i] = $matches[1][0];
       }
-      
-      $this->logHandler->log(3, $this->TAG, print_r($this->scannedBCs, TRUE));
-      $this->logHandler->log(3, $this->TAG, print_r($this->manualBCs, TRUE));
       
       //get all the string codes codes
       preg_match_all("/\s+?<text\s+id=[\"'](.+)[\"']\s*>\s*<value>.+<\/value>\s*<\/text>/", $this->xmlString, $matches);

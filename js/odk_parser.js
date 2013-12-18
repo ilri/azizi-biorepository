@@ -74,7 +74,7 @@ Parse.prototype.sendToServer = function () {
       }
    });
    alert("It may take some time to process the files you have provided. An email with the excel file will be sent to the email you have provided when the processing is done");
-   location.reload();
+   //location.reload();
 };
 
 Parse.prototype.validateInput = function () {
