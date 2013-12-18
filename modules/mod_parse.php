@@ -188,6 +188,14 @@ class Parser {
          $currMainSheetItem++;
       }
       
+      //clean all sheets
+      if($this->parseType !== "viewing"){
+          $sheetArrayKeys = array_keys($this->sheetIndexes);
+          foreach ($sheetArrayKeys as $currSheet){
+              $this->cleanSheet($currSheet);
+          }
+      }
+      
       //save the excel object
       $this->logHandler->log(3, $this->TAG, 'saving the excel file as '.$_POST['fileName'].'.xlsx');
       if(!file_exists($this->downloadDir)){
@@ -393,7 +401,7 @@ class Parser {
               $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
           }else {
             //echo 'column name for Parent_Cell not found<br/>';
-            $this->logHandler->log(2, $this->TAG, 'column name for Primary_ID not found '.print_r($this->allColumnNames[$parentCellName],TRUE));
+            $this->logHandler->log(2, $this->TAG, 'column name for Primary_ID not found '.print_r($this->allColumnNames[$parentKey],TRUE));
             //print_r($this->allColumnNames[$parentCellName]);
          }
       }
@@ -416,7 +424,7 @@ class Parser {
             $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
             //$this->phpExcel->getActiveSheet()->getStyle($cellName)->getAlignment()->setWrapText(true);
          } else {
-            $this->logHandler->log(2, $this->TAG, 'column name for Parent_Cell not found '.print_r($this->allColumnNames[$parentCellName],TRUE));
+            $this->logHandler->log(2, $this->TAG, 'column name for Parent_Cell not found '.print_r($this->allColumnNames[$parentKey],TRUE));
             //print_r($this->allColumnNames[$parentCellName]);
          }
       }
@@ -585,6 +593,34 @@ class Parser {
       $this->nextRowName[$parentKey]++;
    }
    
+   /**
+    * This method checks all cells in the sheet specified to see if they are blank and inserts a 0 if blank found
+    * 
+    * @param    string      $sheetName      The name of the sheet eg main_sheet
+    */
+   private function cleanSheet($sheetName){
+       $this->logHandler->log(3, $this->TAG, 'cleaning '.$sheetName);
+       $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$sheetName]);
+       foreach($this->phpExcel->getActiveSheet()->getRowIterator() as $row){
+           $rowIndex = $row->getRowIndex();
+           
+           //get array of all column headings in sheet
+           $sheetRowHeadings = $this->allColumnNames[$sheetName];
+           foreach($sheetRowHeadings as $columnHeading){
+               //get column name/id corresponding to columnHeading
+               $columnName = $this->getColumnName($sheetName, $columnHeading);
+               $cellName = $columnName.$rowIndex;
+               $cell = $this->phpExcel->getActiveSheet()->getCell($cellName);
+               if(strlen($cell->getValue()) === 0){
+                   $this->logHandler->log(3, $this->TAG, 'cell '.$cellName.' in '.$sheetName.' is empty, inserting 0 into it');
+                   //setting cell value to 0 if cell is blank
+                   $this->phpExcel->getActiveSheet()->setCellValue($cellName, "0");
+               }
+           }
+       }
+   }
+
+
    /**
     * This function gets the string corresponding to a string code used in ODK eg if mlk is passed to this function and mlk = Milk according to the xml file
     * then Milk will be returned
