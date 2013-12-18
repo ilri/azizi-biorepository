@@ -431,7 +431,7 @@ class Parser {
                   $this->logHandler->log(4, $this->TAG, 'value of '.$keys[$index].' is '.$values[$index]);
                   
                   //check if value is a barcode
-                  if(strlen($values[$index]) > 0 && in_array($keys[$index], $this->manualBCs)){
+                  if(strlen($values[$index]) > 0 && in_array($keys[$index], $this->manualBCs) && $this->parseType !== "viewing"){
                       //is a barcode that was entered manually, now get index of the key in manualBCs array
                       $barcodeIndex = array_search($keys[$index], $this->manualBCs, TRUE);
                       
