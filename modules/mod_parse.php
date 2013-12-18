@@ -100,6 +100,16 @@ class Parser {
     */
    private $odkInstance;
    
+   /**
+    * @var array      Array of all input ids that store scanned barcodes
+    */
+   private $scannedBCs;
+   
+   /**
+    * @var array      Array of all input ides that store manually entered barcodes
+    */
+   private $manualBCs;
+   
    public function __construct() {
       //load settings
       $this->loadSettings();
@@ -416,9 +426,27 @@ class Parser {
 	       }*/
                //end of fix
 
-               if (!is_array($values[$index])) {
+               if (!is_array($values[$index])) {//values[index] is a string
                   //echo 'value of '.$keys[$index].' is '.$values[$index].'<br/>';
                   $this->logHandler->log(4, $this->TAG, 'value of '.$keys[$index].' is '.$values[$index]);
+                  
+                  //check if value is a barcode
+                  if(strlen($values[$index]) > 0 && in_array($keys[$index], $this->manualBCs)){
+                      //is a barcode that was entered manually, now get index of the key in manualBCs array
+                      $barcodeIndex = array_search($keys[$index], $this->manualBCs, TRUE);
+                      
+                      //get key for scanned barcode field corresponding to manual barcode field
+                      $scannedBCKey = $this->scannedBCs[$barcodeIndex];
+                      
+                      //get sheet column name corresponding to scannedBCKey
+                      $scannedBCColumnName = $this->getColumnName($parentKey, $scannedBCKey);
+                      if($scannedBCColumnName!== FALSE){
+                          //set value of cell corresponding to scanned barcode to values[index]
+                          $scannedBCCellName = $scannedBCColumnName.$rowName;
+                          $this->phpExcel->getActiveSheet()->setCellValue($scannedBCCellName, $values[$index]);
+                          $values[$index] = "NULL";
+                      }
+                  }
                   
                   if(filter_var($values[$index], FILTER_VALIDATE_URL)) {
                      $values[$index] = $this->downloadImage($values[$index]);
@@ -652,7 +680,7 @@ class Parser {
       $tmpXMLString = str_replace("&#61;", "=", $tmpXMLString);
       $this->xmlString = $tmpXMLString;
       
-      $matches = array();//temp var for inserting regex matches
+      $matches = array();//temp var for inserting regex matches. Using one variable to save mem
       
       //get all the language codes for languages specifed as translations in xml
       preg_match_all("/\s+<translation\s+lang=[\"'](.+)[\"']>/", $this->xmlString, $matches);
@@ -669,6 +697,28 @@ class Parser {
          $tempODKInstance = $matches[1][0];
       }
       $this->odkInstance = $tempODKInstance;
+      
+      //associate all the barcode inputs in xml with their respective manual barcode inputs
+      preg_match_all("/<bind\s+nodeset\s*=\s*[\"'](.+)[\"']\s+type\s*=\s*[\"']barcode[\"']/i", $this->xmlString, $matches);
+      $barcodeURLS = $matches[1];
+      $barcodeManualURLS = array();
+      for($i = 0; $i < sizeof($barcodeURLS); $i++){
+          //get respective manual input corresponding to barcode input
+          preg_match_all("/<bind\s+nodeset\s*=\s*[\"'](.+)[\"']\s+type\s*=\s*[\"']string[\"'].+relevant\s*=\s*[\"']\s*".str_replace("/", "\/", $barcodeURLS[$i])."\s*=\s*''\s*[\"']/i", $this->xmlString, $matches);
+          $barcodeManualURLS[$i] = $matches[1][0];
+      }
+      
+      $this->scannedBCs = array();
+      $this->manualBCs = array();
+      //get just the id of the barcode input urls eg bsr in /dgea2/bsr
+      for($i = 0; $i < sizeof($barcodeURLS); $i++){
+          preg_match_all("/.+/([a-z0-9_\-]+)$/i",$barcodeURLS[$i],$matches);
+          $this->scannedBCs[$i] = $matches[1][0];
+      }
+      for($i = 0; $i < sizeof($barcodeManualURLS); $i++){
+          preg_match_all("/.+/([a-z0-9_\-]+)$/i",$barcodeManualURLS[$i],$matches);
+          $this->manualBCs[$i] = $matches[1][0];
+      }
       
       //get all the string codes codes
       preg_match_all("/\s+?<text\s+id=[\"'](.+)[\"']\s*>\s*<value>.+<\/value>\s*<\/text>/", $this->xmlString, $matches);
