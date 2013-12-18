@@ -110,6 +110,11 @@ class Parser {
     */
    private $manualBCs;
    
+   /**
+    * @var object     Object containing general functions 
+    */
+   private $gTasks;
+   
    public function __construct() {
       //load settings
       $this->loadSettings();
@@ -117,6 +122,9 @@ class Parser {
       //include modules
       include_once $this->ROOT.'modules/mod_log.php';
       $this->logHandler = new LogHandler();
+      
+      include_once $this->settings['common_lib_dir'].'mod_general_v0.6.php';
+      $this->gTasks = new GeneralTasks();
       
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');
       
@@ -478,7 +486,8 @@ class Parser {
                   }
                   
                   if(filter_var($values[$index], FILTER_VALIDATE_URL)) {
-                     $values[$index] = $this->downloadImage($values[$index]);
+                     //$values[$index] = $this->downloadImage($values[$index]);
+                     $values[$index] = $this->gTasks->downloadImage($values[$index], $this->imagesDir);
                   }
                   
                   $values[$index] = $this->formatTime($values[$index]);//format values[index] if it is time
@@ -608,6 +617,7 @@ class Parser {
     * @param    string      $source         Url of the directory to be zipped
     * @param    string      $destination    Url of the destination zip file
     * @param    boolean     $include_dir    Defaults to false. If set to true, the zip file will contain a folder corresponding to the source
+    * 
     * @return   boolean     Returns true if zip was successfull
     */
    function zipParsedItems($source, $destination, $include_dir = false) {
