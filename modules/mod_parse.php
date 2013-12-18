@@ -720,6 +720,9 @@ class Parser {
           $this->manualBCs[$i] = $matches[1][0];
       }
       
+      $this->logHandler->log(3, $this->TAG, print_r($this->scannedBCs, TRUE));
+      $this->logHandler->log(3, $this->TAG, print_r($this->manualBCs, TRUE));
+      
       //get all the string codes codes
       preg_match_all("/\s+?<text\s+id=[\"'](.+)[\"']\s*>\s*<value>.+<\/value>\s*<\/text>/", $this->xmlString, $matches);
       
