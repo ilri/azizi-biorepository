@@ -165,6 +165,7 @@ class Parser {
       $objWriter->save($this->downloadDir.'/'.$_POST['fileName'].'.xlsx');
       
       //create dictionary and save in download dir
+      $this->logHandler->log(3, $this->TAG, 'Creating dictionary');
       $dictionary = new PHPExcel();
       $dictionary->getProperties()->setCreator($_POST['creator']);
       $dictionary->getProperties()->setLastModifiedBy($_POST['creator']);
@@ -191,11 +192,11 @@ class Parser {
                   $dictionary->getActiveSheet()->getColumnDimension($lang[$i])->setAutoSize(true);
               }
           }
+          $rowID = $codeIndex +2;
           
           $dictionary->getActiveSheet()->setCellValue("A".$rowID, $allCodes[$codeIndex]);
           
           for($i = 0; $i < $noLanguages; $i++){
-              $rowID = $codeIndex +2;
               $dictionary->getActiveSheet()->setCellValue($lang[$i].$rowID, $currCode[$i]);
           }
           $codeIndex++;
@@ -236,7 +237,7 @@ class Parser {
       $x = intval($indexOfKey/26) -1;
       $y = fmod($indexOfKey, 26);
       $z = fmod($indexOfKey, 26*26);
-      $this->logHandler->log(3, $this->TAG, 'z = '.$z);
+      
       $columnName = "";
       if($x>=0){
          $columnName = $columnNames[$x];
