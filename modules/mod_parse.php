@@ -98,6 +98,7 @@ class Parser {
    /**
     * @var string     ODK instance id obtained from xml file
     */
+   private $odkInstance;
    
    public function __construct() {
       //load settings
@@ -330,7 +331,7 @@ class Parser {
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
               }
               $cellName = $columnName . $rowName;
-              $this->phpExcel->getActiveSheet()->setCellValue($cellName, $rowIndex);
+              $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->odkInstance.$rowIndex); //instance of the ODK file plus the id of the row eg dgea1
               $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
           }else {
             //echo 'column name for Parent_Cell not found<br/>';
@@ -651,6 +652,18 @@ class Parser {
       //get all the language codes for languages specifed as translations in xml
       preg_match_all("/\s+<translation\s+lang=[\"'](.+)[\"']>/", $this->xmlString, $matches);
       $this->languageCodes = $matches[1];
+      
+      //get the odk instance id for the form
+      preg_match_all("/<instance>[\s\n]*<[a-z0-9_\s]+id=[\"']([a-z0-9_]+)[\"']\s*>/i", $this->xmlString, $matches);
+      $tempODKInstance = $matches[1][0];//assuming that the first instance tag in xml file is what we are looking for
+      
+      //check if the last part of the instance contains a version number
+      if(preg_match("/.+_[v][ersion_\-]*[0-9]$/i", $tempODKInstance) === 1){
+         $this->logHandler->log(4, $this->TAG, $tempODKInstance." contains a version number, removing it");
+         preg_match_all("/(.+)_[v][ersion_\-]*[0-9]$/i", $tempODKInstance, $matches);
+         $tempODKInstance = $matches[1][0];
+      }
+      $this->odkInstance = $tempODKInstance;
       
       //get all the string codes codes
       preg_match_all("/\s+?<text\s+id=[\"'](.+)[\"']\s*>\s*<value>.+<\/value>\s*<\/text>/", $this->xmlString, $matches);
