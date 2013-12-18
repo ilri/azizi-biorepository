@@ -91,8 +91,9 @@ class Parser {
    private $parseType;
    
    /**
-    * @var string      ODK instance ID in the xml file 
+    * @var array      Array of language codes for languages specified in xml file as translations
     */
+   private $languageCodes;
    
    public function __construct() {
       //load settings
@@ -191,8 +192,7 @@ class Parser {
           
           if($codeIndex === 0){//is the first code, label all the language columns
               for ($i = 0; $i < $noLanguages; $i++){
-                  $j = $i+1;
-                  $dictionary->getActiveSheet()->setCellValue($lang[$i]."1", "Language".$j);
+                  $dictionary->getActiveSheet()->setCellValue($lang[$i]."1", $this->languageCodes[$i]);
                   $dictionary->getActiveSheet()->getStyle($lang[$i]."1")->getFont()->setBold(TRUE);
                   $dictionary->getActiveSheet()->getColumnDimension($lang[$i])->setAutoSize(true);
               }
@@ -609,9 +609,17 @@ class Parser {
    }
    
    private function convertKeyToValue($key) {
+      //get the default language
+      $defaultLangIndex = 0;
+      for($i = 0; $i < sizeof($this->languageCodes); $i++){
+          if($this->languageCodes[$i] === "eng"){
+              $defaultLangIndex = $i;
+          }
+      }
       
+      //get the default language's string value of string code (key)
       if(array_key_exists($key, $this->xmlValues)) {
-         return $this->xmlValues[$key][0]; // returns the first value corresponding to key
+         return $this->xmlValues[$key][$defaultLangIndex];
       }
       else {
          return $key;
@@ -634,8 +642,13 @@ class Parser {
       //$this->xmlString = file_get_contents($this->ROOT . "animals.xml");
       $this->xmlString = $_POST['xmlString'];
       
-      //get all the codes
-      $matches = array();
+      $matches = array();//temp var for inserting regex matches
+      
+      //get all the language codes for languages specifed as translations in xml
+      preg_match_all("/\s+<translation\s+lang=[\"'](.+)[\"']>/", $this->xmlString, $matches);
+      $this->languageCodes = $matches[1];
+      
+      //get all the string codes codes
       preg_match_all("/\s+?<text\s+id=[\"'](.+)[\"']\s*>\s*<value>.+<\/value>\s*<\/text>/", $this->xmlString, $matches);
       
       //add all unique codes found into new array
