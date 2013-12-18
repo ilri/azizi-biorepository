@@ -452,7 +452,7 @@ class Parser {
                      $values[$index] = $this->downloadImage($values[$index]);
                   }
                   
-                  $values[$index] = formatTime($values[$index]);//format values[index] if it is time
+                  $values[$index] = $this->formatTime($values[$index]);//format values[index] if it is time
                   
                   if(strlen($values[$index]) === 0) {
                      $values[$index] = "NULL";
