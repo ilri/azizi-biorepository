@@ -111,7 +111,7 @@ class Parser {
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');
       
       //init other vars
-      $this->parseType = $_POST['parse_type'];
+      $this->parseType = $_POST['parseType'];
       $this->logHandler->log(3, $this->TAG, 'requested parse type is '.$this->parseType);
       $this->sheetIndexes = array();
       $this->allColumnNames = array();

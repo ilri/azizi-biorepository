@@ -34,7 +34,7 @@ class ParseODK extends Repository{
             <tr><td>Email Address</td><td><input type="text" id="email" name="email"/></td></tr>
             <tr><td>Name the Excel file to be generated</td><td><input type="text" id="file_name" name="file_name"/></td></tr>
             <tr><td>Type of output</td><td>
-                <select name="parse_type" id="parse_type">
+                <select name="parseType" id="parseType">
                     <option value="viewing">Easy viewing</option>
                     <option value="analysis">Analysis</option>
                 </select>
