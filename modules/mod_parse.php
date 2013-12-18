@@ -236,6 +236,10 @@ class Parser {
       $this->sendZipURL($zipName);
    }
    
+   
+   /*
+    * This function loads settings from the main ini file
+    */
    private function loadSettings() {
       $settingsDir = $this->ROOT."config/";
       if(file_exists($settingsDir."main.ini")) {
@@ -243,6 +247,9 @@ class Parser {
       }
    }
    
+   /**
+    * Appends meta data to the excel file using details provided in post request. Meta data is good
+    */
    private function setExcelMetaData() {
       $this->logHandler->log(3, $this->TAG, 'setting excel metadata');
       $this->phpExcel->getProperties()->setCreator($_POST['creator']);
@@ -252,6 +259,14 @@ class Parser {
       $this->phpExcel->getProperties()->setDescription("This Excel file has been generated using ODK Parser that utilizes the PHPExcel library on PHP. ODK Parse was created by Jason Rogena (j.rogena@cgiar.org)");
    }
    
+   /**
+    * This function returns the column name eg A, B, AA, AZ corresponding to a key in a json object
+    * 
+    * @param    string     $parentKey     The name of the excel sheet e.g main_sheet to be referenced agains 
+    * @param    string     $key           The title of column in the excel sheet. Note that column titles in the excel sheet correspond to keys in a json object
+    * 
+    * @return   string     returns an excel column name/id eg AA AB etc
+    */
    private function getColumnName($parentKey, $key){//a maximum of 676 (26*26) columns
       //$this->logHandler->log(3, $this->TAG, 'getting column name corresponding to '.$key);
       $columnNames = array("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z");
@@ -276,43 +291,62 @@ class Parser {
       
    }
    
+   /**
+    * The heart of this object. Is a recurssive function that takes in a json object and creates an excel sheet row corresponding to that object.
+    * The keys in the json have corresponding columns eg in {"key1":"val1","key2":"val2"} there are corresponding columns for key1 and key2 in
+    * the excel sheet. If the json object passed to this class is part of a json array (which it most likely is) the other json objects in the
+    * json array will correspond to the other rows in the excel sheet eg:
+    *   jsonArray = [jsonObject1, jsonObject2],
+    *   jsonObject1 = {"key1":"val1_fromJO1","key2":"val2_fromJO1"} and
+    *   jsonObject2 = {"key2":"val2_fromJO2","key3":"val3_fromJO2"}
+    * 
+    *   The excel sheet corresponding to jsonArray will look like:
+    *   ________________________________________________
+    *   |     key1      |     key2     |     key3      |
+    *   ------------------------------------------------
+    *   |  val1_fromJO1 | val2_fromJO1 |     NULL      |
+    *   |      NULL     | val2_fromJO2 |  val3_fromJO2 |
+    * 
+    * 
+    * @param    assoc-array     $jsonObject         The jsonObject with which you want to generate the excel sheet row     
+    * @param    string          $parentKey          The name of the sheet in which you want to create the row eg main_sheet
+    * @param    string          $parentCellName     Defaults to NULL. If specified, this is the id of the parent row in cases where the provided jsonObject is an instance in a repeat
+    * @param    int             $rowIndex           Defaults to NULL. If specified, this is the index of the jsonObject in its parent jsonArray. "Primary ID" column is filled with respective value if specified
+    */
    private function createSheetRow($jsonObject, $parentKey, $parentCellName = NULL, $rowIndex = -1) {
       $this->logHandler->log(4, $this->TAG, 'creating a new sheet row in '.$parentKey);
       //check if sheet for parent key exists
       $sheetArrayKeys = array_keys($this->sheetIndexes);
       $isNewSheet = FALSE;
       if(!in_array($parentKey, $sheetArrayKeys)) {
+          //sheet for parentKey does not exist. We now attempt to create it
+          
          $isNewSheet = TRUE;
-         //echo 'sheet for '.$parentKey.' does not exist<br/>';
          $this->logHandler->log(2, $this->TAG, 'sheet for '.$parentKey.' does not exist');
          //create sheet for parent key
-         //echo 'size of sheet indexes before '.sizeof($this->sheetIndexes)."<br/>";
+         
          $this->logHandler->log(4, $this->TAG, 'size of sheet indexes before '.sizeof($this->sheetIndexes));
          $this->sheetIndexes[$parentKey] = sizeof($this->sheetIndexes);
-         //echo 'size of sheet indexes now '.sizeof($this->sheetIndexes)."<br/>";
+         
          $this->logHandler->log(4, $this->TAG, 'size of sheet indexes now '.sizeof($this->sheetIndexes));
          $this->nextRowName[$parentKey] = 2;
          $this->allColumnNames[$parentKey] = array();
          
          if(sizeof($this->sheetIndexes)>1){
             $this->phpExcel->createSheet();
-            //echo 'this is not the first sheet, therefore calling createSheet<br/>';
             $this->logHandler->log(4, $this->TAG, 'this is not the first sheet, therefore calling createSheet');
          }
          $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentKey]);
-         //echo 'set active sheet index to '.$this->sheetIndexes[$parentKey]."<br/>";
          $this->logHandler->log(4, $this->TAG, 'set active sheet index to '.$this->sheetIndexes[$parentKey]);
          $this->phpExcel->getActiveSheet()->setTitle($parentKey);
       }
       else {
-         //set active sheet to that which corresponds to parent key
+         //Sheet corresponding to parentKey already exists, set active sheet to that which corresponds to parent key
          $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentKey]);
-         //echo 'sheet for '.$parentKey.' already exists<br/>';
          $this->logHandler->log(4, $this->TAG, 'sheet for '.$parentKey.' already exists');
       }
       
       //split keys and values in jsonObject
-      //echo 'splitting keys and values in jsonObject<br/>';
       $this->logHandler->log(4, $this->TAG, 'splitting keys and values in jsonObject');
       $keys = array_keys($jsonObject);
       $values = array();
@@ -321,12 +355,10 @@ class Parser {
          $values[$index] = $value;
          $index++;
       }
-      //echo 'size of values is '.sizeof($values)."<br/>";
       $this->logHandler->log(4, $this->TAG, 'size of values is '.sizeof($values));
       
-      //get next row name for parent key
+      //get next row name in sheet corresponding to  parent key
       $rowName = $this->nextRowName[$parentKey];
-      //echo 'row name is '.$rowName.'<br/>';
       $this->logHandler->log(4, $this->TAG, 'row name is '.$rowName);
       
       //set Primary_ID as first cell in row if required
@@ -352,16 +384,15 @@ class Parser {
          }
       }
       
-      //set name of parent cell as first cell in row if is set
+      //set name of parent cell as first/second cell in row if is set
       if ($parentCellName != NULL) {
          if (!in_array("Parent_Cell", $this->allColumnNames[$parentKey])) {
-            //echo 'pushing Parent_Cell to allColumnNames array for ' . $parentKey . '<br/>';
             $this->logHandler->log(4, $this->TAG, 'pushing Parent_Cell to allColumnNames array for ' . $parentKey);
             array_push($this->allColumnNames[$parentKey], "Parent_Cell");
             //$this->allColumnNames[$parentKey][sizeof($this->allColumnNames[$parentKey])]="Parent_Cell";
          }
          $columnName = $this->getColumnName($parentKey, "Parent_Cell");
-         if ($columnName != FALSE) {
+         if ($columnName !== FALSE) {//safe to continue
             if($isNewSheet === TRUE){
                $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", "Parent cell");
                $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
@@ -371,7 +402,6 @@ class Parser {
             $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
             //$this->phpExcel->getActiveSheet()->getStyle($cellName)->getAlignment()->setWrapText(true);
          } else {
-            //echo 'column name for Parent_Cell not found<br/>';
             $this->logHandler->log(2, $this->TAG, 'column name for Parent_Cell not found '.print_r($this->allColumnNames[$parentCellName],TRUE));
             //print_r($this->allColumnNames[$parentCellName]);
          }
@@ -379,8 +409,7 @@ class Parser {
       
       //add all keys and respective values to row
       if(sizeof($keys) == sizeof($values) && sizeof($values) > 0) {
-      
-         //echo 'adding columns from here<br/>';
+          
          $this->logHandler->log(4, $this->TAG, 'adding columns from here');
          for($index = 0; $index < sizeof($keys); $index++) {
             //add key to allColumns array
@@ -533,13 +562,21 @@ class Parser {
          }
       }
       else {
-         //means the jsonObject is just a string, this is bad, just kill the process
+         //means the jsonObject is just a string and not a json object. This is bad
          $this->logHandler->log(1, $this->TAG, 'jsonobject provided to createSheetRow is a string ('.$jsonObject.'). This should not have happened. Killing process');
          exit(0);
       }
       $this->nextRowName[$parentKey]++;
    }
    
+   
+   /**
+    * This function gets a url, determines if url is images, if so it downloads the image and returns the name of the image.
+    * 
+    * @param    string      $url        The url of the image.
+    * 
+    * @return   string      Returns the name of the image if $url contained image or $url if $url is not a url or if does not contain an image
+    */
    private function downloadImage($url) {
       $this->logHandler->log(3, $this->TAG, 'checking if '.$url.' is image before starting download');
       
@@ -565,6 +602,14 @@ class Parser {
       }
    }
    
+   /**
+    * This function gets a source director, zips everything in that directory and saves the zip as destination
+    * 
+    * @param    string      $source         Url of the directory to be zipped
+    * @param    string      $destination    Url of the destination zip file
+    * @param    boolean     $include_dir    Defaults to false. If set to true, the zip file will contain a folder corresponding to the source
+    * @return   boolean     Returns true if zip was successfull
+    */
    function zipParsedItems($source, $destination, $include_dir = false) {
       $this->logHandler->log(3, $this->TAG, 'zipping all items in '.$source);
       
@@ -623,6 +668,13 @@ class Parser {
       return $zip->close();
    }
    
+   /**
+    * This function delets a directory recurssively
+    * 
+    * @param    string      $dirPath    Path to the directory
+    * 
+    * @throws InvalidArgumentException
+    */
    public function deleteDir($dirPath) {
       $this->logHandler->log(3, $this->TAG, 'deleting '.$dirPath);
       if (!is_dir($dirPath)) {
@@ -642,6 +694,14 @@ class Parser {
       rmdir($dirPath);
    }
    
+   /**
+    * This function gets the string corresponding to a string code used in ODK eg if mlk is passed to this function and mlk = Milk according to the xml file
+    * then Milk will be returned
+    * 
+    * @param    string      $key    The key which a corresponding values is to be found
+    *         
+    * @return   string      Returns the string value corresponding to key according to the xml file or returns $key if on corresponding values is found
+    */
    private function convertKeyToValue($key) {
       //get the default language
       $defaultLangIndex = 0;
@@ -660,6 +720,13 @@ class Parser {
       }
    }
    
+   /**
+    * This function formats time that are in the form yyyy:MM:ddThh:mm:ss:ms+TZ into hh:mm:ss dd-MM-yyyy +TZ (GMT)
+    * 
+    * @param    string      $timeString     The time to be formated
+    * 
+    * @return   string      Returns the formated time if input time ($timeString) is of specified form or $timeString if not
+    */
    private function formatTime($timeString){
        //check if string is time
        if(preg_match("/([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\.([0-9]{3})(\+[0-9]{2})/i", $timeString) === 1){
@@ -673,6 +740,9 @@ class Parser {
        }
    }
    
+   /**
+    * This function parses the json string in post into a jsonObject/associative arry
+    */
    private function parseJson() {
       $this->logHandler->log(3, $this->TAG, 'parsing json string obtained from post');
       $jsonString = $_POST['jsonString'];
@@ -684,6 +754,13 @@ class Parser {
       }
    }
    
+   /**
+    * This function parses the xml file in the post request to obtain:
+    *   - The ODK language codes specified in the xml string
+    *   - The ODK instance id for the form being parsed
+    *   - The fields in the jsonObject in the post request that hold scanned barcodes and manually entered barcodes
+    *   - The string codes and their corresponding string values specified as part of the ODK UI
+    */
    private function loadXML() {
       $this->logHandler->log(3, $this->TAG, 'parsing xml obtained from post');
       //$this->xmlString = file_get_contents($this->ROOT . "animals.xml");
@@ -757,6 +834,11 @@ class Parser {
       $this->logHandler->log(4, $this->TAG, 'strings obtained from xml file are'.print_r($this->xmlValues,TRUE));
    }
    
+   /**
+    * This file sends a email to the requester with a link to the provided zip file for downloading
+    * 
+    * @param    string      $zipName        The name of the zip file whose url is to be sent
+    */
    private function sendZipURL($zipName) {
       $this->logHandler->log(3, $this->TAG, 'sending email to '.$_POST['email']);
       $url = "http://".$_SERVER['HTTP_HOST'].$this->rootDirURI.$zipName;
@@ -769,6 +851,13 @@ class Parser {
       shell_exec('echo "'.$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$emailSubject.'" -- '.$_POST['email']);
    }
    
+   /**
+    * This function returns the depth of an array
+    * 
+    * @param    array   $array     The array whose depth is to be determined
+    * 
+    * @return   int     The depth of the array     
+    */
   private function array_depth($array) {
        $max_depth = 1;
        
@@ -784,6 +873,12 @@ class Parser {
        return $max_depth;
    } 
    
+   /**
+    * This file determines if provided object is a jsonObject
+    * 
+    * @param    mixed       $json       The object to be determined if is json object
+    * @return   boolean     returns true if provided object is json object
+    */
    function isJson($json) {
       $keys = array_keys($json);
       if(sizeof($keys)>0){
