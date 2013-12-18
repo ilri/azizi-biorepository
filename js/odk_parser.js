@@ -68,7 +68,8 @@ Parse.prototype.sendToServer = function () {
          email: window.parse.email,
          fileName: window.parse.fileName,
          jsonString: window.parse.jsonText,
-         xmlString: window.parse.xmlText
+         xmlString: window.parse.xmlText,
+         parse_type: window.parse.parse_type
       }
    });
    alert("It may take some time to process the files you have provided. An email with the excel file will be sent to the email you have provided when the processing is done");
