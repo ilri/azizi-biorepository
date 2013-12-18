@@ -196,6 +196,8 @@ class Parser {
           }
       }
       
+      $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$mainSheetKey]);
+      
       //save the excel object
       $this->logHandler->log(3, $this->TAG, 'saving the excel file as '.$_POST['fileName'].'.xlsx');
       if(!file_exists($this->downloadDir)){
@@ -599,7 +601,7 @@ class Parser {
     * @param    string      $sheetName      The name of the sheet eg main_sheet
     */
    private function cleanSheet($sheetName){
-       $this->logHandler->log(3, $this->TAG, 'cleaning '.$sheetName);
+       $this->logHandler->log(3, $this->TAG, 'cleaning '.$sheetName.' sheet');
        $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$sheetName]);
        foreach($this->phpExcel->getActiveSheet()->getRowIterator() as $row){
            $rowIndex = $row->getRowIndex();
@@ -612,7 +614,7 @@ class Parser {
                $cellName = $columnName.$rowIndex;
                $cell = $this->phpExcel->getActiveSheet()->getCell($cellName);
                if(strlen($cell->getValue()) === 0){
-                   $this->logHandler->log(3, $this->TAG, 'cell '.$cellName.' in '.$sheetName.' is empty, inserting 0 into it');
+                   $this->logHandler->log(4, $this->TAG, 'cell '.$cellName.' in '.$sheetName.' is empty, inserting 0 into it');
                    //setting cell value to 0 if cell is blank
                    $this->phpExcel->getActiveSheet()->setCellValue($cellName, "0");
                }
