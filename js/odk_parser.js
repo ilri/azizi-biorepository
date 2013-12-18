@@ -30,6 +30,7 @@ Parse.prototype.readFile = function (file, output) {
      if(output === "json") {
         var jsonString = e.target.result;
         jsonString = jsonString.split("}{").join("},{");
+        jsonString = jsonString.split(/$/).join("");
         //jsonString = jsonString.replace(/(\r\n|\n|\r)/gm, ""); //remove all line breaks
         if(jsonString.indexOf("[") !== 0){
             //console.log("no opening and closing square brackets");

@@ -90,6 +90,10 @@ class Parser {
     */
    private $parseType;
    
+   /**
+    * @var string      ODK instance ID in the xml file 
+    */
+   
    public function __construct() {
       //load settings
       $this->loadSettings();
@@ -187,7 +191,8 @@ class Parser {
           
           if($codeIndex === 0){//is the first code, label all the language columns
               for ($i = 0; $i < $noLanguages; $i++){
-                  $dictionary->getActiveSheet()->setCellValue($lang[$i]."1", "Language".$i+1);
+                  $j = $i+1;
+                  $dictionary->getActiveSheet()->setCellValue($lang[$i]."1", "Language".$j);
                   $dictionary->getActiveSheet()->getStyle($lang[$i]."1")->getFont()->setBold(TRUE);
                   $dictionary->getActiveSheet()->getColumnDimension($lang[$i])->setAutoSize(true);
               }
