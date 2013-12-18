@@ -177,7 +177,8 @@ class Parser {
      
       $currMainSheetItem = 0; 
       foreach($this->jsonObject as $currentJsonObject) {
-         $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$currMainSheetItem.' of '.count($this->jsonObject));
+         $sensibleIndex = $currMainSheetItem +1;
+         $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$sensibleIndex.' of '.count($this->jsonObject));
          if($this->parseType === "viewing"){
              $this->createSheetRow($currentJsonObject, $mainSheetKey);
          }
@@ -584,132 +585,6 @@ class Parser {
       $this->nextRowName[$parentKey]++;
    }
    
-   
-   /**
-    * This function gets a url, determines if url is images, if so it downloads the image and returns the name of the image.
-    * 
-    * @param    string      $url        The url of the image.
-    * 
-    * @return   string      Returns the name of the image if $url contained image or $url if $url is not a url or if does not contain an image
-    */
-   private function downloadImage($url) {
-      $this->logHandler->log(3, $this->TAG, 'checking if '.$url.' is image before starting download');
-      
-      //only supported in PHP 5.4+
-      $contentType = get_headers($url, 1);
-      $contentType = $contentType["Content-Type"];
-      //echo 'content type is '.$contentType."<br/>";
-      $this->logHandler->log(4, $this->TAG, 'content type is '.$contentType);
-      if(strpos($contentType, 'image')!==NULL) {
-         if(!file_exists($this->imagesDir)) {
-            mkdir($this->imagesDir,0777,true);
-         }
-         //echo 'starting downloads'.$this->sessionID.'<br/>';
-         $this->logHandler->log(4, $this->TAG, 'starting downloads'.$this->sessionID);
-         $timestamp = round(microtime(true) * 1000);
-         $name = $timestamp.".".str_replace("image/", "", $contentType);
-         $img = $this->imagesDir.'/'.$name;
-         file_put_contents($img, file_get_contents($url));
-         return $name;
-      }
-      else {
-         return $url;
-      }
-   }
-   
-   /**
-    * This function gets a source director, zips everything in that directory and saves the zip as destination
-    * 
-    * @param    string      $source         Url of the directory to be zipped
-    * @param    string      $destination    Url of the destination zip file
-    * @param    boolean     $include_dir    Defaults to false. If set to true, the zip file will contain a folder corresponding to the source
-    * 
-    * @return   boolean     Returns true if zip was successfull
-    */
-   function zipParsedItems($source, $destination, $include_dir = false) {
-      $this->logHandler->log(3, $this->TAG, 'zipping all items in '.$source);
-      
-      if (!extension_loaded('zip') || !file_exists($source)) {
-         return false;
-      }
-
-      if (file_exists($destination)) {
-         unlink($destination);
-      }
-
-      $zip = new ZipArchive();
-      if (!$zip->open($destination, ZIPARCHIVE::CREATE)) {
-         return false;
-      }
-      $source = str_replace('\\', '/', realpath($source));
-
-      if (is_dir($source) === true) {
-
-         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source), RecursiveIteratorIterator::SELF_FIRST);
-
-         if ($include_dir) {
-
-            $arr = explode("/", $source);
-            $maindir = $arr[count($arr) - 1];
-
-            $source = "";
-            for ($i = 0; $i < count($arr) - 1; $i++) {
-               $source .= '/' . $arr[$i];
-            }
-
-            $source = substr($source, 1);
-
-            $zip->addEmptyDir($maindir);
-         }
-
-         foreach ($files as $file) {
-            $file = str_replace('\\', '/', $file);
-
-            // Ignore "." and ".." folders
-            if (in_array(substr($file, strrpos($file, '/') + 1), array('.', '..')))
-               continue;
-
-            $file = realpath($file);
-
-            if (is_dir($file) === true) {
-               $zip->addEmptyDir(str_replace($source . '/', '', $file . '/'));
-            } else if (is_file($file) === true) {
-               $zip->addFromString(str_replace($source . '/', '', $file), file_get_contents($file));
-            }
-         }
-      } else if (is_file($source) === true) {
-         $zip->addFromString(basename($source), file_get_contents($source));
-      }
-
-      return $zip->close();
-   }
-   
-   /**
-    * This function delets a directory recurssively
-    * 
-    * @param    string      $dirPath    Path to the directory
-    * 
-    * @throws InvalidArgumentException
-    */
-   public function deleteDir($dirPath) {
-      $this->logHandler->log(3, $this->TAG, 'deleting '.$dirPath);
-      if (!is_dir($dirPath)) {
-         throw new InvalidArgumentException("$dirPath must be a directory");
-      }
-      if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
-         $dirPath .= '/';
-      }
-      $files = glob($dirPath . '*', GLOB_MARK);
-      foreach ($files as $file) {
-         if (is_dir($file)) {
-            self::deleteDir($file);
-         } else {
-            unlink($file);
-         }
-      }
-      rmdir($dirPath);
-   }
-   
    /**
     * This function gets the string corresponding to a string code used in ODK eg if mlk is passed to this function and mlk = Milk according to the xml file
     * then Milk will be returned
@@ -728,7 +603,7 @@ class Parser {
       }
       
       //get the default language's string value of string code (key)
-      if(array_key_exists($key, $this->xmlValues)) {
+      if(!is_array($key) && array_key_exists($key, $this->xmlValues)) {
          return $this->xmlValues[$key][$defaultLangIndex];
       }
       else {
@@ -865,28 +740,6 @@ class Parser {
       //mail($_POST['email'], $emailSubject, $message, $headers);
       
       shell_exec('echo "'.$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$emailSubject.'" -- '.$_POST['email']);
-   }
-   
-   /**
-    * This function returns the depth of an array
-    * 
-    * @param    array   $array     The array whose depth is to be determined
-    * 
-    * @return   int     The depth of the array     
-    */
-  private function array_depth($array) {
-       $max_depth = 1;
-       
-       foreach ($array as $value) {
-           if (is_array($value)) {
-               $depth = $this->array_depth($value) + 1;
-
-               if ($depth > $max_depth) {
-                   $max_depth = $depth;
-               }
-           }
-       }
-       return $max_depth;
    } 
    
    /**
