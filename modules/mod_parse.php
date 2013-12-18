@@ -266,7 +266,7 @@ class Parser {
    }
    
    private function createSheetRow($jsonObject, $parentKey, $parentCellName = NULL, $rowIndex = -1) {
-      $this->logHandler->log(3, $this->TAG, 'creating a new sheet row in '.$parentKey);
+      $this->logHandler->log(4, $this->TAG, 'creating a new sheet row in '.$parentKey);
       //check if sheet for parent key exists
       $sheetArrayKeys = array_keys($this->sheetIndexes);
       $isNewSheet = FALSE;
