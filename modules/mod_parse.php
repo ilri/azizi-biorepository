@@ -519,7 +519,7 @@ class Parser {
                      
                      //check if elements of values[index] are valid json objects
                      $testChild = $values[$index][0];
-                     if ($this->isJson($testChild) === TRUE) {
+                     if ($this->gTasks->isJson($testChild) === TRUE) {
                         $this->phpExcel->getActiveSheet()->setCellValue($cellName, "Check " . $keys[$index] . " sheet");
                         foreach ($values[$index] as $childJsonObject) {
                            
@@ -740,22 +740,6 @@ class Parser {
       //mail($_POST['email'], $emailSubject, $message, $headers);
       
       shell_exec('echo "'.$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$emailSubject.'" -- '.$_POST['email']);
-   } 
-   
-   /**
-    * This file determines if provided object is a jsonObject
-    * 
-    * @param    mixed       $json       The object to be determined if is json object
-    * @return   boolean     returns true if provided object is json object
-    */
-   function isJson($json) {
-      $keys = array_keys($json);
-      if(sizeof($keys)>0){
-         return TRUE;
-      }
-      else{
-         return FALSE;
-      }
    }
     
 }
