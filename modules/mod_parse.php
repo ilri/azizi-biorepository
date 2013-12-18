@@ -164,6 +164,46 @@ class Parser {
       $objWriter = new PHPExcel_Writer_Excel2007($this->phpExcel);
       $objWriter->save($this->downloadDir.'/'.$_POST['fileName'].'.xlsx');
       
+      //create dictionary and save in download dir
+      $dictionary = new PHPExcel();
+      $dictionary->getProperties()->setCreator($_POST['creator']);
+      $dictionary->getProperties()->setLastModifiedBy($_POST['creator']);
+      $dictionary->getProperties()->setTitle("dictionary");
+      $dictionary->getProperties()->setSubject("Created using ODK Parser");
+      $dictionary->getProperties()->setDescription("This Excel file has been generated using ODK Parser that utilizes the PHPExcel library on PHP. ODK Parse was created by Jason Rogena (j.rogena@cgiar.org)");
+      
+      $dictionary->setActiveSheetIndex(0);
+      $dictionary->getActiveSheet()->setTitle("dictionary");
+      $dictionary->getActiveSheet()->setCellValue("A1", "Code");
+      $dictionary->getActiveSheet()->getStyle("A1")->getFont()->setBold(TRUE);
+      $dictionary->getActiveSheet()->getColumnDimension("A")->setAutoSize(true);
+      $lang = array("B","C","D","E","F","G","H","I","J","K","L","M","N","O","P");
+      $codeIndex = 0;
+      $allCodes = array_keys($this->xmlValues);
+      foreach ($this->xmlValues as $currCode){
+          //get number of languages
+          $noLanguages = sizeof($currCode);
+          
+          if($codeIndex === 0){//is the first code, label all the language columns
+              for ($i = 0; $i < $noLanguages; $i++){
+                  $dictionary->getActiveSheet()->setCellValue($lang[$i]."1", "Language".$i+1);
+                  $dictionary->getActiveSheet()->getStyle($lang[$i]."1")->getFont()->setBold(TRUE);
+                  $dictionary->getActiveSheet()->getColumnDimension($lang[$i])->setAutoSize(true);
+              }
+          }
+          
+          $dictionary->getActiveSheet()->setCellValue("A".$rowID, $allCodes[$codeIndex]);
+          
+          for($i = 0; $i < $noLanguages; $i++){
+              $rowID = $codeIndex +2;
+              $dictionary->getActiveSheet()->setCellValue($lang[$i].$rowID, $currCode[$i]);
+          }
+          $codeIndex++;
+      }
+      
+      $dicObjWriter = new PHPExcel_Writer_Excel2007($dictionary);
+      $dicObjWriter->save($this->downloadDir.'/dictionary.xlsx');
+      
       //zip parsed files
       $zipName = 'download/'.$this->sessionID.'.zip';
       $this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
@@ -563,8 +603,9 @@ class Parser {
    }
    
    private function convertKeyToValue($key) {
+      
       if(array_key_exists($key, $this->xmlValues)) {
-         return $this->xmlValues[$key];
+         return $this->xmlValues[$key][0]; // returns the first value corresponding to key
       }
       else {
          return $key;
@@ -586,34 +627,26 @@ class Parser {
       $this->logHandler->log(3, $this->TAG, 'parsing xml obtained from post');
       //$this->xmlString = file_get_contents($this->ROOT . "animals.xml");
       $this->xmlString = $_POST['xmlString'];
-      $subStrings = array();
-      $count = 0;
-      while (1 == 1) {
-         $pref = strpos($this->xmlString, "<text");
-         $suf = strpos($this->xmlString, "</text>") + 7;
-         if ($pref !== FALSE && $suf !== FALSE) {
-            $subStrings[$count] = substr($this->xmlString, $pref, ($suf - $pref));
-            $this->xmlString = substr_replace($this->xmlString, "", $pref, ($suf - $pref));
-            //get the id
-            $idPref = strpos($subStrings[$count], "id=");
-            $idSuf = strpos($subStrings[$count], "><value>");
-            $id = substr($subStrings[$count], $idPref + 4, ($idSuf - $idPref) - 5);
-
-            //get the value
-            $valuePref = strpos($subStrings[$count], "<value>");
-            $valueSuf = strpos($subStrings[$count], "</value>");
-            $value = substr($subStrings[$count], $valuePref + 7, ($valueSuf - $valuePref) - 7);
-            
-            $value = str_replace("&lt;", "<", $value);
-            $value = str_replace("&gt;", ">", $value);
-            
-            $this->xmlValues[$id] = $value;
-            $count++;
-         } 
-         else {
-            break;
+      
+      //get all the codes
+      $matches = array();
+      preg_match_all("/\s+?<text\s+id=[\"'](.+)[\"']\s*>\s*<value>.+<\/value>\s*<\/text>/", $this->xmlString, $matches);
+      
+      //add all unique codes found into new array
+      $codes = array();
+      foreach ($matches[1] as $currCode) {
+         if(!in_array($currCode, $codes)){
+            array_push($codes, $currCode);
          }
       }
+      
+      $this->xmlValues = array();
+      //get all values for each unique code
+      foreach ($codes as $currCode){
+          preg_match_all("/\s+?<text\s+id=[\"']".$currCode."[\"']\s*>\s*<value>(.+)<\/value>\s*<\/text>/", $this->xmlString, $matches);
+          $this->xmlValues[$currCode] = $matches[1];
+      }
+      
       //print_r($this->xmlValues);
       $this->logHandler->log(4, $this->TAG, 'strings obtained from xml file are'.print_r($this->xmlValues,TRUE));
    }
