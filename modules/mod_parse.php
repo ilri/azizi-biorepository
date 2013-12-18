@@ -95,6 +95,10 @@ class Parser {
     */
    private $languageCodes;
    
+   /**
+    * @var string     ODK instance id obtained from xml file
+    */
+   
    public function __construct() {
       //load settings
       $this->loadSettings();
@@ -612,7 +616,7 @@ class Parser {
       //get the default language
       $defaultLangIndex = 0;
       for($i = 0; $i < sizeof($this->languageCodes); $i++){
-          if($this->languageCodes[$i] === "eng"){
+          if(preg_match("/eng.*/i", $this->languageCodes[$i]) === 1){ //preg_match returns 1 if pattern matches and 0 if it doesnt
               $defaultLangIndex = $i;
           }
       }
