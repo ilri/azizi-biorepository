@@ -150,7 +150,8 @@ class Parser {
       $this->loadXML();
 
       include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
-      $jsonWidth = $this->array_depth($this->jsonObject);
+      //$jsonWidth = $this->array_depth($this->jsonObject);
+      $jsonWidth = $this->gTasks->getArrayDepth($this->jsonObject);
       $this->logHandler->log(3, $this->TAG, 'Width of json is '.$jsonWidth);
       $this->logHandler->log(3, $this->TAG, 'Length of json is '.count($this->jsonObject));
 
@@ -237,8 +238,12 @@ class Parser {
       
       //zip parsed files
       $zipName = 'download/'.$this->sessionID.'.zip';
-      $this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
-      $this->deleteDir($this->downloadDir);
+      //$this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
+      $this->logHandler->log(3, $this->TAG, 'zipping output files into '.$zipName);
+      $this->gTasks->zipDir($this->downloadDir, $this->ROOT.$zipName);
+      //$this->deleteDir($this->downloadDir);
+      $this->logHandler->log(3, $this->TAG, 'deleting temporary dir '.$this->downloadDir);
+      $this->gTasks->deleteDir($this->downloadDir);
       
       //send zip file to specified email
       $this->sendZipURL($zipName);
@@ -487,6 +492,7 @@ class Parser {
                   
                   if(filter_var($values[$index], FILTER_VALIDATE_URL)) {
                      //$values[$index] = $this->downloadImage($values[$index]);
+                     $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
                      $values[$index] = $this->gTasks->downloadImage($values[$index], $this->imagesDir);
                   }
                   
