@@ -10,6 +10,7 @@ function Parse() {
    this.name = $("#name").val();
    this.email = $("#email").val();
    this.fileName = $("#file_name").val();
+   this.parseType = $("#parseType").val();
    
    if(this.validateInput()) {
       var jsonFile = document.getElementById("json_file").files[0];
