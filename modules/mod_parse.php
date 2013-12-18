@@ -331,7 +331,7 @@ class Parser {
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
               }
               $cellName = $columnName . $rowName;
-              $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->odkInstance.$rowIndex); //instance of the ODK file plus the id of the row eg dgea1
+              $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->odkInstance."_".$rowIndex); //instance of the ODK file plus the id of the row eg dgea2_1
               $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
           }else {
             //echo 'column name for Parent_Cell not found<br/>';
@@ -445,12 +445,8 @@ class Parser {
                      if ($this->isJson($testChild) === TRUE) {
                         $this->phpExcel->getActiveSheet()->setCellValue($cellName, "Check " . $keys[$index] . " sheet");
                         foreach ($values[$index] as $childJsonObject) {
-                           if($this->parseType === "viewing"){
-                               $this->createSheetRow($childJsonObject, $keys[$index], $parentKey . " (" . $cellName . ")");
-                           }
-                           else{
-                               $this->createSheetRow($childJsonObject, $keys[$index], $rowName);
-                           }
+                           
+                           $this->createSheetRow($childJsonObject, $keys[$index], $this->odkInstance."_".$rowName);//NOTE that this is wher the createSheetRow function calls itself
                         }
                      }
                      else{//means that the array contains multiple select values
