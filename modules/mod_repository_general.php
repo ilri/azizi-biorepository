@@ -248,6 +248,7 @@ class Repository extends DBase{
             echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
          }
          else if($currentModuleName === "ln2_transfers" && in_array($_SESSION['username'], Config::$ln2_transfer_engineers)){
+             $_SESSION['user_type'] = "LN2 Engineers";
              echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
          }
       }
