@@ -166,6 +166,9 @@ class Ln2Requests extends Repository{
             if($res === 0) {
                $message = "Unable to add the last request. Try again later";
             }
+            else{
+                $this->sendRequestEmail($ldapName, $_POST['amount']);
+            }
          }
          else {
             $message = "Unable to add the last request. Requests can only be made by valid ILRI Users";
@@ -378,7 +381,7 @@ class Ln2Requests extends Repository{
             unlink("./generated_pages/" . $pageName);
             //copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
             //unlink("/tmp/".$hash.".pdf");
-            $this->sendEmail("'/tmp/" . $pdfName . ".pdf'", $email, $date, $name);
+            $this->sendApprovalEmail("'/tmp/" . $pdfName . ".pdf'", $email, $date, $name);
          }
 
       }
@@ -392,7 +395,7 @@ class Ln2Requests extends Repository{
     * @param   string   $date       The date the requisition waas made
     * @param   string   $name       Name of the reciever
     */
-   private function sendEmail($pdfURL, $reciever, $date, $name) {
+   private function sendApprovalEmail($pdfURL, $reciever, $date, $name) {
       //$reciever = $this->getEmailAddress($ldapUser);
       $cc = Config::$managerEmail;
       $subject = "Invoice for Nitrogen requested on ".$date;
@@ -400,6 +403,13 @@ class Ln2Requests extends Repository{
       shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
       //shell_exec('echo "'.$message.'"|mailx -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -r '.Config::$repositoryMailAdd.' '.$reciever);
       unlink($pdfURL);
+   }
+   
+   private function sendRequestEmail($requester, $amount){
+       $reciever = Config::$managerEmail;
+       $subject = "Nitrogen request from ".$requester;
+       $message = $requester." sent a request out for ".$amount." Kg(s) of Nitrogen on ".date('d/m/Y h:i:s a', time())." Please approve it";
+       shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$reciever);
    }
 
    /**
