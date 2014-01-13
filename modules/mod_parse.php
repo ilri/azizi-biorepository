@@ -292,26 +292,9 @@ class Parser {
     * @return   string     returns an excel column name/id eg AA AB etc
     */
    private function getColumnName($parentKey, $key){//a maximum of 676 (26*26) columns
-      //$this->logHandler->log(3, $this->TAG, 'getting column name corresponding to '.$key);
-      $columnNames = array("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z");
-      $indexOfKey = array_search($key, $this->allColumnNames[$parentKey]);
-      $x = intval($indexOfKey/26) -1;
-      $y = fmod($indexOfKey, 26);
-      $z = fmod($indexOfKey, 26*26);
-      
-      $columnName = "";
-      if($x>=0){
-         $columnName = $columnNames[$x];
-      }
-      if($y<26){
-         $columnName = $columnName.$columnNames[$y];
-         //echo 'returned from getcolumn name '.$columnName.'<br/>';
-         $this->logHandler->log(4, $this->TAG, 'returned from getcolumn name '.$columnName);
-         return $columnName;
-      }
-      if($z<26){
-          $columnName = $columnName.$columnNames[$z];
-      }
+     $indexOfKey = array_search($key, $this->allColumnNames[$parentKey]);
+     include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
+     return PHPExcel_Cell::stringFromColumnIndex($indexOfKey);
       
    }
    
