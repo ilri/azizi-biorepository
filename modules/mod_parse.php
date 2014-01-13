@@ -318,7 +318,7 @@ class Parser {
     * @param    assoc-array     $jsonObject         The jsonObject with which you want to generate the excel sheet row     
     * @param    string          $parentKey          The name of the sheet in which you want to create the row eg main_sheet
     * @param    string          $parentCellName     Defaults to NULL. If specified, this is the id of the parent row in cases where the provided jsonObject is an instance in a repeat
-    * @param    int             $rowIndex           Defaults to NULL. If specified, this is the index of the jsonObject in its parent jsonArray. "Primary ID" column is filled with respective value if specified
+    * @param    int             $rowIndex           Defaults to NULL. If specified, this is the index of the jsonObject in its parent jsonArray. "primary_key" column is filled with respective value if specified
     */
    private function createSheetRow($jsonObject, $parentKey, $parentCellName = NULL, $rowIndex = -1) {
       $this->logHandler->log(4, $this->TAG, 'creating a new sheet row in '.$parentKey);
@@ -368,17 +368,17 @@ class Parser {
       $rowName = $this->nextRowName[$parentKey];
       $this->logHandler->log(4, $this->TAG, 'row name is '.$rowName);
       
-      //set Primary_ID as first cell in row if required
+      //set primary_key as first cell in row if required
       if($rowIndex !== -1){
-          if(!in_array("Primary_ID", $this->allColumnNames[$parentKey])){
-              $this->logHandler->log(4, $this->TAG, 'pushing Primary_ID to allColumnNames array for ' . $parentKey);
-              array_push($this->allColumnNames[$parentKey], "Primary_ID");
+          if(!in_array("primary_key", $this->allColumnNames[$parentKey])){
+              $this->logHandler->log(4, $this->TAG, 'pushing primary_key to allColumnNames array for ' . $parentKey);
+              array_push($this->allColumnNames[$parentKey], "primary_key");
           }
           
-          $columnName = $this->getColumnName($parentKey, "Primary_ID");
+          $columnName = $this->getColumnName($parentKey, "primary_key");
           if($columnName !== FALSE){
               if($isNewSheet === TRUE){
-                  $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", "Primary ID");
+                  $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", "primary_key");
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
               }
               $cellName = $columnName . $rowName;
@@ -386,22 +386,22 @@ class Parser {
               $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
           }else {
             //echo 'column name for Parent_Cell not found<br/>';
-            $this->logHandler->log(2, $this->TAG, 'column name for Primary_ID not found '.print_r($this->allColumnNames[$parentKey],TRUE));
+            $this->logHandler->log(2, $this->TAG, 'column name for primary_key not found '.print_r($this->allColumnNames[$parentKey],TRUE));
             //print_r($this->allColumnNames[$parentCellName]);
          }
       }
       
       //set name of parent cell as first/second cell in row if is set
       if ($parentCellName != NULL) {
-         if (!in_array("Parent_Cell", $this->allColumnNames[$parentKey])) {
-            $this->logHandler->log(4, $this->TAG, 'pushing Parent_Cell to allColumnNames array for ' . $parentKey);
-            array_push($this->allColumnNames[$parentKey], "Parent_Cell");
+         if (!in_array("secondary_key", $this->allColumnNames[$parentKey])) {
+            $this->logHandler->log(4, $this->TAG, 'pushing secondary_key to allColumnNames array for ' . $parentKey);
+            array_push($this->allColumnNames[$parentKey], "secondary_key");
             //$this->allColumnNames[$parentKey][sizeof($this->allColumnNames[$parentKey])]="Parent_Cell";
          }
-         $columnName = $this->getColumnName($parentKey, "Parent_Cell");
+         $columnName = $this->getColumnName($parentKey, "secondary_key");
          if ($columnName !== FALSE) {//safe to continue
             if($isNewSheet === TRUE){
-               $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", "Parent cell");
+               $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", "secondary_key");
                $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
             }
             $cellName = $columnName . $rowName;
@@ -409,7 +409,7 @@ class Parser {
             $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
             //$this->phpExcel->getActiveSheet()->getStyle($cellName)->getAlignment()->setWrapText(true);
          } else {
-            $this->logHandler->log(2, $this->TAG, 'column name for Parent_Cell not found '.print_r($this->allColumnNames[$parentKey],TRUE));
+            $this->logHandler->log(2, $this->TAG, 'column name for secondary_key not found '.print_r($this->allColumnNames[$parentKey],TRUE));
             //print_r($this->allColumnNames[$parentCellName]);
          }
       }
