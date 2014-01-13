@@ -179,12 +179,7 @@ class Parser {
       foreach($this->jsonObject as $currentJsonObject) {
          $sensibleIndex = $currMainSheetItem +1;
          $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$sensibleIndex.' of '.count($this->jsonObject));
-         if($this->parseType === "viewing"){
-             $this->createSheetRow($currentJsonObject, $mainSheetKey);
-         }
-         else{
-             $this->createSheetRow($currentJsonObject, $mainSheetKey, NULL, $currMainSheetItem);
-         }
+         $this->createSheetRow($currentJsonObject, $mainSheetKey, NULL, $currMainSheetItem);
          $currMainSheetItem++;
       }
       
