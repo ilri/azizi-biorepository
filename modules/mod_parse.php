@@ -114,6 +114,11 @@ class Parser {
     * @var object     Object containing general functions 
     */
    private $gTasks;
+
+   /**
+    * @var string     Wheter images should be downloaded from their respective urls. Can either be 'yes' or 'no'
+    */
+   private $dwnldImages;
    
    public function __construct() {
       //load settings
@@ -141,6 +146,7 @@ class Parser {
       $this->imagesDir = $this->ROOT.'download/'.$this->sessionID.'/images';
       $this->downloadDir = $this->ROOT.'download/'.$this->sessionID;
       $this->xmlValues = array();
+      $this->dwnldImages = $_POST['dwnldImages'];
       
       //$this->rootDirURI = "/~jason/ilri/ODKParser/";
       $this->rootDirURI = $this->settings['root_uri'];
@@ -479,7 +485,7 @@ class Parser {
                       }
                   }
                   
-                  if(filter_var($values[$index], FILTER_VALIDATE_URL)) {
+                  if(filter_var($values[$index], FILTER_VALIDATE_URL) && $this->dwnldImages === "yes") {
                      //$values[$index] = $this->downloadImage($values[$index]);
                      $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
                      $values[$index] = $this->gTasks->downloadImage($values[$index], $this->imagesDir);

@@ -11,6 +11,7 @@ function Parse() {
    this.email = $("#email").val();
    this.fileName = $("#file_name").val();
    this.parseType = $("#parseType").val();
+   this.dwnldImages = $("#dwnldImages").val();
    
    if(this.validateInput()) {
       var jsonFile = document.getElementById("json_file").files[0];
@@ -70,7 +71,8 @@ Parse.prototype.sendToServer = function () {
          fileName: window.parse.fileName,
          jsonString: window.parse.jsonText,
          xmlString: window.parse.xmlText,
-         parseType: window.parse.parseType
+         parseType: window.parse.parseType,
+         dwnldImages: window.parse.dwnldImages
       }
    });
    alert("It may take some time to process the files you have provided. An email with the excel file will be sent to the email you have provided when the processing is done");

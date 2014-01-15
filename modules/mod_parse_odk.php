@@ -39,6 +39,12 @@ class ParseODK extends Repository{
                     <option value="analysis">Analysis</option>
                 </select>
             </td></tr>
+            <tr><td>Download Images</td><td>
+               <select name="dwnldImages" id="dwnldImages">
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+               </select>
+            </td></tr>
             <tr><td>JSON File</td><td><input id="json_file" name="json_file" type="file"/></td></tr>
             <tr><td>XML File</td><td><input id="xml_file" name="xml_file" type="file"/></td></tr>
             <tr><td colspan="2" style="text-align: right;"><button id="generate_b" name="generate_b" onclick="return false;" class="btn-primary">Generate</button></td></tr>
