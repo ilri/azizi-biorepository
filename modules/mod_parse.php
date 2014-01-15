@@ -517,7 +517,7 @@ class Parser {
                         $this->phpExcel->getActiveSheet()->setCellValue($cellName, "Check " . $keys[$index] . " sheet");
                         foreach ($values[$index] as $childJsonObject) {
                            
-                            $this->createSheetRow($childJsonObject, $keys[$index], $this->odkInstance."_".$rowName);//NOTE that this is wher the createSheetRow function calls itself
+                            $this->createSheetRow($childJsonObject, $keys[$index], $this->odkInstance."_".$rowIndex);//NOTE that this is wher the createSheetRow function calls itself
                            
                         }
                      }
