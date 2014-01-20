@@ -120,6 +120,56 @@ class Parser {
     */
    private $dwnldImages;
    
+   /**
+    * @var array      Multidimensional array that holds all the cells in the CSV in the form $cells[row][column]. Values of the first row are considered headings
+    */
+   private $cells;
+   
+   /**
+    * @var string     Name of the file caching the authentication cookies from the ODK aggregate server
+    */
+   private $authCookies;
+   
+   /**
+    * @var array      Multidimensional array with sheets and the headings in those sheets. Headings are the first row of the CSV
+    *                 Used only when parsing CSV
+    */
+   private $sheets;
+   
+   /**
+    * @var string     prefix to be used when Parsing CSV when comparing keys in xml file with those in the CSV
+    */
+   private $idPrefix;
+   
+   /**
+    * @var array      Array of all select input IDs obtained from the xml file 
+    */
+   private $selectIDs;
+   
+   /**
+    *
+    * @var string     The aggregate username to be used when Authenticating against the Aggregate server when fetching content from there
+    */
+   private $aUsername;
+   
+   /**
+    *
+    * @var string     The aggregate password to be used when Authenticating against the Aggregate server when fetching content from there
+    */
+   private $aPassword;
+   
+   /**
+    *
+    * @var string     User agent cURL will pretend to be during authentication against aggregate server
+    */
+   private $userAgent;
+   
+   /**
+    *
+    * @var string     URL through which authentication on the aggregate server will be done
+    */
+   private $authURL;
+   
    public function __construct() {
       //load settings
       $this->loadSettings();
@@ -148,46 +198,94 @@ class Parser {
       $this->xmlValues = array();
       $this->dwnldImages = $_POST['dwnldImages'];
       
+      $this->cells = array();
+      $this->authCookies = $this->ROOT."download/AUTH".mt_rand();
+      $this->sheets = array();
+      $this->idPrefix = "";
+      $this->selectIDs = array();
+      $this->authURL = "http://hpc.ilri.cgiar.org/aggregate/local_login.html?redirect=";
+      
       //$this->rootDirURI = "/~jason/ilri/ODKParser/";
       $this->rootDirURI = $this->settings['root_uri'];
       
-      //parse json String
-      $this->parseJson();
       $this->loadXML();
-
       include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
-      //$jsonWidth = $this->array_depth($this->jsonObject);
-      $jsonWidth = $this->gTasks->getArrayDepth($this->jsonObject);
-      $this->logHandler->log(3, $this->TAG, 'Width of json is '.$jsonWidth);
-      $this->logHandler->log(3, $this->TAG, 'Length of json is '.count($this->jsonObject));
-
-      $jsonComplexity = count($this->jsonObject) * $jsonWidth;
-      if($jsonComplexity > 500) {
-         $this->logHandler->log(3, $this->TAG, 'Json appears to be complex ('.$jsonComplexity.'), excel sheet cells will be cached on disk');
-         if(!file_exists($this->ROOT.'tmp')){
-            mkdir($this->ROOT.'tmp', 0777, true);
-         }
-         $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_discISAM;
-         $cacheSettings = array( 'dir' => $this->ROOT.'tmp');
-         PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings); 
-      }
-      else{
-         $this->logHandler->log(3, $this->TAG, 'Json is not complex ('.$jsonComplexity.'), excel sheets will not be cached on disk');
-      }
-            
-      $this->phpExcel = new PHPExcel();
-      $this->setExcelMetaData();
       
-      //process all responses
       $mainSheetKey = "main_sheet";
-     
-      $currMainSheetItem = 0; 
-      foreach($this->jsonObject as $currentJsonObject) {
-         $sensibleIndex = $currMainSheetItem +1;
-         $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$sensibleIndex.' of '.count($this->jsonObject));
-         $this->createSheetRow($currentJsonObject, $mainSheetKey, NULL, $currMainSheetItem);
-         $currMainSheetItem++;
+      
+      if(isset($_POST['jsonString']) && strlen($_POST['jsonString']) > 0){
+          $this->logHandler->log(3, $this->TAG, 'Input is json. Parsing it as such');
+          
+          $this->parseJson();
+          $jsonWidth = $this->gTasks->getArrayDepth($this->jsonObject);
+          $this->logHandler->log(3, $this->TAG, 'Width of json is '.$jsonWidth);
+          $this->logHandler->log(3, $this->TAG, 'Length of json is '.count($this->jsonObject));
+          
+          $jsonComplexity = count($this->jsonObject) * $jsonWidth;
+          
+          
+          if($jsonComplexity > 500) {
+              $this->logHandler->log(3, $this->TAG, 'Json appears to be complex ('.$jsonComplexity.'), excel sheet cells will be cached on disk');
+              if(!file_exists($this->ROOT.'tmp')){
+                  mkdir($this->ROOT.'tmp', 0777, true);    
+              }
+              $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_discISAM;
+              $cacheSettings = array( 'dir' => $this->ROOT.'tmp');
+              PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings);
+              
+          }
+          else{
+              $this->logHandler->log(3, $this->TAG, 'Json is not complex ('.$jsonComplexity.'), excel sheets will not be cached on disk');
+          }
+          
+          $this->phpExcel = new PHPExcel();
+          $this->setExcelMetaData();
+          
+          $currMainSheetItem = 0;
+          foreach($this->jsonObject as $currentJsonObject) {
+              $sensibleIndex = $currMainSheetItem +1;
+              $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$sensibleIndex.' of '.count($this->jsonObject));
+              $this->createSheetRow($currentJsonObject, $mainSheetKey, NULL, $currMainSheetItem);
+              $currMainSheetItem++;
+          }
+      
       }
+      else if(isset($_POST['csvString']) && strlen($_POST['csvString']) > 0){
+          $this->logHandler->log(3, $this->TAG, 'Input is csv. Parsing it as such');
+          
+          $this->aUsername = $this->settings['aggregate_user'];
+          $this->aPassword = $this->settings['aggregate_pass'];
+          $this->userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0";
+          
+          $this->parseCSV();
+          
+          $this->phpExcel = new PHPExcel();
+          $this->setExcelMetaData();
+          
+          //replace all : in headings with -
+          for($i=0; $i<sizeof($this->cells[0]); $i++){
+              $this->cells[0][$i] = str_replace(":", "-", $this->cells[0][$i]);
+          }
+          
+          $rowIndex = 0;
+          while($rowIndex < sizeof($this->cells)){
+              if(is_array($this->cells[$rowIndex])){
+                  $readableRIndex = $rowIndex+1;
+                  $this->logHandler->log(3, $this->TAG, 'At '.$readableRIndex." of ".sizeof($this->cells));
+                  $this->logHandler->log(3, $this->TAG, 'Current CSV row has '.sizeof($this->cells[$rowIndex])." columns");
+                  $columnIndex = 0;
+                  
+                  while($columnIndex < sizeof($this->cells[$rowIndex])){
+                      $this->insertCSVCell($this->cells[$rowIndex][$columnIndex], $rowIndex, $this->cells[0][$columnIndex], $mainSheetKey);
+                      $columnIndex++;
+                  }    
+              }
+              $rowIndex++;
+         }
+
+         unlink($this->authCookies);
+      }
+      
       
       //clean all sheets
       if($this->parseType !== "viewing"){
@@ -289,14 +387,18 @@ class Parser {
     * 
     * @param    string     $parentKey     The name of the excel sheet e.g main_sheet to be referenced agains 
     * @param    string     $key           The title of column in the excel sheet. Note that column titles in the excel sheet correspond to keys in a json object
+    * @param    integer    $index         Index of $key in parent sheet if already known. Defaults to -1
     * 
     * @return   string     returns an excel column name/id eg AA AB etc
     */
-   private function getColumnName($parentKey, $key){//a maximum of 676 (26*26) columns
-     $indexOfKey = array_search($key, $this->allColumnNames[$parentKey]);
-     include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
-     return PHPExcel_Cell::stringFromColumnIndex($indexOfKey);
-      
+   private function getColumnName($parentKey, $key, $index = -1){//a maximum of 676 (26*26) columns
+     if($index === -1){
+         $indexOfKey = array_search($key, $this->allColumnNames[$parentKey]);
+         return PHPExcel_Cell::stringFromColumnIndex($indexOfKey);
+     }
+     else{
+         return PHPExcel_Cell::stringFromColumnIndex($index);
+     }
    }
    
    /**
@@ -481,7 +583,7 @@ class Parser {
                           //set value of cell corresponding to scanned barcode to values[index]
                           $scannedBCCellName = $scannedBCColumnName.$rowName;
                           $this->phpExcel->getActiveSheet()->setCellValue($scannedBCCellName, $values[$index]);
-                          $values[$index] = "NULL";
+                          $values[$index] = "null";
                       }
                   }
                   
@@ -494,7 +596,7 @@ class Parser {
                   $values[$index] = $this->formatTime($values[$index]);//format values[index] if it is time
                   
                   if(strlen($values[$index]) === 0) {
-                     $values[$index] = "NULL";
+                     $values[$index] = "null";
                   }
                   
                   //if output data is meant for easy viewing, convert values[index] to its respective string (parsed from xml file) else just save the code as is
@@ -531,7 +633,7 @@ class Parser {
                             $this->phpExcel->getActiveSheet()->setCellValue($cellName, $commaSeparatedString);
                         }
                         else{
-                            $this->phpExcel->getActiveSheet()->setCellValue($cellName, "NULL");
+                            $this->phpExcel->getActiveSheet()->setCellValue($cellName, "null");
                             foreach($values[$index] as $childString){
                                 $columnExisted = TRUE;
                                 $newKey = $keys[$index]."-".$childString;
@@ -559,7 +661,7 @@ class Parser {
                   else {
                      //echo 'value of '.$keys[$index].' is an array but is empty<br/>';
                      $this->logHandler->log(2, $this->TAG, 'value of '.$keys[$index].' is an array but is empty');
-                     $this->phpExcel->getActiveSheet()->setCellValue($cellName, "NULL");
+                     $this->phpExcel->getActiveSheet()->setCellValue($cellName, "null");
                   }
                }
                //$this->phpExcel->getActiveSheet()->getStyle($cellName)->getAlignment()->setWrapText(true);
@@ -579,7 +681,224 @@ class Parser {
       $this->nextRowName[$parentKey]++;
    }
    
-   /**
+   private function insertCSVCell($cellString, $rowIndex, $columnHeading, $parentSheetName){
+       $sheetNames = array_keys($this->sheets);
+
+        if (!in_array($parentSheetName, $sheetNames)) {
+            $this->sheets[$parentSheetName] = array();
+            $this->logHandler->log(4, $this->TAG, "First time encountering " . $parentSheetName);
+            if (sizeof($sheetNames) > 0) {
+                $this->phpExcel->createSheet();
+            }
+            $this->sheetIndexes[$parentSheetName] = sizeof($sheetNames);
+
+            $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentSheetName]);
+            $this->phpExcel->getActiveSheet()->setTitle($parentSheetName);
+        } else {
+            $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentSheetName]);
+        }
+
+        if (!in_array($columnHeading, $this->sheets[$parentSheetName])) {
+            array_push($this->sheets[$parentSheetName], $columnHeading);
+        }
+        $columnIndex = array_search($columnHeading, $this->sheets[$parentSheetName]);
+
+        //check if string is non image url
+        $rowID = $rowIndex + 1;
+        $cellID = $this->getColumnName(NULL, NULL, $columnIndex) . $rowID;
+        if (filter_var($cellString, FILTER_VALIDATE_URL) && $this->isImage($cellString) === FALSE) {
+            $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $this->cells[0][$columnIndex] . " sheet");
+            $this->parseHTMLTable($cellString, $this->cells[0][$columnIndex], $rowIndex);
+        }
+        else if($this->isImage($cellString) && $this->dwnldImages === "yes"){ //is image
+            $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
+            $cellString = $this->gTasks->downloadImage($cellString, $this->imagesDir);
+        }
+        else {
+            if (!in_array("-" . $this->idPrefix . "-" . $columnHeading, $this->selectIDs)) {//not a multiple select question         
+        
+                //check if value is a barcode
+                if(strlen($cellString) > 0 && in_array($this->getAltHeadingName($columnHeading), $this->manualBCs) && $this->parseType !== "viewing" && $rowIndex!==0){
+                    //is a barcode that was entered manually, now get index of the key in manualBCs array
+                    $barcodeIndex = array_search($this->getAltHeadingName($columnHeading), $this->manualBCs, TRUE);
+                      
+                    //get key for scanned barcode field corresponding to manual barcode field
+                    $scannedBCKey = $this->scannedBCs[$barcodeIndex];
+                    
+                    //since $scannedBCKey is not the full key rather just the last part
+                    $headings = $this->sheets[$parentSheetName];
+                    $scannedBCColumnName = FALSE;
+                    for($i = 0; $i<sizeof($headings); $i++){
+                        if(strpos($headings[$i], $scannedBCKey) !== FALSE){//$scannedBCKey is in $headings[$i]
+                            $scannedBCColumnName = $this->getColumnName(NULL, NULL, $i);
+                            break;
+                        }
+                    }
+                      
+                    //get sheet column name corresponding to scannedBCKey
+                    if($scannedBCColumnName!== FALSE){
+                        //set value of cell corresponding to scanned barcode to values[index]
+                        $scannedBCCellName = $scannedBCColumnName.$rowID;
+                        $this->phpExcel->getActiveSheet()->setCellValue($scannedBCCellName, $cellString);
+                        $cellString = "null";
+                    }
+                }
+                
+                if (strlen($cellString) === 0) {
+                    $cellString = "null";
+                }
+                
+                $cellString = $this->formatTime($cellString);
+                if($rowID!==0 && $this->parseType === "viewing"){
+                    $cellString = $this->convertKeyToValue($cellString);
+                }        
+                
+                $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
+                if ($rowIndex === 0) {
+                    $this->phpExcel->getActiveSheet()->getStyle($cellID)->getFont()->setBold(TRUE);
+                    $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $columnIndex))->setAutoSize(true);
+                }
+            } else if ($rowIndex > 0) {//is a multiple select question
+                $this->phpExcel->getActiveSheet()->setCellValue($cellID, "null");
+                $selectAns = explode(" ", $cellString);
+                foreach ($selectAns as $currAns) {
+                    if (strlen($currAns) > 0) {
+                        $currAnsColmnIndex = 0;
+                        if (!in_array($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName])) {
+                            array_push($this->sheets[$parentSheetName], $columnHeading . "-" . $currAns);
+
+                            $currAnsColmnIndex = array_search($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName]);
+                            $currHeadingCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . "1";
+
+                            $this->phpExcel->getActiveSheet()->setCellValue($currHeadingCellID, $columnHeading . "-" . $currAns);
+                            $this->phpExcel->getActiveSheet()->getStyle($currHeadingCellID)->getFont()->setBold(TRUE);
+                            $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $currAnsColmnIndex))->setAutoSize(true);
+                        }
+
+                        $currAnsColmnIndex = array_search($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName]);
+
+                        $currAnsCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . $rowID;
+                        $this->phpExcel->getActiveSheet()->setCellValue($currAnsCellID, "1");
+                    }
+                }
+            } else {
+                $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
+                $this->phpExcel->getActiveSheet()->getStyle($cellID)->getFont()->setBold(TRUE);
+                $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $columnIndex))->setAutoSize(true);
+            }
+        }
+    }
+    
+    private function getAltHeadingName($heading){
+        $headingParts = explode("-",$heading);
+        return $headingParts[sizeof($headingParts)-1];
+    }
+
+
+    private function parseHTMLTable($url, $sheetName, $secondaryKey) {
+        $encodedURL = urlencode($url);
+        $authURL = $this->authURL.$encodedURL;
+        $sheetNames = array_keys($this->nextRowName);
+        if(!in_array($sheetName, $sheetNames)){
+            $this->nextRowName[$sheetName] = 0;
+        }
+
+        if(file_exists($this->authCookies) === FALSE){
+            $this->logHandler->log(3, $this->TAG, 'Authenticating '.$this->aUsername.' on the Aggregate server');
+            $authCh = curl_init($authURL);
+            curl_setopt($authCh, CURLOPT_USERAGENT, $this->userAgent);
+            curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
+            curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
+            curl_setopt($authCh, CURLOPT_CONNECTTIMEOUT, TRUE);
+            curl_setopt($authCh, CURLOPT_COOKIEJAR, $this->authCookies);
+            curl_setopt($authCh, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+            curl_setopt($authCh, CURLOPT_USERPWD, $this->aUsername.":".$this->aPassword);
+
+            curl_exec($authCh);
+            curl_close($authCh);
+        }
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE); 
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
+
+        $html = curl_exec($ch);
+        curl_close($ch);
+
+        $htmlTables = array();
+
+        preg_match_all("/<table(.*\n*.*)<\/table>/",$html,$htmlTables);
+
+        //check the number of tables in page (should be one)
+        if(sizeof($htmlTables[1])===1) {
+            $dataTable = $htmlTables[1][0];
+            //print_r($htmlTables);
+            //get the table headers <th>
+            $th = array();
+            preg_match_all("/<th>([a-z_\-0-9]*)<\/th>/i",$dataTable, $th);
+
+            $headings = $th[1];//table headings gotten
+
+            for($i=0; $i<sizeof($headings); $i++){
+                $headings[$i] = $sheetName."-".$headings[$i];
+            }
+
+            array_unshift($headings, "secondary_key");
+
+            $sheetNames = array_keys($this->sheets);
+            if(!in_array($sheetName, $sheetNames)){
+               for($hIndex = 0; $hIndex < sizeof($headings); $hIndex++){
+                   $this->insertCSVCell($headings[$hIndex], $this->nextRowName[$sheetName], $headings[$hIndex], $sheetName);
+               }
+               $this->nextRowName[$sheetName]++;
+            }
+
+
+            $tr = array();
+            preg_match_all("/<\/th>\s*(<tr>.*<\/tr>$)/",$dataTable,$tr);
+            $tr = $tr[1];
+
+            if(sizeof($tr) === 1){
+                $rows = explode("</tr>", $tr[0]);
+                for($rowIndex = 0; $rowIndex < sizeof($rows); $rowIndex++){
+                    //check if row is actual table row
+                    if(strpos($rows[$rowIndex],'<tr>') !== false){
+                        $rows[$rowIndex] = str_replace("<tr>","",$rows[$rowIndex]);
+                        $rowColumns = explode("</td>", $rows[$rowIndex]);
+
+                        array_unshift($rowColumns, $this->odkInstance."_".$secondaryKey);
+
+                        if((sizeof($headings)+1) === sizeof($rowColumns)){
+                            for($columnIndex = 0; $columnIndex < sizeof($rowColumns); $columnIndex++){
+                                if($columnIndex<sizeof($headings)){
+                                   $rowColumns[$columnIndex] = str_replace("<td>","", $rowColumns[$columnIndex]);
+                                   $this->insertCSVCell($rowColumns[$columnIndex], $this->nextRowName[$sheetName], $headings[$columnIndex], $sheetName);
+                                }
+                            }
+                        }
+                        else{
+                            $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: '.print_r($htmlTables, true));
+                            $this->logHandler->log(1, $this->TAG, 'it appears the rows in html table were parsed badly, exiting');
+                            exit();
+                        }
+                        $this->nextRowName[$sheetName]++;
+                    }
+                }
+            }
+        }
+        else{
+            $this->logHandler->log(4, $this->TAG, 'Badly parsed html looks like this: '.$html);
+            $this->logHandler->log(1, $this->TAG, 'HTML appears to have been parsed badly, exiting');
+            exit();
+        }
+
+        //print_r($htmlTables);
+    }
+
+    /**
     * This method checks all cells in the sheet specified to see if they are blank and inserts a 0 if blank found
     * 
     * @param    string      $sheetName      The name of the sheet eg main_sheet
@@ -667,6 +986,28 @@ class Parser {
       }
    }
    
+   private function parseCSV() {
+       $rows = explode("\"\n\"", $_POST['csvString']);
+       $index = 0;
+       while($index < sizeof($rows)){
+           $columns = explode("\",\"", $rows[$index]);
+            
+            //remove the double quotes still remaining in the first and last elements of the columns array
+           $columns[0] = str_replace("\"","",$columns[0]);
+           $columns[sizeof($columns) - 1] = str_replace("\"", "", $columns[sizeof($columns) - 1]);
+           
+           if($index===0){
+               array_unshift($columns,"primary_key");
+           }
+           else{
+               array_unshift($columns,$this->odkInstance."_".$index);
+           }
+           
+           $this->cells[$index] = $columns;
+           $index++;
+       }
+   }
+   
    /**
     * This function parses the xml file in the post request to obtain:
     *   - The ODK language codes specified in the xml string
@@ -692,15 +1033,16 @@ class Parser {
       $this->languageCodes = $matches[1];
       
       //get the odk instance id for the form
-      preg_match_all("/<instance>[\s\n]*<[a-z0-9_\s]+id=[\"']([a-z0-9_]+)[\"']\s*>/i", $this->xmlString, $matches);
-      $tempODKInstance = $matches[1][0];//assuming that the first instance tag in xml file is what we are looking for
+      preg_match_all("/<instance>[\s\n]*<([a-z0-9_\-]+)\s+id=[\"']([a-z0-9_]+)[\"']\s*>/i", $this->xmlString, $matches);
+      $this->idPrefix = $matches[1][0];
+      $tempODKInstance = $matches[2][0];//assuming that the first instance tag in xml file is what we are looking for
       
       //check if the last part of the instance contains a version number
-      if(preg_match("/.+_[v][ersion_\-]*[0-9]$/i", $tempODKInstance) === 1){
+      /*if(preg_match("/.+_[v][ersion_\-]*[0-9]$/i", $tempODKInstance) === 1){
          $this->logHandler->log(4, $this->TAG, $tempODKInstance." contains a version number, removing it");
          preg_match_all("/(.+)_[v][ersion_\-]*[0-9]$/i", $tempODKInstance, $matches);
          $tempODKInstance = $matches[1][0];
-      }
+      }*/
       $this->odkInstance = $tempODKInstance;
       
       //associate all the barcode inputs in xml with their respective manual barcode inputs
@@ -745,6 +1087,14 @@ class Parser {
       
       //print_r($this->xmlValues);
       $this->logHandler->log(4, $this->TAG, 'strings obtained from xml file are'.print_r($this->xmlValues,TRUE));
+      
+      preg_match_all("/<bind\s+nodeset\s*=\s*[\"']([a-z_0-9\-\/]+)[\"'].*type\s*=\s*[\"']select[\"'].*(?=\/>)/",$this->xmlString,$matches);
+      $matches = $matches[1];
+      for($i=0; $i<sizeof($matches); $i++){
+          $matches[$i] = str_replace("/","-",$matches[$i]);
+      }
+       
+      $this->selectIDs = $matches;
    }
    
    /**
@@ -763,7 +1113,18 @@ class Parser {
       
       shell_exec('echo "'.$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$emailSubject.'" -- '.$_POST['email']);
    }
-    
+   
+   private function isImage($url) {
+       $contentType = get_headers($url, 1);
+       $contentType = $contentType["Content-Type"];
+       if (!is_array($contentType) && strpos($contentType, 'image') !== NULL) {
+           return TRUE;
+       } 
+       else {
+            return FALSE;
+       }
+   }
+
 }
 
 $obj = new Parser();

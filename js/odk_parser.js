@@ -14,10 +14,21 @@ function Parse() {
    this.dwnldImages = $("#dwnldImages").val();
    
    if(this.validateInput()) {
-      var jsonFile = document.getElementById("json_file").files[0];
+      var jsonFileRegex = /.+\.json$/i
+      var csvFileRegex = /.+\.csv/i
       this.jsonText = "";
-      this.firstFileLoaded = false;
-      this.readFile(jsonFile, "json");
+      this.csvText = "";
+      if(jsonFileRegex.test($("#data_file").val()) === true){
+          var jsonFile = document.getElementById("data_file").files[0];
+          this.firstFileLoaded = false;
+          this.readFile(jsonFile, "json");
+      }
+      else if(csvFileRegex.test($("#data_file").val()) === true){
+          var csvFile = document.getElementById("data_file").files[0];
+          this.firstFileLoaded = false;
+          this.readFile(csvFile, "csv");
+      }
+      
 
       var xmlFile = document.getElementById("xml_file").files[0];
       this.xmlText = "";
@@ -46,6 +57,10 @@ Parse.prototype.readFile = function (file, output) {
         window.parse.xmlText = e.target.result;
         validOutput = true;
      }
+     else if(output === "csv") {
+         window.parse.csvText = e.target.result;
+         validOutput = true;
+     }
      
      if(validOutput === true) {
          if (window.parse.firstFileLoaded === false) {
@@ -72,7 +87,8 @@ Parse.prototype.sendToServer = function () {
          jsonString: window.parse.jsonText,
          xmlString: window.parse.xmlText,
          parseType: window.parse.parseType,
-         dwnldImages: window.parse.dwnldImages
+         dwnldImages: window.parse.dwnldImages,
+         csvString: window.parse.csvText
       }
    });
    alert("It may take some time to process the files you have provided. An email with the excel file will be sent to the email you have provided when the processing is done");
@@ -102,9 +118,9 @@ Parse.prototype.validateInput = function () {
       $("#file_name").focus();
       return false;
    }
-   if($("#json_file").val() === undefined || $("#json_file").val().length === 0) {
-      Notification.show({create:true, hide:true, updateText:false, text:'Please select the JSON file to be parsed', error:true});
-      $("#json_file").focus();
+   if($("#data_file").val() === undefined || $("#data_file").val().length === 0) {
+      Notification.show({create:true, hide:true, updateText:false, text:'Please select the JSON or CSV file to be parsed', error:true});
+      $("#data_file").focus();
       return false;
    }
    if($("#xml_file").val() === undefined || $("#xml_file").val().length === 0) {
@@ -122,7 +138,7 @@ Parse.prototype.validateJson = function (jsonString) {
    catch (error) {
       //alert("The JSON file provided is invalid");
       Notification.show({create:true, hide:true, updateText:false, text:'The JSON file you provided is invalid', error:true});
-      $("#json_file").focus();
+      $("#data_file").focus();
       return false;
    }
    return true;
