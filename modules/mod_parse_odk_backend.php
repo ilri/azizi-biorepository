@@ -555,14 +555,14 @@ class Parser {
                   
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
                }
-	       
+          
                //fix for bug in json file were multi select answers are sparated by spaces
                /*if(!is_array($values[$index])){
                   $exploded = explode(" ",$values[$index]);
                   if(sizeof($exploded)>1){
                      $values[$index]=$exploded;
                   }
-	       }*/
+          }*/
                //end of fix
 
                if (!is_array($values[$index])) {//values[index] is a string
@@ -710,7 +710,7 @@ class Parser {
             $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $this->cells[0][$columnIndex] . " sheet");
             $this->parseHTMLTable($cellString, $this->cells[0][$columnIndex], $rowIndex);
         }
-        else if($this->isImage($cellString) && $this->dwnldImages === "yes"){ //is image
+        else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $this->isImage($cellString) ===TRUE && $this->dwnldImages === "yes"){ //is image
             $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
             $cellString = $this->gTasks->downloadImage($cellString, $this->imagesDir);
         }
@@ -880,7 +880,7 @@ class Parser {
                             }
                         }
                         else{
-                            $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: '.print_r($htmlTables, true));
+                            $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: '.sizeof($headings).' '.sizeof($rowColumns).' '.$html );
                             $this->logHandler->log(1, $this->TAG, 'it appears the rows in html table were parsed badly, exiting');
                             exit();
                         }
@@ -904,16 +904,21 @@ class Parser {
     * @param    string      $sheetName      The name of the sheet eg main_sheet
     */
    private function cleanSheet($sheetName){
-       $this->logHandler->log(3, $this->TAG, 'cleaning '.$sheetName.' sheet');
+       $this->logHandler->log(3, $this->TAG, 'cleaning '.$sheetName.' sheet ');
        $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$sheetName]);
        foreach($this->phpExcel->getActiveSheet()->getRowIterator() as $row){
            $rowIndex = $row->getRowIndex();
-           
            //get array of all column headings in sheet
-           $sheetRowHeadings = $this->allColumnNames[$sheetName];
+           if(sizeof($this->allColumnNames)>0)//means we are parsing json
+               $sheetRowHeadings = $this->allColumnNames[$sheetName];
+           else if(sizeof($this->sheets)>0)//means we are parsing csv
+               $sheetRowHeadings = $this->sheets[$sheetName];
            foreach($sheetRowHeadings as $columnHeading){
                //get column name/id corresponding to columnHeading
-               $columnName = $this->getColumnName($sheetName, $columnHeading);
+               if(sizeof($this->allColumnNames)>0)//means we are parsing json
+                   $columnName = $this->getColumnName($sheetName, $columnHeading);
+               else if(sizeof($this->sheets)>0)//means we are parsing csv
+                   $columnName = $this->getColumnName(NULL, NULL, array_search($columnHeading, $sheetRowHeadings));
                $cellName = $columnName.$rowIndex;
                $cell = $this->phpExcel->getActiveSheet()->getCell($cellName);
                if(strlen($cell->getValue()) === 0){
