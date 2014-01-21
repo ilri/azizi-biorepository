@@ -759,29 +759,50 @@ class Parser {
                     $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $columnIndex))->setAutoSize(true);
                 }
             } else if ($rowIndex > 0) {//is a multiple select question
-                $this->phpExcel->getActiveSheet()->setCellValue($cellID, "null");
-                $selectAns = explode(" ", $cellString);
-                foreach ($selectAns as $currAns) {
-                    if (strlen($currAns) > 0) {
-                        $currAnsColmnIndex = 0;
-                        if (!in_array($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName])) {
-                            array_push($this->sheets[$parentSheetName], $columnHeading . "-" . $currAns);
+                if($this->parseType === "viewing"){
+                    $selectAns = explode(" ". $cellString);
+                    
+                    $cellString = "";
+                    foreach ($selectAns as $currSelectAns){
+                        if(strlen($cellString) === 0){
+                            $cellString = $this->convertKeyToValue($currSelectAns);
+                        }
+                        else{
+                            $cellString = $cellString.", ".$this->convertKeyToValue($currSelectAns);
+                        }
+                    }
+                    
+                    if(strlen($cellString) === 0){
+                        $cellString = "null";
+                    }
+                    
+                    $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
+                }
+                else{//excel is for analysis purposes
+                    $this->phpExcel->getActiveSheet()->setCellValue($cellID, "null");
+                    $selectAns = explode(" ", $cellString);
+                    foreach ($selectAns as $currAns) {
+                        if (strlen($currAns) > 0) {
+                            $currAnsColmnIndex = 0;
+                            if (!in_array($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName])) {
+                                array_push($this->sheets[$parentSheetName], $columnHeading . "-" . $currAns);
+
+                                $currAnsColmnIndex = array_search($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName]);
+                                $currHeadingCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . "1";
+
+                                $this->phpExcel->getActiveSheet()->setCellValue($currHeadingCellID, $columnHeading . "-" . $currAns);
+                                $this->phpExcel->getActiveSheet()->getStyle($currHeadingCellID)->getFont()->setBold(TRUE);
+                                $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $currAnsColmnIndex))->setAutoSize(true);
+                            }
 
                             $currAnsColmnIndex = array_search($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName]);
-                            $currHeadingCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . "1";
 
-                            $this->phpExcel->getActiveSheet()->setCellValue($currHeadingCellID, $columnHeading . "-" . $currAns);
-                            $this->phpExcel->getActiveSheet()->getStyle($currHeadingCellID)->getFont()->setBold(TRUE);
-                            $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $currAnsColmnIndex))->setAutoSize(true);
+                            $currAnsCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . $rowID;
+                            $this->phpExcel->getActiveSheet()->setCellValue($currAnsCellID, "1");
                         }
-
-                        $currAnsColmnIndex = array_search($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName]);
-
-                        $currAnsCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . $rowID;
-                        $this->phpExcel->getActiveSheet()->setCellValue($currAnsCellID, "1");
                     }
                 }
-            } else {
+            } else {//is a multiple select question heading
                 $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
                 $this->phpExcel->getActiveSheet()->getStyle($cellID)->getFont()->setBold(TRUE);
                 $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $columnIndex))->setAutoSize(true);
