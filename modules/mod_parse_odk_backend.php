@@ -751,7 +751,19 @@ class Parser {
                 $cellString = $this->formatTime($cellString);
                 if($rowIndex!==0 && $this->parseType === "viewing"){
                     $cellString = $this->convertKeyToValue($cellString);
-                }        
+                }
+                else if($rowIndex === 0){
+                    $headings = explode("-", $cellString);
+                    $cellString = "";
+                    foreach ($headings as $currHeading){
+                        if(strlen($cellString) === 0){
+                            $cellString = $this->convertKeyToValue($currHeading);
+                        }
+                        else{
+                            $cellString = $cellString." :: ".$this->convertKeyToValue($currHeading);
+                        }
+                    }
+                }
                 
                 $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
                 if ($rowIndex === 0) {
@@ -825,6 +837,8 @@ class Parser {
         }
 
         if(file_exists($this->authCookies) === FALSE){
+            touch($this->authCookies);
+            chmod($this->authCookies, 0777);
             $this->logHandler->log(3, $this->TAG, 'Authenticating '.$this->aUsername.' on the Aggregate server');
             $authCh = curl_init($authURL);
             curl_setopt($authCh, CURLOPT_USERAGENT, $this->userAgent);
