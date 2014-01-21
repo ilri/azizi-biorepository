@@ -749,7 +749,7 @@ class Parser {
                 }
                 
                 $cellString = $this->formatTime($cellString);
-                if($rowID!==0 && $this->parseType === "viewing"){
+                if($rowIndex!==0 && $this->parseType === "viewing"){
                     $cellString = $this->convertKeyToValue($cellString);
                 }        
                 
@@ -760,7 +760,7 @@ class Parser {
                 }
             } else if ($rowIndex > 0) {//is a multiple select question
                 if($this->parseType === "viewing"){
-                    $selectAns = explode(" ". $cellString);
+                    $selectAns = explode(" ", $cellString);
                     
                     $cellString = "";
                     foreach ($selectAns as $currSelectAns){
