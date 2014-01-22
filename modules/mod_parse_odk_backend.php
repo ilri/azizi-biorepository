@@ -873,9 +873,16 @@ class Parser {
             //print_r($htmlTables);
             //get the table headers <th>
             $th = array();
-            preg_match_all("/<th>([a-z_\-0-9]*)<\/th>/i",$dataTable, $th);
-
-            $headings = $th[1];//table headings gotten
+            $uncleanTHs = explode('</th>', $dataTable);
+            $cleanTHCount = 0;
+            foreach($uncleanTHs as $currTH){
+               if(strpos($currTH, '<th>') !== FALSE){
+                  $splitTH = explode('<th>',$currTH);
+                  $th[$cleanTHCount] = $splitTH[1];
+                  $cleanTHCount++;
+               }
+            }
+            $headings = $th;//table headings gotten
 
             for($i=0; $i<sizeof($headings); $i++){
                 $headings[$i] = $sheetName."-".$headings[$i];
