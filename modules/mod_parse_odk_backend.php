@@ -991,7 +991,7 @@ class Parser {
       }
       
       //get the default language's string value of string code (key)
-      if(!is_array($key) && array_key_exists($key, $this->xmlValues)) {
+      if((is_string($key) ||  is_numeric($key)) && array_key_exists($key, $this->xmlValues)) {
          return $this->xmlValues[$key][$defaultLangIndex];
       }
       else {
