@@ -14,87 +14,87 @@ class Parser {
     * @var string    Tag to be used in logging
     */
    private $TAG = "Parse.php";
-   
+
    /**
     * @var string       Relative path to the root of this project
     */
    private $ROOT = "../";
-   
+
    /**
     * @var LogHandler   Object to handle all the logging
     */
    private $logHandler;
-   
+
    /**
     * @var assoc_array  Associative array containig settings to be used by this file
     */
    private $settings;
-   
+
    /**
     * @var PhpExcel     A place holder for the last error that occured. Useful for sending data back to the user
     */
    private $phpExcel;
-   
+
    /**
     * @var Json         Json object parsed from the json string gotten from post
     */
    private $jsonObject;
-   
+
    /**
     * @var  array       array containig indexes of all excel sheets created by this object
     */
    private $sheetIndexes;
-   
+
    /**
     * @var array        Associative array containing all column names in all excel sheets in the format [sheet_name][column_index]
     */
    private $allColumnNames;
-   
+
    /**
     * @var array        Associative array containing the name of the next row in each excel sheet
     */
    private $nextRowName;
-   
+
    /**
     * @var string       Relative path where all images will be downloaded to for the current excel file
     */
    private $imagesDir;
-   
+
    /**
     * @var string       Relative path to where all downloads in this project are put
     */
    private $downloadDir;
-   
+
    /**
     * @var string       ID for this php session
     */
    private $sessionID;
-   
+
    /**
     * @var string       XML string gotten from last post request
     */
    private $xmlString;
-   
+
    /**
-    * @var array       Associative array of keys and values for strings gotten from the XML string  
+    * @var array       Associative array of keys and values for strings gotten from the XML string
     */
    private $xmlValues;
-   
+
    /**
     * @var string      URI to where exactly the project is in apache
     */
    private $rootDirURI;
-   
+
    public function __construct() {
       //load settings
       $this->loadSettings();
-      
+
       //include modules
       include_once $this->ROOT.'modules/mod_log.php';
       $this->logHandler = new LogHandler();
-      
+
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');
-      
+
       //init other vars
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
@@ -106,10 +106,10 @@ class Parser {
       $this->imagesDir = $this->ROOT.'download/'.$this->sessionID.'/images';
       $this->downloadDir = $this->ROOT.'download/'.$this->sessionID;
       $this->xmlValues = array();
-      
+
       //$this->rootDirURI = "/~jason/ilri/ODKParser/";
       $this->rootDirURI = $this->settings['root_uri'];
-      
+
       //parse json String
       $this->parseJson();
       $this->loadXML();
@@ -127,48 +127,48 @@ class Parser {
          }
          $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_discISAM;
          $cacheSettings = array( 'dir' => $this->ROOT.'tmp');
-         PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings); 
+         PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings);
       }
       else{
          $this->logHandler->log(3, $this->TAG, 'Json is not complex ('.$jsonComplexity.'), excel sheets will not be cached on disk');
       }
-            
+
       $this->phpExcel = new PHPExcel();
       $this->setExcelMetaData();
-      
+
       //process all responses
       $mainSheetKey = "main_sheet";
-     
-      $currMainSheetItem = 1; 
+
+      $currMainSheetItem = 1;
       foreach($this->jsonObject as $currentJsonObject) {
          $this->logHandler->log(3, $this->TAG, 'Now at main sheet item '.$currMainSheetItem.' of '.count($this->jsonObject));
          $this->createSheetRow($currentJsonObject, $mainSheetKey);
          $currMainSheetItem++;
       }
-      
+
       //save the excel object
       if(!file_exists($this->downloadDir)){
          mkdir($this->downloadDir,0777,true);
       }
       $objWriter = new PHPExcel_Writer_Excel2007($this->phpExcel);
       $objWriter->save($this->downloadDir.'/'.$_POST['fileName'].'.xlsx');
-      
+
       //zip parsed files
       $zipName = 'download/'.$this->sessionID.'.zip';
       $this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
       $this->deleteDir($this->downloadDir);
-      
+
       //send zip file to specified email
       $this->sendZipURL($zipName);
    }
-   
+
    private function loadSettings() {
       $settingsDir = $this->ROOT."config/";
       if(file_exists($settingsDir."main.ini")) {
          $this->settings = parse_ini_file($settingsDir."main.ini");
       }
    }
-   
+
    private function setExcelMetaData() {
       $this->logHandler->log(3, $this->TAG, 'setting excel metadata');
       $this->phpExcel->getProperties()->setCreator($_POST['creator']);
@@ -177,7 +177,7 @@ class Parser {
       $this->phpExcel->getProperties()->setSubject("Created using ODK Parser");
       $this->phpExcel->getProperties()->setDescription("This Excel file has been generated using ODK Parser that utilizes the PHPExcel library on PHP. ODK Parse was created by Jason Rogena (j.rogena@cgiar.org)");
    }
-   
+
    private function getColumnName($parentKey, $key){//a maximum of 676 (26*26) columns
       //$this->logHandler->log(3, $this->TAG, 'getting column name corresponding to '.$key);
       $columnNames = array("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z");
@@ -194,9 +194,9 @@ class Parser {
          $this->logHandler->log(4, $this->TAG, 'returned from getcolumn name '.$columnName);
          return $columnName;
       }
-      
+
    }
-   
+
    private function createSheetRow($jsonObject, $parentKey, $parentCellName = NULL) {
       $this->logHandler->log(3, $this->TAG, 'creating a new sheet row in '.$parentKey);
       //check if sheet for parent key exists
@@ -214,7 +214,7 @@ class Parser {
          $this->logHandler->log(4, $this->TAG, 'size of sheet indexes now '.sizeof($this->sheetIndexes));
          $this->nextRowName[$parentKey] = 2;
          $this->allColumnNames[$parentKey] = array();
-         
+
          if(sizeof($this->sheetIndexes)>1){
             $this->phpExcel->createSheet();
             //echo 'this is not the first sheet, therefore calling createSheet<br/>';
@@ -231,7 +231,7 @@ class Parser {
          //echo 'sheet for '.$parentKey.' already exists<br/>';
          $this->logHandler->log(4, $this->TAG, 'sheet for '.$parentKey.' already exists');
       }
-      
+
       //split keys and values in jsonObject
       //echo 'splitting keys and values in jsonObject<br/>';
       $this->logHandler->log(4, $this->TAG, 'splitting keys and values in jsonObject');
@@ -244,12 +244,12 @@ class Parser {
       }
       //echo 'size of values is '.sizeof($values)."<br/>";
       $this->logHandler->log(4, $this->TAG, 'size of values is '.sizeof($values));
-      
+
       //get next row name for parent key
       $rowName = $this->nextRowName[$parentKey];
       //echo 'row name is '.$rowName.'<br/>';
       $this->logHandler->log(4, $this->TAG, 'row name is '.$rowName);
-      
+
       //set name of parent cell as first cell in row if is set
       if ($parentCellName != NULL) {
          if (!in_array("Parent_Cell", $this->allColumnNames[$parentKey])) {
@@ -274,10 +274,10 @@ class Parser {
             //print_r($this->allColumnNames[$parentCellName]);
          }
       }
-      
+
       //add all keys and respective values to row
       if(sizeof($keys) == sizeof($values) && sizeof($values) > 0) {
-      
+
          //echo 'adding columns from here<br/>';
          $this->logHandler->log(4, $this->TAG, 'adding columns from here');
          for($index = 0; $index < sizeof($keys); $index++) {
@@ -289,23 +289,23 @@ class Parser {
                $this->logHandler->log(4, $this->TAG, 'pushing '.$keys[$index].' to allColumnNames array for '.$parentKey);
                //array_push($this->allColumnNames[$parentKey], $keys[$index]);
                $this->allColumnNames[$parentKey][sizeof($this->allColumnNames[$parentKey])]=$keys[$index];
-               
+
             }
-            
+
             $columnName = $this->getColumnName($parentKey, $keys[$index]);
             if($columnExisted == FALSE) {
                $this->phpExcel->getActiveSheet()->getColumnDimension($columnName)->setAutoSize(true);
             }
-            
+
             if ($columnName != FALSE) {
                $cellName = $columnName . $rowName;
                $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentKey]);
-               
+
                if($columnExisted === FALSE){
                   $this->phpExcel->getActiveSheet()->setCellValue($columnName."1", $this->convertKeyToValue($keys[$index]));
                   $this->phpExcel->getActiveSheet()->getStyle($columnName."1")->getFont()->setBold(TRUE);
                }
-	       
+
                if(!is_array($values[$index])){
                   $exploded = explode(" ",$values[$index]);
                   if(sizeof($exploded)>1){
@@ -316,20 +316,20 @@ class Parser {
                if (!is_array($values[$index])) {
                   //echo 'value of '.$keys[$index].' is '.$values[$index].'<br/>';
                   $this->logHandler->log(4, $this->TAG, 'value of '.$keys[$index].' is '.$values[$index]);
-                  
+
                   if(filter_var($values[$index], FILTER_VALIDATE_URL)) {
                      $values[$index] = $this->downloadImage($values[$index]);
                   }
-                  
+
                   if(strlen($values[$index]) === 0) {
                      $values[$index] = "NULL";
                   }
                   $this->phpExcel->getActiveSheet()->setCellValue($cellName, $this->convertKeyToValue($values[$index]));
-               } 
+               }
                else {//if values is an array
                   if (sizeof($values[$index]) > 0) {
                      $this->logHandler->log(4, $this->TAG, 'value of '.$keys[$index].' is an array');
-                     
+
                      $testChild = $values[$index][0];
                      if ($this->isJson($testChild) === TRUE) {
                         $this->phpExcel->getActiveSheet()->setCellValue($cellName, "Check " . $keys[$index] . " sheet");
@@ -345,7 +345,7 @@ class Parser {
                         }
                         $this->phpExcel->getActiveSheet()->setCellValue($cellName, $commaSeparatedString);
                      }
-                        
+
                   }
                   else {
                      //echo 'value of '.$keys[$index].' is an array but is empty<br/>';
@@ -359,7 +359,7 @@ class Parser {
                //echo 'column name for '.$keys[$index].' not found<br/>';
                $this->logHandler->log(2, $this->TAG, 'column name for '.$keys[$index].' not found '.print_r($this->allColumnNames[$parentKey],TRUE));
             }
-            
+
          }
       }
       else {
@@ -369,10 +369,10 @@ class Parser {
       }
       $this->nextRowName[$parentKey]++;
    }
-   
+
    private function downloadImage($url) {
       $this->logHandler->log(3, $this->TAG, 'checking if '.$url.' is image before starting download');
-      
+
       //only supported in PHP 5.4+
       $contentType = get_headers($url, 1);
       $contentType = $contentType["Content-Type"];
@@ -394,10 +394,10 @@ class Parser {
          return $url;
       }
    }
-   
-   function zipParsedItems($source, $destination, $include_dir = false) {
+
+   private function zipParsedItems($source, $destination, $include_dir = false) {
       $this->logHandler->log(3, $this->TAG, 'zipping all items in '.$source);
-      
+
       if (!extension_loaded('zip') || !file_exists($source)) {
          return false;
       }
@@ -452,7 +452,7 @@ class Parser {
 
       return $zip->close();
    }
-   
+
    public function deleteDir($dirPath) {
       $this->logHandler->log(3, $this->TAG, 'deleting '.$dirPath);
       if (!is_dir($dirPath)) {
@@ -471,16 +471,14 @@ class Parser {
       }
       rmdir($dirPath);
    }
-   
+
    private function convertKeyToValue($key) {
-      if(array_key_exists($key, $this->xmlValues)) {
-         return $this->xmlValues[$key];
-      }
-      else {
-         return $key;
-      }
+      if(is_null($key) || $key == 'NULL') return $key;
+      $this->logHandler->log(3, $this->TAG, 'line 476:'.$key );
+      if(array_key_exists($key, $this->xmlValues)) return $this->xmlValues[$key];
+      else return $key;
    }
-   
+
    private function parseJson() {
       $this->logHandler->log(3, $this->TAG, 'parsing json string obtained from post');
       $jsonString = $_POST['jsonString'];
@@ -491,7 +489,7 @@ class Parser {
          die();
       }
    }
-   
+
    private function loadXML() {
       $this->logHandler->log(3, $this->TAG, 'parsing xml obtained from post');
       //$this->xmlString = file_get_contents($this->ROOT . "animals.xml");
@@ -513,13 +511,13 @@ class Parser {
             $valuePref = strpos($subStrings[$count], "<value>");
             $valueSuf = strpos($subStrings[$count], "</value>");
             $value = substr($subStrings[$count], $valuePref + 7, ($valueSuf - $valuePref) - 7);
-            
+
             $value = str_replace("&lt;", "<", $value);
             $value = str_replace("&gt;", ">", $value);
-            
+
             $this->xmlValues[$id] = $value;
             $count++;
-         } 
+         }
          else {
             break;
          }
@@ -527,7 +525,7 @@ class Parser {
       //print_r($this->xmlValues);
       $this->logHandler->log(4, $this->TAG, 'strings obtained from xml file are'.print_r($this->xmlValues,TRUE));
    }
-   
+
    private function sendZipURL($zipName) {
       $this->logHandler->log(3, $this->TAG, 'sending email to '.$_POST['email']);
       $url = "http://".$_SERVER['HTTP_HOST'].$this->rootDirURI.$zipName;
@@ -536,13 +534,13 @@ class Parser {
       $message = "Hi ".$_POST['creator'].",\nODK Parser has finished generating ".$_POST['fileName'].".xlsx. You can download the file along with its companion images as a zip file from the following link ".$url." . This is an auto-generated email, please do not reply to it.";
       //$headers = "From: noreply@cgiar.org";
       //mail($_POST['email'], $emailSubject, $message, $headers);
-      
+
       shell_exec('echo "'.$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$emailSubject.'" -- '.$_POST['email']);
    }
-   
+
   private function array_depth($array) {
        $max_depth = 1;
-       
+
        foreach ($array as $value) {
            if (is_array($value)) {
                $depth = $this->array_depth($value) + 1;
@@ -553,18 +551,14 @@ class Parser {
            }
        }
        return $max_depth;
-   } 
-   
-   function isJson($json) {
-      $keys = array_keys($json);
-      if(sizeof($keys)>0){
-         return TRUE;
-      }
-      else{
-         return FALSE;
-      }
    }
-    
+
+  private function isJson($json) {
+     if(!is_array($json)) return FALSE;
+      $keys = array_keys($json);
+      if(sizeof($keys) > 0) return TRUE;
+      else return FALSE;
+   }
 }
 
 $obj = new Parser();

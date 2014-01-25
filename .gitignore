@@ -5,3 +5,5 @@ database
 .muttrc
 uploads
 config/repository_config
+download
+tmp

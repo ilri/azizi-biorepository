@@ -25,26 +25,46 @@ class ParseODK extends Repository{
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
    }
 
+   /**
+    * Creates the home page to the parser function
+    */
    private function HomePage() {
-      ?>
-      <h3 id="odk_heading">ODK Parser</h3>
-      <form class="form-horizontal">
-         <table id="odk_table">
-            <tr><td>Full Name</td><td><input type="text" id="name" name="name"/></td></tr>
-            <tr><td>Email Address</td><td><input type="text" id="email" name="email"/></td></tr>
-            <tr><td>Name the Excel file to be generated</td><td><input type="text" id="file_name" name="file_name"/></td></tr>
-            <tr><td>JSON File</td><td><input id="json_file" name="json_file" type="file"/></td></tr>
-            <tr><td>XML File</td><td><input id="xml_file" name="xml_file" type="file"/></td></tr>
-            <tr><td colspan="2" style="text-align: right;"><button id="generate_b" name="generate_b" onclick="return false;" class="btn-primary">Generate</button></td></tr>
-         </table>
-      </form>
-      <script>
-         $(document).ready( function() {
-            $("#generate_b").click(function (){ var parser = new Parse(); });
-         });
-         $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
-      </script>
-      <?php
+?>
+<h3 id="odk_heading">ODK Parser</h3>
+<form class="form-horizontal odk_parser">
+   <div class="form-group">
+      <label for="json_file" class="control-label">JSON File</label>
+      <div class=""><input type="file" class="form-control" id="json_file" placeholder="JSON File"></div>
+   </div>
+   <div class="form-group">
+      <label for="xml_file" class="control-label">XML File</label>
+      <div class=""><input type="file" class="form-control" id="xml_file" placeholder="XML file"></div>
+   </div>
+   <div class="form-group">
+      <label for="name" class="control-label">Full Name</label>
+      <div class="col-sm-10"><input type="text" class="form-control" id="name" value="<?php echo "{$_SESSION['surname']} {$_SESSION['onames']}"; ?>" placeholder="Full Names"></div>
+   </div>
+   <div class="form-group">
+      <label for="email" class="control-label">Email Address</label>
+      <div class="col-sm-10"><input type="text" class="form-control" id="email" placeholder="Email"></div>
+   </div>
+   <div class="form-group">
+      <label for="file_name" class="control-label">Excel spreadsheet to be generated</label>
+      <div class=""><input type="text" class="form-control" id="file_name" placeholder="Excel Spreadsheet Name"></div>
+   </div>
+   <div class="center"><button id="generate_b" name="generate_b" onclick="return false;" class="btn-primary">Generate</button></div>
+</form>
+
+<script>
+   $(document).ready( function() {
+      $("#generate_b").click(function (){ var parser = new Parse(); });
+      $("#xml_file").change(function (){
+         $("#file_name").val( $('#xml_file').val().split('\\').pop().split('.').shift() );
+      });
+   });
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+</script>
+<?php
    }
 }
 ?>
