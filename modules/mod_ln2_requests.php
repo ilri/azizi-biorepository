@@ -174,8 +174,24 @@ class Ln2Requests extends Repository{
             $message = "Unable to add the last request. Requests can only be made by valid ILRI Users";
          }
       }
-      else if($projectID === 0) {
-         $message = "Unable to add the last request. Enter a valid charge code";
+      else if($projectID === 0) {//user entered a charge code not in the database
+         $cols = array("alt_ccode","date","amount_req","added_by","ldap_name");
+         $ldapName = $this->Dbase->getUserFullName($_SESSION['username']);
+         $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
+         $colVals = array($_POST['chargeCode'],$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
+         if($ldapName !== 0){
+            $res = $this->Dbase->InsertOnDuplicateUpdate("ln2_acquisitions",$cols,$colVals);
+            if($res === 0) {
+               $message = "Unable to add the last request. Try again later";
+            }
+            else{
+                $this->sendRequestEmail($ldapName, $_POST['amount']);
+            }
+         }
+         else {
+            $message = "Unable to add the last request. Requests can only be made by valid ILRI Users";
+         }
+
       }
       else {
          $message = "Unable to add the last request. Try again later";
@@ -248,6 +264,9 @@ class Ln2Requests extends Repository{
       //reformat rows fetched from first query
       $rows = array();
       foreach ($data as $row) {
+         if(isset($row["charge_code"]) === FALSE || str_len($row["charge_code"]) === 0 ){//check if row has no associated project
+            $row["charge_code"] = $row["alt_ccode"];
+         }
          $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
       }
       $response = array(
