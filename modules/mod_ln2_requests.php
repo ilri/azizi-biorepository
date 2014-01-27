@@ -109,7 +109,10 @@ class Ln2Requests extends Repository{
    <div id="past_requests">&nbsp;</div>
 </div>
 <div id="dialog-modal" title="Set the amount approved" style="display: none;">
-   <table><tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr></table>
+   <table>
+      <tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr>
+      <tr><td>Comment: </td><td><input type="text" name = "comment" id="comment" size="50" /></td></tr>   
+   </table>
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
