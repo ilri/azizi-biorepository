@@ -83,11 +83,13 @@ var Ln2Requests = {
                         //TODO: add logic for changing column value from server
                         $.post("index.php?page=ln2_requests&do=setAmountApproved", {
                            rowID:id,
-                           amountApproved:$("#newAmountApproved").val()
+                           amountApproved:$("#newAmountApproved").val(),
+                           comment:$("#comment").val()
                         }, function(){
                            console.log("response recieved, email should have been sent");
                            $("#past_requests").flexReload();
                            $("#newAmountApproved").val("");
+                           $("#comment").val("");
                         });
                         $(this).dialog("close");
                      }

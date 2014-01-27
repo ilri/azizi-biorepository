@@ -245,7 +245,7 @@ class Ln2Requests extends Repository{
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
       $query = "SELECT a.*, b.name AS project, b.`charge_code`".
               " FROM ln2_acquisitions AS a".
-              " INNER JOIN ln2_chargecodes AS b ON a.`project_id` = b.id".
+              " LEFT JOIN ln2_chargecodes AS b ON a.`project_id` = b.id".
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
@@ -264,7 +264,7 @@ class Ln2Requests extends Repository{
       //reformat rows fetched from first query
       $rows = array();
       foreach ($data as $row) {
-         if(isset($row["charge_code"]) === FALSE || str_len($row["charge_code"]) === 0 ){//check if row has no associated project
+         if($row['alt_ccode'] !== NULL){//check if row has no associated project
             $row["charge_code"] = $row["alt_ccode"];
          }
          $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
@@ -286,8 +286,8 @@ class Ln2Requests extends Repository{
         $query = "SELECT `amount_appr` FROM ln2_acquisitions WHERE id = ?";
         $result = $this->Dbase->ExecuteQuery($query,array($_POST['rowID']));
         if(sizeof($result) === 1 && is_null($result[0]['amount_appr'])) {
-           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ?, `apprvd_by` = ? WHERE id = ?";
-           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_SESSION['username'],$_POST['rowID']));
+           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ?, `apprvd_by` = ?, `comment` = ? WHERE id = ?";
+           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_SESSION['username'], $_POST['comment'],$_POST['rowID']));
            $this->generateInvoice($_POST['rowID']);
         }
       }
