@@ -111,7 +111,7 @@ class Ln2Requests extends Repository{
 <div id="dialog-modal" title="Set the amount approved" style="display: none;">
    <table>
       <tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr>
-      <tr><td>Comment: </td><td><input type="text" name = "comment" id="comment" size="50" /></td></tr>   
+      <tr><td>Comment: </td><td><textarea type="text" name = "comment" id="comment" cols="30" rows="2" ></textarea></td></tr>   
    </table>
 </div>
 <script type="text/javascript">

@@ -75,7 +75,7 @@ var Ln2Requests = {
                position: ['center','center'],
                show: 'blind',
                hide: 'blind',
-               width: 400,
+               width: 500,
                dialogClass: 'ui-dialog-osx',
                buttons: {
                   "Set": function() {
