@@ -98,6 +98,7 @@ class Ln2Requests extends Repository{
                            </table>
                         </fieldset>
                   </td></tr>
+                  <tr><td class="label" colspan="2">Comment <input name="req_comment" id="req_comment" size="75"></td></tr>
                   <tr><td colspan="2">
                         <input type="submit" value="Request" name="submitButton" id="submitButton"/>
                         <input type="reset" value="Cancel" name="cancelButton" id="cancelButton"/>
@@ -160,10 +161,10 @@ class Ln2Requests extends Repository{
       //$userID = $this->addUserIfNotExists($_POST['user']);
       $projectID = $this->getProjectID($_POST['chargeCode']);
       if($projectID !== 0){
-         $cols = array("project_id","date","amount_req","added_by","ldap_name");
+         $cols = array("project_id","date","amount_req","added_by","ldap_name","req_comment");
          $ldapName = $this->Dbase->getUserFullName($_SESSION['username']);
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
-         $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
+         $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName,$_POST['req_comment']);
          if($ldapName !== 0){
             $res = $this->Dbase->InsertOnDuplicateUpdate("ln2_acquisitions",$cols,$colVals);
             if($res === 0) {
@@ -178,10 +179,10 @@ class Ln2Requests extends Repository{
          }
       }
       else if($projectID === 0) {//user entered a charge code not in the database
-         $cols = array("alt_ccode","date","amount_req","added_by","ldap_name");
+         $cols = array("alt_ccode","date","amount_req","added_by","ldap_name","req_comment");
          $ldapName = $this->Dbase->getUserFullName($_SESSION['username']);
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
-         $colVals = array($_POST['chargeCode'],$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
+         $colVals = array($_POST['chargeCode'],$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName,$_POST['req_comment']);
          if($ldapName !== 0){
             $res = $this->Dbase->InsertOnDuplicateUpdate("ln2_acquisitions",$cols,$colVals);
             if($res === 0) {
