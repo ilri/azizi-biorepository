@@ -122,9 +122,9 @@ class Ln2Requests extends Repository{
       dataType: 'json',
       colModel : [
          {display: 'Date', name: 'date', width: 100, sortable: true, align: 'center'},
-         {display: 'Requester', name: 'username', width: 300, sortable: true, align: 'left'},
-         {display: 'Amount Requested', name: 'amount_req', width: 50, sortable: false, align: 'center'},
-         {display: 'Amount Approved', name: 'amount_appr', width: 50, sortable: false, align: 'center'},
+         {display: 'Requester', name: 'username', width: 200, sortable: true, align: 'left'},
+         {display: 'Amount Requested', name: 'amount_req', width: 100, sortable: false, align: 'center'},
+         {display: 'Amount Approved', name: 'amount_appr', width: 100, sortable: false, align: 'center'},
          {display: 'Charge Code', name: 'charge_code', width: 50, sortable: false, align: 'center'},
          {display: 'Comment', name: 'req_comment', width: 250, sortable: false, align: 'left' }
       ],
