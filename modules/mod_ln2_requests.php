@@ -111,7 +111,7 @@ class Ln2Requests extends Repository{
 <div id="dialog-modal" title="Set the amount approved" style="display: none;">
    <table>
       <tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr>
-      <tr><td>Comment: </td><td><textarea type="text" name = "comment" id="comment" cols="30" rows="2" ></textarea></td></tr>   
+      <tr><td>Comment: </td><td><textarea type="text" name = "apprv_comment" id="apprv_comment" cols="30" rows="2" ></textarea></td></tr>   
    </table>
 </div>
 <script type="text/javascript">
@@ -289,8 +289,8 @@ class Ln2Requests extends Repository{
         $query = "SELECT `amount_appr` FROM ln2_acquisitions WHERE id = ?";
         $result = $this->Dbase->ExecuteQuery($query,array($_POST['rowID']));
         if(sizeof($result) === 1 && is_null($result[0]['amount_appr'])) {
-           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ?, `apprvd_by` = ?, `comment` = ? WHERE id = ?";
-           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_SESSION['username'], $_POST['comment'],$_POST['rowID']));
+           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ?, `apprvd_by` = ?, `apprv_comment` = ? WHERE id = ?";
+           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_SESSION['username'], $_POST['apprv_comment'],$_POST['rowID']));
            $this->generateInvoice($_POST['rowID']);
         }
       }
