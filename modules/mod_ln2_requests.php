@@ -123,9 +123,10 @@ class Ln2Requests extends Repository{
       colModel : [
          {display: 'Date', name: 'date', width: 100, sortable: true, align: 'center'},
          {display: 'Requester', name: 'username', width: 300, sortable: true, align: 'left'},
-         {display: 'Amount Requested', name: 'amount_req', width: 150, sortable: false, align: 'center'},
-         {display: 'Amount Approved', name: 'amount_appr', width: 150, sortable: false, align: 'center'},
-         {display: 'Charge Code', name: 'charge_code', width: 100, sortable: false, align: 'center'}
+         {display: 'Amount Requested', name: 'amount_req', width: 50, sortable: false, align: 'center'},
+         {display: 'Amount Approved', name: 'amount_appr', width: 50, sortable: false, align: 'center'},
+         {display: 'Charge Code', name: 'charge_code', width: 50, sortable: false, align: 'center'},
+         {display: 'Comment', name: 'req_comment', width: 250, sortable: false, align: 'left' }
       ],
       searchitems : [
          {display: 'Requester', name : 'username'},
@@ -271,7 +272,8 @@ class Ln2Requests extends Repository{
          if($row['alt_ccode'] !== NULL){//check if row has no associated project
             $row["charge_code"] = $row["alt_ccode"];
          }
-         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
+         if($row['req_comment'] === NULL) $row['req_comment'] = "";
+         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"], "req_comment" => $row["req_comment"]));
       }
       $response = array(
           'total' => $dataCount,
