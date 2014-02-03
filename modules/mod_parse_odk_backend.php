@@ -2,7 +2,6 @@
 /**
  * The main class of the system. All other classes inherit from this main one
  *
- * @category   AVID
  * @package    ODKParser
  * @author     Jason Rogena <j.rogena@cgiar.org>
  * @since      v0.1
@@ -681,6 +680,14 @@ class Parser {
       $this->nextRowName[$parentKey]++;
    }
    
+   /**
+    * This recursive function creates an excel sheet cell using the vaule of a csv file "cell"
+    * 
+    * @param   string      $cellString       This is the text in the csv file cell
+    * @param   int         $rowIndex         This is the index of the row containing the cell. Rows start from 0
+    * @param   string      $columnHeading    The heading of the column in which the cell is in e.g primary_key
+    * @param   string      $parentSheetName  The name of the excel sheet in which the cell will be inserted eg main_sheet
+    */
    private function insertCSVCell($cellString, $rowIndex, $columnHeading, $parentSheetName){
        $sheetNames = array_keys($this->sheets);
 
@@ -814,6 +821,16 @@ class Parser {
         }
     }
     
+    /**
+     * This function gets the string (question text) corresponding to each column heading code.
+     * e.g if a csv column heading is "sectioncode-questioncode" then this function will determine
+     * which jr:itext the question corresponds to. It then adds it to the dictionary (if it does not
+     * already exist there)
+     * 
+     * @param  string     $columnHeadingCode    The text that is the csv column heading. This corresponds to the question code eg <select ref="/formid/sectionid/questionid"
+     *                                          will have a csv heading that will look like "sectionid-qestionid"
+     * @return string                           The text corresponding to a question is returned if found and $columnHeadingCode of none is found
+     */
     private function processColumnHeading($columnHeadingCode){
        //$columnHeading code can be sectioncode-questioncode
        // 1. append formid to column heading and replace all '-' with '/' (escaped / of course)
@@ -822,10 +839,10 @@ class Parser {
        
        // 2. search code in xml file and get relevant itext
        $result = array();
-       preg_match_all("/ref\s*=\s*['\"]".$formatedCHC."['\"]\s*>[\s\n]*<label\s+ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-]+)['\"]\)['\"]/i", $this->xmlString, $result);
+       preg_match_all("/ref\s*=\s*['\"]".$formatedCHC."['\"]\s*>[\s\n]*<(label|hint)\s+ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-]+)['\"]\)['\"]/i", $this->xmlString, $result);
        
-       if($result !== FALSE && sizeof($result[1]) === 1){
-          $textCode = $result[1][0];
+       if($result !== FALSE && sizeof($result[2]) === 1){
+          $textCode = $result[2][0];
           
           // 3. Add the code for the question to the dictionary and return the code for the question or the Text for the question depending on the purpose of the excel
           for($index = 0; $index < sizeof($this->languageCodes); $index++){
@@ -857,12 +874,29 @@ class Parser {
        return $columnHeadingCode;
     }
     
+    /**
+     * This method returns the last part of the csv column heading.
+     * e.g if the heading looks like sectionid-questionid then 
+     * questioncode is returned
+     * 
+     * @param  string   $heading    The csv file column heading of the form sectionid-questionid
+     * @return string               Returns the last part in $heading
+     */
     private function getAltHeadingName($heading){
         $headingParts = explode("-",$heading);
         return $headingParts[sizeof($headingParts)-1];
     }
 
-
+    /**
+     * This method Fetches a html file in aggregate server and scrapes data from the page.
+     * It is assumed that this page contains a <table></table> tag that contains the data.
+     * Authentication against the server is done and stored as a cookie if not previously done.
+     * Auth is through the use of digests
+     * 
+     * @param  type  $url           Points to the page in the aggregate server
+     * @param  type  $sheetName     Name of the excel sheet where the data from the html file will be dumpd
+     * @param  type  $secondaryKey  Key that will associate the data in the html page to the parent data in the main_sheet
+     */
     private function parseHTMLTable($url, $sheetName, $secondaryKey) {
         $encodedURL = urlencode($url);
         $authURL = $this->authURL.$encodedURL;
@@ -897,6 +931,7 @@ class Parser {
 
         $html = curl_exec($ch);
         curl_close($ch);
+        $html = str_replace("\n", " ", $html);
 
         $htmlTables = array();
 
