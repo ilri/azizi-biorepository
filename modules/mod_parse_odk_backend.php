@@ -818,15 +818,15 @@ class Parser {
        $this->logHandler->log(3, "Processing excel column heading ".$columnHeadingCode);
        //$columnHeading code can be sectioncode-questioncode
        // 1. append formid to column heading and replace all '-' with '/' (escaped / of course)
-       $formatedCHC = "-".$this->idPrefix . $columnHeadingCode;
+       $formatedCHC = "-".$this->idPrefix . "-" . $columnHeadingCode;
        $formatedCHC = str_replace("-", "\/", $formatedCHC);
        
        // 2. search code in xml file and get relevant itext
        $result = array();
        preg_match_all("/ref\s*=\s*['\"]".$formatedCHC."['\"]\s*>[\s\n]*<label\s+ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-]+)['\"]\)['\"]/i", $this->xmlString, $result);
        
-       if($result !== FALSE && sizeof($result) === 1){
-          $textCode = $result[0][1];
+       if($result !== FALSE && sizeof($result[1]) === 1){
+          $textCode = $result[1][0];
           
           // 3. Add the code for the question to the dictionary and return the code for the question or the Text for the question depending on the purpose of the excel
           for($index = 0; $index < sizeof($this->languageCodes); $index++){
@@ -838,9 +838,24 @@ class Parser {
              return $columnHeadingCode;
        }
        else{
-          $this->logHandler->log(3, "Unable to get text code for question ".$columnHeadingCode." This was returned instead".print_r($result, TRUE));
-          return $columnHeadingCode;
+          // 3. Check if question is repeat
+          preg_match_all("/ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-]+)['\"]\)['\"]\s*\/>[\s\n]*<repeat\s+nodeset\s*=\s*[\"']".$formatedCHC."[\"']/i", $this->xmlString, $result);
+          if($result !== FALSE && sizeof($result[1]) ===1){
+             $textCode = $result[1][0];
+             
+             // 4. Add the code for the question to the dictionary and return the code for the question or the Text for the question depending on the purpose
+             for($index = 0; $index < sizeof($this->languageCodes); $index++){
+               $this->languageCodes[$index][$columnHeadingCode] = $this->languageCodes[$index][$textCode];
+             }
+             if($this->parseType = "viewing")
+                return $this->convertKeyToValue($columnHeadingCode);
+             else
+                return $columnHeadingCode;
+          }
+          
        }
+       $this->logHandler->log(3, "Unable to get text code for question ".$columnHeadingCode." This was returned instead".print_r($result, TRUE));
+       return $columnHeadingCode;
     }
     
     private function getAltHeadingName($heading){
