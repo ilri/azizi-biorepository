@@ -853,7 +853,7 @@ class Parser {
           }
           
        }
-       $this->logHandler->log(3, "Unable to get text code for question ".$columnHeadingCode." This was returned instead".print_r($result, TRUE));
+       $this->logHandler->log(2, "Unable to get text code for question ".$columnHeadingCode);
        return $columnHeadingCode;
     }
     
