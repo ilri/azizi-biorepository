@@ -46,7 +46,7 @@ class Parser {
    private $sheetIndexes;
    
    /**
-    * @var array        Associative array containing all column names in all excel sheets in the format [sheet_name][column_index]
+    * @var array        Associative array containing all column names in all excel sheets in the format [sheet_name][column_index]. Only used when parsing json
     */
    private $allColumnNames;
    
@@ -358,7 +358,7 @@ class Parser {
       //send zip file to specified email
       $this->sendZipURL($zipName);
    }
-   
+
    
    /*
     * This function loads settings from the main ini file
@@ -706,7 +706,7 @@ class Parser {
         //check if string is non image url
         $rowID = $rowIndex + 1;
         $cellID = $this->getColumnName(NULL, NULL, $columnIndex) . $rowID;
-        if (filter_var($cellString, FILTER_VALIDATE_URL) && $this->isImage($cellString) === FALSE) {
+        if (filter_var($cellString, FILTER_VALIDATE_URL) && $this->isImage($cellString) === FALSE) {//is non-image url
             $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $this->cells[0][$columnIndex] . " sheet");
             $this->parseHTMLTable($cellString, $this->cells[0][$columnIndex], $rowIndex);
         }
@@ -753,16 +753,7 @@ class Parser {
                     $cellString = $this->convertKeyToValue($cellString);
                 }
                 else if($rowIndex === 0){
-                    $headings = explode("-", $cellString);
-                    $cellString = "";
-                    foreach ($headings as $currHeading){
-                        if(strlen($cellString) === 0){
-                            $cellString = $this->convertKeyToValue($currHeading);
-                        }
-                        else{
-                            $cellString = $cellString." :: ".$this->convertKeyToValue($currHeading);
-                        }
-                    }
+                    $cellString = $this->processColumnHeading($cellString);
                 }
                 
                 $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
@@ -815,11 +806,41 @@ class Parser {
                     }
                 }
             } else {//is a multiple select question heading
+                $cellString = $this->processColumnHeading($cellString);
                 $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
                 $this->phpExcel->getActiveSheet()->getStyle($cellID)->getFont()->setBold(TRUE);
                 $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $columnIndex))->setAutoSize(true);
             }
         }
+    }
+    
+    private function processColumnHeading($columnHeadingCode){
+       $this->logHandler->log(3, "Processing excel column heading ".$columnHeadingCode);
+       //$columnHeading code can be sectioncode-questioncode
+       // 1. append formid to column heading and replace all '-' with '/' (escaped / of course)
+       $formatedCHC = "-".$this->idPrefix . $columnHeadingCode;
+       $formatedCHC = str_replace("-", "\/", $formatedCHC);
+       
+       // 2. search code in xml file and get relevant itext
+       $result = array();
+       preg_match_all("/ref\s*=\s*['\"]".$formatedCHC."['\"]\s*>[\s\n]*<label\s+ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-]+)['\"]\)['\"]/i", $this->xmlString, $result);
+       
+       if($result !== FALSE && sizeof($result) === 1){
+          $textCode = $result[0][1];
+          
+          // 3. Add the code for the question to the dictionary and return the code for the question or the Text for the question depending on the purpose of the excel
+          for($index = 0; $index < sizeof($this->languageCodes); $index++){
+             $this->languageCodes[$index][$columnHeadingCode] = $this->languageCodes[$index][$textCode];
+          }
+          if($this->parseType = "viewing")
+             return $this->convertKeyToValue($columnHeadingCode);
+          else
+             return $columnHeadingCode;
+       }
+       else{
+          $this->logHandler->log(3, "Unable to get text code for question ".$columnHeadingCode." This was returned instead".print_r($result, TRUE));
+          return $columnHeadingCode;
+       }
     }
     
     private function getAltHeadingName($heading){
