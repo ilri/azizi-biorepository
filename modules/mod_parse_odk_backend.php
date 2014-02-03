@@ -815,7 +815,6 @@ class Parser {
     }
     
     private function processColumnHeading($columnHeadingCode){
-       $this->logHandler->log(3, "Processing excel column heading ".$columnHeadingCode);
        //$columnHeading code can be sectioncode-questioncode
        // 1. append formid to column heading and replace all '-' with '/' (escaped / of course)
        $formatedCHC = "-".$this->idPrefix . "-" . $columnHeadingCode;
@@ -830,7 +829,7 @@ class Parser {
           
           // 3. Add the code for the question to the dictionary and return the code for the question or the Text for the question depending on the purpose of the excel
           for($index = 0; $index < sizeof($this->languageCodes); $index++){
-             $this->languageCodes[$index][$columnHeadingCode] = $this->languageCodes[$index][$textCode];
+             $this->xmlValues[$columnHeadingCode][$index] = $this->xmlValues[$textCode][$index];
           }
           if($this->parseType = "viewing")
              return $this->convertKeyToValue($columnHeadingCode);
@@ -845,7 +844,7 @@ class Parser {
              
              // 4. Add the code for the question to the dictionary and return the code for the question or the Text for the question depending on the purpose
              for($index = 0; $index < sizeof($this->languageCodes); $index++){
-               $this->languageCodes[$index][$columnHeadingCode] = $this->languageCodes[$index][$textCode];
+               $this->xmlValues[$columnHeadingCode][$index] = $this->xmlValues[$textCode][$index];
              }
              if($this->parseType = "viewing")
                 return $this->convertKeyToValue($columnHeadingCode);
