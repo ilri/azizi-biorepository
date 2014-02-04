@@ -726,7 +726,7 @@ class Parser {
             if (!in_array("-" . $this->idPrefix . "-" . $columnHeading, $this->selectIDs)) {//not a multiple select question         
         
                 //check if value is a barcode
-                if(strlen($cellString) > 0 && in_array($this->getAltHeadingName($columnHeading), $this->manualBCs) && $this->parseType !== "viewing" && $rowIndex!==0){
+                if(strlen($cellString) > 0 && $cellString !== "null" && in_array($this->getAltHeadingName($columnHeading), $this->manualBCs) && $this->parseType !== "viewing" && $rowIndex!==0){
                     //is a barcode that was entered manually, now get index of the key in manualBCs array
                     $barcodeIndex = array_search($this->getAltHeadingName($columnHeading), $this->manualBCs, TRUE);
                       
@@ -840,7 +840,7 @@ class Parser {
        
        // 2. search code in xml file and get relevant itext
        $result = array();
-       preg_match_all("/ref\s*=\s*['\"]".$formatedCHC."['\"]\s*>[\s\n]*<(label|hint)\s+ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-]+)['\"]\)['\"]/i", $this->xmlString, $result);
+       preg_match_all("/ref\s*=\s*['\"]".$formatedCHC."['\"]\s*>[\s\n]*<(label|hint)\s+ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-\.]+)['\"]\)['\"]/i", $this->xmlString, $result);
        
        if($result !== FALSE && sizeof($result[2]) === 1){
           $textCode = $result[2][0];
@@ -856,7 +856,7 @@ class Parser {
        }
        else{
           // 3. Check if question is repeat
-          preg_match_all("/ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-]+)['\"]\)['\"]\s*\/>[\s\n]*<repeat\s+nodeset\s*=\s*[\"']".$formatedCHC."[\"']/i", $this->xmlString, $result);
+          preg_match_all("/ref[\s]*=[\s]*[\"']jr:itext\([\"']([a-z0-9_\-\.]+)['\"]\)['\"]\s*\/>[\s\n]*<repeat\s+nodeset\s*=\s*[\"']".$formatedCHC."[\"']/i", $this->xmlString, $result);
           if($result !== FALSE && sizeof($result[1]) ===1){
              $textCode = $result[1][0];
              
