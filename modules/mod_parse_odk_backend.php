@@ -569,7 +569,7 @@ class Parser {
                   $this->logHandler->log(4, $this->TAG, 'value of '.$keys[$index].' is '.$values[$index]);
                   
                   //check if value is a barcode
-                  if(strlen($values[$index]) > 0 && in_array($keys[$index], $this->manualBCs) && $this->parseType !== "viewing"){
+                  if(in_array($this->getAltHeadingName($columnHeading), $this->manualBCs) === TRUE && $rowIndex !== 0 && strlen($cellString) !== 0 && $cellString !=="null" && $this->parseType !== "viewing"){
                       //is a barcode that was entered manually, now get index of the key in manualBCs array
                       $barcodeIndex = array_search($keys[$index], $this->manualBCs, TRUE);
                       
@@ -720,6 +720,7 @@ class Parser {
         else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $this->isImage($cellString) ===TRUE && $this->dwnldImages === "yes"){ //is image
             $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
             $cellString = $this->gTasks->downloadImage($cellString, $this->imagesDir);
+            $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
         }
         else {
             if (!in_array("-" . $this->idPrefix . "-" . $columnHeading, $this->selectIDs)) {//not a multiple select question         
@@ -848,7 +849,7 @@ class Parser {
           for($index = 0; $index < sizeof($this->languageCodes); $index++){
              $this->xmlValues[$columnHeadingCode][$index] = $this->xmlValues[$textCode][$index];
           }
-          if($this->parseType = "viewing")
+          if($this->parseType === "viewing")
              return $this->convertKeyToValue($columnHeadingCode);
           else
              return $columnHeadingCode;
@@ -863,7 +864,7 @@ class Parser {
              for($index = 0; $index < sizeof($this->languageCodes); $index++){
                $this->xmlValues[$columnHeadingCode][$index] = $this->xmlValues[$textCode][$index];
              }
-             if($this->parseType = "viewing")
+             if($this->parseType === "viewing")
                 return $this->convertKeyToValue($columnHeadingCode);
              else
                 return $columnHeadingCode;
