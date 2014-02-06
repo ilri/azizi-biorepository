@@ -99,50 +99,38 @@ class LabelPrinter extends Repository{
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
 <div id='home'>
-  <h3>Printing Labels</h3>
+  <h2 class="center">Generate Labels</h2>
   <?php echo $addinfo; ?>
-   <form enctype="multipart/form-data" name="upload" action="index.php?page=labels&do=generate_labels" method="POST" onSubmit="LabelPrinter.generateLabels();">
-    <input type="hidden" value="10240000" name="MAX_FILE_SIZE"/>
      <div id='generate'>
-       <fieldset>
-         <legend>Generate New Labels</legend>
-         <fieldset id='general'>
+         <div id='general'>
             <legend>General</legend>
-            <table>
-               <tr><td class='label'>Label Type:</td><td><?php echo $labelTypes; ?></td></tr>
-               <!-- <tr><td class='label'>Sequence:</td><td><input type='radio' name='sequence' value='sequential' /> Sequential <input type='radio' name='sequence' value='random' /> Random</td></tr> -->
-               <tr><td class='label'>Purpose:</td><td><input type='radio' name='purpose' value='testing' /> Testing <input type='radio' name='purpose' value='final' /> Final</td></tr>
-               <tr><td class='label'>Duplicates:</td><td><input type='radio' name='duplicates' value='allow' /> Allow <input type='radio' name='duplicates' value='not_allowed' /> Not Allowed</td></tr>
-               <tr><td class='links' colspan='2'>
-                  <input type='submit' value='Generate' name='generate' />
-                  <input type='reset' value='Cancel' name='cancel' />
-              </td></tr>
-            </table>
-         </fieldset>
-         <fieldset id='sequence'>
-            <legend>Sequence of the labels</legend>
             <div>
-               <table>
-                  <tr><td>Prefix</td><td><span id='prefix_place'><?php echo $prefixes; ?></span></td></tr>
-                  <tr><td>Count</td><td><input type='text' name='count' value='' size='5'></td></tr>
-               </table>
+               <div><label>Label Type:</label><?php echo $labelTypes; ?></div>
+               <div><label>Purpose:</label><input type='radio' name='purpose' value='testing' /> Testing <input type='radio' name='purpose' value='final' /> Final</div>
+               <div><label>Duplicates:</label><input type='radio' name='duplicates' value='allow' /> Allow <input type='radio' name='duplicates' value='not_allowed' /> Not Allowed</div>
+               <div class='links'>
+                  <input type='submit' value='Generate' name='generate' /><input type='reset' value='Cancel' name='cancel' />
+              </div>
+            </div>
          </div>
-         </fieldset>
-         <fieldset id='info'>
+         <div id='sequence'>
+            <legend>Labels Sequence</legend>
+            <div>
+               <div><label>Prefix</label><span id='prefix_place'><?php echo $prefixes; ?></span></div>
+               <div><label>Count</label><input type='text' name='count' value='' size='5' /></div>
+            </div>
+         </div>
+         <div id='info'>
             <legend>Purpose of the labels</legend>
-         </fieldset>
-       </fieldset>
-     </div>
-  </form>
-  <span><a href='javascript:;' onClick='LabelPrinter.toggleMe("printed_labels");'>Printed Labels</a></span>
-  <div id='lower_panel' class='hidden'>
-   <div id='printed_labels'>&nbsp;</div>
-  </div>
+         </div>
 </div>
+  <div><a href='javascript:;' onClick='LabelPrinter.toggleMe("printed_labels");'>Printed Labels</a></div>
+  <div id='lower_panel' class='hidden'>
+      <div id='printed_labels'>&nbsp;</div>
+  </div>
 
 <script type='text/javascript'>
       $('[name=purpose]').bind('click', LabelPrinter.labelsPurpose);
-//      $('[name=sequence]').bind('click', LabelPrinter.labelsSequence);
 
       //changing the prefix
       $('#prefixId').live('change', function(){

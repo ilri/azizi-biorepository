@@ -193,15 +193,19 @@ class Repository extends DBase{
       }
       ?>
       <div id='login'>
-         <form action="?page=login" name='login_form' method='POST'>
+         <form action="?page=login" name='login_form' method='POST' class="form-horizontal" role="form">
             <div id='login_page'>
                <div class="top">Login</div>
                <div id='addinfo'><?php echo $addinfo; ?></div>
-               <table>
-                  <tr><td>Username</td><td><input type="text" name="username" value="<?php echo $username; ?>" size="15"/></td></tr>
-                  <tr><td>Password</td><td><input type="password" name="password" size="15" /></td></tr>
+               <div class="form-group">
+                  <label for="usernameId" class="control-label col-sm-10">Username</label>
+                  <div><input id="usernameId" type="text" name="username" placeholder="username" value="<?php echo $username; ?>" size="15"/></div>
+               </div>
+               <div class="form-group">
+                  <label for="passwordId" class="control-label col-sm-10">Password</label>
+                  <div><input class="form-control" id="passwordId" type="password" placeholder="Password" name="password" size="15" /></div>
                   <input type="hidden" name="md5_pass" />
-               </table>
+               </div>
                <div class='buttons'><input type="submit" name="login" value="Log In" />   <input type="reset" value="Cancel" /></div>
             </div>
       <?php echo $hidden; ?>
@@ -278,7 +282,7 @@ class Repository extends DBase{
             return;
          }
          else if(is_string($adAuth)){
-            
+
          }
    }
 

@@ -2,26 +2,23 @@ var Main = {
    ajaxParams: {successMssg: undefined, div2Update: undefined}, successMssg: undefined, title: 'Label Printing'
 };
 
+/**
+ * A class for liquid nitrogen transfer
+ *
+ * @type type
+ */
 var LN2Transferer = {
+
    submitNewTransfer: function() {
-      if(this.validateInput()) {
-         return true;
-      }
-      else {
-         return false;
-      }
+      if(this.validateInput()) return true;
+      else return false;
+
       return false;
    },
+
    validateInput: function() {
-      if (typeof(String.prototype.trim) === "undefined") {
-         String.prototype.trim = function()
-         {
-            return String(this).replace(/^\s+|\s+$/g, '');
-         };
-      }
-      
       $("#technician").val($("#technician").val().trim());
-      
+
       if($("#technician").val() === "") {
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the technician', error:true});
          $("#technician").focus();
@@ -32,24 +29,13 @@ var LN2Transferer = {
          $("#technician").focus();
          return false;
       }
-      
+
       if($("#date").val() === "") {
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the tranfer date', error:true});
          $("#date").focus();
          return false;
       }
-      
-      /*if($("#litres").val() === "") {
-         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the amout of litres transfered', error:true});
-         $("#litres").focus();
-         return false;
-      }
-      else if(isNaN($("#litres").val())) {
-         Notification.show({create:true, hide:true, updateText:false, text:'Amount in litres you entered is not a number', error:true});
-         $("#litres").focus();
-         return false;
-      }*/
-      
+
       if($("#pBeforeTransfer").val() === "") {
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the production level before the transfer', error:true});
          $("#pBeforeTransfer").focus();
@@ -65,7 +51,7 @@ var LN2Transferer = {
          $("#pBeforeTransfer").focus();
          return false;
       }
-      
+
       if($("#pAfterTransfer").val() === "") {
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the production level after the transfer', error:true});
          $("#pAfterTransfer").focus();
@@ -86,7 +72,7 @@ var LN2Transferer = {
          $("#pAfterTransfer").focus();
          return false;
       }
-      
+
       if($("#pressureLoss").val() === "") {
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the pressure loss', error:true});
          $("#pressureLoss").focus();

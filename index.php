@@ -25,5 +25,4 @@
         Designed and Developed By: <a href="mailto:a.kihara@cgiar.org" target="_top">Kihara Absolomon</a>, <a href="mailto:j.rogena@cgiar.org" target="_blank">Rogena Jason</a>
      </div>
    </body>
-</body>
 </html>
