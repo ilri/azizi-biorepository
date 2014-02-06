@@ -48,63 +48,53 @@ class LN2Transferer extends Repository{
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
       ?>
 <div id='home'>
-   <h3>Nitrogen Transfer</h3>
+   <h3 class="center">Nitrogen Transfer</h3>
+   <hr />
    <?php echo $addinfo?>
-   <form enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=ln2_transfers&do=submit_ln2_transfer" onsubmit="return LN2Transferer.submitNewTransfer();" >
-      <div id="generate">
-         <fieldset>
-            <legend>Add a new Transfer</legend>
-               <table id="mainField">
-                  <tr><td class="label">Technician</td><td><input type="text" name="technician" id="technician" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>"/></td></tr>
-                  <tr><td class="label">Date of transfer</td><td><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>"/></td></tr>
-                  <script>
-                     $(function() {
-                        $( "#date" ).datepicker({maxDate: '0', dateFormat: 'dd-mm-yy',minDate:'-2'});
-                     });
-                  </script>
-                  <tr><td class="label">Litres transfered</td><td><input type="text" name="litres" id="litres" value="" size="4" disabled="true"/></td></tr>
-                  <tr><td colspan="2">
-                        <fieldset>
-                           <legend>Production Levels</legend>
-                           <table>
-                              <tr>
-                                 <td class="label">Before Transfer</td><td><input type="text" name="pBeforeTransfer" id="pBeforeTransfer" value="" size="4"/></td>
-                                 <td class="label">After Transfer</td><td><input type="text" name="pAfterTransfer" id="pAfterTransfer" value="" size="4"/></td>
-                                 <td class="label">Pressure Loss</td><td><input type="text" name="pressureLoss" id="pressureLoss" value="" size="4"/></td>
-                              </tr>
-                              <script>
-                                 $("#pAfterTransfer").change(function (){
-                                    if($("#pBeforeTransfer").val() !== "" && !isNaN($("#pBeforeTransfer").val())) {
-                                       if($("#pAfterTransfer").val() !== "" && !isNaN($("#pAfterTransfer").val())){
-                                          var diff = $("#pBeforeTransfer").val() - $("#pAfterTransfer").val();
-                                          $("#litres").val(diff*10);
-                                       }
-                                    }
-                                 });
-                                 $("#pBeforeTransfer").change(function (){
-                                    if($("#pBeforeTransfer").val() !== "" && !isNaN($("#pBeforeTransfer").val())) {
-                                       if($("#pAfterTransfer").val() !== "" && !isNaN($("#pAfterTransfer").val())){
-                                          var diff = $("#pBeforeTransfer").val() - $("#pAfterTransfer").val();
-                                          $("#litres").val(diff*10);
-                                       }
-                                    }
-                                 });
-                              </script>
-                           </table>
-                        </fieldset>
-                  </td></tr>
-                  <tr><td colspan="2">
-                        <input type="submit" value="Submit" name="submitButton" id="submitButton"/>
-                        <input type="reset" value="Cancel" name="cancelButton" id="cancelButton"/>
-                  </td></tr>
-               </table>
-         </fieldset>
+   <form enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=ln2_transfers&do=submit_ln2_transfer" onsubmit="return LN2Transferer.submitNewTransfer();" class="form-horizontal" ref="form" >
+      <div id="transfer">
+         <h4>Add a new Transfer</h4>
+         <div>
+            <div class="left-align"><label class="left-align">Technician</label><input type="text" name="technician" id="technician" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>"/></div>
+            <div class="left-align"><label class="left-align">Date of transfer</label><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>" /></div>
+            <div><label class="left-align">Litres transfered</label><input type="text" name="litres" id="litres" value="" size="4" disabled="true" /></div>
+         </div>
+         <hr />
+         <h4>Production Levels</h4>
+         <div>
+            <div class="left-align"><label class="left-align">Before Transfer</label><input type="text" name="pBeforeTransfer" id="pBeforeTransfer" value="" size="4"/></div>
+            <div class="left-align"><label class="left-align">After Transfer</label><input type="text" name="pAfterTransfer" id="pAfterTransfer" value="" size="4" /></div>
+            <div><label class="left-align">Pressure Loss</label><input type="text" name="pressureLoss" id="pressureLoss" value="" size="4" /></div>
+         </div>
+         <div class="links">
+            <input type="submit" value="Submit" name="submitButton" id="submitButton"/>
+            <input type="reset" value="Cancel" name="cancelButton" id="cancelButton"/>
+         </div>
       </div>
    </form>
    <div id="past_transfers">&nbsp;</div>
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+   $(function() {
+      $( "#date" ).datepicker({maxDate: '0', dateFormat: 'dd-mm-yy',minDate:'-2'});
+   });
+   $("#pAfterTransfer").change(function (){
+      if($("#pBeforeTransfer").val() !== "" && !isNaN($("#pBeforeTransfer").val())) {
+         if($("#pAfterTransfer").val() !== "" && !isNaN($("#pAfterTransfer").val())){
+            var diff = $("#pBeforeTransfer").val() - $("#pAfterTransfer").val();
+            $("#litres").val(diff*10);
+         }
+      }
+   });
+   $("#pBeforeTransfer").change(function (){
+      if($("#pBeforeTransfer").val() !== "" && !isNaN($("#pBeforeTransfer").val())) {
+         if($("#pAfterTransfer").val() !== "" && !isNaN($("#pAfterTransfer").val())){
+            var diff = $("#pBeforeTransfer").val() - $("#pAfterTransfer").val();
+            $("#litres").val(diff*10);
+         }
+      }
+   });
    $("#past_transfers").flexigrid({
       url: "mod_ajax.php?page=ln2_transfers&do=fetch_ln2_transfers",
       dataType: 'json',

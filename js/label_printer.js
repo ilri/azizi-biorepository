@@ -165,14 +165,10 @@ var LabelPrinter={
          content += "Printing testing labels, nothing to save here!";
       }
       else{
-         content +="<div>\n\
-         <table>\n\
-            <tr><td>Project</td><td><span id='project_place'>"+ projects +"</span></td></tr>\n\
-            <tr><td>Requester</td><td><span id='requester_place'>"+ requester +"</span></td></tr>\n\
-            <tr><td>Charge Code</td><td><span id='charge_code'>Select a project first</span></td></tr>\n\
-            <tr><td>Comments</td><td><textarea cols='20' rows='3' name=comments></textarea></td></tr>\n\
-         </table>\n\
-        </div>";
+         content +="<div><label>Project</label><span id='project_place'>"+ projects +"</span></div>\n\
+            <div><label>Requester</label><span id='requester_place'>"+ requester +"</span></div>\n\
+            <div><label>Charge Code</label><span id='charge_code'>Select a project first</span></div>\n\
+            <div><label>Comments</label><textarea cols='20' rows='2' name=comments></textarea></div>";
       }
       $('#info').html(content);
 
@@ -227,12 +223,8 @@ var LabelPrinter={
       });
 
       if(sequence == 'sequential'){
-         content +="<div>\n\
-         <table>\n\
-            <tr><td>Prefix</td><td><span id='prefix_place'>"+ prefix +"</span></td></tr>\n\
-            <tr><td>Count</td><td><input type='text' name='count' value='' size='5'></td></tr>\n\
-         </table>\n\
-        </div>";
+         content +="<div><label>Prefix</label><span id='prefix_place'>"+ prefix +"</span></div>\n\
+                   <div><label>Count</label><input type='text' name='count' value='' size='5' /></div>";
       }
       else{
          content +="<div>\n\

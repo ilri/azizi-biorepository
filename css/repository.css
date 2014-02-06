@@ -19,18 +19,6 @@ body {
   border: none;
 }
 
-input[type='text'], input[type='password']{
-   border-color: #CDCDCD;
-   border-style: inset;
-   -moz-border-radius: 3px;
-   -webkit-border-radius: 4px;
-   border-radius: 4px;
-   padding: 1px 0px;
-   border-width: 2px;
-   box-shadow: none;
-   margin: 3px 0px;
-}
-
 #addinfo, #top_tip{
    margin: 2px 5px;
    min-height: 20px;
@@ -58,7 +46,7 @@ input[type='text'], input[type='password']{
    margin: 10px;
 }
 
-#home, #whoisme{
+#home, #whoisme, #lower_panel{
    width: 920px;
 }
 #repository{
@@ -91,41 +79,79 @@ input[type='text'], input[type='password']{
    background-color: #804051;
 }
 
-#generate fieldset td{
-   font-size: 76%;
-}
-
-#generate fieldset .label{
-   font-weight: bold;
+#mainField label, #transfer label{
+   padding-top: 5px;
+   height: 30px;
+   margin-left: 20px;
 }
 
 #generate #general, #generate #sequence, #generate #info{
    float: left;
    margin: 2px 4px;
+   height: 250px;
 }
 
 #generate #general{
-
+   width: 350px;
 }
 
 #generate #sequence{
-   max-width: 200px
+   width: 200px;
+   border-left: 1px dotted #d3d3d3;
+   padding-left: 5px;
 }
 
 #generate #info{
-   max-width: 200px
+   width: 330px;
+   float: none;
+   margin-left: 580px;
+   border-left: 1px dotted #d3d3d3;
+   padding-left: 5px;
 }
 
-#generate {
-   margin-left: auto;
-   margin-right: auto;
-   width: 90%;
+#generate .links, #transfer .links{
+   width: 100%;
 }
 
-#mainField {
-   margin-left: auto;
-   margin-right: auto;
-   width: 70%;
+#mainField, #generate {
+   margin: 0px auto 5px auto;
+   width: 100%;
+}
+
+#mainField div, #generate div{
+   margin-bottom: 10px;
+}
+
+#mainField .shift-right, #generate .shift-right{
+   margin-left: 250px;
+}
+
+#mainField .links{
+   width: 100%;
+}
+
+#generate label{
+   width: 80px;
+   float: left;
+   height: 20px;
+   padding: 5px 5px 0px 0px;
+   text-align: right;
+}
+
+#sequence label{
+   width: 40px;
+}
+
+#sequence select{
+   width: 150px;
+}
+
+#info select{
+   width: 200px;
+}
+
+.left-align{
+   float: left;
 }
 
 .links{
@@ -175,6 +201,7 @@ input[type='text'], input[type='password']{
 
 .links, #upload, .instructions{
    text-align: center;
+   display: inline-block;
 }
 
 .error{
@@ -215,11 +242,19 @@ input[type='text'], input[type='password']{
    margin-top: 60px;
 }
 
-#login table{
-   margin: 5px auto;
+#login .form-group{
+   margin: 7px;
+   width: 320px;
 }
 
-#login #login_page{
+#login input, #mainField input, #generate input, #transfer input{
+   height: 30px;
+   width: 150px;
+   margin-left: 10px;
+}
+
+#sequence input{
+   width: 80px;
 }
 
 #login_page .top{
@@ -239,7 +274,7 @@ input[type='text'], input[type='password']{
     margin: 1px 10px 1px 0px;
 }
 
-#whoisme .user{ float: right; }
+#whoisme .user{ float: right; margin-right: 10px; }
 #whoisme .back{ padding-left: 10px; text-align: left; }
 
 #odk_table {

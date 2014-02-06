@@ -54,56 +54,26 @@ class Ln2Requests extends Repository{
 
       ?>
 <div id='home'>
-   <h3>Nitrogen Requests</h3>
+   <h3 class="center">Nitrogen Requests</h3>
+   <hr />
    <?php echo $addinfo?>
    <form enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=ln2_requests&do=request" onsubmit="return Ln2Requests.submitNewRequest();" >
-      <div id="generate">
-         <fieldset>
-            <legend>Add a Request</legend>
-               <table id="mainField">
-                  <tr><td class="label">Name</td><td><input type="text" name="user" id="user" disabled="true" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>"/></td></tr>
-                  <tr><td class="label">Date of Request</td><td><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>"/></td></tr>
-                  <script>
-                     $(function() {
-                        $( "#date" ).datepicker({maxDate: '0', dateFormat: 'dd-mm-yy'});
-                     });
-                  </script>
-                  <tr><td class="label">Amount of Nitrogen (Litres)</td><td><input type="text" name="amount" id="amount" value="" size="4"/></td></tr>
-                  <tr><td colspan="2">
-                        <fieldset>
-                           <legend>Project</legend>
-                           <table>
-                              <tr><td class="label">Project</td><td><input type="text" name="project" id="project" value="" disabled="true" size="50"/></td>
-                                 <td class="label">Charge Code</td><td><input type="text" name="chargeCode" id="chargeCode" value=""/></td></tr>
-                              <script>
-                                 $(function (){
-                                    var chargeCodes = <?php echo json_encode($chargeCodes);?>;
-                                    var projects = <?php echo json_encode($chargeCodesWP);?>;
-                                    for(var i = 0; i < chargeCodes.length; i++) {
-                                       if(chargeCodes[i] === null) {
-                                          chargeCodes.splice(i, 1);
-                                          i--;
-                                       }
-                                    }
-                                    $("#chargeCode").autocomplete({
-                                       source: chargeCodes,
-                                       minLength: 2,
-                                       select: function (event, ui) {
-                                          var value = ui.item.value;
-                                          $("#project").val(projects[value]);
-                                       }
-                                    });
-                                 });
-                              </script>
-                           </table>
-                        </fieldset>
-                  </td></tr>
-                  <tr><td colspan="2">
-                        <input type="submit" value="Request" name="submitButton" id="submitButton"/>
-                        <input type="reset" value="Cancel" name="cancelButton" id="cancelButton"/>
-                  </td></tr>
-               </table>
-         </fieldset>
+      <div id="request" class="form-horizontal" role="form">
+         <div id="mainField">
+            <div>
+               <div class="left-align"><label class="left-align">Name</label><input type="text" class="form-control" name="user" id="user" disabled="true" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
+               <div class="left-align"><label class="left-align">Request Date</label><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>" class="form-control" /></div>
+               <div><label class="left-align">Amount of Nitrogen (Litres)</label><input type="text" name="amount" id="amount" value="" size="4" class="form-control" /></div>
+            </div>
+            <div style="margin: 20px 0px;">
+               <div class="left-align"><label class="left-align">Project</label><input type="text" name="project" id="project" value="" disabled="true" size="50" class="form-control" /></div>
+               <div><label class="left-align">Charge Code</label><input type="text" name="chargeCode" id="chargeCode" value="" class="form-control" /></div>
+            </div>
+            <div class="links">
+               <input type="submit" value="Request" name="submitButton" id="submitButton"/>
+               <input type="reset" value="Cancel" name="cancelButton" id="cancelButton"/>
+            </div>
+         </div>
       </div>
    </form>
    <div id="past_requests">&nbsp;</div>
@@ -113,6 +83,25 @@ class Ln2Requests extends Repository{
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+   $(function() {
+      $( "#date" ).datepicker({maxDate: '0', dateFormat: 'dd-mm-yy'});
+      var chargeCodes = <?php echo json_encode($chargeCodes); ?>;
+      var projects = <?php echo json_encode($chargeCodesWP); ?>;
+      for(var i = 0; i < chargeCodes.length; i++) {
+         if(chargeCodes[i] === null) {
+            chargeCodes.splice(i, 1);
+            i--;
+         }
+      }
+      $("#chargeCode").autocomplete({
+         source: chargeCodes,
+         minLength: 2,
+         select: function (event, ui) {
+            var value = ui.item.value;
+            $("#project").val(projects[value]);
+         }
+      });
+   });
    $("#past_requests").flexigrid({
       url: "mod_ajax.php?page=ln2_requests&do=fetch",
       dataType: 'json',
