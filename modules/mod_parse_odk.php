@@ -33,12 +33,12 @@ class ParseODK extends Repository{
 <h3 id="odk_heading">ODK Parser</h3>
 <form class="form-horizontal odk_parser">
    <div class="form-group">
-      <label for="json_file" class="control-label">JSON File</label>
-      <div class=""><input type="file" class="form-control" id="json_file" placeholder="JSON File"></div>
+      <label for="json_file" class="control-label">JSON or CSV File</label>
+      <div class=""><input type="file" class="form-control" id="data_file" placeholder="JSON or CSV File"></div>
    </div>
    <div class="form-group">
       <label for="xml_file" class="control-label">XML File</label>
-      <div class=""><input type="file" class="form-control" id="xml_file" placeholder="XML file"></div>
+      <div class=""><input type="file" class="form-control" id="xml_file" name="xml_file" placeholder="XML file"></div>
    </div>
    <div class="form-group">
       <label for="name" class="control-label">Full Name</label>
@@ -50,7 +50,25 @@ class ParseODK extends Repository{
    </div>
    <div class="form-group">
       <label for="file_name" class="control-label">Excel spreadsheet to be generated</label>
-      <div class=""><input type="text" class="form-control" id="file_name" placeholder="Excel Spreadsheet Name"></div>
+      <div class=""><input type="text" class="form-control" name="file_name" id="file_name" placeholder="Excel Spreadsheet Name"></div>
+   </div>
+   <div class="form-group">
+      <label for="parseType" class="control-label">Type of Output</label>
+      <div class="">
+         <select name="parseType" id="parseType">
+            <option value="viewing">Easy viewing</option>
+            <option value="analysis">Analysis</option>
+         </select>
+      </div>
+   </div>
+   <div class="form-group">
+      <label for="dwnldImages" class="control-label">Download Images?</label>
+      <div class="">
+         <select name="dwnldImages" id="dwnldImages">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+         </select>
+      </div>
    </div>
    <div class="center"><button id="generate_b" name="generate_b" onclick="return false;" class="btn-primary">Generate</button></div>
 </form>

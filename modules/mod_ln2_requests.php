@@ -98,6 +98,7 @@ class Ln2Requests extends Repository{
                            </table>
                         </fieldset>
                   </td></tr>
+                  <tr><td class="label" colspan="2">Comment <input name="req_comment" id="req_comment" size="75"></td></tr>
                   <tr><td colspan="2">
                         <input type="submit" value="Request" name="submitButton" id="submitButton"/>
                         <input type="reset" value="Cancel" name="cancelButton" id="cancelButton"/>
@@ -109,7 +110,10 @@ class Ln2Requests extends Repository{
    <div id="past_requests">&nbsp;</div>
 </div>
 <div id="dialog-modal" title="Set the amount approved" style="display: none;">
-   <table><tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr></table>
+   <table>
+      <tr><td>Amount Approved : </td><td><input type="text" name = "newAmountApproved" id="newAmountApproved" size="4"></td></tr>
+      <tr><td>Comment: </td><td><textarea type="text" name = "apprv_comment" id="apprv_comment" cols="30" rows="2" ></textarea></td></tr>   
+   </table>
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
@@ -118,10 +122,11 @@ class Ln2Requests extends Repository{
       dataType: 'json',
       colModel : [
          {display: 'Date', name: 'date', width: 100, sortable: true, align: 'center'},
-         {display: 'Requester', name: 'username', width: 300, sortable: true, align: 'left'},
-         {display: 'Amount Requested', name: 'amount_req', width: 150, sortable: false, align: 'center'},
-         {display: 'Amount Approved', name: 'amount_appr', width: 150, sortable: false, align: 'center'},
-         {display: 'Charge Code', name: 'charge_code', width: 100, sortable: false, align: 'center'}
+         {display: 'Requester', name: 'username', width: 200, sortable: true, align: 'left'},
+         {display: 'Amount Requested', name: 'amount_req', width: 100, sortable: false, align: 'center'},
+         {display: 'Amount Approved', name: 'amount_appr', width: 100, sortable: false, align: 'center'},
+         {display: 'Charge Code', name: 'charge_code', width: 50, sortable: false, align: 'center'},
+         {display: 'Comment', name: 'req_comment', width: 250, sortable: false, align: 'left' }
       ],
       searchitems : [
          {display: 'Requester', name : 'username'},
@@ -157,22 +162,41 @@ class Ln2Requests extends Repository{
       //$userID = $this->addUserIfNotExists($_POST['user']);
       $projectID = $this->getProjectID($_POST['chargeCode']);
       if($projectID !== 0){
-         $cols = array("project_id","date","amount_req","added_by","ldap_name");
+         $cols = array("project_id","date","amount_req","added_by","ldap_name","req_comment");
          $ldapName = $this->Dbase->getUserFullName($_SESSION['username']);
          $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
-         $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName);
+         $colVals = array($projectID,$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName,$_POST['req_comment']);
          if($ldapName !== 0){
             $res = $this->Dbase->InsertOnDuplicateUpdate("ln2_acquisitions",$cols,$colVals);
             if($res === 0) {
                $message = "Unable to add the last request. Try again later";
+            }
+            else{
+                $this->sendRequestEmail($ldapName, $_POST['amount']);
             }
          }
          else {
             $message = "Unable to add the last request. Requests can only be made by valid ILRI Users";
          }
       }
-      else if($projectID === 0) {
-         $message = "Unable to add the last request. Enter a valid charge code";
+      else if($projectID === 0) {//user entered a charge code not in the database
+         $cols = array("alt_ccode","date","amount_req","added_by","ldap_name","req_comment");
+         $ldapName = $this->Dbase->getUserFullName($_SESSION['username']);
+         $date = DateTime::createFromFormat('d-m-Y',$_POST['date']);
+         $colVals = array($_POST['chargeCode'],$date->format("Y-m-d"),$_POST['amount'],$_SESSION['username'],$ldapName,$_POST['req_comment']);
+         if($ldapName !== 0){
+            $res = $this->Dbase->InsertOnDuplicateUpdate("ln2_acquisitions",$cols,$colVals);
+            if($res === 0) {
+               $message = "Unable to add the last request. Try again later";
+            }
+            else{
+                $this->sendRequestEmail($ldapName, $_POST['amount']);
+            }
+         }
+         else {
+            $message = "Unable to add the last request. Requests can only be made by valid ILRI Users";
+         }
+
       }
       else {
          $message = "Unable to add the last request. Try again later";
@@ -226,7 +250,7 @@ class Ln2Requests extends Repository{
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
       $query = "SELECT a.*, b.name AS project, b.`charge_code`".
               " FROM ln2_acquisitions AS a".
-              " INNER JOIN ln2_chargecodes AS b ON a.`project_id` = b.id".
+              " LEFT JOIN ln2_chargecodes AS b ON a.`project_id` = b.id".
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
@@ -245,7 +269,11 @@ class Ln2Requests extends Repository{
       //reformat rows fetched from first query
       $rows = array();
       foreach ($data as $row) {
-         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"]));
+         if($row['alt_ccode'] !== NULL){//check if row has no associated project
+            $row["charge_code"] = $row["alt_ccode"];
+         }
+         if($row['req_comment'] === NULL) $row['req_comment'] = "";
+         $rows[] = array("id" => $row['id'], "cell" => array("date" => $row['date'],"username" => $row['ldap_name'],"amount_req" => $row["amount_req"], "amount_appr" => $row["amount_appr"], "charge_code" => $row["charge_code"], "req_comment" => $row["req_comment"]));
       }
       $response = array(
           'total' => $dataCount,
@@ -264,8 +292,8 @@ class Ln2Requests extends Repository{
         $query = "SELECT `amount_appr` FROM ln2_acquisitions WHERE id = ?";
         $result = $this->Dbase->ExecuteQuery($query,array($_POST['rowID']));
         if(sizeof($result) === 1 && is_null($result[0]['amount_appr'])) {
-           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ?, `apprvd_by` = ? WHERE id = ?";
-           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_SESSION['username'],$_POST['rowID']));
+           $query = "UPDATE ln2_acquisitions SET `amount_appr` = ?, `apprvd_by` = ?, `apprv_comment` = ? WHERE id = ?";
+           $this->Dbase->ExecuteQuery($query,array($_POST['amountApproved'],$_SESSION['username'], $_POST['apprv_comment'],$_POST['rowID']));
            $this->generateInvoice($_POST['rowID']);
         }
       }
@@ -378,7 +406,7 @@ class Ln2Requests extends Repository{
             unlink("./generated_pages/" . $pageName);
             //copy("/tmp/".$hash.".pdf", "./generated_pages/".$hash.".pdf");
             //unlink("/tmp/".$hash.".pdf");
-            $this->sendEmail("'/tmp/" . $pdfName . ".pdf'", $email, $date, $name);
+            $this->sendApprovalEmail("'/tmp/" . $pdfName . ".pdf'", $email, $date, $name);
          }
 
       }
@@ -392,7 +420,7 @@ class Ln2Requests extends Repository{
     * @param   string   $date       The date the requisition waas made
     * @param   string   $name       Name of the reciever
     */
-   private function sendEmail($pdfURL, $reciever, $date, $name) {
+   private function sendApprovalEmail($pdfURL, $reciever, $date, $name) {
       //$reciever = $this->getEmailAddress($ldapUser);
       $cc = Config::$managerEmail;
       $subject = "Invoice for Nitrogen requested on ".$date;
@@ -400,6 +428,13 @@ class Ln2Requests extends Repository{
       shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -- '.$reciever);
       //shell_exec('echo "'.$message.'"|mailx -s "'.$subject.'" -c '.$cc.' -a '.$pdfURL.' -r '.Config::$repositoryMailAdd.' '.$reciever);
       unlink($pdfURL);
+   }
+   
+   private function sendRequestEmail($requester, $amount){
+       $reciever = Config::$managerEmail;
+       $subject = "Nitrogen request from ".$requester;
+       $message = $requester." sent a request out for ".$amount." Kg(s) of Nitrogen on ".date('d/m/Y h:i:s a', time())." Please approve it";
+       shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$reciever);
    }
 
    /**

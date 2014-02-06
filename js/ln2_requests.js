@@ -75,7 +75,7 @@ var Ln2Requests = {
                position: ['center','center'],
                show: 'blind',
                hide: 'blind',
-               width: 400,
+               width: 500,
                dialogClass: 'ui-dialog-osx',
                buttons: {
                   "Set": function() {
@@ -83,11 +83,13 @@ var Ln2Requests = {
                         //TODO: add logic for changing column value from server
                         $.post("index.php?page=ln2_requests&do=setAmountApproved", {
                            rowID:id,
-                           amountApproved:$("#newAmountApproved").val()
+                           amountApproved:$("#newAmountApproved").val(),
+                           apprv_comment:$("#apprv_comment").val()
                         }, function(){
                            console.log("response recieved, email should have been sent");
                            $("#past_requests").flexReload();
                            $("#newAmountApproved").val("");
+                           $("#apprv_comment").val("");
                         });
                         $(this).dialog("close");
                      }
