@@ -164,6 +164,11 @@ class Repository extends DBase{
          $LimsUploader = new LimsUploader($this->Dbase);
          $LimsUploader->TrafficController();
       }
+      else if(OPTIONS_REQUESTED_MODULE == 'inventory'){
+          require_once 'mod_inventory_management.php';
+          $InventoryManager = new InventoryManager($this->Dbase);
+          $InventoryManager->TrafficController();
+      }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
          $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
@@ -231,6 +236,7 @@ class Repository extends DBase{
 <div class="user_options">
    <ul>
       <li><a href='?page=ln2_requests'>Request Liquid Nitrogen</a></li>
+      <li><a href='?page=inventory'>Inventory Management</a></li>
 <?php
       $this->HomeLinks($_SESSION['user_type']);
 ?>
