@@ -871,7 +871,7 @@ class Parser {
           }
           
        }
-       $this->logHandler->log(2, "Unable to get text code for question ".$columnHeadingCode);
+       $this->logHandler->log(2, $this->TAG, "Unable to get text code for question ".$columnHeadingCode);
        return $columnHeadingCode;
     }
     
