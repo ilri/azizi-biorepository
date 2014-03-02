@@ -988,6 +988,23 @@ class Parser {
                             for($columnIndex = 0; $columnIndex < sizeof($rowColumns); $columnIndex++){
                                 if($columnIndex<sizeof($headings)){
                                    $rowColumns[$columnIndex] = str_replace("<td>","", $rowColumns[$columnIndex]);
+                                   
+                                   //check if contents of cell is a link (<a></a>) to image
+                                   if(preg_match( '/<a\s*href/i', $rowColumns[$columnIndex]) === 1){//cell value is a link to image
+                                      //using preg_split for extracting the image url instead of preg_match inorder to avoid a gready fetch at '.*' in the regex /<a\s*href\s*=\s*['\"].*/
+                                      $linkSegments = preg_split("/<a\s*href\s*=\s*['\"]/i", $rowColumns[$columnIndex]);
+                                      if(count($linkSegments) === 2){
+                                         $linkSegments = $linkSegments[1];
+                                         $linkSegments = preg_split("/['\"]\s*target\s*=\s*.*$/i", $linkSegments);
+                                         if(count($linkSegments) === 2)
+                                            $rowColumns[$columnIndex] = $linkSegments[0];
+                                         else
+                                            $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell (removing last part)');
+                                      }
+                                      else
+                                         $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell (removing first part)');
+                                   }
+                                   
                                    $this->insertCSVCell($rowColumns[$columnIndex], $this->nextRowName[$sheetName], $headings[$columnIndex], $sheetName);
                                 }
                             }
