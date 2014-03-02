@@ -198,6 +198,10 @@ class Parser {
       $this->dwnldImages = $_POST['dwnldImages'];
       
       $this->cells = array();
+      if(!file_exists($this->ROOT."download")){
+         mkdir($this->ROOT."download", 0755);//everything for owner, read-exec for everybody else
+         $this->logHandler->log(3, $this->TAG, 'Created the download directory');
+      }
       $this->authCookies = $this->ROOT."download/AUTH".mt_rand();
       $this->sheets = array();
       $this->idPrefix = "";
