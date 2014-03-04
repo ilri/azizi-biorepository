@@ -71,78 +71,76 @@ class TrayStorage extends Repository{
    private function addTray($addInfo = ''){
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
-<div id="home">
    <?php echo $addInfo?>
-   <h3 class="center">Add a tray</h3>
-   <form enctype="multipart/form-data" name="upload" class="form-horizontal" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
-      <div class="form-group">
-         <label for="tray_label" class="control-label">Tray Label</label>
-         <div class=""><input type="text" class="form-control" id="tray_label" placeholder="JSON or CSV File"></div>
+<h3 class="center">Add a tray</h3>
+<form enctype="multipart/form-data" name="upload" class="form-horizontal" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
+   <div class="form-group">
+      <label for="tray_label" class="control-label">Tray Label</label>
+      <div class=""><input type="text" class="form-control" id="tray_label" placeholder="JSON or CSV File"></div>
+   </div>
+   <div class="form-group">
+      <label for="tank" class="control-label">Tank</label>
+      <div class="">
+         <select id="tank">
+            <option value=""></option><!--NULL option-->
+            <option value="1">1</option><!--TODO: get tanks from tanks table-->
+            <option value="2">2</option>
+         </select>
       </div>
-      <div class="form-group">
-         <label for="tank" class="control-label">Tank</label>
-         <div class="">
-            <select id="tank">
-               <option value=""></option><!--NULL option-->
-               <option value="1">1</option><!--TODO: get tanks from tanks table-->
-               <option value="2">2</option>
-            </select>
-         </div>
+   </div>
+   <div class="form-group">
+      <label for="sector" class="control-label">Sector</label>
+      <div class="">
+         <select id="sector">
+            <option value=""></option><!--NULL option-->
+            <option value="a">A</option><!--TODO: get tanks from tanks table-->
+            <option value="b">B</option>
+            <option value="b">C</option>
+            <option value="b">D</option>
+            <option value="b">E</option>
+            <option value="b">F</option>
+         </select>
       </div>
-      <div class="form-group">
-         <label for="sector" class="control-label">Sector</label>
-         <div class="">
-            <select id="sector">
-               <option value=""></option><!--NULL option-->
-               <option value="a">A</option><!--TODO: get tanks from tanks table-->
-               <option value="b">B</option>
-               <option value="b">C</option>
-               <option value="b">D</option>
-               <option value="b">E</option>
-               <option value="b">F</option>
-            </select>
-         </div>
+   </div>
+   <div class="form-group">
+      <label for="tower" class="control-label">Tower</label>
+      <div class="">
+         <select type="text" class="form-control" id="tower">
+            <option value=""></option><!--NULL option-->
+            <option value="1">1</option><!--TODO: get tanks from tanks table-->
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+         </select>
       </div>
-      <div class="form-group">
-         <label for="tower" class="control-label">Tower</label>
-         <div class="">
-            <select type="text" class="form-control" id="tower">
-               <option value=""></option><!--NULL option-->
-               <option value="1">1</option><!--TODO: get tanks from tanks table-->
-               <option value="2">2</option>
-               <option value="3">3</option>
-               <option value="4">4</option>
-               <option value="5">5</option>
-               <option value="6">6</option>
-            </select>
-         </div>
+   </div>
+   <div class="form-group">
+      <label for="position" class="control-label">Position in Tower</label>
+      <div class="">
+         <select type="text" class="form-control" id="position">
+            <option value=""></option><!--NULL option-->
+            <option value="1">1</option><!--TODO: get tanks from tanks table-->
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+         </select>
       </div>
-      <div class="form-group">
-         <label for="position" class="control-label">Position in Tower</label>
-         <div class="">
-            <select type="text" class="form-control" id="position">
-               <option value=""></option><!--NULL option-->
-               <option value="1">1</option><!--TODO: get tanks from tanks table-->
-               <option value="2">2</option>
-               <option value="3">3</option>
-               <option value="4">4</option>
-               <option value="5">5</option>
-               <option value="6">6</option>
-            </select>
-         </div>
+   </div>
+   <div class="form-group">
+      <label for="status" class="control-label">Status</label>
+      <div class="">
+         <select type="text" class="form-control" id="tower">
+            <option value=""></option><!--NULL option-->
+            <option value="temporary">Temporary</option>
+            <option value="permanent">Permanent</option>
+         </select>
       </div>
-      <div class="form-group">
-         <label for="status" class="control-label">Status</label>
-         <div class="">
-            <select type="text" class="form-control" id="tower">
-               <option value=""></option><!--NULL option-->
-               <option value="temporary">Temporary</option>
-               <option value="permanent">Permanent</option>
-            </select>
-         </div>
-      </div>
-   </form>
-</div>
+   </div>
+</form>
 <script>
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');
 </script>
