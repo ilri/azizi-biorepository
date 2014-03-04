@@ -62,6 +62,9 @@ class TrayStorage extends Repository{
       </ul>
    </div>
 </div>
+<script>
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+</script>
       <?php
    }
 
@@ -140,6 +143,9 @@ class TrayStorage extends Repository{
       </div>
    </form>
 </div>
+<script>
+   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');
+</script>
       <?php
    }
    
