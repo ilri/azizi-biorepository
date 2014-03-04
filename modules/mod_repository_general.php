@@ -170,7 +170,7 @@ class Repository extends DBase{
           $InventoryManager->TrafficController();
       }
       else if(OPTIONS_REQUESTED_MODULE == 'tray_storage'){
-         require_once './mod_tray_storage.php';
+         require_once 'mod_tray_storage.php';
          $trayStorage = new TrayStorage($this->Dbase);
          $trayStorage->TrafficController();
       }
