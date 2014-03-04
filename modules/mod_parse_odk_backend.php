@@ -173,7 +173,7 @@ class Parser {
       //load settings
       $this->loadSettings();
       
-      //include modules
+      // include modules
       include_once $this->ROOT.'modules/mod_log.php';
       $this->logHandler = new LogHandler();
       
