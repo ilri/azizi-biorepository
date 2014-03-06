@@ -126,7 +126,7 @@ class TrayStorage extends Repository{
             </div>
             <div>
                <label for="status">Status</label>
-               <select type="text" id="status">
+               <select type="text" name="status" id="status">
                   <option value=""></option><!--NULL option-->
                   <option value="temporary">Temporary</option>
                   <option value="permanent">Permanent</option>
@@ -136,13 +136,50 @@ class TrayStorage extends Repository{
       </div>
       <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
    </form>
+   <div id="tank_trays"></div>
 </div>
 
-<script>
+<script type="text/javascript">
    $(document).ready( function() {
       TrayStorage.loadTankData();
    });
-   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');
+   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
+   
+   //Javascript for making table
+   /*
+    * Table looks like:
+    *    Tray label | Sample Type | Tank Location | Status 
+    *    
+    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
+    * 
+    */
+   $("#tank_trays").flexigrid({
+      url: "mod_ajax.php?page=tray_storage&do=ajax&action=fetch_trays",
+      dataType: 'json',
+      colModel : [
+         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'left'},
+         {display: 'Sample Type', name: 'type', width: 200, sortable: true, align: 'center'},
+         {display: 'Tank Position', name: 'position', width: 300, sortable: true, align: 'center'},
+         {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
+         {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
+         {display: 'Moved by', name: 'added_by', width: 100, sortable: true, align: 'center'}
+      ],
+      searchitems : [
+         {display: 'Tray Label', name : 'name'},
+         {display: 'Sample Type', name : 'type'}
+      ],
+      sortname : 'date_added',
+      sortorder : 'desc',
+      usepager : true,
+      title : 'Stored Trays',
+      useRp : true,
+      rp : 10,
+      showTableToggleBtn: false,
+      rpOptions: [10, 20, 50], //allowed per-page values
+      width: 900,
+      height: 260,
+      singleSelect: true
+   });
 </script>
       <?php
    }
@@ -159,8 +196,8 @@ class TrayStorage extends Repository{
    
    private function insertTray(){
       $message = "";
-      $columns = array("name","features","size","type","rack","rack_position");
-      $columnValues = array($_POST['tray_label'], $_POST['features'], $_POST['tray_size'], $_POST['sample_types'], $_POST['rack'], $_POST['position']);
+      $columns = array("name","features","size","type","rack","rack_position", "status", "added_by");
+      $columnValues = array($_POST['tray_label'], $_POST['features'], $_POST['tray_size'], $_POST['sample_types'], $_POST['rack'], $_POST['position'], $_POST['status'], $_SESSION['username']);
       $this->Dbase->CreateLogEntry('col values -> '.print_r($columnValues, true), 'fatal');
       $result = $this->Dbase->InsertOnDuplicateUpdate("boxes", $columns, $columnValues);
       if($result === 0) {
@@ -221,6 +258,64 @@ class TrayStorage extends Repository{
          $jsonArray['data'] = $result;
          $this->Dbase->CreateLogEntry('json -> '.json_encode($jsonArray), 'fatal');
          echo json_encode($jsonArray);
+      }
+      elseif (OPTIONS_REQUESTED_ACTION == "fetch_trays") {
+         //check if search criterial provided
+         $criteriaArray = array();
+         if($_POST['query'] != "") {
+            $criteria = "WHERE {$_POST['qtype']} LIKE '%?%'";
+            $criteriaArray[] = $_POST['query'];
+         }
+         else {
+            $criteria = "";
+         }
+
+         $startRow = ($_POST['page'] - 1) * $_POST['rp'];
+         $query = "SELECT a.*".
+                 " FROM boxes AS a".
+                 " $criteria".
+                 " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
+         //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
+         $data = $this->Dbase->ExecuteQuery($query." LIMIT $startRow, {$_POST['rp']}" , $criteriaArray);
+
+         //check if any data was fetched
+         if($data === 1) die (json_encode (array('error' => true)));
+         
+         
+         $dataCount = $this->Dbase->ExecuteQuery($query,$criteriaArray);
+         if($dataCount === 1)
+            die (json_encode (array('error' => true)));
+         else
+            $dataCount = sizeof ($dataCount);
+         
+         //reformat rows fetched from first query
+         $rows = array();
+         foreach ($data as $row) {
+            //get other tank information tank -> sector -> rack
+            $query = "SELECT a.label AS rack_label, b.label AS sector_label, b.tank AS tank_id ".
+                        "FROM boxes ".
+                        "INNER JOIN rack AS a ON boxes.rack = a.id ".
+                        "INNER JOIN tank_sector AS b ON a.tank_sector = b.id ".
+                        "WHERE boxes.id = ?";
+            $result = $this->Dbase->ExecuteQuery($query, $row['id']);
+            if(count($result) === 1){// only one row should be fetched
+               $location = "Tank ".$result[0]['tank_id']."  -> Sector ".$result[0]['sector_label']."  -> Rack ".$result[0]['rack_label']."  -> Position ".$row['rack_position'];
+            }
+            else{
+               $this->Dbase->CreateLogEntry('Was unable to fetch Full tank location for tray with id = '.$row['id'], 'fatal');
+               die(json_encode(array('error' => true)));
+            }
+            
+            
+            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"type" => $row['type'],"position" => $location, "status" => $row["status"], "date_added" => $row["date_added"], "added_by" => $row["added_by"]));
+         }
+         $response = array(
+             'total' => $dataCount,
+             'page' => $_POST['page'],
+             'rows' => $rows
+         );
+
+         die(json_encode($response));
       }
    }
 }

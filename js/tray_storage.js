@@ -40,6 +40,11 @@ var TrayStorage = {
          $("#tray_size").focus();
          return false;
       }
+      if($("#sample_types").val().length > 20){
+         Notification.show({create:true, hide:true, updateText:false, text:'Sample type should not be more than 20 characters', error:true});
+         $("#sample_types").focus();
+         return false;
+      }
       if($("#tank").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please select a tank', error:true});
          $("#tank").focus();
