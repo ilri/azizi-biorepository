@@ -292,7 +292,7 @@ body {
    margin: 2px 4px 2px 80px;
    height: 350px;
 }
-#tray_storage #tank_trays {
+#tray_storage .flexigrid {
    margin-left: 10px;
 }
 
