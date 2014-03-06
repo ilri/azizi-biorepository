@@ -161,6 +161,7 @@ class TrayStorage extends Repository{
       $message = "";
       $columns = array("name","features","size","type","location","rack","rack_position");
       $columnValues = array($_POST['tray_label'], $_POST['features'], $_POST['tray_size'], $_POST['sample_types'], $_POST['sampling_loc'], $_POST['rack'], $_POST['position']);
+      $this->Dbase->CreateLogEntry('col values -> '.print_r($columnValues, true), 'fatal');
       $result = $this->Dbase->InsertOnDuplicateUpdate("boxes", $columns, $columnValues);
       if($result === 0) {
          $message = "Unable to add the last request. Try again later";
