@@ -109,7 +109,7 @@ var TrayStorage = {
             for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
                $("#rack").append($("<option></option>")
                        .attr("value", racks[rackIndex].id)
-                       .text("Rack/Tower "+racks[rackIndex].label));
+                       .text("Rack "+racks[rackIndex].label));
             }
          }
       });
