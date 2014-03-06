@@ -89,6 +89,11 @@ var TrayStorage = {
                        .text("Sector "+sectors[sectorIndex].label));
             }
          }
+         else {//disable child selects
+            $('#sector').prop('disabled', 'disabled');
+            $('#rack').prop('disabled', 'disabled');
+            $('#position').prop('disabled', 'disabled');
+         }
       });
       
       //populate rack select
@@ -108,6 +113,10 @@ var TrayStorage = {
                        .attr("value", racks[rackIndex].id)
                        .text("Rack "+racks[rackIndex].label));
             }
+         }
+         else {//disable child selects
+            $('#rack').prop('disabled', 'disabled');
+            $('#position').prop('disabled', 'disabled');
          }
       });
       
@@ -151,6 +160,9 @@ var TrayStorage = {
                        .text("Positon " + availablePos[availPIndex]));
                console.log("appended "+availablePos[availPIndex]);
             }
+         }
+         else {//disable child selects
+            $('#position').prop('disabled', 'disabled');
          }
       });
    },
