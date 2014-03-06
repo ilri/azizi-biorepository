@@ -62,7 +62,7 @@ var TrayStorage = {
    loadTankData: function(){
       var jsonText = $.ajax({
          type: "GET",
-         url: "index.php?page=tray_storage&do=ajax&action=get_tank_details",
+         url: "mod_ajax.php?page=tray_storage&do=ajax&action=get_tank_details",
          async: false
       }).responseText;
       console.log(jsonText);
