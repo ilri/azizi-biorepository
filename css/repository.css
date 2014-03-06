@@ -285,7 +285,7 @@ body {
 }
 
 #tray_storage{
-   height: 400px;
+   height: 450px;
 }
 #tray_storage #meta_data_div, #tray_storage #location_div {
    float: left;
