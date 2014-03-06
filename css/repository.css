@@ -285,13 +285,17 @@ body {
 }
 
 #tray_storage{
-   height: 450px;
+   height: 800px;
 }
 #tray_storage #meta_data_div, #tray_storage #location_div {
    float: left;
    margin: 2px 4px 2px 80px;
    height: 350px;
 }
+#tray_storage #tank_trays {
+   margin-left: 10px;
+}
+
 
 #odk_table td{ height: 30px; }
 #odk_table input { height: 25px; }

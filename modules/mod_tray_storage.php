@@ -157,9 +157,9 @@ class TrayStorage extends Repository{
       url: "mod_ajax.php?page=tray_storage&do=ajax&action=fetch_trays",
       dataType: 'json',
       colModel : [
-         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'left'},
-         {display: 'Sample Type', name: 'type', width: 200, sortable: true, align: 'center'},
-         {display: 'Tank Position', name: 'position', width: 300, sortable: true, align: 'center'},
+         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Sample Type', name: 'type', width: 150, sortable: true, align: 'center'},
+         {display: 'Tank Position', name: 'position', width: 280, sortable: true, align: 'center'},
          {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
          {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
          {display: 'Moved by', name: 'added_by', width: 100, sortable: true, align: 'center'}
