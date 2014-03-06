@@ -283,6 +283,17 @@ body {
    border-spacing: 20px 5px;
    padding-top: 30px;
 }
+
+#tray_storage #meta_data_div {
+   float: left;
+   margin: 2px 4px;
+   height: 350px;
+}
+#tray_storage #location_div {
+   float: left;
+   margin: 2px 4px;
+   height: 350px;
+}
 #odk_table td{ height: 30px; }
 #odk_table input { height: 25px; }
 #odk_heading { text-align: center; margin: 10px 0px 0px 0px; }

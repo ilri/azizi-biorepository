@@ -77,50 +77,53 @@ class TrayStorage extends Repository{
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
    <?php echo $addInfo?>
+<div id="tray_storage">
+   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
+      <div id="meta_data_div">
+         <legend>Metadata</legend>
+         <div>
+            <div><label for="tray_label">Tray Label</label><input type="text" id="tray_label" /></div>
+         </div>
+      </div>
+      <div id="location_div">
+         <legend>Tray Location</legend>
+         <div>
+            <div>
+               <label for="tank">Tank</label>
+               <select id="tank">
+                  <option value=""></option><!--NULL option-->
+               </select>
+            </div>
+            <div>
+               <label for="sector">Sector</label>
+               <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
+               </select>
+            </div>
+            <div>
+               <label for="rack">Rack</label>
+               <select type="text" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
+               </select>
+            </div>
+            <div>
+               <label for="position">Position in Rack</label>
+               <select type="text" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+               </select>
+            </div>
+            <div>
+               <label for="status" class="control-label">Status</label>
+               <select type="text" id="status">
+                  <option value=""></option><!--NULL option-->
+                  <option value="temporary">Temporary</option>
+                  <option value="permanent">Permanent</option>
+               </select>
+            </div>
+         </div>
+      </div>
+      <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
+   </form>
+</div>
 <h3 class="center">Add a tray</h3>
-<form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
-   <div id="meta_data_div">
-      <legend>Metadata</legend>
-      <div>
-         <div><label for="tray_label">Tray Label</label><input type="text" id="tray_label" /></div>
-      </div>
-   </div>
-   <div id="location_div">
-      <legend>Tray Location</legend>
-      <div>
-         <div>
-            <label for="tank">Tank</label>
-            <select id="tank">
-               <option value=""></option><!--NULL option-->
-            </select>
-         </div>
-         <div>
-            <label for="sector">Sector</label>
-            <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
-            </select>
-         </div>
-         <div>
-            <label for="rack">Rack</label>
-            <select type="text" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
-            </select>
-         </div>
-         <div>
-            <label for="position">Position in Rack</label>
-            <select type="text" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
-            </select>
-         </div>
-         <div>
-            <label for="status" class="control-label">Status</label>
-            <select type="text" id="status">
-               <option value=""></option><!--NULL option-->
-               <option value="temporary">Temporary</option>
-               <option value="permanent">Permanent</option>
-            </select>
-         </div>
-      </div>
-   </div>
-   <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
-</form>
+
 <script>
    $(document).ready( function() {
       TrayStorage.loadTankData();
