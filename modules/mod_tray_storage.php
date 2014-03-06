@@ -111,7 +111,7 @@ class TrayStorage extends Repository{
                </select>
             </div>
             <div>
-               <label for="status" class="control-label">Status</label>
+               <label for="status">Status</label>
                <select type="text" id="status">
                   <option value=""></option><!--NULL option-->
                   <option value="temporary">Temporary</option>
