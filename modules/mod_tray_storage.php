@@ -128,6 +128,9 @@ class TrayStorage extends Repository{
    <div class="center"><input type="submit" value="Request" name="submitButton" id="submitButton"/></div>
 </form>
 <script>
+   $(document).ready( function() {
+      TrayStorage.loadTankData();
+   }
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');
 </script>
       <?php
