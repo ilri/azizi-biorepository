@@ -133,7 +133,7 @@ var TrayStorage = {
             var availablePos = new Array();
             
             //populate available positions array with a 1 index list depending on the size of the rack
-            for(var currPos = 1; currPos <= rack.size; currPos++){
+            for(var currPos = 1; currPos <= rack.length; currPos++){
                availablePos.push(currPos);
             }
             
