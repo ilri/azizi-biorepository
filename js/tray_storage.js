@@ -77,7 +77,6 @@ var TrayStorage = {
       
       //populate sector select
       $("#tank").change(function(){//available sectors in tank to sector select
-         console.log(tanks);
          if($("#tank").val() !== ""){
             $('#sector').find('option').remove()
                     .end()
@@ -86,6 +85,7 @@ var TrayStorage = {
             var tankID = parseInt($("#tank").val());
             var sectors = tanks[tankID].sectors;
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
+               console.log("appended"+sectors[sectorIndex].label);
                $("#sector").append($("<option></option>")
                        .attr("value", sectors[sectorIndex].id)
                        .text("Sector "+sectors[sectorIndex].label));
