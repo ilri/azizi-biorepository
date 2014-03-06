@@ -86,7 +86,7 @@ class TrayStorage extends Repository{
             <div><label for="tray_label">Tray Label</label><input type="text" id="tray_label" /></div>
             <div><label for="features">Features</label><input type="text" id="features" /></div>
             <div>
-               <label for="tray_size">Size</label>
+               <label for="tray_size">Tray size</label>
                <select id="tray_size">
                   <option value=""></option>
                   <option value="81">81</option>
