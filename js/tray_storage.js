@@ -72,7 +72,7 @@ var TrayStorage = {
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
          $("#tank").append($("<option></option>")
                  .attr("value", tanks[tankIndex].TankID)
-                 .text(tanks[tankIndex].TankID));
+                 .text("Tank ".tanks[tankIndex].TankID));
       }
       
       //populate sector select
@@ -87,7 +87,7 @@ var TrayStorage = {
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
                $("#sector").append($("<option></option>")
                        .attr("value", sectors[sectorIndex].id)
-                       .text(sectors[sectorIndex].label));
+                       .text("Sector ".sectors[sectorIndex].label));
             }
          }
       });
@@ -106,7 +106,7 @@ var TrayStorage = {
             for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
                $("#rack").append($("<option></option>")
                        .attr("value", racks[rackIndex].id)
-                       .text(racks[rackIndex].label));
+                       .text("Rack/Tower ".racks[rackIndex].label));
             }
          }
       });
