@@ -87,7 +87,7 @@ class TrayStorage extends Repository{
       <label for="tank" class="control-label">Tank</label>
       <div class="">
          <select id="tank">
-            
+            <option value=""></option><!--NULL option-->
          </select>
       </div>
    </div>
