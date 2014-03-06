@@ -77,6 +77,7 @@ var TrayStorage = {
       
       //populate sector select
       $("#tank").change(function(){//available sectors in tank to sector select
+         console.log(tanks);
          if($("#tank").val() !== ""){
             $('#sector').find('option').remove()
                     .end()
