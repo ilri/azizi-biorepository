@@ -117,7 +117,7 @@ var TrayStorage = {
       //populate position select
       $("#rack").change(function(){
          if($("#tank").val() !== "" && $("#sector").val() !== "" && $("#rack").val() !== ""){
-            $('#rack').find('option').remove()
+            $('#position').find('option').remove()
                     .end()
                     .append('<option value=""></option>')//append a null option
                         .val('');
@@ -129,7 +129,7 @@ var TrayStorage = {
             var sectorID = parseInt($("#sector").val());
             var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
             console.log($("#rack"));
-            /*var rackID = parseInt($("#rack").val());
+            var rackID = parseInt($("#rack").val());
             var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
             //console.log(rack);
             var availablePos = new Array();
@@ -153,7 +153,7 @@ var TrayStorage = {
                $("#positon").append($("<option></option>")
                        .attr("value", availablePos[availPIndex])
                        .text("Positon " + availablePos[availPIndex]));
-            }*/
+            }
          }
       });
    },
