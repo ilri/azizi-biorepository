@@ -125,7 +125,7 @@ class TrayStorage extends Repository{
          </select>
       </div>
    </div>
-   <div class="center"><input type="submit" value="Request" name="submitButton" id="submitButton"/></div>
+   <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
 </form>
 <script>
    $(document).ready( function() {
