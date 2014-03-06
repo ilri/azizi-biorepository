@@ -296,8 +296,8 @@ class TrayStorage extends Repository{
                         "FROM boxes ".
                         "INNER JOIN rack AS a ON boxes.rack = a.id ".
                         "INNER JOIN tank_sector AS b ON a.tank_sector = b.id ".
-                        "WHERE boxes.id = ?";
-            $result = $this->Dbase->ExecuteQuery($query, $row['id']);
+                        "WHERE boxes.id = ".$row['id'];
+            $result = $this->Dbase->ExecuteQuery($query);
             $this->Dbase->CreateLogEntry('tank location details = '.  print_r($result, true), 'fatal');
             if(count($result) === 1){// only one row should be fetched
                $location = "Tank ".$result[0]['tank_id']."  -> Sector ".$result[0]['sector_label']."  -> Rack ".$result[0]['rack_label']."  -> Position ".$row['rack_position'];
