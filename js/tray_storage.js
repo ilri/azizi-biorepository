@@ -149,6 +149,7 @@ var TrayStorage = {
                $("#positon").append($("<option></option>")
                        .attr("value", availablePos[availPIndex])
                        .text("Positon " + availablePos[availPIndex]));
+               console.log("appended "+availablePos[availPIndex]);
             }
          }
       });
