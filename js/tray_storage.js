@@ -128,6 +128,7 @@ var TrayStorage = {
             var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
             var sectorID = parseInt($("#sector").val());
             var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
+            console.log("rack not parsed -"+$("#rack").val());
             var rackID = parseInt($("#rack").val());
             var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
             //console.log(rack);
