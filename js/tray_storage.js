@@ -84,7 +84,7 @@ var TrayStorage = {
                         .val('');
             var tankID = parseInt($("#tank").val());
             var sectors = tanks[tankID].sectors;
-            console.log(sectors);
+            console.log(tanks[tankID]);
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
                console.log("appended"+sectors[sectorIndex].label);
                $("#sector").append($("<option></option>")
