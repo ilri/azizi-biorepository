@@ -66,6 +66,7 @@ var TrayStorage = {
          async: false
       }).responseText;
       console.log(jsonText);
+      
       var json = jQuery.parseJSON(jsonText);
       var tanks = json.data;
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
