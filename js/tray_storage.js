@@ -91,8 +91,20 @@ var TrayStorage = {
             }
          }
          else {//disable child selects
+            $('#sector').find('option').remove()
+                    .end()
+                    .append('<option value=""></option>')//append a null option
+                        .val('');
             $('#sector').prop('disabled', 'disabled');
+            $('#rack').find('option').remove()
+                    .end()
+                    .append('<option value=""></option>')//append a null option
+                        .val('');
             $('#rack').prop('disabled', 'disabled');
+            $('#position').find('option').remove()
+                    .end()
+                    .append('<option value=""></option>')//append a null option
+                        .val('');
             $('#position').prop('disabled', 'disabled');
          }
       });
@@ -117,7 +129,15 @@ var TrayStorage = {
             }
          }
          else {//disable child selects
+            $('#rack').find('option').remove()
+                    .end()
+                    .append('<option value=""></option>')//append a null option
+                        .val('');
             $('#rack').prop('disabled', 'disabled');
+            $('#position').find('option').remove()
+                    .end()
+                    .append('<option value=""></option>')//append a null option
+                        .val('');
             $('#position').prop('disabled', 'disabled');
          }
       });
@@ -165,6 +185,10 @@ var TrayStorage = {
             }
          }
          else {//disable child selects
+            $('#position').find('option').remove()
+                    .end()
+                    .append('<option value=""></option>')//append a null option
+                        .val('');
             $('#position').prop('disabled', 'disabled');
          }
       });
