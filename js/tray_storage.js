@@ -103,8 +103,9 @@ var TrayStorage = {
                         .val('');
             
             var tankID = parseInt($("#tank").val());
+            var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
             var sectorID = parseInt($("#sector").val());
-            var racks = tanks[tankID][sectorID].racks;
+            var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
             for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
                $("#rack").append($("<option></option>")
                        .attr("value", racks[rackIndex].id)
@@ -124,9 +125,11 @@ var TrayStorage = {
             //find all the empty positions in selected rack
             //Do this by determining which slots are empty depending on rack size
             var tankID = parseInt($("#tank").val());
+            var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
             var sectorID = parseInt($("#sector").val());
+            var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
             var rackID = parseInt($("#rack").val());
-            var rack = tanks[tankID][sectorID].racks[rackID];
+            var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
             var availablePos = new Array();
             
             //populate available positions array with a 1 index list depending on the size of the rack
