@@ -77,6 +77,7 @@ var TrayStorage = {
       //populate sector select
       $("#tank").change(function(){//available sectors in tank to sector select
          if($("#tank").val() !== ""){
+            $('#sector').prop('disabled', false);
             $('#sector').find('option').remove()
                     .end()
                     .append('<option value=""></option>')//append a null option
@@ -99,6 +100,7 @@ var TrayStorage = {
       //populate rack select
       $("#sector").change(function(){
          if($("#tank").val() !== "" && $("#sector").val() !== ""){
+            $('#rack').prop('disabled', false);
             $('#rack').find('option').remove()
                     .end()
                     .append('<option value=""></option>')//append a null option
@@ -123,6 +125,7 @@ var TrayStorage = {
       //populate position select
       $("#rack").change(function(){
          if($("#tank").val() !== "" && $("#sector").val() !== "" && $("#rack").val() !== ""){
+            $('#position').prop('disabled', false);
             $('#position').find('option').remove()
                     .end()
                     .append('<option value=""></option>')//append a null option
