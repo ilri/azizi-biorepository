@@ -230,19 +230,21 @@ class TrayStorage extends Repository{
       <div id="meta_data_div">
          <legend>Purpose</legend>
          <div>
-            <div><label for="tray_label">Tray Label</label><input type="text" name="tray_label" id="tray_label" /></div>
-            <div><label for="features">Features</label><input type="text" name="features" id="features" /></div>
+            <div><label for="removed_by">Removed by</label><input type="text" name="features" id="features" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
+            <div><label for="to_who">To Who</label><input type="text" name="tray_label" id="tray_label" /></div>
             <div>
-               <label for="tray_size">Tray size</label>
+               <label for="purpose">Intended purpose</label>
                <select name="tray_size" id="tray_size">
                   <option value=""></option>
-                  <option value="81">81</option>
-                  <option value="100">100</option>
+                  <option value="analysis_on_campus">Analysis on campus</option>
+                  <option value="analysis_off_campus">Analysis off campus</option>
+                  <option value="shipment">Shipment</option>
+                  <option ></option>
                </select>
             </div>
             <div>
-               <label for="sample_types">Sample Types</label>
-               <input type="text" name="sample_types" id="sample_types" />
+               <label for="purpose">Specify analysis to be done</label>
+               <textarea cols="6" rows="3" ></textarea>
             </div>
             <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
          </div>
