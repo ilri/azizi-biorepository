@@ -138,14 +138,14 @@ var TrayStorage = {
             //iterate through all boxes/trays in rack and delete their positions from the available positon array
             var trays = rack.boxes;
             for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
-               var index = availablePos.indexOf(trays[trayIndex].rack_position);
+               var index = availablePos.indexOf(parseInt(trays[trayIndex].rack_position));
                if(index !== -1){//check if position was already in the available positions array (It should have been)
                   availablePos.splice(index, 1);
                }
             }
             
             //add available positions to select
-            for(var availPIndex = 0; availablePos < availablePos.length; availPIndex++){
+            for(var availPIndex = 0; availPIndex < availablePos.length; availPIndex++){
                $("#positon").append($("<option></option>")
                        .attr("value", availablePos[availPIndex])
                        .text("Positon " + availablePos[availPIndex]));
