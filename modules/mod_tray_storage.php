@@ -130,7 +130,7 @@ class TrayStorage extends Repository{
 <script>
    $(document).ready( function() {
       TrayStorage.loadTankData();
-   }
+   });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');
 </script>
       <?php
