@@ -217,14 +217,6 @@ class TrayStorage extends Repository{
                <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
                </select>
             </div>
-            <div>
-               <label for="status">Status</label>
-               <select type="text" name="status" id="status">
-                  <option value=""></option><!--NULL option-->
-                  <option value="temporary">Temporary</option>
-                  <option value="permanent">Permanent</option>
-               </select>
-            </div>
          </div>
       </div>
       <div id="meta_data_div">
