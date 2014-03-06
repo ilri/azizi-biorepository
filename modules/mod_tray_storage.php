@@ -203,7 +203,7 @@ class TrayStorage extends Repository{
       if($result === 0) {
          $message = "Unable to add the last request. Try again later";
       }
-      return print_r($columnValues, true);
+      return $message;
    }
    
    /**
