@@ -28,7 +28,7 @@ var TrayStorage = {
       $("#tray_label").val($("#tray_label").val().trim());
       $("#features").val($("#features").val().trim());
       $("#sample_types").val($("#sample_types").val().trim());
-      $("#sampling_loc").val($("#sampling_loc").val().trim());
+      //$("#sampling_loc").val($("#sampling_loc").val().trim());
       
       if($("#tray_label").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the label no the tray', error:true});
