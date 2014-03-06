@@ -146,7 +146,7 @@ var TrayStorage = {
             
             //add available positions to select
             for(var availPIndex = 0; availPIndex < availablePos.length; availPIndex++){
-               $("#positon").append($("<option></option>")
+               $("#position").append($("<option></option>")
                        .attr("value", availablePos[availPIndex])
                        .text("Positon " + availablePos[availPIndex]));
                console.log("appended "+availablePos[availPIndex]);
