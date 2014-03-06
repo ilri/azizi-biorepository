@@ -231,7 +231,7 @@ class TrayStorage extends Repository{
          <legend>Purpose</legend>
          <div>
             <div><label for="removed_by">Removed by</label><input type="text" name="features" id="features" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
-            <div><label for="to_who">To Who</label><input type="text" name="tray_label" id="tray_label" /></div>
+            <div><label for="to_who">For Who</label><input type="text" name="tray_label" id="tray_label" /></div>
             <div>
                <label for="purpose">Intended purpose</label>
                <select name="tray_size" id="tray_size">
@@ -255,6 +255,7 @@ class TrayStorage extends Repository{
 </div>
 
 <script type="text/javascript">
+   console.log("called");
    $(document).ready( function() {
       TrayStorage.loadTankData(false);
    });
