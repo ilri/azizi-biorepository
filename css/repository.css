@@ -285,7 +285,7 @@ body {
 }
 
 #tray_storage{
-   height: 800px;
+   height: 850px;
 }
 #tray_storage #meta_data_div, #tray_storage #location_div {
    float: left;
@@ -295,7 +295,11 @@ body {
 #tray_storage .flexigrid {
    margin-left: 10px;
 }
-
+#tray_storage #submit_button_div {
+   float: right;
+   width: 100px;
+   margin: 10px 100px 15px 0px;
+}
 
 #odk_table td{ height: 30px; }
 #odk_table input { height: 25px; }

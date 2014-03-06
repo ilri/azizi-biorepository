@@ -134,7 +134,7 @@ class TrayStorage extends Repository{
             </div>
          </div>
       </div>
-      <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
+      <div class="center" id="submit_button_div"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
    </form>
    <div id="tank_trays"></div>
 </div>
