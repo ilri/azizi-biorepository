@@ -303,8 +303,7 @@ class TrayStorage extends Repository{
                $location = "Tank ".$result[0]['tank_id']."  -> Sector ".$result[0]['sector_label']."  -> Rack ".$result[0]['rack_label']."  -> Position ".$row['rack_position'];
             }
             else{
-               $this->Dbase->CreateLogEntry('Was unable to fetch Full tank location for tray with id = '.$row['id'], 'fatal');
-               die(json_encode(array('error' => true)));
+               $location = "unknown";
             }
             
             
