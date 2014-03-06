@@ -201,7 +201,7 @@ class TrayStorage extends Repository{
          }
          $jsonArray['data'] = $result;
          $this->Dbase->CreateLogEntry('json -> '.json_encode($jsonArray), 'fatal');
-         return json_encode($jsonArray);
+         echo json_encode($jsonArray);
       }
    }
 }
