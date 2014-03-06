@@ -289,7 +289,7 @@ body {
 }
 #tray_storage #meta_data_div, #tray_storage #location_div {
    float: left;
-   margin: 2px 4px 10px 80px;
+   margin: 2px 4px 2px 80px;
    height: 350px;
 }
 
