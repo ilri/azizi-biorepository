@@ -244,7 +244,7 @@ class TrayStorage extends Repository{
             </div>
             <div>
                <label for="purpose">Specify analysis to be done</label>
-               <textarea cols="7" rows="3" ></textarea>
+               <textarea cols="8" rows="3" ></textarea>
             </div>
             <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
          </div>
