@@ -143,7 +143,7 @@ class TrayStorage extends Repository{
 
 <script type="text/javascript">
    $(document).ready( function() {
-      TrayStorage.loadTankData();
+      TrayStorage.loadTankData(true);
    });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
    
@@ -256,7 +256,7 @@ class TrayStorage extends Repository{
 
 <script type="text/javascript">
    $(document).ready( function() {
-      TrayStorage.loadTankData();
+      TrayStorage.loadTankData(false);
    });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
    });

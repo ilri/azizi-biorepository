@@ -78,7 +78,17 @@ var TrayStorage = {
       return true;
    },
    
-   loadTankData: function(){
+   /**
+    * This function fetches data from the database and inserts this data into cascading selects that cascade as:
+    *    
+    *    tank -> sector -> rack -> position
+    * 
+    * Cascading logic added. When user selects certain tank, only sectors in that tank will be shown as options in the sector select
+    * 
+    * @param {Boolean} forInsertion Set to true if you want to display available tray positions
+    * @returns {undefined}
+    */
+   loadTankData: function(forInsertion){
       var jsonText = $.ajax({
          type: "GET",
          url: "mod_ajax.php?page=tray_storage&do=ajax&action=get_tank_details",
@@ -181,17 +191,30 @@ var TrayStorage = {
             console.log(rack);
             var availablePos = new Array();
             
-            //populate available positions array with a 1 index list depending on the size of the rack
-            for(var currPos = 1; currPos <= rack.size; currPos++){
-               availablePos.push(currPos);
+            var trays = rack.boxes;
+            //if purpose is for inserting new tray into db then only display rack positions that are empty
+            if(forInsertion){
+               
+               //populate available positions array with a 1 index list depending on the size of the rack
+               for(var currPos = 1; currPos <= rack.size; currPos++){
+                  availablePos.push(currPos);
+               }
+               
+               //iterate through all boxes/trays in rack and delete their positions from the available positon array
+               
+               for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
+                  var index = availablePos.indexOf(parseInt(trays[trayIndex].rack_position));
+                  if(index !== -1){//check if position was already in the available positions array (It should have been)
+                     availablePos.splice(index, 1);
+                  }
+               }
             }
             
-            //iterate through all boxes/trays in rack and delete their positions from the available positon array
-            var trays = rack.boxes;
-            for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
-               var index = availablePos.indexOf(parseInt(trays[trayIndex].rack_position));
-               if(index !== -1){//check if position was already in the available positions array (It should have been)
-                  availablePos.splice(index, 1);
+            //if purpose is for deleting or removing a tray then show positions that have things in them
+            else{
+               //iterate through all boxes/trays in rack and add their positions to the available positon array
+               for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
+                  availablePos.push(parseInt(trays[trayIndex].rack_position));
                }
             }
             
