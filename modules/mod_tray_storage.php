@@ -192,14 +192,15 @@ class TrayStorage extends Repository{
             $message = $this->Dbase->lastError;
          }
          
-         $this->Dbase->CreateLogEntry('tanks -> '.print_r($result, true), 'fatal');
+         //$this->Dbase->CreateLogEntry('tanks -> '.print_r($result, true), 'fatal');
          $jsonArray = array();
          $jsonArray['error'] = $message;
-         $this->Dbase->CreateLogEntry('tray storage error message -> '.$message, 'fatal');
+         
          if($result === 1) {
             $result = array();
          }
          $jsonArray['data'] = $result;
+         $this->Dbase->CreateLogEntry('json -> '.json_encode($jsonArray), 'fatal');
          return json_encode($jsonArray);
       }
    }
