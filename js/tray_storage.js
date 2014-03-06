@@ -130,7 +130,7 @@ var TrayStorage = {
             var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
             var rackID = parseInt($("#rack").val());
             var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
-            console.log(rack);
+            //console.log(rack);
             var availablePos = new Array();
             
             //populate available positions array with a 1 index list depending on the size of the rack
@@ -195,6 +195,8 @@ var TrayStorage = {
     * @returns {Number} Returs the index of the rack in the rack array provided or -1 if no rack in the rack array has the provided rackID
     */
    getRackIndex : function(racks, rackID){
+      console.log(racks);
+      console.log(rackID);
       for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
          if(parseInt(racks[rackIndex].id) === rackID){
             return rackIndex;
