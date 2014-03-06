@@ -17,7 +17,8 @@ var TrayStorage = {
    },
    
    submitRemoveRequest: function(){
-      
+      if(this.validateInsertInput())
+      return false;
    },
    
    validateInsertInput: function(){
@@ -49,6 +50,46 @@ var TrayStorage = {
          $("#sample_types").focus();
          return false;
       }
+      if($("#status").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
+         $("#status").focus();
+         return false;
+      }
+      
+      return validateTankInformation();
+   },
+   
+   validateRemoveInput: function(){
+      if (typeof(String.prototype.trim) === "undefined") {
+         String.prototype.trim = function()
+         {
+            return String(this).replace(/^\s+|\s+$/g, '');
+         };
+      }
+      
+      $("#for_who").val($("for_who").val().trim());
+      $("#purpose").val($("purpose").val().trim());
+      $("#analysis_type").val($("analysis_type").val().trim());
+      if($('#for_who').val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the person the tray is being removed for', error:true});
+         $("#for_who").focus();
+         return false;
+      }
+      if($("#purpose").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the purpose of the tray', error:true});
+         $("#purpose").focus();
+         return false;
+      }
+      if($("#analysis_type").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
+         $("#analysis_type").focus();
+         return false;
+      }
+      
+      return validateTankInformation();
+   },
+   
+   validateTankInformation: function(){
       if($("#tank").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please select a tank', error:true});
          $("#tank").focus();
@@ -69,13 +110,6 @@ var TrayStorage = {
          $("#tank").focus();
          return false;
       }
-      if($("#status").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
-         $("#status").focus();
-         return false;
-      }
-      
-      return true;
    },
    
    /**

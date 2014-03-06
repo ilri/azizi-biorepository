@@ -219,14 +219,14 @@ class TrayStorage extends Repository{
             </div>
          </div>
       </div>
-      <div id="meta_data_div">
+      <div id="purpose_div">
          <legend>Purpose</legend>
          <div>
-            <div><label for="removed_by">Removed by</label><input type="text" name="features" id="features" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
-            <div><label for="to_who">For Who</label><input type="text" name="tray_label" id="tray_label" /></div>
+            <div><label for="removed_by">Removed by</label><input type="text" id="removed_by" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
+            <div><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" /></div>
             <div>
                <label for="purpose">Intended purpose</label>
-               <select name="tray_size" id="tray_size">
+               <select name="purpose" id="purpose">
                   <option value=""></option>
                   <option value="analysis_on_campus">Analysis on campus</option>
                   <option value="analysis_off_campus">Analysis off campus</option>
@@ -235,8 +235,8 @@ class TrayStorage extends Repository{
                </select>
             </div>
             <div>
-               <label for="purpose">Specify analysis to be done</label>
-               <textarea cols="8" rows="3" ></textarea>
+               <label for="analysis_type">Specify analysis to be done</label>
+               <textarea cols="8" rows="3" id="analysis_type" name="analysis_type" ></textarea>
             </div>
             <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
          </div>
