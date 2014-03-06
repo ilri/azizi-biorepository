@@ -79,51 +79,45 @@ class TrayStorage extends Repository{
    <?php echo $addInfo?>
 <h3 class="center">Add a tray</h3>
 <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
-   <div class="form-group">
-      <label for="tank" class="control-label">Tank</label>
-      <div class="">
-         <select id="tank">
-            <option value=""></option><!--NULL option-->
-         </select>
+   <div id="meta_data_div">
+      <legend>Metadata</legend>
+      <div>
+         <div><label for="tray_label">Tray Label</label><input type="text" id="tray_label" /></div>
       </div>
    </div>
-   <div class="form-group">
-      <label for="sector" class="control-label">Sector</label>
-      <div class="">
-         <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
-            
-         </select>
+   <div id="location_div">
+      <legend>Tray Location</legend>
+      <div>
+         <div>
+            <label for="tank">Tank</label>
+            <select id="tank">
+               <option value=""></option><!--NULL option-->
+            </select>
+         </div>
+         <div>
+            <label for="sector">Sector</label>
+            <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div>
+            <label for="rack">Rack</label>
+            <select type="text" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div>
+            <label for="position">Position in Rack</label>
+            <select type="text" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div>
+            <label for="status" class="control-label">Status</label>
+            <select type="text" id="status">
+               <option value=""></option><!--NULL option-->
+               <option value="temporary">Temporary</option>
+               <option value="permanent">Permanent</option>
+            </select>
+         </div>
       </div>
-   </div>
-   <div class="form-group">
-      <label for="rack" class="control-label">Rack</label>
-      <div class="">
-         <select type="text" class="form-control" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
-            
-         </select>
-      </div>
-   </div>
-   <div class="form-group">
-      <label for="position" class="control-label">Position in Rack</label>
-      <div class="">
-         <select type="text" class="form-control" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
-            
-         </select>
-      </div>
-   </div>
-   <div class="form-group">
-      <label for="status" class="control-label">Status</label>
-      <div class="">
-         <select type="text" class="form-control" id="status">
-            <option value=""></option><!--NULL option-->
-            <option value="temporary">Temporary</option>
-            <option value="permanent">Permanent</option>
-         </select>
-      </div>
-   </div>
-   <div class="form-group">
-      <label for="tray_label" class="control-label">Tray Label</label>
-      <div class=""><input type="text" class="form-control" id="tray_label"></div>
    </div>
    <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
 </form>
