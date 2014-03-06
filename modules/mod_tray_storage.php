@@ -22,11 +22,12 @@ class TrayStorage extends Repository{
       /*
        * Hierarchical GET requests handled by this file (tray_storage)
        * - tray_storage (page)
-       *     - add_tray (do)
+       *    - add_tray (do)
        *       - insert_tray (action)
-       *     - remove_tray
-       *     - delete_tray
-       * 
+       *    - remove_tray
+       *    - delete_tray
+       *    - ajax
+       *       - get_tank_details
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/tray_storage.js'></script>";
@@ -41,6 +42,7 @@ class TrayStorage extends Repository{
       if (OPTIONS_REQUESTED_SUB_MODULE == 'add_tray') $this->addTray ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_tray') $this->removeTray (); // remove a tray temporarily from the LN2 tanks 
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_tray') $this->deleteTray (); // delete tray from database (with or without it's metadata)
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax') $this->ajax();
       //TODO: check if you need another sub module for viewing trays
    }
 
@@ -69,6 +71,9 @@ class TrayStorage extends Repository{
    }
 
    private function addTray($addInfo = ''){
+      if(OPTIONS_REQUESTED_ACTION === "insert_tray"){
+         $addInfo = $this->insertTray();
+      }
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
    <?php echo $addInfo?>
@@ -83,8 +88,6 @@ class TrayStorage extends Repository{
       <div class="">
          <select id="tank">
             <option value=""></option><!--NULL option-->
-            <option value="1">1</option><!--TODO: get tanks from tanks table-->
-            <option value="2">2</option>
          </select>
       </div>
    </div>
@@ -93,47 +96,29 @@ class TrayStorage extends Repository{
       <div class="">
          <select id="sector">
             <option value=""></option><!--NULL option-->
-            <option value="a">A</option><!--TODO: get tanks from tanks table-->
-            <option value="b">B</option>
-            <option value="b">C</option>
-            <option value="b">D</option>
-            <option value="b">E</option>
-            <option value="b">F</option>
          </select>
       </div>
    </div>
    <div class="form-group">
-      <label for="tower" class="control-label">Tower</label>
+      <label for="rack" class="control-label">Rack</label>
       <div class="">
-         <select type="text" class="form-control" id="tower">
+         <select type="text" class="form-control" id="rack">
             <option value=""></option><!--NULL option-->
-            <option value="1">1</option><!--TODO: get tanks from tanks table-->
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
          </select>
       </div>
    </div>
    <div class="form-group">
-      <label for="position" class="control-label">Position in Tower</label>
+      <label for="position" class="control-label">Position in Rack</label>
       <div class="">
          <select type="text" class="form-control" id="position">
             <option value=""></option><!--NULL option-->
-            <option value="1">1</option><!--TODO: get tanks from tanks table-->
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
          </select>
       </div>
    </div>
    <div class="form-group">
       <label for="status" class="control-label">Status</label>
       <div class="">
-         <select type="text" class="form-control" id="tower">
+         <select type="text" class="form-control" id="status">
             <option value=""></option><!--NULL option-->
             <option value="temporary">Temporary</option>
             <option value="permanent">Permanent</option>
@@ -156,6 +141,60 @@ class TrayStorage extends Repository{
    private function deleteTray($addInfo = ''){
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       
+   }
+   
+   private function insertTray(){
+      $message = "";
+   }
+   
+   /**
+    * Handles all ajax requests to this page
+    */
+   private function ajax(){
+      $message = "";
+      if(OPTIONS_REQUESTED_ACTION == "get_tank_details"){
+         //get tank details from monitoring database
+         $query = "SELECT * FROM ".Config::$monitoring_db.".units";
+         $result = $this->Dbase->ExecuteQuery($query);
+         if($result !== 1){
+            for($tankIndex = 0; $tankIndex < count($result); $tankIndex++){
+               $result[$tankIndex]['sectors'] = array();
+               $query = "SELECT * FROM tank_sector WHERE tank = ".$result[$tankIndex]['TankID'];
+               $tempResult = $this->Dbase->ExecuteQuery($query);
+               if($tempResult !== 1){
+                  $result[$tankIndex]['sectors'] = $tempResult;
+                  for($sectorIndex = 0; $sectorIndex < count($result[$tankIndex]['sectors']); $sectorIndex++){
+                     $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = array();
+                     $query = "SELECT * FROM rack WHERE tank_sector = ".$result[$tankIndex]['sectors'][$sectorIndex]['id'];
+                     $tempResult = $this->Dbase->ExecuteQuery($query);
+                     if($tempResult !== 1){
+                        $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = $tempResult;
+                        for($rackIndex = 0; $rackIndex < count($result[$tankIndex]['sectors'][$sectorIndex]['racks']); $rackIndex++){
+                           $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'] = array();
+                           $query = "SELECT * FROM boxes WHERE rack = ".$result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['id'];
+                           $tempResult = $this->Dbase->ExecuteQuery($query);
+                           if($tempResult !== 1){
+                              $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'] = $tempResult;
+                           }
+                           else $message = $this->Dbase->lastError;
+                        }
+                     }
+                     else $message = $this->Dbase->lastError;
+                  }
+               }
+               else $message = $this->Dbase->lastError;
+            }
+         }
+         else{
+            $message = $this->Dbase->lastError;
+         }
+         
+         $jsonArray = array();
+         $jsonArray['error'] = $message;
+         if($result === 1) $result = array();
+         $jsonArray['data'] = $result;
+         return json_encode($jsonArray);
+      }
    }
 }
 ?>
