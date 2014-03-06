@@ -65,7 +65,7 @@ var TrayStorage = {
          url: "index.php?page=tray_storage&do=ajax&action=get_tank_details",
          async: false
       }).responseText;
-      
+      console.log(jsonText);
       var json = jQuery.parseJSON(jsonText);
       var tanks = json.data;
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
