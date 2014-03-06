@@ -23,11 +23,21 @@ var TrayStorage = {
             return String(this).replace(/^\s+|\s+$/g, '');
          };
       }
+      
+      //trim spaces from inputs 
       $("#tray_label").val($("#tray_label").val().trim());
+      $("#features").val($("#features").val().trim());
+      $("#sample_types").val($("#sample_types").val().trim());
+      $("#sampling_loc").val($("#sampling_loc").val().trim());
       
       if($("#tray_label").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the label no the tray', error:true});
          $("#tray_label").focus();
+         return false;
+      }
+      if($("#tray_size").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the tray size', error:true});
+         $("#tray_size").focus();
          return false;
       }
       if($("#tank").val() === ""){
