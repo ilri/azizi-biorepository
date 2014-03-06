@@ -107,6 +107,7 @@ var TrayStorage = {
             var sectorID = parseInt($("#sector").val());
             var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
             for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
+               console.log(racks[rackIndex].id);
                $("#rack").append($("<option></option>")
                        .attr("value", racks[rackIndex].id)
                        .text("Rack "+racks[rackIndex].label));
