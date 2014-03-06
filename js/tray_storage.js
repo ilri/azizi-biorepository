@@ -162,7 +162,7 @@ var TrayStorage = {
     */
    getTankIndex : function(tanks, tankID){
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
-         if(tanks[tankIndex].TankID === tankID){
+         if(parseInt(tanks[tankIndex].TankID) === tankID){
             return tankIndex;
          }
       }
@@ -177,7 +177,7 @@ var TrayStorage = {
     */
    getSectorIndex : function(sectors, sectorID){
       for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
-         if(sectors[sectorIndex].id === sectorID){
+         if(parseInt(sectors[sectorIndex].id) === sectorID){
             return sectorIndex;
          }
       }
@@ -192,7 +192,7 @@ var TrayStorage = {
     */
    getRackIndex : function(racks, rackID){
       for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
-         if(racks[rackIndex].id === rackID){
+         if(parseInt(racks[rackIndex].id) === rackID){
             return rackIndex;
          }
       }
