@@ -159,7 +159,6 @@ class TrayStorage extends Repository{
          //get tank details from monitoring database
          $query = "SELECT * FROM ".Config::$config['monitoring_db'].".units";
          $result = $this->Dbase->ExecuteQuery($query);
-         $this->Dbase->CreateLogEntry('tanks -> '.print_r($result, true), 'fatal');
          if($result !== 1){
             for($tankIndex = 0; $tankIndex < count($result); $tankIndex++){
                $result[$tankIndex]['sectors'] = array();
@@ -193,6 +192,7 @@ class TrayStorage extends Repository{
             $message = $this->Dbase->lastError;
          }
          
+         $this->Dbase->CreateLogEntry('tanks -> '.print_r($result, true), 'fatal');
          $jsonArray = array();
          $jsonArray['error'] = $message;
          $this->Dbase->CreateLogEntry('tray storage error message -> '.$message, 'fatal');
