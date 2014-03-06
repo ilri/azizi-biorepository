@@ -157,7 +157,7 @@ class TrayStorage extends Repository{
       $message = "";
       if(OPTIONS_REQUESTED_ACTION == "get_tank_details"){
          //get tank details from monitoring database
-         $query = "SELECT * FROM ".Config::$monitoring_db.".units";
+         $query = "SELECT * FROM ".Config::$config['monitoring_db'].".units";
          $result = $this->Dbase->ExecuteQuery($query);
          if($result !== 1){
             for($tankIndex = 0; $tankIndex < count($result); $tankIndex++){
