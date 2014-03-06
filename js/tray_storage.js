@@ -83,7 +83,7 @@ var TrayStorage = {
                     .append('<option value=""></option>')//append a null option
                         .val('');
             var tankID = parseInt($("#tank").val());
-            var sectors = tanks[tankID].sectors;
+            var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
             console.log(tanks[tankID]);
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
                console.log("appended"+sectors[sectorIndex].label);
@@ -151,5 +151,51 @@ var TrayStorage = {
             }
          }
       });
+   },
+   
+   /**
+    * This function is used to determine the index of a tank in the tank array using its id
+    * 
+    * @param {Array} tanks The tank array
+    * @param {Number} tankID The id of the tank (As from the database)
+    * @returns {Number} Returns the index of a tank in the tank array or -1 if no tank in the array has the provided tankID
+    */
+   getTankIndex : function(tanks, tankID){
+      for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
+         if(tanks[tankIndex].TankID === tankID){
+            return tankIndex;
+         }
+      }
+      return -1;
+   },
+   
+   /**
+    * This function is used to determine the index of a tank sector in a sector array using its id
+    * @param {Array} sectors An array of sectors obtained from the tank array
+    * @param {Number} sectorID The id of the sector as from the database
+    * @returns {Number} Returs the index of the sector in the sector array provided or -1 if no sector in the sector array has the provided sectorID
+    */
+   getSectorIndex : function(sectors, sectorID){
+      for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
+         if(sectors[sectorIndex].id === sectorID){
+            return sectorIndex;
+         }
+      }
+      return -1;
+   },
+   
+   /**
+    * This function is used to determine the index of a rack in a rack array using its id
+    * @param {Array} racks An array of racks obtained from a sector array
+    * @param {Number} rackID The id of the rack as from the database
+    * @returns {Number} Returs the index of the rack in the rack array provided or -1 if no rack in the rack array has the provided rackID
+    */
+   getRackIndex : function(racks, rackID){
+      for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
+         if(racks[rackIndex].id === rackID){
+            return rackIndex;
+         }
+      }
+      return -1;
    }
 };
