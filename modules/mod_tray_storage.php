@@ -80,10 +80,6 @@ class TrayStorage extends Repository{
 <h3 class="center">Add a tray</h3>
 <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
    <div class="form-group">
-      <label for="tray_label" class="control-label">Tray Label</label>
-      <div class=""><input type="text" class="form-control" id="tray_label"></div>
-   </div>
-   <div class="form-group">
       <label for="tank" class="control-label">Tank</label>
       <div class="">
          <select id="tank">
@@ -125,6 +121,10 @@ class TrayStorage extends Repository{
          </select>
       </div>
    </div>
+   <div class="form-group">
+      <label for="tray_label" class="control-label">Tray Label</label>
+      <div class=""><input type="text" class="form-control" id="tray_label"></div>
+   </div>
    <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
 </form>
 <script>
@@ -148,6 +148,7 @@ class TrayStorage extends Repository{
    
    private function insertTray(){
       $message = "";
+      
    }
    
    /**
