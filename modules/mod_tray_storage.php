@@ -78,6 +78,7 @@ class TrayStorage extends Repository{
       ?>
    <?php echo $addInfo?>
 <div id="tray_storage">
+   <h3 class="center">Add a tray</h3>
    <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
       <div id="meta_data_div">
          <legend>Metadata</legend>
@@ -122,7 +123,6 @@ class TrayStorage extends Repository{
       <div class="center"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
    </form>
 </div>
-<h3 class="center">Add a tray</h3>
 
 <script>
    $(document).ready( function() {
