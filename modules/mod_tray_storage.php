@@ -25,9 +25,11 @@ class TrayStorage extends Repository{
        *    - add_tray (do)
        *       - insert_tray (action)
        *    - remove_tray
+       *       -submit_request
        *    - delete_tray
        *    - ajax
        *       - get_tank_details
+       *       - fetch_trays
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/tray_storage.js'></script>";
@@ -78,8 +80,8 @@ class TrayStorage extends Repository{
       ?>
    <?php echo $addInfo?>
 <div id="tray_storage">
-   <h3 class="center">Add a tray</h3>
-   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitNewRequest();" >
+   <h3 class="center">Add a Tray</h3>
+   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitInsertRequest();" >
       <div id="meta_data_div">
          <legend>Metadata</legend>
          <div>
@@ -186,7 +188,78 @@ class TrayStorage extends Repository{
    
    private function removeTray($addInfo = ''){
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
-      
+      ?>
+   <?php echo $addInfo?>
+<div id="tray_storage">
+   <h3 class="center">Remove Tray</h3>
+   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=remove_tray&action=submit_request" onsubmit="return TrayStorage.submitRemoveRequest();" >
+      <div id="location_div">
+         <legend>Tray Location</legend>
+         <div>
+            <div>
+               <label for="tank">Tank</label>
+               <select id="tank">
+                  <option value=""></option><!--NULL option-->
+               </select>
+            </div>
+            <div>
+               <label for="sector">Sector</label>
+               <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
+               </select>
+            </div>
+            <div>
+               <label for="rack">Rack</label>
+               <select type="text" name="rack" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
+               </select>
+            </div>
+            <div>
+               <label for="position">Position in Rack</label>
+               <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+               </select>
+            </div>
+            <div>
+               <label for="status">Status</label>
+               <select type="text" name="status" id="status">
+                  <option value=""></option><!--NULL option-->
+                  <option value="temporary">Temporary</option>
+                  <option value="permanent">Permanent</option>
+               </select>
+            </div>
+         </div>
+      </div>
+      <div id="meta_data_div">
+         <legend>Purpose</legend>
+         <div>
+            <div><label for="tray_label">Tray Label</label><input type="text" name="tray_label" id="tray_label" /></div>
+            <div><label for="features">Features</label><input type="text" name="features" id="features" /></div>
+            <div>
+               <label for="tray_size">Tray size</label>
+               <select name="tray_size" id="tray_size">
+                  <option value=""></option>
+                  <option value="81">81</option>
+                  <option value="100">100</option>
+               </select>
+            </div>
+            <div>
+               <label for="sample_types">Sample Types</label>
+               <input type="text" name="sample_types" id="sample_types" />
+            </div>
+            <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
+         </div>
+      </div>
+      <div class="center" id="submit_button_div"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
+   </form>
+   <div id="tank_trays"></div>
+</div>
+
+<script type="text/javascript">
+   $(document).ready( function() {
+      TrayStorage.loadTankData();
+   });
+   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
+   });
+</script>
+      <?php
    }
    
    private function deleteTray($addInfo = ''){

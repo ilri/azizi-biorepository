@@ -9,14 +9,18 @@ var TrayStorage = {
     * 
     * @returns {Boolean}
     */
-   submitNewRequest : function(){
-      if(this.validateInput() === true){
+   submitInsertRequest : function(){
+      if(this.validateInsertInput() === true){
          return true;
       }
       return false;
    },
    
-   validateInput: function(){
+   submitRemoveRequest: function(){
+      
+   },
+   
+   validateInsertInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
          {
