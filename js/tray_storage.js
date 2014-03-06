@@ -65,7 +65,7 @@ var TrayStorage = {
          url: "mod_ajax.php?page=tray_storage&do=ajax&action=get_tank_details",
          async: false
       }).responseText;
-      console.log(jsonText);
+      //console.log(jsonText);
       
       var json = jQuery.parseJSON(jsonText);
       var tanks = json.data;
@@ -84,9 +84,9 @@ var TrayStorage = {
                         .val('');
             var tankID = parseInt($("#tank").val());
             var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
-            console.log(tanks[tankID]);
+            //console.log(tanks[tankID]);
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
-               console.log("appended"+sectors[sectorIndex].label);
+               //console.log("appended"+sectors[sectorIndex].label);
                $("#sector").append($("<option></option>")
                        .attr("value", sectors[sectorIndex].id)
                        .text("Sector "+sectors[sectorIndex].label));
@@ -130,10 +130,11 @@ var TrayStorage = {
             var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
             var rackID = parseInt($("#rack").val());
             var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
+            console.log(rack);
             var availablePos = new Array();
             
             //populate available positions array with a 1 index list depending on the size of the rack
-            for(var currPos = 1; currPos <= rack.length; currPos++){
+            for(var currPos = 1; currPos <= rack.size; currPos++){
                availablePos.push(currPos);
             }
             
