@@ -87,31 +87,31 @@ class TrayStorage extends Repository{
       <label for="tank" class="control-label">Tank</label>
       <div class="">
          <select id="tank">
-            <option value=""></option><!--NULL option-->
+            
          </select>
       </div>
    </div>
    <div class="form-group">
       <label for="sector" class="control-label">Sector</label>
       <div class="">
-         <select id="sector">
-            <option value=""></option><!--NULL option-->
+         <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
+            
          </select>
       </div>
    </div>
    <div class="form-group">
       <label for="rack" class="control-label">Rack</label>
       <div class="">
-         <select type="text" class="form-control" id="rack">
-            <option value=""></option><!--NULL option-->
+         <select type="text" class="form-control" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
+            
          </select>
       </div>
    </div>
    <div class="form-group">
       <label for="position" class="control-label">Position in Rack</label>
       <div class="">
-         <select type="text" class="form-control" id="position">
-            <option value=""></option><!--NULL option-->
+         <select type="text" class="form-control" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+            
          </select>
       </div>
    </div>
