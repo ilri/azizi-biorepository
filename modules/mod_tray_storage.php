@@ -84,6 +84,20 @@ class TrayStorage extends Repository{
          <legend>Metadata</legend>
          <div>
             <div><label for="tray_label">Tray Label</label><input type="text" id="tray_label" /></div>
+            <div><label for="features">Features</label><input type="text" id="features" /></div>
+            <div>
+               <label for="tray_size">Size</label>
+               <select id="tray_size">
+                  <option value=""></option>
+                  <option value="81">81</option>
+                  <option value="100">100</option>
+               </select>
+            </div>
+            <div>
+               <label for="sample_types">Sample Types</label>
+               <input type="text" id="sample_types" />
+            </div>
+            <div><label for="sampling_loc">Sampling Location</label><input type="text" id="sampling_loc" /></div>
          </div>
       </div>
       <div id="location_div">
