@@ -72,14 +72,14 @@ var TrayStorage = {
       var result = TrayStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
       
       if(result === true){
-         $("#for_who").val($("for_who").val().trim());
-         $("#analysis_type").val($("analysis_type").val().trim());
+         $("#for_who").val($("#for_who").val().trim());
+         $("#analysis_type").val($("#analysis_type").val().trim());
          if($('#for_who').val() === ""){
             Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the person the tray is being removed for', error:true});
             $("#for_who").focus();
             return false;
          }
-         else if($("#for_who").val().split(/\s/)){//at least two names 
+         else if($("#for_who").val().split(/\s/).length < 2){//at least two names 
             Notification.show({create:true, hide:true, updateText:false, text:'Please enter at least two names', error:true});
             $("#for_who").focus();
             return false;
