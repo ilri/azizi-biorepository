@@ -98,9 +98,12 @@ var TrayStorage = {
             return false;
          }
       }
+      else{
+         return false;
+      }
       
       
-      return false;
+      return true;
    },
    
    validateTankInformation: function(){
@@ -124,6 +127,7 @@ var TrayStorage = {
          $("#tank").focus();
          return false;
       }
+      return true;
    },
    
    /**
