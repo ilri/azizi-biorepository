@@ -86,7 +86,7 @@ var TrayStorage = {
          $("#purpose").focus();
          return false;
       }
-      if($("#analysis_type").val() === ""){
+      if($("#analysis_type_div").is(":visible") && $("#analysis_type").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
          $("#analysis_type").focus();
          return false;
