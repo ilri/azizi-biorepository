@@ -234,7 +234,7 @@ class TrayStorage extends Repository{
                   <option ></option>
                </select>
             </div>
-            <div id="analysis_type_div">
+            <div id="analysis_type_div" hidden="true">
                <label for="analysis_type">Specify analysis to be done</label>
                <textarea cols="8" rows="3" id="analysis_type" name="analysis_type" ></textarea>
             </div>
