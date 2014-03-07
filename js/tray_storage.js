@@ -238,7 +238,7 @@ var TrayStorage = {
             var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
             var rackID = parseInt($("#rack").val());
             var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
-            console.log(rack);
+            
             var availablePos = new Array();
             
             var trays = rack.boxes;
@@ -273,7 +273,6 @@ var TrayStorage = {
                $("#position").append($("<option></option>")
                        .attr("value", availablePos[availPIndex])
                        .text("Positon " + availablePos[availPIndex]));
-               console.log("appended "+availablePos[availPIndex]);
             }
          }
          else {//disable child selects
@@ -282,6 +281,30 @@ var TrayStorage = {
                     .append('<option value=""></option>')//append a null option
                         .val('');
             $('#position').prop('disabled', 'disabled');
+         }
+         
+         //show tray label if purpose if for deleting tray information or removing tray
+         if(forInsertion === false){
+            $("#position").change(function(){
+               if($("#position").val() !== ""){
+                  $("#tray_label").val("");
+                  var tankID = parseInt($("#tank").val());
+                  var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
+                  var sectorID = parseInt($("#sector").val());
+                  var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
+                  var rackID = parseInt($("#rack").val());
+                  var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
+                  
+                  //get the box/tray in rack that is stored in position
+                  var trays = rack.boxes;
+                  var position = parseInt($("#position").val());
+                  for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
+                     if(parseInt(trays[trayIndex].rack_position) === position){
+                        $("#tray_label").val(trays[trayIndex].name);
+                     }
+                  }
+               }
+            });
          }
       });
    },

@@ -74,7 +74,7 @@ class TrayStorage extends Repository{
 
    private function addTray($addInfo = ''){
       if(OPTIONS_REQUESTED_ACTION === "insert_tray"){
-         $addInfo = $this->insertTray();
+         $addInfo = $addInfo.$this->insertTray();
       }
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
@@ -187,6 +187,10 @@ class TrayStorage extends Repository{
    }
    
    private function removeTray($addInfo = ''){
+      if(OPTIONS_REQUESTED_ACTION === "submit_request"){
+         $addInfo = $addInfo.$this->submitRemoveRequest();
+      }
+      
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
    <?php echo $addInfo?>
@@ -217,6 +221,9 @@ class TrayStorage extends Repository{
                <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
                </select>
             </div>
+            <div>
+               <label for="tray_label">Tray label</label><input type="text" id="tray_label" disabled="disabled" />
+            </div>
          </div>
       </div>
       <div id="purpose_div">
@@ -246,7 +253,6 @@ class TrayStorage extends Repository{
 </div>
 
 <script type="text/javascript">
-   console.log("called");
    $(document).ready( function() {
       TrayStorage.loadTankData(false);
       $("#purpose").change(function (){
@@ -272,11 +278,46 @@ class TrayStorage extends Repository{
       $message = "";
       $columns = array("name","features","size","type","rack","rack_position", "status", "added_by");
       $columnValues = array($_POST['tray_label'], $_POST['features'], $_POST['tray_size'], $_POST['sample_types'], $_POST['rack'], $_POST['position'], $_POST['status'], $_SESSION['username']);
-      $this->Dbase->CreateLogEntry('col values -> '.print_r($columnValues, true), 'fatal');
+      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
       $result = $this->Dbase->InsertOnDuplicateUpdate("boxes", $columns, $columnValues);
       if($result === 0) {
          $message = "Unable to add the last request. Try again later";
+         $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to make the last insertTray request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
       }
+      return $message;
+   }
+   
+   private function submitRemoveRequest(){
+      $message = "";
+      //get the box in the selected position
+      $query = "SELECT id FROM boxes WHERE rack = '?' AND rack_position = ?";
+      $result = $this->Dbase->ExecuteQuery($query,array($_POST['rack'], $_POST['position']));
+      if($result !== 1){
+         if(count($result) === 1){//only one box/tray should be in that position
+            $trayID = $result[0]['id'];
+            $now = date('Y-m-d H:i:s');
+            $columns = array("box", "removed_by", "removed_for", "purpose", "date_removed");
+            $colVals = array($trayID, $_SESSION['username'], $_POST['for_who'], $_POST['purpose'], $now);
+            if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
+               array_push($columns, "analysis");
+               array_push($colVals, $_POST['analysis_type']);
+            }
+            $result = $this->Dbase->InsertOnDuplicateUpdate("removed_boxes", $columns, $colVals);
+            if($result === 0){
+               $message = "Unable to remove tray for the system.";
+               $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to remove tray from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+            }
+         }
+         else{
+            $message = "It appears that more than one (". count($result) .") tray is in the position specified. Unable to remove anything from the system";
+            $this->Dbase->CreateLogEntry('mod_tray_storage: It appears that more than one ('. count($result) .') tray is in the position specified. Unable to remove anything from the system', 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+         }
+      }
+      else{
+         $message = "Unable to remove the tray from the system. No tray was found in the specified tank position";
+         $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to locate box in the location rack_id:'.$_POST['rack'].' -> position:'. $_POST['position'].'. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      }
+      $columns = array();
       return $message;
    }
    
@@ -330,7 +371,7 @@ class TrayStorage extends Repository{
             $result = array();
          }
          $jsonArray['data'] = $result;
-         $this->Dbase->CreateLogEntry('json -> '.json_encode($jsonArray), 'fatal');
+         $this->Dbase->CreateLogEntry('json for tank information -> '.json_encode($jsonArray), 'debug');
          echo json_encode($jsonArray);
       }
       elseif (OPTIONS_REQUESTED_ACTION == "fetch_trays") {
@@ -372,7 +413,7 @@ class TrayStorage extends Repository{
                         "INNER JOIN tank_sector AS b ON a.tank_sector = b.id ".
                         "WHERE boxes.id = ".$row['id'];
             $result = $this->Dbase->ExecuteQuery($query);
-            $this->Dbase->CreateLogEntry('tank location details = '.  print_r($result, true), 'fatal');
+            $this->Dbase->CreateLogEntry('tank location details -> '.  print_r($result, true), 'debug');
             if(count($result) === 1){// only one row should be fetched
                $location = "Tank ".$result[0]['tank_id']."  -> Sector ".$result[0]['sector_label']."  -> Rack ".$result[0]['rack_label']."  -> Position ".$row['rack_position'];
             }
