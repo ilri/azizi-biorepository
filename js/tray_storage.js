@@ -72,9 +72,7 @@ var TrayStorage = {
       var result = TrayStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
       
       if(result === true){
-         console.log("validating other input");
          $("#for_who").val($("for_who").val().trim());
-         $("#purpose").val($("purpose").val().trim());
          $("#analysis_type").val($("analysis_type").val().trim());
          if($('#for_who').val() === ""){
             Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the person the tray is being removed for', error:true});
