@@ -30,6 +30,7 @@ class TrayStorage extends Repository{
        *    - ajax
        *       - get_tank_details
        *       - fetch_trays
+       *       - fetch_removed_trays
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/tray_storage.js'></script>";
@@ -161,7 +162,7 @@ class TrayStorage extends Repository{
       colModel : [
          {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
          {display: 'Sample Type', name: 'type', width: 150, sortable: true, align: 'center'},
-         {display: 'Tank Position', name: 'position', width: 280, sortable: true, align: 'center'},
+         {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
          {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
          {display: 'Moved by', name: 'added_by', width: 100, sortable: true, align: 'center'}
@@ -249,7 +250,7 @@ class TrayStorage extends Repository{
       </div>
       <div class="center" id="submit_button_div"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
    </form>
-   <div id="tank_trays"></div>
+   <div id="removed_boxes"></div>
 </div>
 
 <script type="text/javascript">
@@ -265,6 +266,43 @@ class TrayStorage extends Repository{
       });
    });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
+   
+   //Javascript for making table
+   /*
+    * Table looks like:
+    *    Tray Label | Location | Removed By | For Who | Date Removed | Date Returned 
+    *    
+    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
+    * 
+    */
+   $("#removed_boxes").flexigrid({
+      url: "mod_ajax.php?page=tray_storage&do=ajax&action=fetch_removed_trays",
+      dataType: 'json',
+      colModel : [
+         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
+         {display: 'Removed by', name: 'removed_by', width: 100, sortable: true, align: 'center'},
+         {display: 'For who', name: 'removed_for', width: 100, sortable: true, align: 'center'},
+         {display: 'Date Removed', name: 'date_removed', width: 100, sortable: true, align: 'center'},
+         {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
+      ],
+      searchitems : [
+         {display: 'Tray Label', name : 'name'},
+         {display: 'Removed by', name : 'removed_by'},
+         {display: 'For who', name : 'removed_for'}
+      ],
+      sortname : 'date_removed',
+      sortorder : 'desc',
+      usepager : true,
+      title : 'Stored Trays',
+      useRp : true,
+      rp : 10,
+      showTableToggleBtn: false,
+      rpOptions: [10, 20, 50], //allowed per-page values
+      width: 900,
+      height: 260,
+      singleSelect: true
+   });
 </script>
       <?php
    }
@@ -421,8 +459,75 @@ class TrayStorage extends Repository{
                $location = "unknown";
             }
             
-            
+            $dateAdded = date('d/m/Y H:i:s', strtotime( $row['date_added'] ));
             $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"type" => $row['type'],"position" => $location, "status" => $row["status"], "date_added" => $row["date_added"], "added_by" => $row["added_by"]));
+         }
+         $response = array(
+             'total' => $dataCount,
+             'page' => $_POST['page'],
+             'rows' => $rows
+         );
+
+         die(json_encode($response));
+      }
+      
+      elseif(OPTIONS_REQUESTED_ACTION === "fetch_removed_trays"){
+         //check if search criterial provided
+         $criteriaArray = array();
+         if($_POST['query'] != "") {
+            $criteria = "WHERE {$_POST['qtype']} LIKE '%?%'";
+            $criteriaArray[] = $_POST['query'];
+         }
+         else {
+            $criteria = "";
+         }
+
+         $startRow = ($_POST['page'] - 1) * $_POST['rp'];
+         $query = "SELECT a.*, b.name, b.rack, b.rack_position".
+                 " FROM removed_boxes AS a".
+                 " INNER JOIN boxes AS b ON a.box = b.id".
+                 " $criteria".
+                 " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
+         //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
+         $data = $this->Dbase->ExecuteQuery($query." LIMIT $startRow, {$_POST['rp']}" , $criteriaArray);
+
+         //check if any data was fetched
+         if($data === 1) die (json_encode (array('error' => true)));
+         
+         
+         $dataCount = $this->Dbase->ExecuteQuery($query,$criteriaArray);
+         if($dataCount === 1)
+            die (json_encode (array('error' => true)));
+         else
+            $dataCount = sizeof ($dataCount);
+         
+         //reformat rows fetched from first query
+         $rows = array();
+         foreach ($data as $row) {
+            //get other tank information tank -> sector -> rack
+            $query = "SELECT a.label AS rack_label, b.label AS sector_label, b.tank AS tank_id ".
+                        "FROM boxes ".
+                        "INNER JOIN rack AS a ON boxes.rack = a.id ".
+                        "INNER JOIN tank_sector AS b ON a.tank_sector = b.id ".
+                        "WHERE boxes.id = ?";
+            $result = $this->Dbase->ExecuteQuery($query, array($row['id']));
+            $this->Dbase->CreateLogEntry('tank location details -> '.  print_r($result, true), 'debug');
+            if(count($result) === 1){// only one row should be fetched
+               $location = "Tank ".$result[0]['tank_id']."  -> Sector ".$result[0]['sector_label']."  -> Rack ".$result[0]['rack_label']."  -> Position ".$row['rack_position'];
+            }
+            else{
+               $location = "unknown";
+            }
+            
+            $dateRemoved = date('d/m/Y H:i:s', strtotime( $row['date_removed'] ));
+            
+            if(is_null($row['date_returned'])){
+               $dateReturned = "Not returned";
+            }
+            else{
+               $dateReturned = date( 'd/m/Y H:i:s', strtotime( $row['date_returned'] ));
+            }
+            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"position" => $location, "removed_by" => $row["removed_by"], "for_who" => $row["for_who"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
          }
          $response = array(
              'total' => $dataCount,
