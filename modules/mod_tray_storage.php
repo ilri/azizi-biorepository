@@ -255,7 +255,7 @@ class TrayStorage extends Repository{
 
 <script type="text/javascript">
    $(document).ready( function() {
-      TrayStorage.loadTankData(false);
+      TrayStorage.loadTankData(false, 1);//show trays that are still in the tanks (and not borrowed/removed)
       $("#purpose").change(function (){
          if($("#purpose").val()=== "analysis_on_campus" || $("#purpose").val()=== "analysis_off_campus"){
             $("#analysis_type_div").show();
@@ -281,8 +281,8 @@ class TrayStorage extends Repository{
       colModel : [
          {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
-         {display: 'Removed by', name: 'removed_by', width: 100, sortable: true, align: 'center'},
-         {display: 'For who', name: 'removed_for', width: 100, sortable: true, align: 'center'},
+         {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
+         {display: 'For who', name: 'removed_for', width: 120, sortable: true, align: 'center'},
          {display: 'Date Removed', name: 'date_removed', width: 100, sortable: true, align: 'center'},
          {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
       ],
@@ -387,6 +387,15 @@ class TrayStorage extends Repository{
                            $tempResult = $this->Dbase->ExecuteQuery($query);
                            if($tempResult !== 1){
                               $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'] = $tempResult;
+                              for($boxIndex = 0; $boxIndex < count($result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes']); $boxIndex++){
+                                 $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'][$boxIndex]['removes'] = array();
+                                 $query = "SELECT * FROM removed_boxes WHERE box = ".$result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'][$boxIndex]['id'];
+                                 $tempResult = $this->Dbase->ExecuteQuery($query);
+                                 if($tempResult !== 1){
+                                    $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'][$boxIndex]['removes'] = $tempResult;
+                                 }
+                                 else $message = $this->Dbase->lastError;
+                              }
                            }
                            else $message = $this->Dbase->lastError;
                         }

@@ -136,9 +136,13 @@ var TrayStorage = {
     * Cascading logic added. When user selects certain tank, only sectors in that tank will be shown as options in the sector select
     * 
     * @param {Boolean} forInsertion Set to true if you want to display available tray positions
+    * @param {Int} traysToShow Defaults to 0. Set to 0 if you want to show all trays, 1 to show trays still in the tanks and 2 for trays that have been removed
+    * 
     * @returns {undefined}
     */
-   loadTankData: function(forInsertion){
+   loadTankData: function(forInsertion, traysToShow){
+      if(typeof(traysToShow)==='undefined') traysToShow = 0;//default traysToShow to 0 (all trays)
+      
       var jsonText = $.ajax({
          type: "GET",
          url: "mod_ajax.php?page=tray_storage&do=ajax&action=get_tank_details",
@@ -264,7 +268,37 @@ var TrayStorage = {
             else{
                //iterate through all boxes/trays in rack and add their positions to the available positon array
                for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
-                  availablePos.push(parseInt(trays[trayIndex].rack_position));
+                  if(traysToShow === 0)//add all trays
+                     availablePos.push(parseInt(trays[trayIndex].rack_position));
+                  
+                  else if(traysToShow === 1){//just show trays that are still in the tanks
+                     
+                     //search for an instance of remove that has not been returned
+                     var safeToShow = true;
+                     var removes = trays[trayIndex].removes;
+                     for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
+                        if(removes[removeIndex].date_returned === null){
+                           safeToShow = false;
+                        }
+                     }
+                     
+                     if(safeToShow)
+                        availablePos.push(parseInt(trays[trayIndex].rack_position));
+                  }
+                  else if(traysToShow === 1){//just show trays that have been removed from tanks
+                     
+                     //search for an instance of remove that has not been returned
+                     var safeToShow = false;
+                     var removes = trays[trayIndex].removes;
+                     for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
+                        if(removes[removeIndex].date_returned === null){
+                           safeToShow = true;
+                        }
+                     }
+                     
+                     if(safeToShow)
+                        availablePos.push(parseInt(trays[trayIndex].rack_position));
+                  }
                }
             }
             
