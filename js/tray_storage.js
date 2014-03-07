@@ -62,14 +62,14 @@ var TrayStorage = {
    },
    
    validateRemoveInput: function(){
-      var result = TrayStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
-      
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
          {
             return String(this).replace(/^\s+|\s+$/g, '');
          };
       }
+      
+      var result = TrayStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
       
       $("#for_who").val($("for_who").val().trim());
       $("#purpose").val($("purpose").val().trim());
