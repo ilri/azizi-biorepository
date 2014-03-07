@@ -71,32 +71,35 @@ var TrayStorage = {
       
       var result = TrayStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
       
-      $("#for_who").val($("for_who").val().trim());
-      $("#purpose").val($("purpose").val().trim());
-      $("#analysis_type").val($("analysis_type").val().trim());
-      if($('#for_who').val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the person the tray is being removed for', error:true});
-         $("#for_who").focus();
-         return false;
-      }
-      else if($("#for_who").val().split(/\s/)){//at least two names 
-         Notification.show({create:true, hide:true, updateText:false, text:'Please enter at least two names', error:true});
-         $("#for_who").focus();
-         return false;
+      if(result === true){
+         $("#for_who").val($("for_who").val().trim());
+         $("#purpose").val($("purpose").val().trim());
+         $("#analysis_type").val($("analysis_type").val().trim());
+         if($('#for_who').val() === ""){
+            Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the person the tray is being removed for', error:true});
+            $("#for_who").focus();
+            return false;
+         }
+         else if($("#for_who").val().split(/\s/)){//at least two names 
+            Notification.show({create:true, hide:true, updateText:false, text:'Please enter at least two names', error:true});
+            $("#for_who").focus();
+            return false;
+         }
+
+         if($("#purpose").val() === ""){
+            Notification.show({create:true, hide:true, updateText:false, text:'Please enter the purpose of the tray', error:true});
+            $("#purpose").focus();
+            return false;
+         }
+         if($("#analysis_type_div").is(":visible") && $("#analysis_type").val() === ""){
+            Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
+            $("#analysis_type").focus();
+            return false;
+         }
       }
       
-      if($("#purpose").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the purpose of the tray', error:true});
-         $("#purpose").focus();
-         return false;
-      }
-      if($("#analysis_type_div").is(":visible") && $("#analysis_type").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
-         $("#analysis_type").focus();
-         return false;
-      }
       
-      return result;
+      return false;
    },
    
    validateTankInformation: function(){
