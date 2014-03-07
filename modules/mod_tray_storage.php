@@ -460,7 +460,7 @@ class TrayStorage extends Repository{
             }
             
             $dateAdded = date('d/m/Y H:i:s', strtotime( $row['date_added'] ));
-            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"type" => $row['type'],"position" => $location, "status" => $row["status"], "date_added" => $row["date_added"], "added_by" => $row["added_by"]));
+            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"type" => $row['type'],"position" => $location, "status" => $row["status"], "date_added" => $dateAdded, "added_by" => $row["added_by"]));
          }
          $response = array(
              'total' => $dataCount,
@@ -527,7 +527,7 @@ class TrayStorage extends Repository{
             else{
                $dateReturned = date( 'd/m/Y H:i:s', strtotime( $row['date_returned'] ));
             }
-            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"position" => $location, "removed_by" => $row["removed_by"], "for_who" => $row["for_who"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
+            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"position" => $location, "removed_by" => $row["removed_by"], "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
          }
          $response = array(
              'total' => $dataCount,
