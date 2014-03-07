@@ -290,7 +290,7 @@ class TrayStorage extends Repository{
    private function submitRemoveRequest(){
       $message = "";
       //get the box in the selected position
-      $query = "SELECT id FROM boxes WHERE rack = '?' AND rack_position = ?";
+      $query = "SELECT id FROM boxes WHERE rack = ? AND rack_position = ?";
       $result = $this->Dbase->ExecuteQuery($query,array($_POST['rack'], $_POST['position']));
       if($result !== 1){
          if(count($result) === 1){//only one box/tray should be in that position
@@ -314,7 +314,7 @@ class TrayStorage extends Repository{
          }
       }
       else{
-         $message = "Unable to remove the tray from the system. No tray was found in the specified tank position. ".print_r(array($_POST['rack'], $_POST['position']), true);
+         $message = "Unable to remove the tray from the system. No tray was found in the specified tank position";
          $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to locate box in the location rack_id:'.$_POST['rack'].' -> position:'. $_POST['position'].'. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
       }
       $columns = array();
