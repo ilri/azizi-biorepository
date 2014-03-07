@@ -252,10 +252,10 @@ class TrayStorage extends Repository{
       TrayStorage.loadTankData(false);
       $("#purpose").change(function (){
          if($("#purpose").val()=== "analysis_on_campus" || $("#purpose").val()=== "analysis_off_campus"){
-            $("#analysis_type_div").hide();
+            $("#analysis_type_div").show();
          }
          else{
-            $("#analysis_type_div").show();
+            $("#analysis_type_div").hide();
          }
       });
    });
