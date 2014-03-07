@@ -17,7 +17,9 @@ var TrayStorage = {
    },
    
    submitRemoveRequest: function(){
-      if(this.validateInsertInput())
+      if(this.validateRemoveInput()){
+         return true;
+      }
       return false;
    },
    
@@ -60,6 +62,8 @@ var TrayStorage = {
    },
    
    validateRemoveInput: function(){
+      var result = validateTankInformation();//Put this first because tank information appears before the rest of the form
+      
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
          {
@@ -92,7 +96,7 @@ var TrayStorage = {
          return false;
       }
       
-      return validateTankInformation();
+      return result;
    },
    
    validateTankInformation: function(){
