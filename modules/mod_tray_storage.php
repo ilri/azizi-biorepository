@@ -234,7 +234,7 @@ class TrayStorage extends Repository{
                   <option ></option>
                </select>
             </div>
-            <div>
+            <div id="analysis_type_div">
                <label for="analysis_type">Specify analysis to be done</label>
                <textarea cols="8" rows="3" id="analysis_type" name="analysis_type" ></textarea>
             </div>
@@ -250,6 +250,14 @@ class TrayStorage extends Repository{
    console.log("called");
    $(document).ready( function() {
       TrayStorage.loadTankData(false);
+      $("#purpose").change(function (){
+         if($("#purpose").val()=== "analysis_on_campus" || $("#purpose").val()=== "analysis_off_campus"){
+            $("#analysis_type_div").hide();
+         }
+         else{
+            $("#analysis_type_div").show();
+         }
+      });
    });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
 </script>

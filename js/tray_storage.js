@@ -75,6 +75,12 @@ var TrayStorage = {
          $("#for_who").focus();
          return false;
       }
+      else if($("#for_who").val().split(/\s/)){//at least two names 
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter at least two names', error:true});
+         $("#for_who").focus();
+         return false;
+      }
+      
       if($("#purpose").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the purpose of the tray', error:true});
          $("#purpose").focus();
