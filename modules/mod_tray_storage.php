@@ -231,7 +231,6 @@ class TrayStorage extends Repository{
                   <option value="analysis_on_campus">Analysis on campus</option>
                   <option value="analysis_off_campus">Analysis off campus</option>
                   <option value="shipment">Shipment</option>
-                  <option ></option>
                </select>
             </div>
             <div id="analysis_type_div" hidden="true">
