@@ -58,11 +58,11 @@ var TrayStorage = {
          return false;
       }
       
-      return validateTankInformation();
+      return TrayStorage.validateTankInformation();
    },
    
    validateRemoveInput: function(){
-      var result = validateTankInformation();//Put this first because tank information appears before the rest of the form
+      var result = TankStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
       
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
