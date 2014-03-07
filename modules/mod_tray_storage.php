@@ -314,7 +314,7 @@ class TrayStorage extends Repository{
          }
       }
       else{
-         $message = "Unable to remove the tray from the system. No tray was found in the specified tank position";
+         $message = "Unable to remove the tray from the system. No tray was found in the specified tank position. ".print_r(array($_POST['rack'], $_POST['position']), true);
          $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to locate box in the location rack_id:'.$_POST['rack'].' -> position:'. $_POST['position'].'. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
       }
       $columns = array();
