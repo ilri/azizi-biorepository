@@ -80,7 +80,6 @@ class Repository extends DBase{
             return;
          }
       }
-
       $aka_module = Config::$modules[OPTIONS_REQUESTED_MODULE];
       //check if the user has permissions to access the module he is asking for
       if(!in_array(OPTIONS_REQUESTED_MODULE, Config::$freeAreas)) {
@@ -284,6 +283,8 @@ class Repository extends DBase{
          else if(is_string($adAuth)){
 
          }
+
+      echo "wtf -- {$adAuth}";
    }
 
    /**

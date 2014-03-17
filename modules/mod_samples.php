@@ -30,6 +30,7 @@ class Samples extends SpreadSheet {
          array('name' =>'sample_pos', 'regex' => '/^position\s+in\s+box$/i', 'data_regex' => '/^[1-9]?[0-9]|100|[a-z][0-9]0?$/i', 'required' => true),
          array('name' =>'parent', 'regex' => '/^parent\s+sample$/i', 'required' => false),
          array('name' =>'comments', 'regex' => '/^comments$/i', 'required' => false),
+         array('name' =>'owner', 'regex' => '/^owner$/i', 'data_regex' => '/^[a-z\s\']+$/i', 'required' => true),
          array('name' =>'lc_ref', 'regex' => '/^labcollector\s+reference$/i', 'required' => false)
       )
    );
@@ -39,13 +40,18 @@ class Samples extends SpreadSheet {
    private $allSamples = array();
    private $extraCols = array();
    private $allProjects = array();
+   private $owners = array();
 
    public function __construct($path, $name, $data) {
         parent::__construct($path, $name, $data);
     }
 
     /**
-     *Normalize the samples data from the users to have consistent data.
+     * Normalizes the data for the samples so that all samples have consistent data.
+     *
+     * Enforces a relational DB references...
+     *
+     * @global object $Repository
      */
     public function NormalizeData(){
        global $Repository;
@@ -56,7 +62,6 @@ class Samples extends SpreadSheet {
 
        //save all the boxes, organism and create a nested array from this data for later use
        foreach($this->data as $key => $t){
-//       echo '<pre>'. print_r($t, true) .'</pre>'; die();
           //trays
           if(!array_key_exists($t['storage_box'], $this->allTrays)){
              $boxId = $this->IsBoxSaved($t['storage_box']);
@@ -76,6 +81,13 @@ class Samples extends SpreadSheet {
             }
             else $this->data[$key]['organism'] = $this->allOrganism[$t['organism']];
           }
+          //owner
+          if(!array_key_exists($t['owner'], $this->owners)){
+             $ownerId = $this->IsOwnerAdded($t['owner']);
+             if(!is_numeric($ownerId)) $this->errors[] = $ownerId;
+             else $this->owners[$t['owner']] = $ownerId;
+          }
+          $this->data[$key]['owner'] = $this->owners[$t['owner']];
           //sample types
           if(isset($t['type']) && !is_numeric($t['type'])){
             if(!array_key_exists($t['type'], $this->allSamples)){
@@ -114,10 +126,12 @@ class Samples extends SpreadSheet {
           //"http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file=entomology_uploads/zip_upload_2012-02-22_101035/CBG/Wakabhare%20%20LT%20Msqt%20CBG%2027.10.09.xls&focused=CBG000109#focused"
           $descr .= "<br /><br />Other Comments:<br />{$t['comments']}";
           //add a link to the original file we uploaded
+          $zoom_factor = isset($t['Zoom Factor'])? $t['Zoom Factor'] : 9;
           $descr .= "<br />Field File = <a target='_blank' href='http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file={$this->finalUploadedFileLink}&sheet={$this->sheet_index}&focused={$t['name']}#focused'>Field Data.xls</a>";
-          $image = ($t['latitude'] == '') ? '' : "<div><img alt='This sample was collected from Lat:{$t['latitude']}, Long:{$t['longitude']}' src='http://maps.googleapis.com/maps/api/staticmap?center={$t['latitude']},{$t['longitude']}&zoom=7&size=300x300&markers=color:blue%7Clabel:S%7C{$t['latitude']},{$t['longitude']}&sensor=false' /><div>";
+          $image = ($t['latitude'] == '') ? '' : "<div><img alt='This sample was collected from Lat:{$t['latitude']}, Long:{$t['longitude']}' src='http://maps.googleapis.com/maps/api/staticmap?center={$t['latitude']},{$t['longitude']}&zoom=$zoom_factor&size=300x300&markers=color:blue%7Clabel:S%7C{$t['latitude']},{$t['longitude']}&sensor=false' /><div>";
           $this->data[$key]['descr'] = "<div style='float:left; width:380px; margin-right:20px;'>$descr</div>$image";
        }
+//       echo '<pre>'. print_r($this->owners, true) .'</pre>'; die();
     }
 
     public function DumpData(){
@@ -164,7 +178,7 @@ class Samples extends SpreadSheet {
          $colvals = array(
             'label' => $label, 'comments' => $t['descr'], 'date_created' => strftime('%Y-%m-%d %H:%M:%S', strtotime($t['collection_date'])), 'date_updated' => date('Y-m-d H:i:s'),
             'sample_type' => $t['type'], 'origin' => $t['origin'], 'org' => $t['organism'],
-            'main_operator' => $_SESSION['contact_id'], 'box_id' => $this->allTrays[$t['storage_box']], 'box_details' => $t['box_details'],
+            'main_operator' => $t['owner'], 'box_id' => $this->allTrays[$t['storage_box']], 'box_details' => $t['box_details'],
             'Project' => $t['project'], 'animal_id' => $t['animal_id'], 'storage_box' => $t['storage_box'], 'longitude' => $t['longitude'], 'latitude' => $t['latitude']
          );
 
@@ -222,35 +236,51 @@ class Samples extends SpreadSheet {
       //duplicate samples
       $query = "select label, count from ". Config::$config['azizi_db'] .".samples where label = :label";
       $stmt = $Repository->Dbase->dbcon->prepare($query);
-      if(!$stmt) return "There was an error while checking for duplicates. Please contact the system administrator.1";
+      if(!$stmt){
+         $Repository->Dbase->CreateLogEntry('', 'fatal', true, __FILE__, __LINE__);
+         return "There was an error while checking for duplicates. Please contact the system administrator.";
+      }
 
       //duplicate trays
       $query = "select box_id, box_name from ". Config::$config['azizi_db'] .".boxes_def where box_name = :box_name";
       $tray = $Repository->Dbase->dbcon->prepare($query);
-      if(!$tray) return "There was an error while checking for duplicate trays. Please contact the system administrator.1";
+      if(!$tray){
+         $Repository->Dbase->CreateLogEntry('', 'fatal', true, __FILE__, __LINE__);
+          return "There was an error while checking for duplicate trays. Please contact the system administrator.1";
+      }
 
       //duplicate parent sample
       $query = 'select count, label from '. Config::$config['azizi_db'] .'.samples where comments like :comments';
       $parent = $Repository->Dbase->dbcon->prepare($query);
-      if(!$parent) return "There was an error while checking for duplicate parents. Please contact the system administrator.1";
+      if(!$parent){
+         $Repository->Dbase->CreateLogEntry('', 'fatal', true, __FILE__, __LINE__);
+         return "There was an error while checking for duplicate parents. Please contact the system administrator.1";
+      }
 
       foreach($this->data as $data) {
          if($stmt->execute(array('label' => $data['label']))) {
             if($stmt->num_rows != 0) $this->errors[] = "The sample <b>'{$data['label']}'</b> is already in the database!";
          }
-         else return "There was an error while checking for duplicate samples. Please contact the system administrator.";
-
+         else{
+            $Repository->Dbase->CreateLogEntry('', 'fatal', true, __FILE__, __LINE__);
+            return "There was an error while checking for duplicate samples. Please contact the system administrator.";
+         }
 
          if($tray->execute(array('box_name' => $data['storage_box']))) {
             if($stmt->num_rows != 0) $this->errors[] = "The tray <b>'{$data['storage_box']}'</b> is already in the database!";
          }
-         else return "There was an error while checking for duplicate samples. Please contact the system administrator.";
-
+         else{
+            $Repository->Dbase->CreateLogEntry('', 'fatal', true, __FILE__, __LINE__);
+            return "There was an error while checking for duplicate samples. Please contact the system administrator.";
+         }
 
          if($parent->execute(array('comments' => "%{$data['parent']}%"))) {
             if($parent->num_rows != 0) $this->errors[] = "The parent <b>'{$data['parent']}'</b> is already in the database!";
          }
-         else return "There was an error while checking for duplicate samples. Please contact the system administrator.";
+         else{
+            $Repository->Dbase->CreateLogEntry('', 'fatal', true, __FILE__, __LINE__);
+            return "There was an error while checking for duplicate samples. Please contact the system administrator.";
+         }
       }
       return 0;
    }
@@ -277,6 +307,28 @@ class Samples extends SpreadSheet {
        }
        else return $boxId;
     }
+
+    /**
+     * Checks whether the sample owner has been added to the database. If not adds the person and links them to the sample
+     *
+     * @global object   $Repository  The object with the main class of the Lims uploader
+     * @param  string   $owner       The name of the owner that we want to save
+     * @return mixed    Returns the ownerId of the sample owner, whether saved or existing when all is ok, else it returns a string with the error message in case there was an error
+     */
+    private function IsOwnerAdded($owner){
+       global $Repository;
+       $ownerId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.contacts', 'count', 'name', $owner);
+       if($ownerId == -2) return $Repository->Dbase->lastError;
+       elseif(is_null($ownerId)){
+         $ownerId = $Repository->Dbase->AddOwner(Config::$config['azizi_db'], $owner);
+         if(!is_numeric($ownerId)){
+            if($Repository->Dbase->dbcon->errno == 1062) return $ownerId;    //complaining of a duplicate box....lets continue
+            else return $Repository->Dbase->lastError;   //we have an error while adding the tray, so we just return
+         }
+         else return $ownerId;
+       }
+       else return $ownerId;
+   }
 
     /**
      * Checks whether a organism is already added to the database. If already saved, it returns the organism id
