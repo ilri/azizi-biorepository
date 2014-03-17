@@ -247,7 +247,7 @@ body {
    width: 320px;
 }
 
-#login input, #mainField input, #generate input, #transfer input{
+#login input, #mainField input, #transfer input{
    height: 30px;
    width: 150px;
    margin-left: 10px;

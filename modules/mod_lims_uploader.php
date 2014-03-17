@@ -28,7 +28,7 @@ class LimsUploader{
     * The constructor of this class. Initializes the Dbase connection and the logging systems
     */
    public function __construct($Dbase){
-      $this->Dbase = $DBase;
+      $this->Dbase = $Dbase;
    }
 
    /**
@@ -37,13 +37,27 @@ class LimsUploader{
     * @return type
     */
    public function TrafficController(){
+      global $Repository;
+
       if(OPTIONS_REQUEST_TYPE == 'normal') echo "<script type='text/javascript' src='js/lims_uploader.js'></script>";
 
       if(OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'sample_sheet') $this->SampleSheet();
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'download') $this->DownloadSampleSheet();
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'process') $this->ProcessData();
-      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'post_data') $this->PostData();
+      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'post_data'){
+         //re-open the db connection using a profile with rw permissions
+         Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
+         $this->Dbase->InitializeConnection();
+         if(is_null($this->Dbase->dbcon)) {
+            ob_start();
+            $Repository->LoginPage(OPTIONS_MSSG_DB_CON_ERROR);
+            $Repository->errorPage = ob_get_contents();
+            ob_end_clean();
+            return;
+         }
+         $this->PostData();
+      }
    }
 
    /**
@@ -195,6 +209,8 @@ class LimsUploader{
          return;
       }
 
+//      $curFile->DumpData();
+
       if(count($curFile->errors) != 0){
          //show the errors that we have encountered
          $errors = implode("<br />\n", $curFile->errors);
@@ -254,7 +270,9 @@ CONTENT;
 //      die();
 
       $res = $curFile->UploadData();
-      if($res === 0) $this->HomePage("The data has been uploaded successfully.");
+      if($res === 0){
+         $this->HomePage("The data has been uploaded successfully.");
+      }
       else $this->HomePage($res);
    }
 
@@ -273,4 +291,3 @@ CONTENT;
    }
 }
 ?>
-
