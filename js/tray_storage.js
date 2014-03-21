@@ -516,5 +516,7 @@ var TrayStorage = {
       $("#rack").val('');
       $("#position").val('');
       $('#remove_id').val('');
+      $('#tray_label').val('');
+      $('#return_comment').val('');
    }
 };
