@@ -23,6 +23,10 @@ var TrayStorage = {
       return false;
    },
    
+   submitReturnRequest: function(){
+      //TODO: do stuff here ;)
+   },
+   
    validateInsertInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -143,13 +147,7 @@ var TrayStorage = {
    loadTankData: function(forInsertion, traysToShow){
       if(typeof(traysToShow)==='undefined') traysToShow = 0;//default traysToShow to 0 (all trays)
       
-      var jsonText = $.ajax({
-         type: "GET",
-         url: "mod_ajax.php?page=tray_storage&do=ajax&action=get_tank_details",
-         async: false
-      }).responseText;
-      
-      var json = jQuery.parseJSON(jsonText);
+      var json = TrayStorage.getTankData(false);//get tank data but dont cache the data in window.tankData
       var tanks = json.data;
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
          $("#tank").append($("<option></option>")
@@ -341,6 +339,27 @@ var TrayStorage = {
             });
          }
       });
+   },
+   
+   /**
+    * This function gets the tank data from the server and caches this data in window.tankData if required to
+    * 
+    * @param {Boolean} saveInWindow If set to TRUE, this function will cache the tank data as a json object in window.tankData
+    * 
+    * @returns {JSONObject} Returns a JSONObject with the tank data
+    */
+   getTankData : function(saveInWindow){
+      var jsonText = $.ajax({
+         type: "GET",
+         url: "mod_ajax.php?page=tray_storage&do=ajax&action=get_tank_details",
+         async: false
+      }).responseText;
+      
+      var json = jQuery.parseJSON(jsonText);
+      if(saveInWindow){
+         window.tankData = json;
+      }
+      return json;
    },
    
    /**
