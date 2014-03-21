@@ -478,7 +478,7 @@ var TrayStorage = {
       
       $("#tray_label").autocomplete({
          source: suggestions,
-         minLength: 2,
+         minLength: 1,
          select: function(event, ui) {
             var key = ui.item.key;
             

@@ -372,6 +372,44 @@ class TrayStorage extends Repository{
       });
    });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
+   
+   //Javascript for making table
+   /*
+    * Table looks like:
+    *    Tray Label | Location | Removed By | For Who | Date Removed | Date Returned 
+    *    
+    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
+    * 
+    */
+   $("#returned_boxes").flexigrid({
+      url: "mod_ajax.php?page=tray_storage&do=ajax&action=fetch_removed_trays",
+      dataType: 'json',
+      colModel : [
+         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
+         {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
+         {display: 'Returned by', name: 'returned_by', width: 120, sortable: true, align: 'center'},
+         {display: 'Date Removed', name: 'date_removed', width: 100, sortable: true, align: 'center'},
+         {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
+      ],
+      searchitems : [
+         {display: 'Tray Label', name : 'name'},
+         {display: 'Returned by', name : 'returned_by'},
+         {display: 'Returned by', name : 'returned_by'},
+         {display: 'For who', name : 'removed_for'}
+      ],
+      sortname : 'date_removed',
+      sortorder : 'desc',
+      usepager : true,
+      title : 'Stored Trays',
+      useRp : true,
+      rp : 10,
+      showTableToggleBtn: false,
+      rpOptions: [10, 20, 50], //allowed per-page values
+      width: 900,
+      height: 260,
+      singleSelect: true
+   });
 </script>
       <?php
    }
@@ -622,11 +660,13 @@ class TrayStorage extends Repository{
             
             if(is_null($row['date_returned'])){
                $dateReturned = "Not returned";
+               $returnedBy = $dateReturned;
             }
             else{
                $dateReturned = date( 'd/m/Y H:i:s', strtotime( $row['date_returned'] ));
+               $returnedBy = $row['returned_by'];
             }
-            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"position" => $location, "removed_by" => $row["removed_by"], "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
+            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"position" => $location, "removed_by" => $row["removed_by"], "returned_by" => $returnedBy, "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
          }
          $response = array(
              'total' => $dataCount,
