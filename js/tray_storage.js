@@ -33,7 +33,7 @@ var TrayStorage = {
             data: formData,
             async: false
          }).responseText;
-         var responseJson = jQuery.parseJSON(responseJson);
+         var responseJson = jQuery.parseJSON(responseText);
          console.log(responseJson);
          if(responseJson.error_message.length > 0){
             Notification.show({create:true, hide:true, updateText:false, text: responseJson.error_message, error:true});
