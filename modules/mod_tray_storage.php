@@ -177,7 +177,7 @@ class TrayStorage extends Repository{
          {display: 'Sample Type', name : 'type'}
       ],
       sortname : 'date_added',
-      sortorder : 'asc',
+      sortorder : 'desc',
       usepager : true,
       title : 'Stored Trays',
       useRp : true,
@@ -302,7 +302,7 @@ class TrayStorage extends Repository{
          {display: 'For who', name : 'removed_for'}
       ],
       sortname : 'date_removed',
-      sortorder : 'asc',
+      sortorder : 'desc',
       usepager : true,
       title : 'Stored Trays',
       useRp : true,
@@ -399,7 +399,7 @@ class TrayStorage extends Repository{
          {display: 'For who', name : 'removed_for'}
       ],
       sortname : 'date_returned',
-      sortorder : 'asc',
+      sortorder : 'desc',
       usepager : true,
       title : 'Stored Trays',
       useRp : true,
