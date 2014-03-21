@@ -449,7 +449,7 @@ var TrayStorage = {
    },
    
    setRemovedTraySuggestions : function(){
-      TrayStorage.resetReturnInput();
+      TrayStorage.resetReturnInput(true);
       var tankData = TrayStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
       
       //get all trays that have been removed
@@ -510,13 +510,15 @@ var TrayStorage = {
       });
    },
    
-   resetReturnInput: function(){
+   resetReturnInput: function(complete){
       $("#tank").val('');
       $("#sector").val('');
       $("#rack").val('');
       $("#position").val('');
       $('#remove_id').val('');
-      $('#tray_label').val('');
-      $('#return_comment').val('');
+      if(complete){
+         $('#tray_label').val('');
+         $('#return_comment').val('');
+      }
    }
 };
