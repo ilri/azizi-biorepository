@@ -364,6 +364,7 @@ class TrayStorage extends Repository{
          TrayStorage.submitReturnRequest();
       });
    });
+   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
 </script>
       <?php
    }
