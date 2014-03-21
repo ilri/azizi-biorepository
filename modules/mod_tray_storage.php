@@ -368,12 +368,7 @@ class TrayStorage extends Repository{
       //clear the value the remove_id input when tray_label input is changed
       $('#tray_label').change(function(){
          console.log("remove_id cleared");
-         
-         $("#tank").val('');
-         $("#sector").val('');
-         $("#rack").val('');
-         $("#position").val('');
-         $('#remove_id').val('');
+         TrayStorage.resetReturnInput();
       });
    });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link

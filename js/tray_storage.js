@@ -449,6 +449,7 @@ var TrayStorage = {
    },
    
    setRemovedTraySuggestions : function(){
+      TrayStorage.resetReturnInput();
       var tankData = TrayStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
       
       //get all trays that have been removed
@@ -507,5 +508,13 @@ var TrayStorage = {
             }
          }
       });
+   },
+   
+   resetReturnInput: function(){
+      $("#tank").val('');
+      $("#sector").val('');
+      $("#rack").val('');
+      $("#position").val('');
+      $('#remove_id').val('');
    }
 };
