@@ -398,7 +398,7 @@ class TrayStorage extends Repository{
          {display: 'Returned by', name : 'returned_by'},
          {display: 'For who', name : 'removed_for'}
       ],
-      sortname : 'date_removed',
+      sortname : 'date_returned',
       sortorder : 'desc',
       usepager : true,
       title : 'Stored Trays',
