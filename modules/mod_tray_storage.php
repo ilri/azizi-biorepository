@@ -436,7 +436,7 @@ class TrayStorage extends Repository{
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
       //get the last remove recored for the box/tray being returned
-      $query = "UPDATE `removed_boxes` SET `date_returned` = '?', `returned_by` = '?', `return_comment` = '?' WHERE id = ?";
+      $query = "UPDATE `removed_boxes` SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
       $now = date('Y-m-d H:i:s');
       $result = $this->Dbase->ExecuteQuery($query, array($now, $_SESSION['username'], $_POST['return_comment'], $_POST['remove_id']));
       if($result === 0){
