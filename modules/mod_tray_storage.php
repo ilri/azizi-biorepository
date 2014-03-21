@@ -449,7 +449,7 @@ class TrayStorage extends Repository{
          
          if(is_array($result)) $jsonArray = $result;
          
-         return array("data" => $jsonArray, "error_message" => $message);
+         return json_encode(array("data" => $jsonArray, "error_message" => $message));
       }
       else return $message;
    }
