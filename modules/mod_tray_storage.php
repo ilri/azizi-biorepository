@@ -33,6 +33,7 @@ class TrayStorage extends Repository{
        *       - get_tank_details
        *       - fetch_trays
        *       - fetch_removed_trays
+       *       - submit_return_request
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/tray_storage.js'></script>";
@@ -327,8 +328,8 @@ class TrayStorage extends Repository{
    <h3 class="center">Return Tray</h3>
    <div id="return_div">
       <legend>Tray Information</legend>
-      <div><label for="tray_label">Tray Label</label><input type="text" name="tray_label" id="tray_label" /></div>
-      <div><label for="return_comment">Comment</label><textarea cols="80" rows="4" name="return_comment" id="return_comment"></textarea></div>
+      <div><label for="tray_label">Tray Label</label><input type="text" id="tray_label" /><input type="hidden" id="remove_id"/></div>
+      <div><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
       <div class="center" id="submit_button_div"><button type="button" id="submitButton">Return</button></div>
    </div>
    <div id="location_div">
@@ -358,10 +359,21 @@ class TrayStorage extends Repository{
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
-      TrayStorage.getTankData(true);//cache fetched tank data so as to make the page faster
-      //TODO: add returnable trays as suggestions to tray_label input
+      TrayStorage.setRemovedTraySuggestions();
+      
       $('#submitButton').click(function(){
          TrayStorage.submitReturnRequest();
+      });
+      
+      //clear the value the remove_id input when tray_label input is changed
+      $('#tray_label').change(function(){
+         console.log("remove_id cleared");
+         
+         $("#tank").val('');
+         $("#sector").val('');
+         $("#rack").val('');
+         $("#position").val('');
+         $('#remove_id').val('');
       });
    });
    $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
@@ -421,32 +433,25 @@ class TrayStorage extends Repository{
       return $message;
    }
    
-   private function submitReturnRequest() {
+   private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
       //get the last remove recored for the box/tray being returned
-      $query = "SELECT id FROM `removed_boxes` WHERE date_returned IS NULL AND box = ?";
-      $result = $this->Dbase->ExecuteQuery($query,array($_POST['tray_id']));
-      if($result !== 1){
-         if(count($result) === 1){//there should only be one instance in the database where the box was removed and not returned
-            $removeID = $result[0]['id'];
-            $query = "UPDATE `removed_boxes` SET `date_returned` = '?', `returned_by` = '?', `return_comment` = '?' WHERE id = ?";
-            $now = date('Y-m-d H:i:s');
-            $result = $this->Dbase->ExecuteQuery($query, array($now, $_SESSION['username'], $_POST['return_comment'], $removeID));
-            if($result === 0){
-               $message = "Unable to return tray back into the system";
-               $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to return tray back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
-            }
-         }
-         else{
-            $message = "The database appears to be corrupt. The specified tray/box (". $_POST['tray_label'] .") was removed and not returned more than once. Unable to return the tray";
-            $this->Dbase->CreateLogEntry('mod_tray_storage: Tray'. $_POST['tray_label'].' was removed and not returned more than once ('. count($result) .'). Unable to record a return', 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
-         }
+      $query = "UPDATE `removed_boxes` SET `date_returned` = '?', `returned_by` = '?', `return_comment` = '?' WHERE id = ?";
+      $now = date('Y-m-d H:i:s');
+      $result = $this->Dbase->ExecuteQuery($query, array($now, $_SESSION['username'], $_POST['return_comment'], $_POST['remove_id']));
+      if($result === 0){
+         $message = "Unable to return tray back into the system";
+         $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to return tray back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
       }
-      else{
-         $message = "Unable to return the tray. No tray labeled ".$_POST['tray_label']." was removed (and not returned) from the tanks";
-         $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to locate box labeled '.$_POST['tray_labeled'].' in the removed_boxes table. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      
+      if($fromAjaxRequest) {
+         $jsonArray = array();
+         
+         if(is_array($result)) $jsonArray = $result;
+         
+         return array("data" => $jsonArray, "error_message" => $message);
       }
-      return $message;
+      else return $message;
    }
    
    /**
@@ -635,6 +640,10 @@ class TrayStorage extends Repository{
          );
 
          die(json_encode($response));
+      }
+      
+      else if(OPTIONS_REQUESTED_ACTION === "submit_return_request"){
+         die($this->submitReturnRequest(TRUE));
       }
    }
 }

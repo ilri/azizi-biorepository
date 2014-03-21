@@ -63,11 +63,11 @@ class Ln2Requests extends Repository{
             <div>
                <div class="left-align"><label class="left-align">Name</label><input type="text" class="form-control" name="user" id="user" disabled="true" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
                <div class="left-align"><label class="left-align">Request Date</label><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>" class="form-control" /></div>
-               <div><label class="left-align">Amount of Nitrogen (Litres)</label><input type="text" name="amount" id="amount" value="" size="4" class="form-control" /></div>
+               <div><label class="left-align">Amount of Nitrogen (KGs)</label><input type="text" name="amount" id="amount" value="" size="4" class="form-control" /></div>
             </div>
             <div style="margin: 20px 0px;">
-               <div class="left-align"><label class="left-align">Project</label><input type="text" name="project" id="project" value="" disabled="true" size="50" class="form-control" /></div>
-               <div><label class="left-align">Charge Code</label><input type="text" name="chargeCode" id="chargeCode" value="" class="form-control" /></div>
+               <div class="left-align"><label class="left-align">Full Charge Code</label><input type="text" name="project" id="project" value="" disabled="true" size="50" class="form-control" /></div>
+               <div><label class="left-align">Activity Code</label><input type="text" name="chargeCode" id="chargeCode" value="" class="form-control" /></div>
             </div>
             <div class="links">
                <input type="submit" value="Request" name="submitButton" id="submitButton"/>

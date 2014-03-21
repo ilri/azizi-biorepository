@@ -293,6 +293,9 @@ body {
    height: 350px;
    width: 350px;
 }
+#tray_storage #tray_label {
+   height: 30px;
+}
 #tray_storage .flexigrid {
    margin-left: 10px;
 }

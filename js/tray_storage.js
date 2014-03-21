@@ -24,7 +24,21 @@ var TrayStorage = {
    },
    
    submitReturnRequest: function(){
-      //TODO: do stuff here ;)
+      if(this.validateReturnInput()){
+         var formData = {return_comment: $("#return_comment").val(), remove_id: $("#remove_id").val()};
+         
+         var responseText = $.ajax({
+            url: "mod_ajax.php?page=tray_storage&do=ajax&action=submit_return_request",
+            type: "POST",
+            data: formData,
+            async: false
+         }).responseText;
+         var responseJson = jQuery.parseJSON(responseJson);
+         if(responseJson.error_message.length > 0){
+            Notification.show({create:true, hide:true, updateText:false, text: responseJson.error_message, error:true});
+         }
+      }
+      
    },
    
    validateInsertInput: function(){
@@ -105,6 +119,29 @@ var TrayStorage = {
       }
       
       
+      return true;
+   },
+   
+   validateReturnInput: function(){
+      if (typeof(String.prototype.trim) === "undefined") {
+         String.prototype.trim = function()
+         {
+            return String(this).replace(/^\s+|\s+$/g, '');
+         };
+      }
+      
+      $("#return_comment").val($("#return_comment").val().trim());
+      $("#tray_label").val($("#tray_label").val().trim());
+      if($("#tray_label").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the tray label', error:true});
+         $("#tray_label").focus();
+         return false;
+      }
+      if($("#remove_id").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'The tray you specified does not exist or has not been removed from the tanks. Use provided suggestions', error:true});
+         $("#tray_label").focus();
+         return false;
+      }
       return true;
    },
    
@@ -406,5 +443,66 @@ var TrayStorage = {
          }
       }
       return -1;
+   },
+   
+   setRemovedTraySuggestions : function(){
+      var tankData = TrayStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+      
+      //get all trays that have been removed
+      var suggestions = new Array();
+      var tanks = tankData.data;
+      for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){//iterate through all the tanks
+         var sectors = tanks[tankIndex].sectors;
+         for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){//iterate through all the sectors
+            var racks = sectors[sectorIndex].racks;
+            for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){//iterate through all the racks
+               var boxes = racks[rackIndex].boxes;
+               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
+                  var removes = boxes[boxIndex].removes;
+                  //get all the removes that dont have returns, should be a maximux of one
+                  for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
+                     if(typeof(removes[removeIndex].date_returned) === 'undefined' || removes[removeIndex].date_returned === null){
+                        var keyValue = {value: boxes[boxIndex].name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex+'-'+removeIndex};
+                        suggestions.push(keyValue);
+                        break;//you should only have one remove without a return date associated with a box/tray
+                     }
+                  }
+               }
+            }
+         }
+      }
+      
+      $("#tray_label").autocomplete({
+         source: suggestions,
+         minLength: 2,
+         select: function(event, ui) {
+            var key = ui.item.key;
+            
+            //split key to get respective indexes for tank, sector, rack, box and remove
+            //key looks something like: tankIndex-sectorIndex-rackIndex-boxIndex-removeIndex
+            var parentIndexes = key.split("-");
+            
+            //convert all the parent indexes to integers
+            for(var i = 0; i<parentIndexes.length; i++){
+               parentIndexes[i] = parseInt(parentIndexes[i]);
+            }
+            if(parentIndexes.length === 5){
+               //set values of tank position inputs
+               $("#tank").val(tanks[parentIndexes[0]].TankID);
+               
+               var sector = tanks[parentIndexes[0]].sectors[parentIndexes[1]];
+               $("#sector").val(sector.label);
+               
+               var rack = sector.racks[parentIndexes[2]];
+               $("#rack").val(rack.label);
+               
+               var box = rack.boxes[parentIndexes[3]];
+               $("#position").val(box.rack_position);
+               
+               var remove = box.removes[parentIndexes[4]];
+               $("#remove_id").val(remove.id);
+            }
+         }
+      });
    }
 };
