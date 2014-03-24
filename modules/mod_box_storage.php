@@ -568,23 +568,26 @@ class BoxStorage extends Repository{
                      $racks = array();
                      for($boxIndex = 0; $boxIndex < count($tempResult); $boxIndex++){
                         //create array of boxes inside rack if it doesnt exist
-                        if(!isset($racks[$tempResult[$boxIndex]['rack']])){
-                           $racks[$tempResult[$boxIndex]['rack']] = array();
-                           $racks[$tempResult[$boxIndex]['rack']]['name'] = $tempResult[$boxIndex]['rack'];
-                           $racks[$tempResult[$boxIndex]['rack']]['size'] = $result[$tankIndex]['sectors'][$sectorIndex]['rack_pos'];//assuming here that you will not find a box out of range specified in boxes_local_def
-                           $racks[$tempResult[$boxIndex]['rack']]['boxes'] = array();
+                        if(strlen($tempResult[$boxIndex]['rack']) > 0){
+                           if(!isset($racks[$tempResult[$boxIndex]['rack']])){
+                              $racks[$tempResult[$boxIndex]['rack']] = array();
+                              $racks[$tempResult[$boxIndex]['rack']]['name'] = $tempResult[$boxIndex]['rack'];
+                              $racks[$tempResult[$boxIndex]['rack']]['size'] = $result[$tankIndex]['sectors'][$sectorIndex]['rack_pos'];//assuming here that you will not find a box out of range specified in boxes_local_def
+                              $racks[$tempResult[$boxIndex]['rack']]['boxes'] = array();
+                           }
+
+                           //get retrieves on the box
+                           $query = "SELECT * FROM ".Config::$config['lims_extension'].".retrieved_boxes WHERE box_def = ".$tempResult[$boxIndex]['box_id'];
+                           $tempResult[$boxIndex]['retrievs'] = $this->Dbase->ExecuteQuery($query);
+                           if($tempResult[$boxIndex]['retrieves'] === 1){
+                              $tempResult[$boxIndex]['retrieves'] = array();
+                              $message = $this->Dbase->lastError;
+                           }
+
+                           //push box into parent rack
+                           array_push($racks[$tempResult[$boxIndex]['rack']]['boxes'], $tempResult[$boxIndex]);
                         }
-                        
-                        //get retrieves on the box
-                        $query = "SELECT * FROM ".Config::$config['lims_extension'].".retrieved_boxes WHERE box_def = ".$tempResult[$boxIndex]['box_id'];
-                        $tempResult[$boxIndex]['retrievs'] = $this->Dbase->ExecuteQuery($query);
-                        if($tempResult[$boxIndex]['retrieves'] === 1){
-                           $tempResult[$boxIndex]['retrieves'] = array();
-                           $message = $this->Dbase->lastError;
-                        }
-                        
-                        //push box into parent rack
-                        array_push($racks[$tempResult[$boxIndex]['rack']]['boxes'], $tempResult[$boxIndex]);
+                        else $this->Dbase->CreateLogEntry('box_storage: Unable to add box with box_id = '.$tempResult[$boxIndex]['box_id']." because its rack has not been specified", 'warnings');
                      }
                      
                      $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = $racks;
