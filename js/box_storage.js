@@ -197,12 +197,25 @@ var BoxStorage = {
       
       //populate sector select
       $("#tank").change(function(){//available sectors in tank to sector select
+         //clear all children selects
+         $('#sector').find('option').remove()
+                 .end()
+                 .append('<option value=""></option>')//append a null option
+                     .val('');
+         $('#sector').prop('disabled', 'disabled');
+         $('#rack').find('option').remove()
+                 .end()
+                 .append('<option value=""></option>')//append a null option
+                     .val('');
+         $('#rack').prop('disabled', 'disabled');
+         $('#position').find('option').remove()
+                 .end()
+                 .append('<option value=""></option>')//append a null option
+                     .val('');
+         $('#position').prop('disabled', 'disabled');
          if($("#tank").val() !== ""){
             $('#sector').prop('disabled', false);//enable sector select
-            $('#sector').find('option').remove()
-                    .end()
-                    .append('<option value=""></option>')//append a null option
-                        .val('');
+            
             var tankID = parseInt($("#tank").val());
             var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
@@ -211,27 +224,22 @@ var BoxStorage = {
                        .text(sectors[sectorIndex].facility));
             }
          }
-         else {//disable child selects
-            $('#sector').find('option').remove()
-                    .end()
-                    .append('<option value=""></option>')//append a null option
-                        .val('');
-            $('#sector').prop('disabled', 'disabled');
-            $('#rack').find('option').remove()
-                    .end()
-                    .append('<option value=""></option>')//append a null option
-                        .val('');
-            $('#rack').prop('disabled', 'disabled');
-            $('#position').find('option').remove()
-                    .end()
-                    .append('<option value=""></option>')//append a null option
-                        .val('');
-            $('#position').prop('disabled', 'disabled');
-         }
+         
       });
       
       //populate rack select
       $("#sector").change(function(){
+         //clear all children selects
+         $('#rack').find('option').remove()
+                 .end()
+                 .append('<option value=""></option>')//append a null option
+                     .val('');
+         $('#rack').prop('disabled', 'disabled');
+         $('#position').find('option').remove()
+                 .end()
+                 .append('<option value=""></option>')//append a null option
+                     .val('');
+         $('#position').prop('disabled', 'disabled');
          if($("#tank").val() !== "" && $("#sector").val() !== ""){
             $('#rack').prop('disabled', false);
             $('#rack').find('option').remove()
@@ -249,22 +257,16 @@ var BoxStorage = {
                        .text("Rack "+racks[rackIndex].name));
             }
          }
-         else {//disable child selects
-            $('#rack').find('option').remove()
-                    .end()
-                    .append('<option value=""></option>')//append a null option
-                        .val('');
-            $('#rack').prop('disabled', 'disabled');
-            $('#position').find('option').remove()
-                    .end()
-                    .append('<option value=""></option>')//append a null option
-                        .val('');
-            $('#position').prop('disabled', 'disabled');
-         }
       });
       
       //populate position select
       $("#rack").change(function(){
+         //clear all children selects
+         $('#position').find('option').remove()
+                 .end()
+                 .append('<option value=""></option>')//append a null option
+                     .val('');
+         $('#position').prop('disabled', 'disabled');
          if($("#tank").val() !== "" && $("#sector").val() !== "" && $("#rack").val() !== ""){
             $('#position').prop('disabled', false);
             $('#position').find('option').remove()
@@ -346,13 +348,6 @@ var BoxStorage = {
                        .attr("value", availablePos[availPIndex])
                        .text("Positon " + availablePos[availPIndex]));
             }
-         }
-         else {//disable child selects
-            $('#position').find('option').remove()
-                    .end()
-                    .append('<option value=""></option>')//append a null option
-                        .val('');
-            $('#position').prop('disabled', 'disabled');
          }
          
          //show box label if purpose if for deleting box information or removing box
