@@ -465,14 +465,10 @@ class BoxStorage extends Repository{
       //change keeper to biorepository manger if box is in temp position
       $ownerID = $_POST['owner'];
       if($_POST['status'] === 'temporary'){
-         $contacts = $this->getContacts();
-         if($contacts !==1){
-            foreach($contacts as $currContact){
-               if($currContact['email'] === Config::$limsManager){
-                  $ownerID = $currContact['count'];
-                  break;
-               }
-            }
+         $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
+         $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
+         if($result !== 1){
+            $ownerID = $result[0]['count'];
          }
       }
       
@@ -823,7 +819,8 @@ class BoxStorage extends Repository{
       }
       
       else if(OPTIONS_REQUESTED_ACTION === "fetch_sample_types"){
-         $result = $this->getContacts();
+         $query = "SELECT * FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";//only select sample types that have descriptions
+         $result = $this->Dbase->ExecuteQuery($query);
          $jsonArray = array();
          if($result !== 1){
             $jsonArray['data'] = $result;
@@ -834,12 +831,6 @@ class BoxStorage extends Repository{
             $jsonArray['error_message'] = "Unable to get available sample types. Please contact the system developers";
          }
       }
-   }
-   
-   private function getContacts(){
-      $query = "SELECT * FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";//only select sample types that have descriptions
-      $result = $this->Dbase->ExecuteQuery($query);
-      return $result;
    }
 }
 ?>
