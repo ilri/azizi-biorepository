@@ -196,16 +196,16 @@ class BoxStorage extends Repository{
       url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes",
       dataType: 'json',
       colModel : [
-         {display: 'Box Label', name: 'name', width: 100, sortable: true, align: 'center'},
-         {display: 'Sample Type', name: 'type', width: 150, sortable: true, align: 'center'},
+         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
+         {display: 'Sample Type', name: 'sample_name', width: 150, sortable: true, align: 'center'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
          {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
          {display: 'Moved by', name: 'added_by', width: 100, sortable: true, align: 'center'}
       ],
       searchitems : [
-         {display: 'Box Label', name : 'name'},
-         {display: 'Sample Type', name : 'type'}
+         {display: 'Box Label', name : 'box_name'},
+         {display: 'Sample Type', name : 'sample_name'}
       ],
       sortname : 'date_added',
       sortorder : 'desc',
@@ -492,8 +492,14 @@ class BoxStorage extends Repository{
       if($result !== 0) {
          $boxId = $result;
          //insert extra information in lims_extension database
-         $columns = array("box_id","status", "features", "sample_types");
-         $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types']);
+         $now = date('Y-m-d H:i:s');
+         
+         $addedBy = $_SESSION['username'];
+         if(strlen($addedBy) === 0)$addedBy = $_SESSION['surname']." ".$_SESSION['onames'];
+         
+         $columns = array("box_id","status", "features", "sample_types", "date_added", "added_by");
+         $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
+         
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
          $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['lims_extension'].".boxes_def", $columns, $columnValues);
          if($result === 0){
@@ -711,8 +717,10 @@ class BoxStorage extends Repository{
          }
 
          $startRow = ($_POST['page'] - 1) * $_POST['rp'];
-         $query = "SELECT a.*".
-                 " FROM boxes AS a".
+         $query = "SELECT a.*, b.*, c.description AS sample_name".
+                 " FROM ".Config::$config['azizi_db'].".boxes_def AS a".
+                 " JOIN ".Config::$config['lims_extension'].".boxes_def AS b ON a.box_id = b.box_id".
+                 " INNER JOIN ".Config::$config['azizi_db'].".sample_types_def AS c ON b.sample_types = c.sample_type_name".
                  " $criteria".
                  " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
          //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
@@ -732,22 +740,22 @@ class BoxStorage extends Repository{
          $rows = array();
          foreach ($data as $row) {
             //get other tank information tank -> sector -> rack
-            $query = "SELECT a.label AS rack_label, b.label AS sector_label, b.tank AS tank_id ".
-                        "FROM boxes ".
-                        "INNER JOIN rack AS a ON boxes.rack = a.id ".
-                        "INNER JOIN tank_sector AS b ON a.tank_sector = b.id ".
-                        "WHERE boxes.id = ".$row['id'];
+            $query = "SELECT a.rack, a.rack_position, b.facility AS sector, c.name AS tank ".
+                        "FROM ".Config::$config['azizi_db'].".boxes_def AS a".
+                        "INNER JOIN ".Config::$config['azizi_db'].".boxes_local_def AS b ON a.location = b.id".
+                        "INNER JOIN ".Config::$config['azizi_db'].".storage_facilities AS c ON b.facility_id = c.id".
+                        "WHERE a.box_id = ".$row['box_id'];
             $result = $this->Dbase->ExecuteQuery($query);
             $this->Dbase->CreateLogEntry('tank location details -> '.  print_r($result, true), 'debug');
             if(count($result) === 1){// only one row should be fetched
-               $location = "Tank ".$result[0]['tank_id']."  -> Sector ".$result[0]['sector_label']."  -> Rack ".$result[0]['rack_label']."  -> Position ".$row['rack_position'];
+               $location = $result[0]['tank']."  -> Sector ".$result[0]['sector']."  -> Rack ".$result[0]['rack']."  -> Position ".$row['rack_position'];
             }
             else{
                $location = "unknown";
             }
             
             $dateAdded = date('d/m/Y H:i:s', strtotime( $row['date_added'] ));
-            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"type" => $row['type'],"position" => $location, "status" => $row["status"], "date_added" => $dateAdded, "added_by" => $row["added_by"]));
+            $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'],"sample_types" => $row['sample_types'],"position" => $location, "status" => $row["status"], "date_added" => $dateAdded, "added_by" => $row["added_by"]));
          }
          $response = array(
              'total' => $dataCount,
