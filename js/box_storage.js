@@ -278,8 +278,8 @@ var BoxStorage = {
             var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
             var sectorID = parseInt($("#sector").val());
             var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
-            var rackID = parseInt($("#rack").val());
-            var rack = racks[BoxStorage.getRackIndex(racks, rackID)];
+            var rackName = $("#rack").val();
+            var rack = racks[BoxStorage.getRackIndex(racks, rackName)];
             
             var availablePos = new Array();
             
@@ -436,12 +436,12 @@ var BoxStorage = {
    /**
     * This function is used to determine the index of a rack in a rack array using its id
     * @param {Array} racks An array of racks obtained from a sector array
-    * @param {Number} rackID The id of the rack as from the database
+    * @param {String} rackName The name of the rack as from the database
     * @returns {Number} Returs the index of the rack in the rack array provided or -1 if no rack in the rack array has the provided rackID
     */
-   getRackIndex : function(racks, rackID){
+   getRackIndex : function(racks, rackName){
       for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
-         if(parseInt(racks[rackIndex].name) === rackID){
+         if(racks[rackIndex].name === rackName){
             return rackIndex;
          }
       }
