@@ -602,7 +602,7 @@ class BoxStorage extends Repository{
             $result = array();
          }
          $jsonArray['data'] = $result;
-         $this->Dbase->CreateLogEntry('bod_box_storage: json for tank information -> '.json_encode($jsonArray), 'debug');
+         $this->Dbase->CreateLogEntry('bod_box_storage: json for tank information -> '.print_r($result, true), 'debug');
          echo json_encode($jsonArray);
       }
       elseif (OPTIONS_REQUESTED_ACTION == "fetch_boxes") {
