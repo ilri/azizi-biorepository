@@ -560,7 +560,7 @@ class BoxStorage extends Repository{
                $result[$tankIndex]['sectors'] = $tempResult;
                for($sectorIndex = 0; $sectorIndex < count($result[$tankIndex]['sectors']); $sectorIndex++){
                   //get all boxes in that sector
-                  $query = "SELECT * FROM ".Config::$config['azizi_db']."boxes_def WHERE location = ".$result[$tankIndex]['sectors'][$sectorIndex]['id'];
+                  $query = "SELECT * FROM ".Config::$config['azizi_db'].".boxes_def WHERE location = ".$result[$tankIndex]['sectors'][$sectorIndex]['id'];
                   $tempResult = $this->Dbase->ExecuteQuery($query);
                   
                   //get all unique racks in this sector
