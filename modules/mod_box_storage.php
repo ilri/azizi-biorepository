@@ -220,6 +220,9 @@ class BoxStorage extends Repository{
          //if user sets position to temporary set owner to biorepository manager
          $("#owner").prop('disabled', 'disabled');
       }
+      else{
+         $("#owner").prop('disabled', false);
+      }
    });
 </script>
       <?php
