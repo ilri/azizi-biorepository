@@ -429,7 +429,7 @@ class BoxStorage extends Repository{
       $columns = array("box_name","size","box_type","location","rack","rack_position");
       $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $_POST['rack'], $_POST['position']);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
-      $result = $this->Dbase->InsertOnDuplicateUpdate("boxes", $columns, $columnValues);
+      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['lims_extension'].".boxes_def", $columns, $columnValues);
       if($result !== 0) {
          $boxId = $result;
          //insert extra information in lims_extension database
