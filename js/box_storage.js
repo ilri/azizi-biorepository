@@ -72,7 +72,7 @@ var BoxStorage = {
          $("#sample_types").focus();
          return false;
       }
-      if($("#owner").val() === ""){
+      if($('#owner').is(':disabled')=== false && $("#owner").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please specify the owner of the box', error:true});
          $("#owner").focus();
          return false;

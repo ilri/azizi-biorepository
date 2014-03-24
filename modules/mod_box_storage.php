@@ -462,8 +462,22 @@ class BoxStorage extends Repository{
       $boxSizeInLIMS = GeneralTasks::NumericPosition2LCPosition(1, $_POST['box_size']);
       $boxSizeInLIMS = $boxSizeInLIMS.".".GeneralTasks::NumericPosition2LCPosition($_POST['box_size'], $_POST['box_size']);
       
+      //change keeper to biorepository manger if box is in temp position
+      $ownerID = $_POST['owner'];
+      if($_POST['status'] === 'temporary'){
+         $contacts = $this->getContacts();
+         if($contacts !==1){
+            foreach($contacts as $currContact){
+               if($currContact['email'] === Config::$limsManager){
+                  $ownerID = $currContact['count'];
+                  break;
+               }
+            }
+         }
+      }
+      
       $columns = array("box_name","size","box_type","location","rack","rack_position", "keeper");
-      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $_POST['rack'], $_POST['position'], $_POST['owner']);
+      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $_POST['rack'], $_POST['position'], $ownerID);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
       $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['azizi_db'].".boxes_def", $columns, $columnValues, "box_id");
       if($result !== 0) {
@@ -809,8 +823,7 @@ class BoxStorage extends Repository{
       }
       
       else if(OPTIONS_REQUESTED_ACTION === "fetch_sample_types"){
-         $query = "SELECT * FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";//only select sample types that have descriptions
-         $result = $this->Dbase->ExecuteQuery($query);
+         $result = $this->getContacts();
          $jsonArray = array();
          if($result !== 1){
             $jsonArray['data'] = $result;
@@ -821,6 +834,12 @@ class BoxStorage extends Repository{
             $jsonArray['error_message'] = "Unable to get available sample types. Please contact the system developers";
          }
       }
+   }
+   
+   private function getContacts(){
+      $query = "SELECT * FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";//only select sample types that have descriptions
+      $result = $this->Dbase->ExecuteQuery($query);
+      return $result;
    }
 }
 ?>
