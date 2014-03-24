@@ -156,7 +156,7 @@ class BoxStorage extends Repository{
             </div>
             <div style="display: none;" id="rack_spec_div">
                <label for="rack">Rack</label>
-               <input type="text" id="rack_spec" name="rack_spec" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
+               <input type="text" id="rack_spec" name="rack_spec" /><a href="" id="cancelAnchor" ><img src='images/close.png' /></a>
             </div>
             <div>
                <label for="position">Position in Rack</label>
