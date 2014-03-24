@@ -583,14 +583,22 @@ class BoxStorage extends Repository{
                               $tempResult[$boxIndex]['retrieves'] = array();
                               $message = $this->Dbase->lastError;
                            }
-
+                         
                            //push box into parent rack
                            array_push($racks[$tempResult[$boxIndex]['rack']]['boxes'], $tempResult[$boxIndex]);
                         }
                         else $this->Dbase->CreateLogEntry('box_storage: Unable to add box with box_id = '.$tempResult[$boxIndex]['box_id']." because its rack has not been specified", 'warnings');
                      }
                      
-                     $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = $racks;
+                     //change racks array from associative to index
+                     $newRackIndex = 0;
+                     $convertedRacks = array();
+                     foreach ($racks as $currRack) {
+                        $convertedRacks[$newRackIndex] = $currRack;
+                        $newRackIndex++;
+                     }
+                     
+                     $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = $convertedRacks;
                   }
                   else $message = $this->Dbase->lastError;
                }
