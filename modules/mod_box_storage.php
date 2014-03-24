@@ -119,7 +119,7 @@ class BoxStorage extends Repository{
             </div>
             <div>
                <label for="sector">Sector</label>
-               <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
+               <select id="sector" name="sector" disabled="disabled"><!--Disabled until parent select is selected-->
                </select>
             </div>
             <div>
@@ -421,11 +421,28 @@ class BoxStorage extends Repository{
    
    private function insertBox(){
       $message = "";
-      $columns = array("name","features","size","type","rack","rack_position", "status", "added_by");
-      $columnValues = array($_POST['box_label'], $_POST['features'], $_POST['box_size'], $_POST['sample_types'], $_POST['rack'], $_POST['position'], $_POST['status'], $_SESSION['username']);
+      
+      //generate box size that lims can understand
+      $boxSizeInLIMS = GeneralTasks::NumericPosition2LCPosition(1, $_POST['box_size']);
+      $boxSizeInLIMS = $boxSizeInLIMS.".".GeneralTasks::NumericPosition2LCPosition($_POST['box_size'], $_POST['box_size']);
+      
+      $columns = array("box_name","size","box_type","location","rack","rack_position");
+      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $_POST['rack'], $_POST['position']);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
       $result = $this->Dbase->InsertOnDuplicateUpdate("boxes", $columns, $columnValues);
-      if($result === 0) {
+      if($result !== 0) {
+         $boxId = $result;
+         //insert extra information in lims_extension database
+         $columns = array("box_id","status", "features", "sample_type");
+         $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types']);
+         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
+         $result = $this->Dbase->InsertOnDuplicateUpdate("boxes", $columns, $columnValues);
+         if($result === 0){
+            $message = "Unable to add some information from the last request";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+         }
+      }
+      else{
          $message = "Unable to add the last request. Try again later";
          $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
       }
@@ -574,6 +591,13 @@ class BoxStorage extends Repository{
                               $racks[$tempResult[$boxIndex]['rack']]['name'] = $tempResult[$boxIndex]['rack'];
                               $racks[$tempResult[$boxIndex]['rack']]['size'] = $result[$tankIndex]['sectors'][$sectorIndex]['rack_pos'];//assuming here that you will not find a box out of range specified in boxes_local_def
                               $racks[$tempResult[$boxIndex]['rack']]['boxes'] = array();
+                           }
+                           
+                           //get extra data for box in boxes_def table in lims_extension database
+                           $query = "SELECT * FROM ".Config::$config['lims_extension'].".boxes_def WHERE box_id = ".$tempResult[$boxIndex]['box_id'];
+                           $extraData = $this->Dbase->ExecuteQuery($query);
+                           if(count($extraData) === 1){
+                              $tempResult[$boxIndex] = array_merge($tempResult[$boxIndex], $extraData[0]);
                            }
 
                            //get retrieves on the box
