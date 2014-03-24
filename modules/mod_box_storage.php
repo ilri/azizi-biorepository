@@ -34,6 +34,7 @@ class BoxStorage extends Repository{
        *       - fetch_boxes
        *       - fetch_removed_boxes
        *       - submit_return_request
+       *       - fetch_sample_types
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/box_storage.js'></script>";
@@ -103,7 +104,17 @@ class BoxStorage extends Repository{
             </div>
             <div>
                <label for="sample_types">Sample Types</label>
-               <input type="text" name="sample_types" id="sample_types" />
+               <select name="sample_types" id="sample_types">
+                  <?php
+                     $query = "SELECT * FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
+                     $result = $this->Dbase->ExecuteQuery($query);
+                     if($result !== 1){
+                        foreach($result as $sampleType){
+                           echo '<option value="'.$sampleType['sample_type_name'].'">'.$sampleType['description'].'</option>';
+                        }
+                     }
+                  ?>
+               </select>
             </div>
             <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
          </div>
@@ -770,6 +781,20 @@ class BoxStorage extends Repository{
       
       else if(OPTIONS_REQUESTED_ACTION === "submit_return_request"){
          die($this->submitReturnRequest(TRUE));
+      }
+      
+      else if(OPTIONS_REQUESTED_ACTION === "fetch_sample_types"){
+         $query = "SELECT * FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";//only select sample types that have descriptions
+         $result = $this->Dbase->ExecuteQuery($query);
+         $jsonArray = array();
+         if($result !== 1){
+            $jsonArray['data'] = $result;
+            $jsonArray['error_message'] = '';
+         }
+         else{
+            $jsonArray['data'] = array();
+            $jsonArray['error_message'] = "Unable to get available sample types. Please contact the system developers";
+         }
       }
    }
 }
