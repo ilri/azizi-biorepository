@@ -55,7 +55,6 @@ var BoxStorage = {
       //trim spaces from inputs 
       $("#box_label").val($("#box_label").val().trim());
       $("#features").val($("#features").val().trim());
-      $("#sample_types").val($("#sample_types").val().trim());
       //$("#sampling_loc").val($("#sampling_loc").val().trim());
       
       if($("#box_label").val() === ""){
@@ -68,9 +67,14 @@ var BoxStorage = {
          $("#box_size").focus();
          return false;
       }
-      if($("#sample_types").val().length > 20){
-         Notification.show({create:true, hide:true, updateText:false, text:'Sample type should not be more than 20 characters', error:true});
+      if($("#sample_types").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the main sample type', error:true});
          $("#sample_types").focus();
+         return false;
+      }
+      if($("#owner").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the owner of the box', error:true});
+         $("#owner").focus();
          return false;
       }
       if($("#status").val() === ""){
