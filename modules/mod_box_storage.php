@@ -116,6 +116,20 @@ class BoxStorage extends Repository{
                   ?>
                </select>
             </div>
+            <div>
+               <label for="owner">Sample Keeper</label>
+               <select name="owner" id="owner">
+                  <?php
+                     $query = "SELECT * FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";
+                     $result = $this->Dbase->ExecuteQuery($query);
+                     if($result !== 1){
+                        foreach($result as $contact){
+                           echo '<option value="'.$contact['count'].'">'.$contact['name'].'</option>';
+                        }
+                     }
+                  ?>
+               </select>
+            </div>
             <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
          </div>
       </div>
