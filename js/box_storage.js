@@ -441,7 +441,7 @@ var BoxStorage = {
     */
    getRackIndex : function(racks, rackID){
       for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
-         if(parseInt(racks[rackIndex].id) === rackID){
+         if(parseInt(racks[rackIndex].name) === rackID){
             return rackIndex;
          }
       }
