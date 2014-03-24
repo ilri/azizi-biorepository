@@ -191,14 +191,14 @@ var BoxStorage = {
       var tanks = json.data;
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
          $("#tank").append($("<option></option>")
-                 .attr("value", tanks[tankIndex].TankID)
-                 .text("Tank "+tanks[tankIndex].TankID));
+                 .attr("value", tanks[tankIndex].id)
+                 .text("Tank "+tanks[tankIndex].name));
       }
       
       //populate sector select
       $("#tank").change(function(){//available sectors in tank to sector select
          if($("#tank").val() !== ""){
-            $('#sector').prop('disabled', false);
+            $('#sector').prop('disabled', false);//enable sector select
             $('#sector').find('option').remove()
                     .end()
                     .append('<option value=""></option>')//append a null option
@@ -208,7 +208,7 @@ var BoxStorage = {
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
                $("#sector").append($("<option></option>")
                        .attr("value", sectors[sectorIndex].id)
-                       .text("Sector "+sectors[sectorIndex].label));
+                       .text("Sector "+sectors[sectorIndex].facility));
             }
          }
          else {//disable child selects
@@ -413,7 +413,7 @@ var BoxStorage = {
     */
    getTankIndex : function(tanks, tankID){
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
-         if(parseInt(tanks[tankIndex].TankID) === tankID){
+         if(parseInt(tanks[tankIndex].id) === tankID){
             return tankIndex;
          }
       }

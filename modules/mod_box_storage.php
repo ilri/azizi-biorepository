@@ -570,6 +570,8 @@ class BoxStorage extends Repository{
                         //create array of boxes inside rack if it doesnt exist
                         if(!isset($racks[$tempResult[$boxIndex]['rack']])){
                            $racks[$tempResult[$boxIndex]['rack']] = array();
+                           $racks[$tempResult[$boxIndex]['rack']]['name'] = $tempResult[$boxIndex]['rack'];
+                           $racks[$tempResult[$boxIndex]['rack']]['boxes'] = array();
                         }
                         
                         //get retrieves on the box
@@ -581,7 +583,7 @@ class BoxStorage extends Repository{
                         }
                         
                         //push box into parent rack
-                        array_push($racks[$tempResult[$boxIndex]['rack']], $tempResult[$boxIndex]);
+                        array_push($racks[$tempResult[$boxIndex]['rack']]['boxes'], $tempResult[$boxIndex]);
                      }
                      
                      $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = $racks;
