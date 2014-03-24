@@ -245,8 +245,8 @@ var BoxStorage = {
             var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
             for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
                $("#rack").append($("<option></option>")
-                       .attr("value", racks[rackIndex].id)
-                       .text("Rack "+racks[rackIndex].label));
+                       .attr("value", racks[rackIndex].name)
+                       .text("Rack "+racks[rackIndex].name));
             }
          }
          else {//disable child selects
@@ -313,9 +313,9 @@ var BoxStorage = {
                      
                      //search for an instance of remove that has not been returned
                      var safeToShow = true;
-                     var removes = boxes[boxIndex].removes;
-                     for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
-                        if(removes[removeIndex].date_returned === null){
+                     var retrieves = boxes[boxIndex].retrieves;
+                     for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
+                        if(retrieves[removeIndex].date_returned === null){
                            safeToShow = false;
                         }
                      }
@@ -327,9 +327,9 @@ var BoxStorage = {
                      
                      //search for an instance of remove that has not been returned
                      var safeToShow = false;
-                     var removes = boxes[boxIndex].removes;
-                     for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
-                        if(removes[removeIndex].date_returned === null){
+                     var retrieves = boxes[boxIndex].retrieves;
+                     for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
+                        if(retrieves[removeIndex].date_returned === null){
                            safeToShow = true;
                         }
                      }

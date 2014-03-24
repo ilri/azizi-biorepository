@@ -571,14 +571,15 @@ class BoxStorage extends Repository{
                         if(!isset($racks[$tempResult[$boxIndex]['rack']])){
                            $racks[$tempResult[$boxIndex]['rack']] = array();
                            $racks[$tempResult[$boxIndex]['rack']]['name'] = $tempResult[$boxIndex]['rack'];
+                           $racks[$tempResult[$boxIndex]['rack']]['size'] = $result[$tankIndex]['sectors'][$sectorIndex]['rack_pos'];//assuming here that you will not find a box out of range specified in boxes_local_def
                            $racks[$tempResult[$boxIndex]['rack']]['boxes'] = array();
                         }
                         
                         //get retrieves on the box
                         $query = "SELECT * FROM ".Config::$config['lims_extension'].".retrieved_boxes WHERE box_def = ".$tempResult[$boxIndex]['box_id'];
                         $tempResult[$boxIndex]['retrievs'] = $this->Dbase->ExecuteQuery($query);
-                        if($tempResult[$boxIndex]['retrievs'] === 1){
-                           $tempResult[$boxIndex]['retrievs'] = array();
+                        if($tempResult[$boxIndex]['retrieves'] === 1){
+                           $tempResult[$boxIndex]['retrieves'] = array();
                            $message = $this->Dbase->lastError;
                         }
                         
