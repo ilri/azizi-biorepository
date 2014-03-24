@@ -149,10 +149,14 @@ class BoxStorage extends Repository{
                <select id="sector" name="sector" disabled="disabled"><!--Disabled until parent select is selected-->
                </select>
             </div>
-            <div>
+            <div id="rack_div">
                <label for="rack">Rack</label>
                <select type="text" name="rack" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
                </select>
+            </div>
+            <div style="display: none;" id="rack_spec_div">
+               <label for="rack">Rack</label>
+               <input type="text" id="rack_spec" name="rack_spec" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
             </div>
             <div>
                <label for="position">Position in Rack</label>
@@ -224,6 +228,10 @@ class BoxStorage extends Repository{
          $("#owner").prop('disabled', false);
       }
    });
+   $("#cancelAnchor").click(function (){
+      $("#rack_spec_div").hide();
+      $("#rack_div").unhide();
+   });
 </script>
       <?php
    }
@@ -258,11 +266,12 @@ class BoxStorage extends Repository{
                <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
                </select>
             </div>
-            <div>
+            <div id="rack_div">
                <label for="rack">Rack</label>
                <select type="text" name="rack" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
                </select>
             </div>
+            
             <div>
                <label for="position">Position in Rack</label>
                <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
@@ -472,8 +481,12 @@ class BoxStorage extends Repository{
          }
       }
       
+      //check if user specified the rack manually
+      $rack = $_POST['rack'];
+      if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
+      
       $columns = array("box_name","size","box_type","location","rack","rack_position", "keeper");
-      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $_POST['rack'], $_POST['position'], $ownerID);
+      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
       $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['azizi_db'].".boxes_def", $columns, $columnValues, "box_id");
       if($result !== 0) {

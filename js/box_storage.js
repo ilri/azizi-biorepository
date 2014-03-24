@@ -250,6 +250,9 @@ var BoxStorage = {
                     .end()
                     .append('<option value=""></option>')//append a null option
                         .val('');
+            $("#rack").append($("<option></option>")
+                       .attr("value", "n£WR@ck")
+                       .text("Specify new rack"));
             
             var tankID = parseInt($("#tank").val());
             var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
@@ -272,6 +275,11 @@ var BoxStorage = {
                      .val('');
          $('#position').prop('disabled', 'disabled');
          if($("#tank").val() !== "" && $("#sector").val() !== "" && $("#rack").val() !== ""){
+            if($("#rack").val() === "n£WR@ck"){//user wants to specify rack name
+               $("#rack_spec_div").unhide();
+               $("#rack_div").hide();
+            }
+            
             $('#position').prop('disabled', false);
             $('#position').find('option').remove()
                     .end()
@@ -283,66 +291,77 @@ var BoxStorage = {
             var tankID = parseInt($("#tank").val());
             var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
             var sectorID = parseInt($("#sector").val());
-            var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
-            var rackName = $("#rack").val();
-            var rack = racks[BoxStorage.getRackIndex(racks, rackName)];
             
             var availablePos = new Array();
             
-            var boxes = rack.boxes;
-            //if purpose is for inserting new box into db then only display rack positions that are empty
-            if(forInsertion){
-               
-               //populate available positions array with a 1 index list depending on the size of the rack
-               for(var currPos = 1; currPos <= rack.size; currPos++){
-                  availablePos.push(currPos);
+            if($("#rack").val() !== "n£WR@ck"){//if user has selected an existing rack from list
+               var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
+               var rackName = $("#rack").val();
+               var rack = racks[BoxStorage.getRackIndex(racks, rackName)];
+
+
+               var boxes = rack.boxes;
+               //if purpose is for inserting new box into db then only display rack positions that are empty
+               if(forInsertion){
+
+                  //populate available positions array with a 1 index list depending on the size of the rack
+                  for(var currPos = 1; currPos <= rack.size; currPos++){
+                     availablePos.push(currPos);
+                  }
+
+                  //iterate through all boxes/boxes in rack and delete their positions from the available positon array
+
+                  for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
+                     var index = availablePos.indexOf(parseInt(boxes[boxIndex].rack_position));
+                     if(index !== -1){//check if position was already in the available positions array (It should have been)
+                        availablePos.splice(index, 1);
+                     }
+                  }
                }
-               
-               //iterate through all boxes/boxes in rack and delete their positions from the available positon array
-               
-               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
-                  var index = availablePos.indexOf(parseInt(boxes[boxIndex].rack_position));
-                  if(index !== -1){//check if position was already in the available positions array (It should have been)
-                     availablePos.splice(index, 1);
+
+               //if purpose is for deleting or removing a box then show positions that have things in them
+               else{
+                  //iterate through all boxes/boxes in rack and add their positions to the available positon array
+                  for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
+                     if(boxesToShow === 0)//add all boxes
+                        availablePos.push(parseInt(boxes[boxIndex].rack_position));
+
+                     else if(boxesToShow === 1){//just show boxes that are still in the tanks
+
+                        //search for an instance of remove that has not been returned
+                        var safeToShow = true;
+                        var retrieves = boxes[boxIndex].retrieves;
+                        for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
+                           if(retrieves[removeIndex].date_returned === null){
+                              safeToShow = false;
+                           }
+                        }
+
+                        if(safeToShow)
+                           availablePos.push(parseInt(boxes[boxIndex].rack_position));
+                     }
+                     else if(boxesToShow === 1){//just show boxes that have been removed from tanks
+
+                        //search for an instance of remove that has not been returned
+                        var safeToShow = false;
+                        var retrieves = boxes[boxIndex].retrieves;
+                        for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
+                           if(retrieves[removeIndex].date_returned === null){
+                              safeToShow = true;
+                           }
+                        }
+
+                        if(safeToShow)
+                           availablePos.push(parseInt(boxes[boxIndex].rack_position));
+                     }
                   }
                }
             }
-            
-            //if purpose is for deleting or removing a box then show positions that have things in them
-            else{
-               //iterate through all boxes/boxes in rack and add their positions to the available positon array
-               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
-                  if(boxesToShow === 0)//add all boxes
-                     availablePos.push(parseInt(boxes[boxIndex].rack_position));
-                  
-                  else if(boxesToShow === 1){//just show boxes that are still in the tanks
-                     
-                     //search for an instance of remove that has not been returned
-                     var safeToShow = true;
-                     var retrieves = boxes[boxIndex].retrieves;
-                     for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
-                        if(retrieves[removeIndex].date_returned === null){
-                           safeToShow = false;
-                        }
-                     }
-                     
-                     if(safeToShow)
-                        availablePos.push(parseInt(boxes[boxIndex].rack_position));
-                  }
-                  else if(boxesToShow === 1){//just show boxes that have been removed from tanks
-                     
-                     //search for an instance of remove that has not been returned
-                     var safeToShow = false;
-                     var retrieves = boxes[boxIndex].retrieves;
-                     for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
-                        if(retrieves[removeIndex].date_returned === null){
-                           safeToShow = true;
-                        }
-                     }
-                     
-                     if(safeToShow)
-                        availablePos.push(parseInt(boxes[boxIndex].rack_position));
-                  }
+            else{//user wants to specify the rack manually
+               //get the allowed number of tray positions in this sector
+               var maxPositions = parseInt(sectors[BoxStorage.getSectorIndex(sectors, sectorID)].rack_pos);
+               for(var currPos = 1; currPos <= maxPositions; currPos++){
+                  availablePos.push(currPos);
                }
             }
             
