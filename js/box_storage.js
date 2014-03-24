@@ -168,6 +168,13 @@ var BoxStorage = {
          $("#rack").focus();
          return false;
       }
+      if($("#rack_spec").length && $("#rack_spec").is(":visible")){//check if rack specify input is in dom and if it's visible
+         if($("#rack_spec").val() === ""){
+            Notification.show({create:true, hide:true, updateText:false, text:'Please enter the rack name', error:true});
+            $("#rack_spec").focus();
+            return false;
+         }
+      }
       if($("#position").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please select a rack position', error:true});
          $("#tank").focus();
