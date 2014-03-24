@@ -108,6 +108,7 @@ class BoxStorage extends Repository{
                   <?php
                      $query = "SELECT * FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
                      $result = $this->Dbase->ExecuteQuery($query);
+                     echo '<option value=""></option>';//add the first blank option
                      if($result !== 1){
                         foreach($result as $sampleType){
                            echo '<option value="'.$sampleType['sample_type_name'].'">'.$sampleType['description'].'</option>';
@@ -122,6 +123,7 @@ class BoxStorage extends Repository{
                   <?php
                      $query = "SELECT * FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";
                      $result = $this->Dbase->ExecuteQuery($query);
+                     echo '<option value=""></option>';//add the first blank option
                      if($result !== 1){
                         foreach($result as $contact){
                            echo '<option value="'.$contact['count'].'">'.$contact['name'].'</option>';
