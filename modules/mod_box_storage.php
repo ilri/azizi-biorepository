@@ -230,7 +230,7 @@ class BoxStorage extends Repository{
    });
    $("#cancelAnchor").click(function (){
       $("#rack_spec_div").hide();
-      $("#rack_div").unhide();
+      $("#rack_div").show();
    });
 </script>
       <?php

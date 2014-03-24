@@ -276,7 +276,7 @@ var BoxStorage = {
          $('#position').prop('disabled', 'disabled');
          if($("#tank").val() !== "" && $("#sector").val() !== "" && $("#rack").val() !== ""){
             if($("#rack").val() === "n£WR@ck"){//user wants to specify rack name
-               $("#rack_spec_div").unhide();
+               $("#rack_spec_div").show();
                $("#rack_div").hide();
             }
             
