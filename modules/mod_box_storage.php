@@ -433,8 +433,8 @@ class BoxStorage extends Repository{
       if($result !== 0) {
          $boxId = $result;
          //insert extra information in lims_extension database
-         $columns = array("box_id","status", "features", "sample_type");
-         $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types']);
+         $columns = array("box_id","status", "features");
+         $columnValues = array($boxId, $_POST['status'], $_POST['features']);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
          $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['lims_extension'].".boxes_def", $columns, $columnValues);
          if($result === 0){
