@@ -219,6 +219,11 @@ var BoxStorage = {
                  .append('<option value=""></option>')//append a null option
                      .val('');
          $('#rack').prop('disabled', 'disabled');
+         if($('#rack_div').length) $('#rack_div').show();
+         if($('#rack_spec_div').length) {
+            $('#rack_spec_div').hide();
+            $('#rack_spec').val("");
+         }
          $('#position').find('option').remove()
                  .end()
                  .append('<option value=""></option>')//append a null option
@@ -246,6 +251,11 @@ var BoxStorage = {
                  .append('<option value=""></option>')//append a null option
                      .val('');
          $('#rack').prop('disabled', 'disabled');
+         if($('#rack_div').length) $('#rack_div').show();
+         if($('#rack_spec_div').length) {
+            $('#rack_spec_div').hide();
+            $('#rack_spec').val("");
+         }
          $('#position').find('option').remove()
                  .end()
                  .append('<option value=""></option>')//append a null option
