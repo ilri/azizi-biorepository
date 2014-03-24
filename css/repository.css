@@ -284,22 +284,22 @@ body {
    padding-top: 30px;
 }
 
-#tray_storage{
+#box_storage{
    height: 850px;
 }
-#tray_storage #meta_data_div, #tray_storage #location_div, #tray_storage #purpose_div, #tray_storage #return_div {
+#box_storage #meta_data_div, #box_storage #location_div, #box_storage #purpose_div, #box_storage #return_div {
    float: left;
    margin: 2px 4px 2px 80px;
    height: 350px;
    width: 350px;
 }
-#tray_storage #tray_label {
+#box_storage #box_label {
    height: 30px;
 }
-#tray_storage .flexigrid {
+#box_storage .flexigrid {
    margin-left: 10px;
 }
-#tray_storage #submit_button_div {
+#box_storage #submit_button_div {
    float: right;
    width: 100px;
    margin: 10px 100px 15px 0px;

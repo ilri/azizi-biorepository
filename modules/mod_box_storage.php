@@ -9,7 +9,7 @@
  * @since      v0.2
  */
 
-class TrayStorage extends Repository{
+class BoxStorage extends Repository{
 
    public $Dbase;
 
@@ -20,23 +20,23 @@ class TrayStorage extends Repository{
    public function TrafficController() {
 
       /*
-       * Hierarchical GET requests handled by this file (tray_storage)
-       * - tray_storage (page)
-       *    - add_tray (do)
-       *       - insert_tray (action)
-       *    - remove_tray
+       * Hierarchical GET requests handled by this file (box_storage)
+       * - box_storage (page)
+       *    - add_box (do)
+       *       - insert_box (action)
+       *    - remove_box
        *       -submit_request
-       *    - return_tray
+       *    - return_box
        *       -submit_return
-       *    - delete_tray
+       *    - delete_box
        *    - ajax
        *       - get_tank_details
-       *       - fetch_trays
-       *       - fetch_removed_trays
+       *       - fetch_boxes
+       *       - fetch_removed_boxes
        *       - submit_return_request
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
-         echo "<script type='text/javascript' src='js/tray_storage.js'></script>";
+         echo "<script type='text/javascript' src='js/box_storage.js'></script>";
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.form.js' /></script>";
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.flexigrid/flexigrid.pack.js' /></script>";
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.ui/js/jquery-ui.min.js' /></script>";
@@ -45,12 +45,12 @@ class TrayStorage extends Repository{
       }
 
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->homePage();
-      if (OPTIONS_REQUESTED_SUB_MODULE == 'add_tray') $this->addTray ();
-      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_tray') $this->removeTray (); // remove a tray temporarily from the LN2 tanks 
-      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return_tray') $this->returnTray (); // return a tray that had been removed/borrowed
-      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_tray') $this->deleteTray (); // delete tray from database (with or without it's metadata)
+      if (OPTIONS_REQUESTED_SUB_MODULE == 'add_box') $this->addBox ();
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_box') $this->removeBox (); // remove a box temporarily from the LN2 tanks 
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return_box') $this->returnBox (); // return a box that had been removed/borrowed
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_box') $this->deleteBox (); // delete box from database (with or without it's metadata)
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax') $this->ajax();
-      //TODO: check if you need another sub module for viewing trays
+      //TODO: check if you need another sub module for viewing boxes
    }
 
    /**
@@ -61,14 +61,14 @@ class TrayStorage extends Repository{
       ?>
 <div id='home'>
    <?php echo $addInfo?>
-   <h3 class="center">Tray Storage</h3>
+   <h3 class="center">Box Storage</h3>
    <hr />
    <div class="user_options">
       <ul>
-         <li><a href='?page=tray_storage&do=add_tray'>Add a tray</a></li>
-         <li><a href='?page=tray_storage&do=remove_tray'>Remove (borrow) a tray</a></li>
-         <li><a href="?page=tray_storage&do=return_tray">Return a borrowed tray</a></li>
-         <li><a href='?page=tray_storage&do=delete_tray'>Delete a tray</a></li>
+         <li><a href='?page=box_storage&do=add_box'>Add a box</a></li>
+         <li><a href='?page=box_storage&do=remove_box'>Retrieve a box</a></li>
+         <li><a href="?page=box_storage&do=return_box">Return a borrowed box</a></li>
+         <li><a href='?page=box_storage&do=delete_box'>Delete a box</a></li>
       </ul>
    </div>
 </div>
@@ -78,24 +78,24 @@ class TrayStorage extends Repository{
       <?php
    }
 
-   private function addTray($addInfo = ''){
-      if(OPTIONS_REQUESTED_ACTION === "insert_tray"){
-         $addInfo = $addInfo.$this->insertTray();
+   private function addBox($addInfo = ''){
+      if(OPTIONS_REQUESTED_ACTION === "insert_box"){
+         $addInfo = $addInfo.$this->insertBox();
       }
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
    <?php echo $addInfo?>
-<div id="tray_storage">
-   <h3 class="center">Add a Tray</h3>
-   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=add_tray&action=insert_tray" onsubmit="return TrayStorage.submitInsertRequest();" >
+<div id="box_storage">
+   <h3 class="center">Add a Box</h3>
+   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=box_storage&do=add_box&action=insert_box" onsubmit="return BoxStorage.submitInsertRequest();" >
       <div id="meta_data_div">
          <legend>Metadata</legend>
          <div>
-            <div><label for="tray_label">Tray Label</label><input type="text" name="tray_label" id="tray_label" /></div>
+            <div><label for="box_label">Box Label</label><input type="text" name="box_label" id="box_label" /></div>
             <div><label for="features">Features</label><input type="text" name="features" id="features" /></div>
             <div>
-               <label for="tray_size">Tray size</label>
-               <select name="tray_size" id="tray_size">
+               <label for="box_size">Box size</label>
+               <select name="box_size" id="box_size">
                   <option value=""></option>
                   <option value="81">81</option>
                   <option value="100">100</option>
@@ -109,7 +109,7 @@ class TrayStorage extends Repository{
          </div>
       </div>
       <div id="location_div">
-         <legend>Tray Location</legend>
+         <legend>Box Location</legend>
          <div>
             <div>
                <label for="tank">Tank</label>
@@ -144,28 +144,28 @@ class TrayStorage extends Repository{
       </div>
       <div class="center" id="submit_button_div"><input type="submit" value="Add" name="submitButton" id="submitButton"/></div>
    </form>
-   <div id="tank_trays"></div>
+   <div id="tank_boxes"></div>
 </div>
 
 <script type="text/javascript">
    $(document).ready( function() {
-      TrayStorage.loadTankData(true);
+      BoxStorage.loadTankData(true);
    });
-   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
    
    //Javascript for making table
    /*
     * Table looks like:
-    *    Tray label | Sample Type | Tank Location | Status 
+    *    Box label | Sample Type | Tank Location | Status 
     *    
     *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
     * 
     */
-   $("#tank_trays").flexigrid({
-      url: "mod_ajax.php?page=tray_storage&do=ajax&action=fetch_trays",
+   $("#tank_boxes").flexigrid({
+      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes",
       dataType: 'json',
       colModel : [
-         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Box Label', name: 'name', width: 100, sortable: true, align: 'center'},
          {display: 'Sample Type', name: 'type', width: 150, sortable: true, align: 'center'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
@@ -173,13 +173,13 @@ class TrayStorage extends Repository{
          {display: 'Moved by', name: 'added_by', width: 100, sortable: true, align: 'center'}
       ],
       searchitems : [
-         {display: 'Tray Label', name : 'name'},
+         {display: 'Box Label', name : 'name'},
          {display: 'Sample Type', name : 'type'}
       ],
       sortname : 'date_added',
       sortorder : 'desc',
       usepager : true,
-      title : 'Stored Trays',
+      title : 'Stored Boxes',
       useRp : true,
       rp : 10,
       showTableToggleBtn: false,
@@ -193,11 +193,11 @@ class TrayStorage extends Repository{
    }
    
    /**
-    * This function displays the Remove Tray screen. Submissions handled using webserver requests i.e POST and GET
+    * This function displays the Remove Box screen. Submissions handled using webserver requests i.e POST and GET
     * 
     * @param type $addInfo
     */
-   private function removeTray($addInfo = ''){
+   private function removeBox($addInfo = ''){
       if(OPTIONS_REQUESTED_ACTION === "submit_request"){
          $addInfo = $addInfo.$this->submitRemoveRequest();
       }
@@ -205,11 +205,11 @@ class TrayStorage extends Repository{
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
    <?php echo $addInfo?>
-<div id="tray_storage">
-   <h3 class="center">Remove Tray</h3>
-   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=tray_storage&do=remove_tray&action=submit_request" onsubmit="return TrayStorage.submitRemoveRequest();" >
+<div id="box_storage">
+   <h3 class="center">Remove Box</h3>
+   <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=box_storage&do=remove_box&action=submit_request" onsubmit="return BoxStorage.submitRemoveRequest();" >
       <div id="location_div">
-         <legend>Tray Location</legend>
+         <legend>Box Location</legend>
          <div>
             <div>
                <label for="tank">Tank</label>
@@ -233,7 +233,7 @@ class TrayStorage extends Repository{
                </select>
             </div>
             <div>
-               <label for="tray_label">Tray label</label><input type="text" id="tray_label" disabled="disabled" />
+               <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" />
             </div>
          </div>
       </div>
@@ -265,7 +265,7 @@ class TrayStorage extends Repository{
 
 <script type="text/javascript">
    $(document).ready( function() {
-      TrayStorage.loadTankData(false, 1);//show trays that are still in the tanks (and not borrowed/removed)
+      BoxStorage.loadTankData(false, 1);//show boxes that are still in the tanks (and not borrowed/removed)
       $("#purpose").change(function (){
          if($("#purpose").val()=== "analysis_on_campus" || $("#purpose").val()=== "analysis_off_campus"){
             $("#analysis_type_div").show();
@@ -275,21 +275,21 @@ class TrayStorage extends Repository{
          }
       });
    });
-   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
    
    //Javascript for making table
    /*
     * Table looks like:
-    *    Tray Label | Location | Removed By | For Who | Date Removed | Date Returned 
+    *    Box Label | Location | Removed By | For Who | Date Removed | Date Returned 
     *    
     *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
     * 
     */
    $("#removed_boxes").flexigrid({
-      url: "mod_ajax.php?page=tray_storage&do=ajax&action=fetch_removed_trays",
+      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
       dataType: 'json',
       colModel : [
-         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Box Label', name: 'name', width: 100, sortable: true, align: 'center'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
          {display: 'For who', name: 'removed_for', width: 120, sortable: true, align: 'center'},
@@ -297,14 +297,14 @@ class TrayStorage extends Repository{
          {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
       ],
       searchitems : [
-         {display: 'Tray Label', name : 'name'},
+         {display: 'Box Label', name : 'name'},
          {display: 'Removed by', name : 'removed_by'},
          {display: 'For who', name : 'removed_for'}
       ],
       sortname : 'date_removed',
       sortorder : 'desc',
       usepager : true,
-      title : 'Stored Trays',
+      title : 'Stored Boxes',
       useRp : true,
       rp : 10,
       showTableToggleBtn: false,
@@ -318,17 +318,17 @@ class TrayStorage extends Repository{
    }
    
    /**
-    * This function displays the Return Tray screen. Submissions handled using Javascript AJAX requests
+    * This function displays the Return Box screen. Submissions handled using Javascript AJAX requests
     * 
     * @param type $addInfo
     */
-   private function returnTray(){
+   private function returnBox(){
       ?>
-<div id="tray_storage">
-   <h3 class="center">Return Tray</h3>
+<div id="box_storage">
+   <h3 class="center">Return Box</h3>
    <div id="return_div">
-      <legend>Tray Information</legend>
-      <div><label for="tray_label">Tray Label</label><input type="text" id="tray_label" /><input type="hidden" id="remove_id"/></div>
+      <legend>Box Information</legend>
+      <div><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
       <div><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
       <div class="center" id="submit_button_div"><button type="button" id="submitButton">Return</button></div>
    </div>
@@ -359,33 +359,33 @@ class TrayStorage extends Repository{
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
-      TrayStorage.setRemovedTraySuggestions();
+      BoxStorage.setRemovedBoxSuggestions();
       
       $('#submitButton').click(function(){
-         TrayStorage.submitReturnRequest();
+         BoxStorage.submitReturnRequest();
       });
       
-      //clear the value the remove_id input when tray_label input is changed
-      $('#tray_label').change(function(){
+      //clear the value the remove_id input when box_label input is changed
+      $('#box_label').change(function(){
          console.log("remove_id cleared");
-         TrayStorage.resetReturnInput(false);
+         BoxStorage.resetReturnInput(false);
       });
    });
-   $('#whoisme .back').html('<a href=\'?page=tray_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
    
    //Javascript for making table
    /*
     * Table looks like:
-    *    Tray Label | Location | Removed By | For Who | Date Removed | Date Returned 
+    *    Box Label | Location | Removed By | For Who | Date Removed | Date Returned 
     *    
     *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
     * 
     */
    $("#returned_boxes").flexigrid({
-      url: "mod_ajax.php?page=tray_storage&do=ajax&action=fetch_removed_trays",
+      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
       dataType: 'json',
       colModel : [
-         {display: 'Tray Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Box Label', name: 'name', width: 100, sortable: true, align: 'center'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
          {display: 'Returned by', name: 'returned_by', width: 120, sortable: true, align: 'center'},
@@ -393,7 +393,7 @@ class TrayStorage extends Repository{
          {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
       ],
       searchitems : [
-         {display: 'Tray Label', name : 'name'},
+         {display: 'Box Label', name : 'name'},
          {display: 'Returned by', name : 'returned_by'},
          {display: 'Returned by', name : 'returned_by'},
          {display: 'For who', name : 'removed_for'}
@@ -401,7 +401,7 @@ class TrayStorage extends Repository{
       sortname : 'date_returned',
       sortorder : 'desc',
       usepager : true,
-      title : 'Stored Trays',
+      title : 'Stored Boxes',
       useRp : true,
       rp : 10,
       showTableToggleBtn: false,
@@ -414,20 +414,20 @@ class TrayStorage extends Repository{
       <?php
    }
    
-   private function deleteTray($addInfo = ''){
+   private function deleteBox($addInfo = ''){
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       
    }
    
-   private function insertTray(){
+   private function insertBox(){
       $message = "";
       $columns = array("name","features","size","type","rack","rack_position", "status", "added_by");
-      $columnValues = array($_POST['tray_label'], $_POST['features'], $_POST['tray_size'], $_POST['sample_types'], $_POST['rack'], $_POST['position'], $_POST['status'], $_SESSION['username']);
+      $columnValues = array($_POST['box_label'], $_POST['features'], $_POST['box_size'], $_POST['sample_types'], $_POST['rack'], $_POST['position'], $_POST['status'], $_SESSION['username']);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
       $result = $this->Dbase->InsertOnDuplicateUpdate("boxes", $columns, $columnValues);
       if($result === 0) {
          $message = "Unable to add the last request. Try again later";
-         $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to make the last insertTray request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
       }
       return $message;
    }
@@ -439,28 +439,28 @@ class TrayStorage extends Repository{
       $result = $this->Dbase->ExecuteQuery($query,array($_POST['rack'], $_POST['position']));
       if($result !== 1){
          if(count($result) === 1){//only one box/tray should be in that position
-            $trayID = $result[0]['id'];
+            $boxID = $result[0]['id'];
             $now = date('Y-m-d H:i:s');
             $columns = array("box", "removed_by", "removed_for", "purpose", "date_removed");
-            $colVals = array($trayID, $_SESSION['username'], $_POST['for_who'], $_POST['purpose'], $now);
+            $colVals = array($boxID, $_SESSION['username'], $_POST['for_who'], $_POST['purpose'], $now);
             if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
                array_push($columns, "analysis");
                array_push($colVals, $_POST['analysis_type']);
             }
             $result = $this->Dbase->InsertOnDuplicateUpdate("removed_boxes", $columns, $colVals);
             if($result === 0){
-               $message = "Unable to remove tray for the system.";
-               $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to remove tray from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+               $message = "Unable to remove box for the system.";
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
             }
          }
          else{
-            $message = "It appears that more than one (". count($result) .") tray is in the position specified. Unable to remove anything from the system";
-            $this->Dbase->CreateLogEntry('mod_tray_storage: It appears that more than one ('. count($result) .') tray is in the position specified. Unable to remove anything from the system', 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+            $message = "It appears that more than one (". count($result) .") box is in the position specified. Unable to remove anything from the system";
+            $this->Dbase->CreateLogEntry('mod_box_storage: It appears that more than one ('. count($result) .') box is in the position specified. Unable to remove anything from the system', 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
       }
       else{
-         $message = "Unable to remove the tray from the system. No tray was found in the specified tank position";
-         $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to locate box in the location rack_id:'.$_POST['rack'].' -> position:'. $_POST['position'].'. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+         $message = "Unable to remove the box from the system. No box was found in the specified tank position";
+         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to locate box in the location rack_id:'.$_POST['rack'].' -> position:'. $_POST['position'].'. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
       }
       $columns = array();
       return $message;
@@ -468,13 +468,13 @@ class TrayStorage extends Repository{
    
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
-      //get the last remove recored for the box/tray being returned
+      //get the last remove recored for the box/box being returned
       $query = "UPDATE `removed_boxes` SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
       $now = date('Y-m-d H:i:s');
       $result = $this->Dbase->ExecuteQuery($query, array($now, $_SESSION['username'], $_POST['return_comment'], $_POST['remove_id']));
       if($result === 0){
-         $message = "Unable to return tray back into the system";
-         $this->Dbase->CreateLogEntry('mod_tray_storage: Unable to return tray back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+         $message = "Unable to return box back into the system";
+         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to return box back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
       }
       
       if($fromAjaxRequest) {
@@ -549,7 +549,7 @@ class TrayStorage extends Repository{
          $this->Dbase->CreateLogEntry('json for tank information -> '.json_encode($jsonArray), 'debug');
          echo json_encode($jsonArray);
       }
-      elseif (OPTIONS_REQUESTED_ACTION == "fetch_trays") {
+      elseif (OPTIONS_REQUESTED_ACTION == "fetch_boxes") {
          //check if search criterial provided
          $criteriaArray = array();
          if($_POST['query'] != "") {
@@ -608,7 +608,7 @@ class TrayStorage extends Repository{
          die(json_encode($response));
       }
       
-      elseif(OPTIONS_REQUESTED_ACTION === "fetch_removed_trays"){
+      elseif(OPTIONS_REQUESTED_ACTION === "fetch_removed_boxes"){
          //check if search criterial provided
          $criteriaArray = array();
          if($_POST['query'] != "") {

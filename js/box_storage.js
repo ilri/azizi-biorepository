@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var TrayStorage = {
+var BoxStorage = {
    
    /**
     * 
@@ -28,7 +28,7 @@ var TrayStorage = {
          var formData = {return_comment: $("#return_comment").val(), remove_id: $("#remove_id").val()};
          
          var responseText = $.ajax({
-            url: "mod_ajax.php?page=tray_storage&do=ajax&action=submit_return_request",
+            url: "mod_ajax.php?page=box_storage&do=ajax&action=submit_return_request",
             type: "POST",
             data: formData,
             async: false
@@ -39,7 +39,7 @@ var TrayStorage = {
             Notification.show({create:true, hide:true, updateText:false, text: responseJson.error_message, error:true});
          }
          
-         TrayStorage.setRemovedTraySuggestions();
+         BoxStorage.setRemovedBoxSuggestions();
       }
       
    },
@@ -53,19 +53,19 @@ var TrayStorage = {
       }
       
       //trim spaces from inputs 
-      $("#tray_label").val($("#tray_label").val().trim());
+      $("#box_label").val($("#box_label").val().trim());
       $("#features").val($("#features").val().trim());
       $("#sample_types").val($("#sample_types").val().trim());
       //$("#sampling_loc").val($("#sampling_loc").val().trim());
       
-      if($("#tray_label").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the label no the tray', error:true});
-         $("#tray_label").focus();
+      if($("#box_label").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the label no the box', error:true});
+         $("#box_label").focus();
          return false;
       }
-      if($("#tray_size").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the tray size', error:true});
-         $("#tray_size").focus();
+      if($("#box_size").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the box size', error:true});
+         $("#box_size").focus();
          return false;
       }
       if($("#sample_types").val().length > 20){
@@ -74,12 +74,12 @@ var TrayStorage = {
          return false;
       }
       if($("#status").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
+         Notification.show({create:true, hide:true, updateText:false, text:'Please select the box\'s status', error:true});
          $("#status").focus();
          return false;
       }
       
-      return TrayStorage.validateTankInformation();
+      return BoxStorage.validateTankInformation();
    },
    
    validateRemoveInput: function(){
@@ -90,13 +90,13 @@ var TrayStorage = {
          };
       }
       
-      var result = TrayStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
+      var result = BoxStorage.validateTankInformation();//Put this first because tank information appears before the rest of the form
       
       if(result === true){
          $("#for_who").val($("#for_who").val().trim());
          $("#analysis_type").val($("#analysis_type").val().trim());
          if($('#for_who').val() === ""){
-            Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the person the tray is being removed for', error:true});
+            Notification.show({create:true, hide:true, updateText:false, text:'Please enter the name of the person the box is being removed for', error:true});
             $("#for_who").focus();
             return false;
          }
@@ -107,12 +107,12 @@ var TrayStorage = {
          }
 
          if($("#purpose").val() === ""){
-            Notification.show({create:true, hide:true, updateText:false, text:'Please enter the purpose of the tray', error:true});
+            Notification.show({create:true, hide:true, updateText:false, text:'Please enter the purpose of the box', error:true});
             $("#purpose").focus();
             return false;
          }
          if($("#analysis_type_div").is(":visible") && $("#analysis_type").val() === ""){
-            Notification.show({create:true, hide:true, updateText:false, text:'Please select the tray\'s status', error:true});
+            Notification.show({create:true, hide:true, updateText:false, text:'Please select the box\'s status', error:true});
             $("#analysis_type").focus();
             return false;
          }
@@ -134,15 +134,15 @@ var TrayStorage = {
       }
       
       $("#return_comment").val($("#return_comment").val().trim());
-      $("#tray_label").val($("#tray_label").val().trim());
-      if($("#tray_label").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the tray label', error:true});
-         $("#tray_label").focus();
+      $("#box_label").val($("#box_label").val().trim());
+      if($("#box_label").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the box label', error:true});
+         $("#box_label").focus();
          return false;
       }
       if($("#remove_id").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'The tray you specified does not exist or has not been removed from the tanks. Use provided suggestions', error:true});
-         $("#tray_label").focus();
+         Notification.show({create:true, hide:true, updateText:false, text:'The box you specified does not exist or has not been removed from the tanks. Use provided suggestions', error:true});
+         $("#box_label").focus();
          return false;
       }
       return true;
@@ -179,15 +179,15 @@ var TrayStorage = {
     * 
     * Cascading logic added. When user selects certain tank, only sectors in that tank will be shown as options in the sector select
     * 
-    * @param {Boolean} forInsertion Set to true if you want to display available tray positions
-    * @param {Int} traysToShow Defaults to 0. Set to 0 if you want to show all trays, 1 to show trays still in the tanks and 2 for trays that have been removed
+    * @param {Boolean} forInsertion Set to true if you want to display available box positions
+    * @param {Int} boxesToShow Defaults to 0. Set to 0 if you want to show all boxes, 1 to show boxes still in the tanks and 2 for boxes that have been removed
     * 
     * @returns {undefined}
     */
-   loadTankData: function(forInsertion, traysToShow){
-      if(typeof(traysToShow)==='undefined') traysToShow = 0;//default traysToShow to 0 (all trays)
+   loadTankData: function(forInsertion, boxesToShow){
+      if(typeof(boxesToShow)==='undefined') boxesToShow = 0;//default boxesToShow to 0 (all boxes)
       
-      var json = TrayStorage.getTankData(false);//get tank data but dont cache the data in window.tankData
+      var json = BoxStorage.getTankData(false);//get tank data but dont cache the data in window.tankData
       var tanks = json.data;
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
          $("#tank").append($("<option></option>")
@@ -204,7 +204,7 @@ var TrayStorage = {
                     .append('<option value=""></option>')//append a null option
                         .val('');
             var tankID = parseInt($("#tank").val());
-            var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
+            var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
                $("#sector").append($("<option></option>")
                        .attr("value", sectors[sectorIndex].id)
@@ -240,9 +240,9 @@ var TrayStorage = {
                         .val('');
             
             var tankID = parseInt($("#tank").val());
-            var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
+            var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
             var sectorID = parseInt($("#sector").val());
-            var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
+            var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
             for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){
                $("#rack").append($("<option></option>")
                        .attr("value", racks[rackIndex].id)
@@ -275,16 +275,16 @@ var TrayStorage = {
             //find all the empty positions in selected rack
             //Do this by determining which slots are empty depending on rack size
             var tankID = parseInt($("#tank").val());
-            var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
+            var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
             var sectorID = parseInt($("#sector").val());
-            var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
+            var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
             var rackID = parseInt($("#rack").val());
-            var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
+            var rack = racks[BoxStorage.getRackIndex(racks, rackID)];
             
             var availablePos = new Array();
             
-            var trays = rack.boxes;
-            //if purpose is for inserting new tray into db then only display rack positions that are empty
+            var boxes = rack.boxes;
+            //if purpose is for inserting new box into db then only display rack positions that are empty
             if(forInsertion){
                
                //populate available positions array with a 1 index list depending on the size of the rack
@@ -292,28 +292,28 @@ var TrayStorage = {
                   availablePos.push(currPos);
                }
                
-               //iterate through all boxes/trays in rack and delete their positions from the available positon array
+               //iterate through all boxes/boxes in rack and delete their positions from the available positon array
                
-               for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
-                  var index = availablePos.indexOf(parseInt(trays[trayIndex].rack_position));
+               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
+                  var index = availablePos.indexOf(parseInt(boxes[boxIndex].rack_position));
                   if(index !== -1){//check if position was already in the available positions array (It should have been)
                      availablePos.splice(index, 1);
                   }
                }
             }
             
-            //if purpose is for deleting or removing a tray then show positions that have things in them
+            //if purpose is for deleting or removing a box then show positions that have things in them
             else{
-               //iterate through all boxes/trays in rack and add their positions to the available positon array
-               for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
-                  if(traysToShow === 0)//add all trays
-                     availablePos.push(parseInt(trays[trayIndex].rack_position));
+               //iterate through all boxes/boxes in rack and add their positions to the available positon array
+               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
+                  if(boxesToShow === 0)//add all boxes
+                     availablePos.push(parseInt(boxes[boxIndex].rack_position));
                   
-                  else if(traysToShow === 1){//just show trays that are still in the tanks
+                  else if(boxesToShow === 1){//just show boxes that are still in the tanks
                      
                      //search for an instance of remove that has not been returned
                      var safeToShow = true;
-                     var removes = trays[trayIndex].removes;
+                     var removes = boxes[boxIndex].removes;
                      for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
                         if(removes[removeIndex].date_returned === null){
                            safeToShow = false;
@@ -321,13 +321,13 @@ var TrayStorage = {
                      }
                      
                      if(safeToShow)
-                        availablePos.push(parseInt(trays[trayIndex].rack_position));
+                        availablePos.push(parseInt(boxes[boxIndex].rack_position));
                   }
-                  else if(traysToShow === 1){//just show trays that have been removed from tanks
+                  else if(boxesToShow === 1){//just show boxes that have been removed from tanks
                      
                      //search for an instance of remove that has not been returned
                      var safeToShow = false;
-                     var removes = trays[trayIndex].removes;
+                     var removes = boxes[boxIndex].removes;
                      for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
                         if(removes[removeIndex].date_returned === null){
                            safeToShow = true;
@@ -335,7 +335,7 @@ var TrayStorage = {
                      }
                      
                      if(safeToShow)
-                        availablePos.push(parseInt(trays[trayIndex].rack_position));
+                        availablePos.push(parseInt(boxes[boxIndex].rack_position));
                   }
                }
             }
@@ -355,24 +355,24 @@ var TrayStorage = {
             $('#position').prop('disabled', 'disabled');
          }
          
-         //show tray label if purpose if for deleting tray information or removing tray
+         //show box label if purpose if for deleting box information or removing box
          if(forInsertion === false){
             $("#position").change(function(){
                if($("#position").val() !== ""){
-                  $("#tray_label").val("");
+                  $("#box_label").val("");
                   var tankID = parseInt($("#tank").val());
-                  var sectors = tanks[TrayStorage.getTankIndex(tanks, tankID)].sectors;
+                  var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
                   var sectorID = parseInt($("#sector").val());
-                  var racks = sectors[TrayStorage.getSectorIndex(sectors, sectorID)].racks;
+                  var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
                   var rackID = parseInt($("#rack").val());
-                  var rack = racks[TrayStorage.getRackIndex(racks, rackID)];
+                  var rack = racks[BoxStorage.getRackIndex(racks, rackID)];
                   
-                  //get the box/tray in rack that is stored in position
-                  var trays = rack.boxes;
+                  //get the box/box in rack that is stored in position
+                  var boxes = rack.boxes;
                   var position = parseInt($("#position").val());
-                  for(var trayIndex = 0; trayIndex < trays.length; trayIndex++){
-                     if(parseInt(trays[trayIndex].rack_position) === position){
-                        $("#tray_label").val(trays[trayIndex].name);
+                  for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
+                     if(parseInt(boxes[boxIndex].rack_position) === position){
+                        $("#box_label").val(boxes[boxIndex].name);
                      }
                   }
                }
@@ -391,7 +391,7 @@ var TrayStorage = {
    getTankData : function(saveInWindow){
       var jsonText = $.ajax({
          type: "GET",
-         url: "mod_ajax.php?page=tray_storage&do=ajax&action=get_tank_details",
+         url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
          async: false
       }).responseText;
       
@@ -448,11 +448,11 @@ var TrayStorage = {
       return -1;
    },
    
-   setRemovedTraySuggestions : function(){
-      TrayStorage.resetReturnInput(true);
-      var tankData = TrayStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+   setRemovedBoxSuggestions : function(){
+      BoxStorage.resetReturnInput(true);
+      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
       
-      //get all trays that have been removed
+      //get all boxes that have been removed
       var suggestions = new Array();
       var tanks = tankData.data;
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){//iterate through all the tanks
@@ -468,7 +468,7 @@ var TrayStorage = {
                      if(typeof(removes[removeIndex].date_returned) === 'undefined' || removes[removeIndex].date_returned === null){
                         var keyValue = {value: boxes[boxIndex].name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex+'-'+removeIndex};
                         suggestions.push(keyValue);
-                        break;//you should only have one remove without a return date associated with a box/tray
+                        break;//you should only have one remove without a return date associated with a box/box
                      }
                   }
                }
@@ -476,7 +476,7 @@ var TrayStorage = {
          }
       }
       
-      $("#tray_label").autocomplete({
+      $("#box_label").autocomplete({
          source: suggestions,
          minLength: 1,
          select: function(event, ui) {
@@ -517,7 +517,7 @@ var TrayStorage = {
       $("#position").val('');
       $('#remove_id').val('');
       if(complete){
-         $('#tray_label').val('');
+         $('#box_label').val('');
          $('#return_comment').val('');
       }
    }

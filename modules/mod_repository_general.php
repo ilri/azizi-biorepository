@@ -169,10 +169,10 @@ class Repository extends DBase{
           $InventoryManager = new InventoryManager($this->Dbase);
           $InventoryManager->TrafficController();
       }
-      else if(OPTIONS_REQUESTED_MODULE == 'tray_storage'){
-         require_once 'mod_tray_storage.php';
-         $trayStorage = new TrayStorage($this->Dbase);
-         $trayStorage->TrafficController();
+      else if(OPTIONS_REQUESTED_MODULE == 'box_storage'){
+         require_once 'mod_box_storage.php';
+         $boxStorage = new BoxStorage($this->Dbase);
+         $boxStorage->TrafficController();
       }
       else{
          $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
