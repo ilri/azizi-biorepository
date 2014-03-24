@@ -492,7 +492,7 @@ class BoxStorage extends Repository{
     */
    private function ajax(){
       $message = "";
-      if(OPTIONS_REQUESTED_ACTION == "get_tank_details"){
+      if(OPTIONS_REQUESTED_ACTION == "get_tank_details"){/*
          //get tank details from monitoring database
          $query = "SELECT * FROM ".Config::$config['monitoring_db'].".units";
          $result = $this->Dbase->ExecuteQuery($query);
@@ -547,7 +547,50 @@ class BoxStorage extends Repository{
          }
          $jsonArray['data'] = $result;
          $this->Dbase->CreateLogEntry('json for tank information -> '.json_encode($jsonArray), 'debug');
-         echo json_encode($jsonArray);
+         echo json_encode($jsonArray);*/
+         
+         //get tank details from azizi_lims
+         $query = "SELECT * FROM ".Config::$config['azizi_db'].".storage_facilities";
+         $result = $this->Dbase->ExecuteQuery($query);
+         for($tankIndex = 0; $tankIndex < count($result); $tankIndex++){
+            $result[$tankIndex]['sectors'] = array();
+            $query = "SELECT * FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility_id = ".$result[$tankIndex]['id'];
+            $tempResult = $this->Dbase->ExecuteQuery($query);
+            if($tempResult !== 1){
+               $result[$tankIndex]['sectors'] = $tempResult;
+               for($sectorIndex = 0; $sectorIndex < count($result[$tankIndex]['sectors']); $sectorIndex++){
+                  //get all boxes in that sector
+                  $query = "SELECT * FROM ".Config::$config['azizi_db']."boxes_def WHERE location = ".$result[$tankIndex]['sectors'][$sectorIndex]['id'];
+                  $tempResult = $this->Dbase->ExecuteQuery($query);
+                  
+                  //get all unique racks in this sector
+                  if($tempResult !== 1){
+                     $racks = array();
+                     for($boxIndex = 0; $boxIndex < count($tempResult); $boxIndex++){
+                        //create array of boxes inside rack if it doesnt exist
+                        if(!isset($racks[$tempResult[$boxIndex]['rack']])){
+                           $racks[$tempResult[$boxIndex]['rack']] = array();
+                        }
+                        
+                        //get retrieves on the box
+                        $query = "SELECT * FROM ".Config::$config['lims_extension'].".retrieved_boxes WHERE box_def = ".$tempResult[$boxIndex]['id'];
+                        $tempResult[$boxIndex]['retrievs'] = $this->Dbase->ExecuteQuery($query);
+                        if($tempResult[$boxIndex]['retrievs'] === 1){
+                           $tempResult[$boxIndex]['retrievs'] = array();
+                           $message = $this->Dbase->lastError;
+                        }
+                        
+                        //push box into parent rack
+                        array_push($racks[$tempResult[$boxIndex]['rack']], $tempResult[$boxIndex]);
+                     }
+                     
+                     $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = $racks;
+                  }
+                  else $message = $this->Dbase->lastError;
+               }
+            }
+            else $message = $this->Dbase->lastError;
+         }
       }
       elseif (OPTIONS_REQUESTED_ACTION == "fetch_boxes") {
          //check if search criterial provided
