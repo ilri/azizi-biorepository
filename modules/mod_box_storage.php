@@ -453,15 +453,15 @@ class BoxStorage extends Repository{
       $boxSizeInLIMS = GeneralTasks::NumericPosition2LCPosition(1, $_POST['box_size']);
       $boxSizeInLIMS = $boxSizeInLIMS.".".GeneralTasks::NumericPosition2LCPosition($_POST['box_size'], $_POST['box_size']);
       
-      $columns = array("box_name","size","box_type","location","rack","rack_position");
-      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $_POST['rack'], $_POST['position']);
+      $columns = array("box_name","size","box_type","location","rack","rack_position", "keeper");
+      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $_POST['rack'], $_POST['position'], $_POST['owner']);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
       $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['azizi_db'].".boxes_def", $columns, $columnValues, "box_id");
       if($result !== 0) {
          $boxId = $result;
          //insert extra information in lims_extension database
-         $columns = array("box_id","status", "features");
-         $columnValues = array($boxId, $_POST['status'], $_POST['features']);
+         $columns = array("box_id","status", "features", "sample_types");
+         $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types']);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
          $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['lims_extension'].".boxes_def", $columns, $columnValues);
          if($result === 0){
