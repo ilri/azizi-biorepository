@@ -218,10 +218,7 @@ class BoxStorage extends Repository{
    $("#status").change(function(){
       if($('#status').val() === "temporary"){
          //if user sets position to temporary set owner to biorepository manager
-         $("#owner").filter(function() {
-            //may want to use $.trim in here
-            return $(this).text() == "Biorepository manager"; 
-         }).prop('selected', true).prop('disabled', 'disabled');
+         $("#owner").prop('disabled', 'disabled');
       }
    });
 </script>
