@@ -192,7 +192,7 @@ var BoxStorage = {
       for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){
          $("#tank").append($("<option></option>")
                  .attr("value", tanks[tankIndex].id)
-                 .text("Tank "+tanks[tankIndex].name));
+                 .text(tanks[tankIndex].name));
       }
       
       //populate sector select
@@ -208,7 +208,7 @@ var BoxStorage = {
             for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){
                $("#sector").append($("<option></option>")
                        .attr("value", sectors[sectorIndex].id)
-                       .text("Sector "+sectors[sectorIndex].facility));
+                       .text(sectors[sectorIndex].facility));
             }
          }
          else {//disable child selects
@@ -394,8 +394,6 @@ var BoxStorage = {
          url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
          async: false
       }).responseText;
-      
-      console.log(jsonText);
       
       var json = jQuery.parseJSON(jsonText);
       if(saveInWindow){
