@@ -568,7 +568,7 @@ class BoxStorage extends Repository{
                      $racks = array();
                      for($boxIndex = 0; $boxIndex < count($tempResult); $boxIndex++){
                         //create array of boxes inside rack if it doesnt exist
-                        if(strlen($tempResult[$boxIndex]['rack']) > 0){
+                        if(strlen($tempResult[$boxIndex]['rack']) > 0 && strlen($tempResult[$boxIndex]['rack_position']) > 0){
                            if(!isset($racks[$tempResult[$boxIndex]['rack']])){
                               $racks[$tempResult[$boxIndex]['rack']] = array();
                               $racks[$tempResult[$boxIndex]['rack']]['name'] = $tempResult[$boxIndex]['rack'];
@@ -587,7 +587,7 @@ class BoxStorage extends Repository{
                            //push box into parent rack
                            array_push($racks[$tempResult[$boxIndex]['rack']]['boxes'], $tempResult[$boxIndex]);
                         }
-                        else $this->Dbase->CreateLogEntry('box_storage: Unable to add box with box_id = '.$tempResult[$boxIndex]['box_id']." because its rack has not been specified", 'warnings');
+                        else $this->Dbase->CreateLogEntry('box_storage: Unable to add box with box_id = '.$tempResult[$boxIndex]['box_id']." because its rack or position on rack has not been specified", 'warnings');
                      }
                      
                      //change racks array from associative to index
