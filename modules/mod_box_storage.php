@@ -591,7 +591,16 @@ class BoxStorage extends Repository{
             }
             else $message = $this->Dbase->lastError;
          }
-         $this->Dbase->CreateLogEntry('mod_box_storage: tank details '.  print_r($result, true), 'fatal');
+         
+         $jsonArray = array();
+         $jsonArray['error'] = $message;
+         
+         if($result === 1) {
+            $result = array();
+         }
+         $jsonArray['data'] = $result;
+         $this->Dbase->CreateLogEntry('bod_box_storage: json for tank information -> '.json_encode($jsonArray), 'debug');
+         echo json_encode($jsonArray);
       }
       elseif (OPTIONS_REQUESTED_ACTION == "fetch_boxes") {
          //check if search criterial provided
