@@ -395,6 +395,8 @@ var BoxStorage = {
          async: false
       }).responseText;
       
+      console.log(jsonText);
+      
       var json = jQuery.parseJSON(jsonText);
       if(saveInWindow){
          window.tankData = json;
