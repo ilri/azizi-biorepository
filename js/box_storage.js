@@ -525,6 +525,7 @@ var BoxStorage = {
          source: suggestions,
          minLength: 1,
          select: function(event, ui) {
+            Console.log("option clicked");
             var key = ui.item.key;
             
             //split key to get respective indexes for tank, sector, rack, box and remove
