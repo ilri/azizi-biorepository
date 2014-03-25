@@ -741,10 +741,10 @@ class BoxStorage extends Repository{
          foreach ($data as $row) {
             //get other tank information tank -> sector -> rack
             $query = "SELECT a.rack, a.rack_position, b.facility AS sector, c.name AS tank ".
-                        "FROM ".Config::$config['azizi_db'].".boxes_def AS a".
-                        "INNER JOIN ".Config::$config['azizi_db'].".boxes_local_def AS b ON a.location = b.id".
-                        "INNER JOIN ".Config::$config['azizi_db'].".storage_facilities AS c ON b.facility_id = c.id".
-                        "WHERE a.box_id = ".$row['box_id'];
+                        " FROM ".Config::$config['azizi_db'].".boxes_def AS a".
+                        " INNER JOIN ".Config::$config['azizi_db'].".boxes_local_def AS b ON a.location = b.id".
+                        " INNER JOIN ".Config::$config['azizi_db'].".storage_facilities AS c ON b.facility_id = c.id".
+                        " WHERE a.box_id = ".$row['box_id'];
             $result = $this->Dbase->ExecuteQuery($query);
             $this->Dbase->CreateLogEntry('tank location details -> '.  print_r($result, true), 'debug');
             if(count($result) === 1){// only one row should be fetched
