@@ -667,7 +667,7 @@ class BoxStorage extends Repository{
 
                            //get retrieves on the box
                            $query = "SELECT * FROM ".Config::$config['lims_extension'].".retrieved_boxes WHERE box_def = ".$tempResult[$boxIndex]['box_id'];
-                           $tempResult[$boxIndex]['retrievs'] = $this->Dbase->ExecuteQuery($query);
+                           $tempResult[$boxIndex]['retrieves'] = $this->Dbase->ExecuteQuery($query);
                            if($tempResult[$boxIndex]['retrieves'] === 1){
                               $tempResult[$boxIndex]['retrieves'] = array();
                               $message = $this->Dbase->lastError;
