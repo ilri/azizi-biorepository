@@ -712,9 +712,9 @@ class BoxStorage extends Repository{
          }
 
          $startRow = ($_POST['page'] - 1) * $_POST['rp'];
-         $query = "SELECT a.*, b.name, b.rack, b.rack_position".
-                 " FROM removed_boxes AS a".
-                 " INNER JOIN boxes AS b ON a.box = b.id".
+         $query = "SELECT a.*, b.box_name, b.rack, b.rack_position".
+                 " FROM ".Config::$config['lims_extension'].".retrieved_boxes AS a".
+                 " INNER JOIN ".Config::$config['azizi_db'].".boxes_def AS c ON a.box_def = b.box_id".
                  " $criteria".
                  " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
          //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
@@ -733,16 +733,15 @@ class BoxStorage extends Repository{
          //reformat rows fetched from first query
          $rows = array();
          foreach ($data as $row) {
-            //get other tank information tank -> sector -> rack
-            $query = "SELECT a.label AS rack_label, b.label AS sector_label, b.tank AS tank_id ".
-                        "FROM boxes ".
-                        "INNER JOIN rack AS a ON boxes.rack = a.id ".
-                        "INNER JOIN tank_sector AS b ON a.tank_sector = b.id ".
-                        "WHERE boxes.id = ?";
-            $result = $this->Dbase->ExecuteQuery($query, array($row['box']));
-            $this->Dbase->CreateLogEntry('tank location details -> '.  print_r($result, true), 'debug');
+            $query = "SELECT a.rack, a.rack_position, b.facility AS sector, c.name AS tank ".
+                        " FROM ".Config::$config['azizi_db'].".boxes_def AS a".
+                        " INNER JOIN ".Config::$config['azizi_db'].".boxes_local_def AS b ON a.location = b.id".
+                        " INNER JOIN ".Config::$config['azizi_db'].".storage_facilities AS c ON b.facility_id = c.id".
+                        " WHERE a.box_id = ".$row['box_def'];
+            $result = $this->Dbase->ExecuteQuery($query);
+            $this->Dbase->CreateLogEntry('fetched row -> '.  print_r($row, true), 'debug');
             if(count($result) === 1){// only one row should be fetched
-               $location = "Tank ".$result[0]['tank_id']."  -> Sector ".$result[0]['sector_label']."  -> Rack ".$result[0]['rack_label']."  -> Position ".$row['rack_position'];
+               $location = $result[0]['tank']."  -> Sector ".$result[0]['sector']."  -> Rack ".$result[0]['rack']."  -> Position ".$row['rack_position'];
             }
             else{
                $location = "unknown";
