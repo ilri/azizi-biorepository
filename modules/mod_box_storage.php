@@ -541,9 +541,12 @@ class BoxStorage extends Repository{
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
       //get the last remove recored for the box/box being returned
-      $query = "UPDATE `removed_boxes` SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
+      $query = "UPDATE ".Config::$config['lims_extension'].".retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
       $now = date('Y-m-d H:i:s');
-      $result = $this->Dbase->ExecuteQuery($query, array($now, $_SESSION['username'], $_POST['return_comment'], $_POST['remove_id']));
+      $returnedBy = $_SESSION['username'];
+      if(strlen($returnedBy) === 0)$returnedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
+      
+      $result = $this->Dbase->ExecuteQuery($query, array($now, $returnedBy, $_POST['return_comment'], $_POST['remove_id']));
       if($result === 0){
          $message = "Unable to return box back into the system";
          $this->Dbase->CreateLogEntry('mod_box_storage: Unable to return box back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
