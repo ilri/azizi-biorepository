@@ -34,9 +34,12 @@ var BoxStorage = {
             async: false
          }).responseText;
          var responseJson = jQuery.parseJSON(responseText);
-         console.log(responseJson);
+         
          if(responseJson.error_message.length > 0){
             Notification.show({create:true, hide:true, updateText:false, text: responseJson.error_message, error:true});
+         }
+         else{
+            Notification.show({create:true, hide:true, updateText:false, text: "Return successfully recorded", error:false});
          }
          
          BoxStorage.setRemovedBoxSuggestions();
@@ -45,7 +48,50 @@ var BoxStorage = {
    },
    
    submitDeleteRequest: function(){
-      //TODO: do stuff here
+      if(this.validateDeleteInput()){
+         var formData = {delete_comment: $("#delete_comment").val(), box_id: $("#box_id").val()};
+         
+         var responseText = $.ajax({
+            url: "mod_ajax.php?page=box_storage&do=ajax&action=submit_delete_request",
+            type: "POST",
+            data: formData,
+            async: false
+         }).responseText;
+         var responseJson = $.parseJSON(responseText);
+         
+         if(responseJson.error_message.length > 0){
+            Notification.show({create:true, hide:true, updateText:false, text: responseJson.error_message, error:true});
+         }
+         else{
+            Notification.show({create:true, hide:true, updateText:false, text: "Box successfully deleted", error:false});
+         }
+         
+         BoxStorage.setDeleteBoxSuggestions();
+      }
+   },
+   
+   validateDeleteInput: function(){
+      if (typeof(String.prototype.trim) === "undefined") {
+         String.prototype.trim = function()
+         {
+            return String(this).replace(/^\s+|\s+$/g, '');
+         };
+      }
+      
+      //trim spaces from inputs 
+      $("#delete_comment").val($("#delete_comment").val().trim());
+      $("#box_label").val($("#box_label").val().trim());
+      
+      if($("#box_label").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the box label', error:true});
+         $("#box_label").focus();
+         return false;
+      }
+      if($("#box_id").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'The box you specified does not exist. Use provided suggestions', error:true});
+         $("#box_label").focus();
+         return false;
+      }
    },
    
    validateInsertInput: function(){

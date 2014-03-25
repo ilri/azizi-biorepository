@@ -25,15 +25,16 @@ class BoxStorage extends Repository{
        *    - add_box (do)
        *       - insert_box (action)
        *    - remove_box
-       *       -submit_request
+       *       - submit_request
        *    - return_box
-       *       -submit_return
+       *       - submit_return
        *    - delete_box
        *    - ajax
        *       - get_tank_details
        *       - fetch_boxes
        *       - fetch_removed_boxes
        *       - submit_return_request
+       *       - submit_delete_request
        *       - fetch_sample_types
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
@@ -466,7 +467,7 @@ class BoxStorage extends Repository{
    <div id="return_div">
       <legend>Box Information</legend>
       <div><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
-      <div><label for="delete_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
+      <div><label for="delete_comment">Comment</label><textarea cols="80" rows="4" id="delete_comment"></textarea></div>
       <div class="center" id="submit_button_div"><button type="button" id="submitButton">Delete</button></div>
    </div>
    <div id="location_div">
@@ -596,6 +597,34 @@ class BoxStorage extends Repository{
       if($result === 0){
          $message = "Unable to return box back into the system";
          $this->Dbase->CreateLogEntry('mod_box_storage: Unable to return box back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+      }
+      
+      if($fromAjaxRequest) {
+         $jsonArray = array();
+         
+         if(is_array($result)) $jsonArray = $result;
+         
+         return json_encode(array("data" => $jsonArray, "error_message" => $message));
+      }
+      else return $message;
+   }
+   
+   private function submitDeleteRequest($fromAjaxRequest = false){
+      $message = "";
+      $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
+      $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
+      if($result !== 1 && count($result) === 1){
+         $deletedBoxesLocId = $result[0]['id'];
+         $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
+         $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $_POST['box_id']));
+         if($result === 1){
+            $message = "Unable to delete the box";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
+         }
+      }
+      else{
+         $message = "Unable to delete the box";
+         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
       }
       
       if($fromAjaxRequest) {
@@ -819,6 +848,10 @@ class BoxStorage extends Repository{
       
       else if(OPTIONS_REQUESTED_ACTION === "submit_return_request"){
          die($this->submitReturnRequest(TRUE));
+      }
+      
+      else if(OPTIONS_REQUESTED_ACTION === "submit_delete_request"){
+         die($this->submitDeleteRequest(TRUE));
       }
       
       else if(OPTIONS_REQUESTED_ACTION === "fetch_sample_types"){
