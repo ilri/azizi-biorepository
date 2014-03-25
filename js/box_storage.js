@@ -94,6 +94,7 @@ var BoxStorage = {
          $("#box_label").focus();
          return false;
       }
+      return true;
    },
    
    validateInsertInput: function(){
