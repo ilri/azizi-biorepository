@@ -615,6 +615,7 @@ class BoxStorage extends Repository{
       $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
       if($result !== 1 && count($result) === 1){
          $deletedBoxesLocId = $result[0]['id'];
+         $this->Dbase->CreateLogEntry('mod_box_storage: deletedBoxesLocId = '.$deletedBoxesLocId, 'debug');
          $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
          $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $_POST['box_id']));
          if($result === 1){
