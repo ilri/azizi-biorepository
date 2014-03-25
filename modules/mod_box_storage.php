@@ -278,7 +278,7 @@ class BoxStorage extends Repository{
                </select>
             </div>
             <div>
-               <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" />
+               <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" /><input type="hidden" id="box_id" name="box_id" />
             </div>
          </div>
       </div>
@@ -574,63 +574,7 @@ class BoxStorage extends Repository{
     */
    private function ajax(){
       $message = "";
-      if(OPTIONS_REQUESTED_ACTION == "get_tank_details"){/*
-         //get tank details from monitoring database
-         $query = "SELECT * FROM ".Config::$config['monitoring_db'].".units";
-         $result = $this->Dbase->ExecuteQuery($query);
-         if($result !== 1){
-            for($tankIndex = 0; $tankIndex < count($result); $tankIndex++){
-               $result[$tankIndex]['sectors'] = array();
-               $query = "SELECT * FROM tank_sector WHERE tank = ".$result[$tankIndex]['TankID'];
-               $tempResult = $this->Dbase->ExecuteQuery($query);
-               if($tempResult !== 1){
-                  $result[$tankIndex]['sectors'] = $tempResult;
-                  for($sectorIndex = 0; $sectorIndex < count($result[$tankIndex]['sectors']); $sectorIndex++){
-                     $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = array();
-                     $query = "SELECT * FROM rack WHERE tank_sector = ".$result[$tankIndex]['sectors'][$sectorIndex]['id'];
-                     $tempResult = $this->Dbase->ExecuteQuery($query);
-                     if($tempResult !== 1){
-                        $result[$tankIndex]['sectors'][$sectorIndex]['racks'] = $tempResult;
-                        for($rackIndex = 0; $rackIndex < count($result[$tankIndex]['sectors'][$sectorIndex]['racks']); $rackIndex++){
-                           $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'] = array();
-                           $query = "SELECT * FROM boxes WHERE rack = ".$result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['id'];
-                           $tempResult = $this->Dbase->ExecuteQuery($query);
-                           if($tempResult !== 1){
-                              $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'] = $tempResult;
-                              for($boxIndex = 0; $boxIndex < count($result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes']); $boxIndex++){
-                                 $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'][$boxIndex]['removes'] = array();
-                                 $query = "SELECT * FROM removed_boxes WHERE box = ".$result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'][$boxIndex]['id'];
-                                 $tempResult = $this->Dbase->ExecuteQuery($query);
-                                 if($tempResult !== 1){
-                                    $result[$tankIndex]['sectors'][$sectorIndex]['racks'][$rackIndex]['boxes'][$boxIndex]['removes'] = $tempResult;
-                                 }
-                                 else $message = $this->Dbase->lastError;
-                              }
-                           }
-                           else $message = $this->Dbase->lastError;
-                        }
-                     }
-                     else $message = $this->Dbase->lastError;
-                  }
-               }
-               else $message = $this->Dbase->lastError;
-            }
-         }
-         else{
-            $message = $this->Dbase->lastError;
-         }
-         
-         //$this->Dbase->CreateLogEntry('tanks -> '.print_r($result, true), 'fatal');
-         $jsonArray = array();
-         $jsonArray['error'] = $message;
-         
-         if($result === 1) {
-            $result = array();
-         }
-         $jsonArray['data'] = $result;
-         $this->Dbase->CreateLogEntry('json for tank information -> '.json_encode($jsonArray), 'debug');
-         echo json_encode($jsonArray);*/
-         
+      if(OPTIONS_REQUESTED_ACTION == "get_tank_details"){
          //get tank details from azizi_lims
          $query = "SELECT * FROM ".Config::$config['azizi_db'].".storage_facilities";
          $result = $this->Dbase->ExecuteQuery($query);

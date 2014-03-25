@@ -396,8 +396,9 @@ var BoxStorage = {
          //show box label if purpose if for deleting box information or removing box
          if(forInsertion === false){
             $("#position").change(function(){
+               $("#box_label").val("");
+               $("#box_id").val("");
                if($("#position").val() !== ""){
-                  $("#box_label").val("");
                   var tankID = parseInt($("#tank").val());
                   var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
                   var sectorID = parseInt($("#sector").val());
@@ -411,6 +412,7 @@ var BoxStorage = {
                   for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
                      if(parseInt(boxes[boxIndex].rack_position) === position){
                         $("#box_label").val(boxes[boxIndex].box_name);
+                        $("#box_id").val(boxes[boxIndex].box_id);
                      }
                   }
                }
