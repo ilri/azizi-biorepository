@@ -430,7 +430,7 @@ class BoxStorage extends Repository{
       url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
       dataType: 'json',
       colModel : [
-         {display: 'Box Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
          {display: 'Returned by', name: 'returned_by', width: 120, sortable: true, align: 'center'},
