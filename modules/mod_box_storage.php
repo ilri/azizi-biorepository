@@ -47,7 +47,7 @@ class BoxStorage extends Repository{
 
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->homePage();
       if (OPTIONS_REQUESTED_SUB_MODULE == 'add_box') $this->addBox ();
-      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_box') $this->removeBox (); // remove a box temporarily from the LN2 tanks 
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_box') $this->retrieveBox (); // retrieve a box temporarily from the LN2 tanks 
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return_box') $this->returnBox (); // return a box that had been removed/borrowed
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_box') $this->deleteBox (); // delete box from database (with or without it's metadata)
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax') $this->ajax();
@@ -241,7 +241,7 @@ class BoxStorage extends Repository{
     * 
     * @param type $addInfo
     */
-   private function removeBox($addInfo = ''){
+   private function retrieveBox($addInfo = ''){
       if(OPTIONS_REQUESTED_ACTION === "submit_request"){
          $addInfo = $addInfo.$this->submitRemoveRequest();
       }
@@ -250,7 +250,7 @@ class BoxStorage extends Repository{
       ?>
    <?php echo $addInfo?>
 <div id="box_storage">
-   <h3 class="center">Remove Box</h3>
+   <h3 class="center">Retrieve a Box</h3>
    <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=box_storage&do=remove_box&action=submit_request" onsubmit="return BoxStorage.submitRemoveRequest();" >
       <div id="location_div">
          <legend>Box Location</legend>
@@ -516,35 +516,25 @@ class BoxStorage extends Repository{
    
    private function submitRemoveRequest(){
       $message = "";
-      //get the box in the selected position
-      $query = "SELECT id FROM boxes WHERE rack = ? AND rack_position = ?";
-      $result = $this->Dbase->ExecuteQuery($query,array($_POST['rack'], $_POST['position']));
-      if($result !== 1){
-         if(count($result) === 1){//only one box/tray should be in that position
-            $boxID = $result[0]['id'];
-            $now = date('Y-m-d H:i:s');
-            $columns = array("box", "removed_by", "removed_for", "purpose", "date_removed");
-            $colVals = array($boxID, $_SESSION['username'], $_POST['for_who'], $_POST['purpose'], $now);
-            if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
-               array_push($columns, "analysis");
-               array_push($colVals, $_POST['analysis_type']);
-            }
-            $result = $this->Dbase->InsertOnDuplicateUpdate("removed_boxes", $columns, $colVals);
-            if($result === 0){
-               $message = "Unable to remove box for the system.";
-               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
-            }
-         }
-         else{
-            $message = "It appears that more than one (". count($result) .") box is in the position specified. Unable to remove anything from the system";
-            $this->Dbase->CreateLogEntry('mod_box_storage: It appears that more than one ('. count($result) .') box is in the position specified. Unable to remove anything from the system', 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
-         }
+      
+      $now = date('Y-m-d H:i:s');
+      $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
+      $removedBy = $_SESSION['username'];
+      if(strlen($removedBy) === 0) $removedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
+      
+      $colVals = array($_POST['box_id'], $removedBy, $_POST['for_who'], $_POST['purpose'], $now);
+      
+      if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
+         array_push($columns, "analysis");
+         array_push($colVals, $_POST['analysis_type']);
       }
-      else{
-         $message = "Unable to remove the box from the system. No box was found in the specified tank position";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to locate box in the location rack_id:'.$_POST['rack'].' -> position:'. $_POST['position'].'. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['lims_extension'].".retrieved_boxes", $columns, $colVals);
+      
+      if($result === 0){
+         $message = "Unable to remove box for the system.";
+         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
       }
-      $columns = array();
+      
       return $message;
    }
    
