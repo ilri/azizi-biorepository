@@ -410,7 +410,7 @@ var BoxStorage = {
                   var position = parseInt($("#position").val());
                   for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){
                      if(parseInt(boxes[boxIndex].rack_position) === position){
-                        $("#box_label").val(boxes[boxIndex].name);
+                        $("#box_label").val(boxes[boxIndex].box_name);
                      }
                   }
                }
