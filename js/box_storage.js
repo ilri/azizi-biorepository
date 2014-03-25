@@ -493,7 +493,6 @@ var BoxStorage = {
    },
    
    setRemovedBoxSuggestions : function(){
-      Console.log("set removed box suggestions called");
       BoxStorage.resetReturnInput(true);
       var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
       
