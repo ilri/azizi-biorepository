@@ -334,7 +334,7 @@ class BoxStorage extends Repository{
       url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
       dataType: 'json',
       colModel : [
-         {display: 'Box Label', name: 'name', width: 100, sortable: true, align: 'center'},
+         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
          {display: 'For who', name: 'removed_for', width: 120, sortable: true, align: 'center'},
@@ -342,7 +342,7 @@ class BoxStorage extends Repository{
          {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
       ],
       searchitems : [
-         {display: 'Box Label', name : 'name'},
+         {display: 'Box Label', name : 'box_name'},
          {display: 'Removed by', name : 'removed_by'},
          {display: 'For who', name : 'removed_for'}
       ],
@@ -757,7 +757,7 @@ class BoxStorage extends Repository{
                $dateReturned = date( 'd/m/Y H:i:s', strtotime( $row['date_returned'] ));
                $returnedBy = $row['returned_by'];
             }
-            $rows[] = array("id" => $row['id'], "cell" => array("name" => $row['name'],"position" => $location, "removed_by" => $row["removed_by"], "returned_by" => $returnedBy, "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
+            $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'],"position" => $location, "removed_by" => $row["removed_by"], "returned_by" => $returnedBy, "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
          }
          $response = array(
              'total' => $dataCount,
