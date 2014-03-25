@@ -48,7 +48,9 @@ var BoxStorage = {
    },
    
    submitDeleteRequest: function(){
+      console.log("submite delete called");
       if(this.validateDeleteInput()){
+         console.log("trying to delete");
          var formData = {delete_comment: $("#delete_comment").val(), box_id: $("#box_id").val()};
          
          var responseText = $.ajax({
