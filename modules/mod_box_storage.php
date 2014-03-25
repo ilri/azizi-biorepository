@@ -746,7 +746,7 @@ class BoxStorage extends Repository{
                         " INNER JOIN ".Config::$config['azizi_db'].".storage_facilities AS c ON b.facility_id = c.id".
                         " WHERE a.box_id = ".$row['box_id'];
             $result = $this->Dbase->ExecuteQuery($query);
-            $this->Dbase->CreateLogEntry('tank location details -> '.  print_r($result, true), 'debug');
+            $this->Dbase->CreateLogEntry('fetched row -> '.  print_r($row, true), 'debug');
             if(count($result) === 1){// only one row should be fetched
                $location = $result[0]['tank']."  -> Sector ".$result[0]['sector']."  -> Rack ".$result[0]['rack']."  -> Position ".$row['rack_position'];
             }
