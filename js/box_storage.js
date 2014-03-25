@@ -579,7 +579,6 @@ var BoxStorage = {
          source: suggestions,
          minLength: 1,
          select: function(event, ui) {
-            Console.log("something selected");
             var key = ui.item.key;
             
             //split key to get respective indexes for tank, sector, rack, box and remove
@@ -590,7 +589,7 @@ var BoxStorage = {
             for(var i = 0; i<parentIndexes.length; i++){
                parentIndexes[i] = parseInt(parentIndexes[i]);
             }
-            if(parentIndexes.length === 5){
+            if(parentIndexes.length === 4){
                //set values of tank position inputs
                $("#tank").val(tanks[parentIndexes[0]].name);
                
