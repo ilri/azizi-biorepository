@@ -502,10 +502,10 @@ var BoxStorage = {
             for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){//iterate through all the racks
                var boxes = racks[rackIndex].boxes;
                for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
-                  var removes = boxes[boxIndex].removes;
-                  //get all the removes that dont have returns, should be a maximux of one
-                  for(var removeIndex = 0; removeIndex < removes.length; removeIndex++){
-                     if(typeof(removes[removeIndex].date_returned) === 'undefined' || removes[removeIndex].date_returned === null){
+                  var retrieves = boxes[boxIndex].retrieves;
+                  //get all the retrieves that dont have returns, should be a maximux of one
+                  for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
+                     if(typeof(retrieves[removeIndex].date_returned) === 'undefined' || retrieves[removeIndex].date_returned === null){
                         var keyValue = {value: boxes[boxIndex].name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex+'-'+removeIndex};
                         suggestions.push(keyValue);
                         break;//you should only have one remove without a return date associated with a box/box
@@ -543,7 +543,7 @@ var BoxStorage = {
                var box = rack.boxes[parentIndexes[3]];
                $("#position").val(box.rack_position);
                
-               var remove = box.removes[parentIndexes[4]];
+               var remove = box.retrieves[parentIndexes[4]];
                $("#remove_id").val(remove.id);
             }
          }
