@@ -44,6 +44,10 @@ var BoxStorage = {
       
    },
    
+   submitDeleteRequest: function(){
+      //TODO: do stuff here
+   },
+   
    validateInsertInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -489,6 +493,7 @@ var BoxStorage = {
    },
    
    setRemovedBoxSuggestions : function(){
+      Console.log("set removed box suggestions called");
       BoxStorage.resetReturnInput(true);
       var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
       
@@ -615,5 +620,17 @@ var BoxStorage = {
          $('#box_label').val('');
          $('#return_comment').val('');
       }
-   }
+   },
+   
+   resetDeleteInput: function(complete){
+      $("#tank").val('');
+      $("#sector").val('');
+      $("#rack").val('');
+      $("#position").val('');
+      $('#box_id').val('');
+      if(complete){
+         $('#box_label').val('');
+         $('#return_comment').val('');
+      }
+   },
 };
