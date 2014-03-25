@@ -267,9 +267,12 @@ var BoxStorage = {
                     .end()
                     .append('<option value=""></option>')//append a null option
                         .val('');
-            $("#rack").append($("<option></option>")
-                       .attr("value", "n£WR@ck")
-                       .text("Specify new rack"));
+                
+            if(forInsertion){//only provide the specify option if purpose is insertion of box
+               $("#rack").append($("<option></option>")
+                           .attr("value", "n£WR@ck")
+                           .text("Specify new rack"));
+            }
             
             var tankID = parseInt($("#tank").val());
             var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
