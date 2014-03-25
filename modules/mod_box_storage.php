@@ -201,7 +201,7 @@ class BoxStorage extends Repository{
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
          {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
-         {display: 'Moved by', name: 'added_by', width: 100, sortable: true, align: 'center'}
+         {display: 'Added by', name: 'added_by', width: 100, sortable: true, align: 'center'}
       ],
       searchitems : [
          {display: 'Box Label', name : 'box_name'},
