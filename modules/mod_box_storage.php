@@ -621,6 +621,19 @@ class BoxStorage extends Repository{
             $message = "Unable to delete the box";
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
          }
+         else{
+            $query = "UPDATE ".Config::$config['lims_extension'].".boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
+            $now = date('Y-m-d H:i:s');
+            $deletedBy = $_SESSION['username'];
+            
+            if(strlen($deletedBy) === 0) $deletedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
+            
+            $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
+            if($result === 1){
+               $message = "Unable to record extra information on the delete";
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to record details of the last box delete. Last error is '.$this->Dbase->lastError, 'fatal');
+            }
+         }
       }
       else{
          $message = "Unable to delete the box";
