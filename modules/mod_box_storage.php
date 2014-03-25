@@ -493,7 +493,7 @@ class BoxStorage extends Repository{
 </div>   
 <script type="text/javascript">
    $(document).ready(function(){
-      BoxStorage.setRemovedBoxSuggestions();
+      BoxStorage.setDeleteBoxSuggestions();
       
       $('#submitButton').click(function(){
          BoxStorage.submitDeleteRequest();
