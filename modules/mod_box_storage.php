@@ -755,7 +755,7 @@ class BoxStorage extends Repository{
             }
             
             $dateAdded = date('d/m/Y H:i:s', strtotime( $row['date_added'] ));
-            $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'],"sample_types" => $row['sample_types'],"position" => $location, "status" => $row["status"], "date_added" => $dateAdded, "added_by" => $row["added_by"]));
+            $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'],"sample_name" => $row['sample_name'],"position" => $location, "status" => $row["status"], "date_added" => $dateAdded, "added_by" => $row["added_by"]));
          }
          $response = array(
              'total' => $dataCount,
