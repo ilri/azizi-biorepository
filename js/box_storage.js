@@ -532,13 +532,13 @@ var BoxStorage = {
             }
             if(parentIndexes.length === 5){
                //set values of tank position inputs
-               $("#tank").val(tanks[parentIndexes[0]].TankID);
+               $("#tank").val(tanks[parentIndexes[0]].name);
                
                var sector = tanks[parentIndexes[0]].sectors[parentIndexes[1]];
-               $("#sector").val(sector.label);
+               $("#sector").val(sector.facility);
                
                var rack = sector.racks[parentIndexes[2]];
-               $("#rack").val(rack.label);
+               $("#rack").val(rack.name);
                
                var box = rack.boxes[parentIndexes[3]];
                $("#position").val(box.rack_position);
