@@ -714,7 +714,7 @@ class BoxStorage extends Repository{
          $startRow = ($_POST['page'] - 1) * $_POST['rp'];
          $query = "SELECT a.*, b.box_name, b.rack, b.rack_position".
                  " FROM ".Config::$config['lims_extension'].".retrieved_boxes AS a".
-                 " INNER JOIN ".Config::$config['azizi_db'].".boxes_def AS c ON a.box_def = b.box_id".
+                 " INNER JOIN ".Config::$config['azizi_db'].".boxes_def AS b ON a.box_def = b.box_id".
                  " $criteria".
                  " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
          //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
