@@ -506,7 +506,7 @@ var BoxStorage = {
                   //get all the retrieves that dont have returns, should be a maximux of one
                   for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
                      if(typeof(retrieves[removeIndex].date_returned) === 'undefined' || retrieves[removeIndex].date_returned === null){
-                        var keyValue = {value: boxes[boxIndex].name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex+'-'+removeIndex};
+                        var keyValue = {value: boxes[boxIndex].box_name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex+'-'+removeIndex};
                         suggestions.push(keyValue);
                         break;//you should only have one remove without a return date associated with a box/box
                      }
