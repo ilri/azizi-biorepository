@@ -550,6 +550,61 @@ var BoxStorage = {
       });
    },
    
+   setDeleteBoxSuggestions : function(){
+      BoxStorage.resetReturnInput(true);
+      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+      
+      //get all boxes that have been removed
+      var suggestions = new Array();
+      var tanks = tankData.data;
+      for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){//iterate through all the tanks
+         var sectors = tanks[tankIndex].sectors;
+         for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){//iterate through all the sectors
+            var racks = sectors[sectorIndex].racks;
+            for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){//iterate through all the racks
+               var boxes = racks[rackIndex].boxes;
+               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
+                  var keyValue = {value: boxes[boxIndex].box_name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex};
+                  suggestions.push(keyValue);
+               }
+            }
+         }
+      }
+      
+      $("#box_label").autocomplete({
+         source: suggestions,
+         minLength: 1,
+         select: function(event, ui) {
+            var key = ui.item.key;
+            
+            //split key to get respective indexes for tank, sector, rack, box and remove
+            //key looks something like: tankIndex-sectorIndex-rackIndex-boxIndex-removeIndex
+            var parentIndexes = key.split("-");
+            
+            //convert all the parent indexes to integers
+            for(var i = 0; i<parentIndexes.length; i++){
+               parentIndexes[i] = parseInt(parentIndexes[i]);
+            }
+            if(parentIndexes.length === 5){
+               //set values of tank position inputs
+               $("#tank").val(tanks[parentIndexes[0]].name);
+               
+               var sector = tanks[parentIndexes[0]].sectors[parentIndexes[1]];
+               $("#sector").val(sector.facility);
+               
+               var rack = sector.racks[parentIndexes[2]];
+               $("#rack").val(rack.name);
+               
+               var box = rack.boxes[parentIndexes[3]];
+               $("#position").val(box.rack_position);
+               
+               var boxID = box.box_id;
+               $("#box_id").val(boxID);
+            }
+         }
+      });
+   },
+   
    resetReturnInput: function(complete){
       $("#tank").val('');
       $("#sector").val('');

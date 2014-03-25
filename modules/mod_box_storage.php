@@ -465,7 +465,7 @@ class BoxStorage extends Repository{
    <h3 class="center">Delete Box</h3>
    <div id="return_div">
       <legend>Box Information</legend>
-      <div><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
+      <div><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
       <div><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
       <div class="center" id="submit_button_div"><button type="button" id="submitButton">Return</button></div>
    </div>
@@ -494,6 +494,19 @@ class BoxStorage extends Repository{
    <div id="returned_boxes"></div>
 </div>   
 <script type="text/javascript">
+   $(document).ready(function(){
+      BoxStorage.setRemovedBoxSuggestions();
+      
+      $('#submitButton').click(function(){
+         BoxStorage.submitReturnRequest();
+      });
+      
+      //clear the value the remove_id input when box_label input is changed
+      $('#box_label').change(function(){
+         console.log("remove_id cleared");
+         BoxStorage.resetReturnInput(false);
+      });
+   });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
