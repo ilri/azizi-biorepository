@@ -555,7 +555,7 @@ var BoxStorage = {
    },
    
    setDeleteBoxSuggestions : function(){
-      BoxStorage.resetReturnInput(true);
+      BoxStorage.resetDeleteInput(true);
       var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
       
       //get all boxes that have been removed
@@ -579,6 +579,7 @@ var BoxStorage = {
          source: suggestions,
          minLength: 1,
          select: function(event, ui) {
+            Console.log("something selected");
             var key = ui.item.key;
             
             //split key to get respective indexes for tank, sector, rack, box and remove

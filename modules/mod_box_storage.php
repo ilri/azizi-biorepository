@@ -501,7 +501,7 @@ class BoxStorage extends Repository{
       
       //clear the value the remove_id input when box_label input is changed
       $('#box_label').change(function(){
-         console.log("remove_id cleared");
+         console.log("box_id cleared");
          BoxStorage.resetDeleteInput(false);
       });
    });
