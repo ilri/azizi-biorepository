@@ -197,7 +197,7 @@ class BoxStorage extends Repository{
       dataType: 'json',
       colModel : [
          {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
-         {display: 'Sample Type', name: 'sample_name', width: 150, sortable: true, align: 'center'},
+         {display: 'Sample Type', name: 'sample_name', width: 120, sortable: true, align: 'left'},
          {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
          {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
          {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
