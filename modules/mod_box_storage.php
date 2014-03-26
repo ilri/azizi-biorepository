@@ -522,7 +522,7 @@ class BoxStorage extends Repository{
       url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes",
       dataType: 'json',
       colModel : [
-         {display: 'Box Label', name: 'box_name', width: 120, sortable: true, align: 'center'},
+         {display: 'Box Label', name: 'box_name', width: 140, sortable: true, align: 'center'},
          {display: 'Deleted by', name: 'deleted_by', width: 160, sortable: true, align: 'center'},
          {display: 'Date Deleted', name: 'date_deleted', width: 120, sortable: true, align: 'center'},
          {display: 'Comment', name: 'delete_comment', width: 380, sortable: true, align: 'left'}
