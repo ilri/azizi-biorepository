@@ -694,7 +694,9 @@ class BoxStorage extends Repository{
       $message = "";
       if(OPTIONS_REQUESTED_ACTION == "get_tank_details"){
          //get tank details from azizi_lims
-         $query = "SELECT * FROM ".Config::$config['azizi_db'].".storage_facilities";
+         $query = "SELECT * FROM ".Config::$config['lims_extension'].".storage_facilities AS a".
+                 " INNER JOIN ".Config::$config['azizi_db'].".storage_facilities  AS b ON a.id = b.id".
+                 " WHERE a.is_tank = 1";
          $result = $this->Dbase->ExecuteQuery($query);
          for($tankIndex = 0; $tankIndex < count($result); $tankIndex++){
             $result[$tankIndex]['sectors'] = array();
