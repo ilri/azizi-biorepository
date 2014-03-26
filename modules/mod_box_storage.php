@@ -35,6 +35,7 @@ class BoxStorage extends Repository{
        *       - fetch_removed_boxes
        *       - submit_return_request
        *       - submit_delete_request
+       *       - fetch_deleted_boxes
        *       - fetch_sample_types
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
@@ -438,7 +439,7 @@ class BoxStorage extends Repository{
          {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
       ],
       searchitems : [
-         {display: 'Box Label', name : 'name'},
+         {display: 'Box Label', name : 'box_name'},
          {display: 'Returned by', name : 'returned_by'},
          {display: 'Returned by', name : 'returned_by'},
          {display: 'For who', name : 'removed_for'}
@@ -446,7 +447,7 @@ class BoxStorage extends Repository{
       sortname : 'date_returned',
       sortorder : 'desc',
       usepager : true,
-      title : 'Stored Boxes',
+      title : 'Returned Boxes',
       useRp : true,
       rp : 10,
       showTableToggleBtn: false,
@@ -491,6 +492,7 @@ class BoxStorage extends Repository{
          </div>
       </div>
    </div>
+   <div id="deleted_boxes"></div>
 </div>   
 <script type="text/javascript">
    $(document).ready(function(){
@@ -507,6 +509,40 @@ class BoxStorage extends Repository{
       });
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
+   
+   //Javascript for making table
+   /*
+    * Table looks like:
+    *    Box Label | Deleted By | Date Deleted | Comment 
+    *    
+    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
+    * 
+    */
+   $("#deleted_boxes").flexigrid({
+      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes",
+      dataType: 'json',
+      colModel : [
+         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
+         {display: 'Deleted by', name: 'deleted_by', width: 120, sortable: true, align: 'center'},
+         {display: 'Date Deleted', name: 'date_deleted', width: 100, sortable: true, align: 'center'},
+         {display: 'Comment', name: 'delete_comment', width: 100, sortable: true, align: 'left'}
+      ],
+      searchitems : [
+         {display: 'Box Label', name : 'box_name'},
+         {display: 'Deleted by', name : 'deleted_by'}
+      ],
+      sortname : 'date_deleted',
+      sortorder : 'desc',
+      usepager : true,
+      title : 'Deleted Boxes',
+      useRp : true,
+      rp : 10,
+      showTableToggleBtn: false,
+      rpOptions: [10, 20, 50], //allowed per-page values
+      width: 900,
+      height: 260,
+      singleSelect: true
+   });
 </script>
       <?php
    }
@@ -850,6 +886,51 @@ class BoxStorage extends Repository{
                $returnedBy = $row['returned_by'];
             }
             $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'],"position" => $location, "removed_by" => $row["removed_by"], "returned_by" => $returnedBy, "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
+         }
+         $response = array(
+             'total' => $dataCount,
+             'page' => $_POST['page'],
+             'rows' => $rows
+         );
+
+         die(json_encode($response));
+      }
+      
+      else if(OPTIONS_REQUESTED_ACTION === "fetch_deleted_boxes"){
+         //check if search criterial provided
+         $criteriaArray = array();
+         if($_POST['query'] != "") {
+            $criteria = "WHERE {$_POST['qtype']} LIKE '%?%' AND date_deleted IS NOT NULL";
+            $criteriaArray[] = $_POST['query'];
+         }
+         else {
+            $criteria = "WHERE date_deleted IS NOT NULL";
+         }
+
+         $startRow = ($_POST['page'] - 1) * $_POST['rp'];
+         $query = "SELECT a.*".
+                 " FROM ".Config::$config['lims_extension'].".boxes_def AS a".
+                 " $criteria".
+                 " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
+         //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
+         $data = $this->Dbase->ExecuteQuery($query." LIMIT $startRow, {$_POST['rp']}" , $criteriaArray);
+
+         //check if any data was fetched
+         if($data === 1) die (json_encode (array('error' => true)));
+         
+         
+         $dataCount = $this->Dbase->ExecuteQuery($query,$criteriaArray);
+         if($dataCount === 1)
+            die (json_encode (array('error' => true)));
+         else
+            $dataCount = sizeof ($dataCount);
+         
+         //reformat rows fetched from first query
+         $rows = array();
+         foreach ($data as $row) {
+            $dateDeleted = date('d/m/Y H:i:s', strtotime( $row['date_deleted'] ));
+            
+            $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'], "deleted_by" => $row["deleted_by"], "date_deleted" => $dateDeleted, "delete_comment" => $row['delete_comment']));
          }
          $response = array(
              'total' => $dataCount,
