@@ -283,6 +283,28 @@ body {
    border-spacing: 20px 5px;
    padding-top: 30px;
 }
+
+#box_storage{
+   height: 850px;
+}
+#box_storage #meta_data_div, #box_storage #location_div, #box_storage #purpose_div, #box_storage #return_div {
+   float: left;
+   margin: 2px 4px 2px 80px;
+   height: 350px;
+   width: 350px;
+}
+#box_storage #box_label {
+   height: 30px;
+}
+#box_storage .flexigrid {
+   margin-left: 10px;
+}
+#box_storage #submit_button_div {
+   float: right;
+   width: 100px;
+   margin: 10px 100px 15px 0px;
+}
+
 #odk_table td{ height: 30px; }
 #odk_table input { height: 25px; }
 #odk_heading { text-align: center; margin: 10px 0px 0px 0px; }
