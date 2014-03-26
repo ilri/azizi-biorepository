@@ -525,7 +525,7 @@ class BoxStorage extends Repository{
          {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
          {display: 'Deleted by', name: 'deleted_by', width: 160, sortable: true, align: 'center'},
          {display: 'Date Deleted', name: 'date_deleted', width: 100, sortable: true, align: 'center'},
-         {display: 'Comment', name: 'delete_comment', width: 250, sortable: true, align: 'left'}
+         {display: 'Comment', name: 'delete_comment', width: 350, sortable: true, align: 'left'}
       ],
       searchitems : [
          {display: 'Box Label', name : 'box_name'},
