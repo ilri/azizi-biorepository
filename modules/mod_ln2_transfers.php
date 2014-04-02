@@ -192,7 +192,7 @@ class LN2Transferer extends Repository{
       ?>
 <div id='home'>
    <h3 class="center">Help</h3>
-   <div style="margin-left: 60px;">
+   <div style="margin-left: 60px; width: 750px;">
       <p>To record a Liquid Nitrogen (LN2) transfer:</p>
       <div style="margin-left: 20px; margin-bottom: 10px;">
          <li> Input the production level before the transfer</li>
