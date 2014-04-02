@@ -39,6 +39,7 @@ class LN2Transferer extends Repository{
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'submit_ln2_transfer') $this->submitNitrogenTrasfer ();
       else if (OPTIONS_REQUESTED_SUB_MODULE == 'fetch_ln2_transfers') $this->fetchTransferHistory ();
+      else if (OPTIONS_REQUESTED_SUB_MODULE == 'howto') $this->showHowto ();
    }
 
    /**
@@ -182,6 +183,32 @@ class LN2Transferer extends Repository{
       );
 
       die(json_encode($response));
+   }
+   
+   /**
+    * This function displays a help page for the users of the system
+    */
+   private function showHowto() {
+      ?>
+<div id='home'>
+   <h3 class="center">Help</h3>
+   <div>
+      <p>To record a Liquid Nitrogen (LN2) transfer:</p>
+      <li> 1. Input the production level before the tranfer</li>
+      <li> 2. Input the production level after the tranfer</li>
+      <li> 3. Input the pressure loss after the tranfer</li>
+      <li> 4. Click on the 'Submit' button</li>
+      <p>Your recording should be added to the table showing the last transfers made on the same page</p>
+   </div>
+   <div>
+      <p>Note that:</p>
+      <li> - You don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system</li>
+   </div>
+</div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=ln2_transfers\'>Back</a>');
+</script>
+<?php
    }
 }
 ?>

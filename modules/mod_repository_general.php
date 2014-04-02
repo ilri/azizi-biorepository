@@ -302,7 +302,14 @@ class Repository extends DBase{
       if (OPTIONS_REQUEST_TYPE == 'ajax') return;
       //display the credentials of the person who is logged in
       Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_type']}";
-      echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a></span></div>";
+      echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a>";
+      
+      //show the howto link for LN2 engineers
+      if(OPTIONS_REQUESTED_MODULE === "ln2_transfers" ){
+         echo " | <a href='?page=ln2_transfers&do=howto'>Howto</a>";
+      }
+      
+      echo "</span></div>";
       return 0;
    }
 
