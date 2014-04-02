@@ -306,7 +306,7 @@ class Repository extends DBase{
       
       //show the howto link for LN2 engineers 
       if(OPTIONS_REQUESTED_MODULE === "ln2_transfers" ){
-         echo " | <a href='?page=ln2_transfers&do=howto'>Howto</a>";
+         echo " | <a href='?page=ln2_transfers&do=howto'>Help</a>";
       }
       
       echo "</span></div>";
