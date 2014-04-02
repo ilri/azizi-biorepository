@@ -304,7 +304,7 @@ class Repository extends DBase{
       Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_type']}";
       echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a>";
       
-      //show the howto link for LN2 engineers
+      //show the howto link for LN2 engineers 
       if(OPTIONS_REQUESTED_MODULE === "ln2_transfers" ){
          echo " | <a href='?page=ln2_transfers&do=howto'>Howto</a>";
       }
