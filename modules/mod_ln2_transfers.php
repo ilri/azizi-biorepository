@@ -200,14 +200,14 @@ class LN2Transferer extends Repository{
          <li> Input the pressure loss after the transfer</li>
          <li> Click on the 'Submit' button</li>
       </div>
-      <p>Your recording should be added to the table showing the last transfers made on the same page</p>
+      <p>Your recording should be added to the table showing the last transfers made on the same page. Note that you don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system.</p>
    </div>
-   <div style="margin-left: 60px; margin-bottom: 100px;">
-      <p>Note that:</p>
+   <!--<div style="margin-left: 60px; margin-bottom: 100px;">
+      <p>For further assistance please contact:</p>
       <div style="margin-left: 20px; margin-bottom: 10px;">
-         <li> You don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system. </li>
+         <li>Absolomon Kihara</li>
       </div>
-   </div>
+   </div>-->
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=ln2_transfers\'>Back</a>');
