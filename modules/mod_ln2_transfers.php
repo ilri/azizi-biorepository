@@ -192,19 +192,21 @@ class LN2Transferer extends Repository{
       ?>
 <div id='home'>
    <h3 class="center">Help</h3>
-   <div>
+   <div style="margin-left: 60px;">
       <p>To record a Liquid Nitrogen (LN2) transfer:</p>
-      <div>
-         <li> 1. Input the production level before the tranfer</li>
-         <li> 2. Input the production level after the tranfer</li>
-         <li> 3. Input the pressure loss after the tranfer</li>
-         <li> 4. Click on the 'Submit' button</li>
+      <div style="margin-left: 20px; margin-bottom: 10px;">
+         <li> Input the production level before the transfer</li>
+         <li> Input the production level after the transfer</li>
+         <li> Input the pressure loss after the transfer</li>
+         <li> Click on the 'Submit' button</li>
       </div>
       <p>Your recording should be added to the table showing the last transfers made on the same page</p>
    </div>
-   <div>
+   <div style="margin-left: 60px; margin-bottom: 100px;">
       <p>Note that:</p>
-      <li> - You don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system. </li>
+      <div style="margin-left: 20px; margin-bottom: 10px;">
+         <li> You don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system. </li>
+      </div>
    </div>
 </div>
 <script type="text/javascript">
