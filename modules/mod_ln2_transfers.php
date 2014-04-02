@@ -202,7 +202,7 @@ class LN2Transferer extends Repository{
    </div>
    <div>
       <p>Note that:</p>
-      <li> - You don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system.</li>
+      <li> - You don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system. </li>
    </div>
 </div>
 <script type="text/javascript">
