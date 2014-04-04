@@ -301,7 +301,7 @@ body {
 #box_storage label{margin-left: 7px;}
 #box_storage input, #box_storage select{margin-left: 4px;}
 #box_details, #box_location, hr{width: 100%;}
-#box_details .left-align{width: 150px; margin: 5px;}
+#box_details .form-group, #box_details .left-align{width: 150px; margin: 5px;}
 #box_location .left-align{width: 130px; margin: 5px 2px;}
 #box_location select, #box_location input{width: 120px; margin: 5px 2px;}
 #box_details select{width: 180px; margin: 5px 2px;}
