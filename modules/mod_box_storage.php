@@ -774,7 +774,7 @@ class BoxStorage extends Repository{
       $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by, e.description as sample_type from '. Config::$config['lims_extension'] .'.lcmod_boxes_def as a '.
           'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
           'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-          'inner join '. Config::$config['lims_extension'] .'.users as d on a.added_by = d.id '.
+          'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
           'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
 
 //      echo $query;
