@@ -93,7 +93,8 @@ class BoxStorage extends Repository{
          //re-open the db connection using a profile with rw permissions
          //changing the static config values does not seem to work
          $newConfig = Config::$config;
-         $newConfig['user'] = $newConfig['rw_user']; $newConfig['pass'] = $newConfig['rw_pass'];
+         $newConfig['user'] = $newConfig['rw_user'];
+         $newConfig['pass'] = $newConfig['rw_pass'];
          $this->Dbase->InitializeConnection($newConfig);
          if(is_null($this->Dbase->dbcon)) {
             ob_start();
@@ -114,6 +115,7 @@ class BoxStorage extends Repository{
          return;
       }
       echo "<pre>".print_r($newConfig, true)."</pre>";
+      echo "<pre>".print_r(Config::$config, true)."</pre>";
       $query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
       $sampleTypes = $this->Dbase->ExecuteQuery($query);
       if($sampleTypes == 1){
