@@ -698,10 +698,9 @@ class BoxStorage extends Repository{
               " INNER JOIN " . Config::$config['azizi_db'] . ".storage_facilities  AS b ON a.id = b.id" .
               " WHERE a.is_tank = 1";
       $result = $this->Dbase->ExecuteQuery($query);
-      echo print_r($result, true);
       for ($tankIndex = 0; $tankIndex < count($result); $tankIndex++) {
          $result[$tankIndex]['sectors'] = array();
-         $query = "SELECT id, facility, racks_nbr, rack_pos, facility_id FROM " . Config::$config['azizi_db'] . ".boxes_local_def WHERE facility_id = " . $result[$tankIndex]['id'];
+         $query = "SELECT * FROM " . Config::$config['azizi_db'] . ".boxes_local_def WHERE facility_id = " . $result[$tankIndex]['id'];
          $tempResult = $this->Dbase->ExecuteQuery($query);
          if ($tempResult !== 1) {
             $result[$tankIndex]['sectors'] = $tempResult;
