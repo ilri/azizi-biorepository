@@ -91,8 +91,10 @@ class BoxStorage extends Repository{
 <?php
       if(OPTIONS_REQUESTED_ACTION === "insert_box"){
          //re-open the db connection using a profile with rw permissions
-         Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
-         $this->Dbase->InitializeConnection();
+         //changing the static config values does not seem to work
+         $newConfig = Config::$config;
+         $newConfig['user'] = $newConfig['rw_user']; $newConfig['pass'] = $newConfig['rw_pass'];
+         $this->Dbase->InitializeConnection($newConfig);
          if(is_null($this->Dbase->dbcon)) {
             ob_start();
             Repository::LoginPage(OPTIONS_MSSG_DB_CON_ERROR);
