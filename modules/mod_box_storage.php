@@ -37,6 +37,7 @@ class BoxStorage extends Repository{
        *       - submit_delete_request
        *       - fetch_deleted_boxes
        *       - fetch_sample_types
+       * 
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/box_storage.js'></script>";
