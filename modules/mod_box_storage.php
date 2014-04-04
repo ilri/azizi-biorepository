@@ -95,6 +95,8 @@ class BoxStorage extends Repository{
          $newConfig = Config::$config;
          $newConfig['user'] = $newConfig['rw_user'];
          $newConfig['pass'] = $newConfig['rw_pass'];
+         echo "<pre>".print_r($newConfig, true)."</pre>";
+         echo "<pre>".print_r(Config::$config, true)."</pre>";
          $this->Dbase->InitializeConnection($newConfig);
          if(is_null($this->Dbase->dbcon)) {
             ob_start();
@@ -114,8 +116,6 @@ class BoxStorage extends Repository{
          $this->RepositoryHomePage($this->Dbase->lastError);
          return;
       }
-      echo "<pre>".print_r($newConfig, true)."</pre>";
-      echo "<pre>".print_r(Config::$config, true)."</pre>";
       $query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
       $sampleTypes = $this->Dbase->ExecuteQuery($query);
       if($sampleTypes == 1){
