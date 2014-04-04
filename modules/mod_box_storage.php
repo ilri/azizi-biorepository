@@ -557,7 +557,7 @@ class BoxStorage extends Repository{
       if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
       //get the user id
-      $query = 'select id from '. Config::$config['lims_extension'] .'.users where login = :login';
+      $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
       $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
       if($userId == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
@@ -575,10 +575,10 @@ class BoxStorage extends Repository{
       $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
       if($result !== 1) {
          $boxId = $this->Dbase->dbcon->lastInsertId();
-         //insert extra information in lims_extension database
+         //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $insertQuery = 'insert into '. Config::$config['lims_extension'] .'.lcmod_boxes_def(box_id, status, features, sample_types, date_added, added_by) values(:box_id, :status, :features, :sample_types, :date_added, :added_by)';
+         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, features, sample_types, date_added, added_by) values(:box_id, :status, :features, :sample_types, :date_added, :added_by)';
          $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'features' => $_POST['features'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy);
          $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
@@ -616,7 +616,7 @@ class BoxStorage extends Repository{
          array_push($columns, "analysis");
          array_push($colVals, $_POST['analysis_type']);
       }
-      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['lims_extension'].".lcmod_retrieved_boxes", $columns, $colVals);
+      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['dbase'].".lcmod_retrieved_boxes", $columns, $colVals);
 
       if($result === 0){
          $message = "Unable to remove box for the system.";
@@ -629,7 +629,7 @@ class BoxStorage extends Repository{
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
       //get the last remove recored for the box/box being returned
-      $query = "UPDATE ".Config::$config['lims_extension'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
+      $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
       $now = date('Y-m-d H:i:s');
       $returnedBy = $_SESSION['username'];
       if(strlen($returnedBy) === 0)$returnedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
@@ -664,7 +664,7 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
          }
          else{
-            $query = "UPDATE ".Config::$config['lims_extension'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
+            $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
             $now = date('Y-m-d H:i:s');
             $deletedBy = $_SESSION['username'];
 
@@ -694,13 +694,13 @@ class BoxStorage extends Repository{
 
    private function getTankDetails() {
       //get tank details from azizi_lims
-      $query = "SELECT * FROM " . Config::$config['lims_extension'] . ".lcmod_storage_facilities AS a" .
+      $query = "SELECT b.id, b.name FROM " . Config::$config['dbase'] . ".lcmod_storage_facilities AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".storage_facilities  AS b ON a.id = b.id" .
               " WHERE a.is_tank = 1";
       $result = $this->Dbase->ExecuteQuery($query);
       for ($tankIndex = 0; $tankIndex < count($result); $tankIndex++) {
          $result[$tankIndex]['sectors'] = array();
-         $query = "SELECT * FROM " . Config::$config['azizi_db'] . ".boxes_local_def WHERE facility_id = " . $result[$tankIndex]['id'];
+         $query = "SELECT id, facility, racks_nbr, rack_pos, facility_id FROM " . Config::$config['azizi_db'] . ".boxes_local_def WHERE facility_id = " . $result[$tankIndex]['id'];
          $tempResult = $this->Dbase->ExecuteQuery($query);
          if ($tempResult !== 1) {
             $result[$tankIndex]['sectors'] = $tempResult;
@@ -722,15 +722,15 @@ class BoxStorage extends Repository{
                            $racks[$tempResult[$boxIndex]['rack']]['boxes'] = array();
                         }
 
-                        //get extra data for box in boxes_def table in lims_extension database
-                        $query = "SELECT * FROM " . Config::$config['lims_extension'] . ".lcmod_boxes_def WHERE box_id = " . $tempResult[$boxIndex]['box_id'];
+                        //get extra data for box in boxes_def table in dbase database
+                        $query = "SELECT * FROM " . Config::$config['dbase'] . ".lcmod_boxes_def WHERE box_id = " . $tempResult[$boxIndex]['box_id'];
                         $extraData = $this->Dbase->ExecuteQuery($query);
                         if (count($extraData) === 1) {
                            $tempResult[$boxIndex] = array_merge($tempResult[$boxIndex], $extraData[0]);
                         }
 
                         //get retrieves on the box
-                        $query = "SELECT * FROM " . Config::$config['lims_extension'] . ".lcmod_retrieved_boxes WHERE box_def = " . $tempResult[$boxIndex]['box_id'];
+                        $query = "SELECT * FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes WHERE box_def = " . $tempResult[$boxIndex]['box_id'];
                         $tempResult[$boxIndex]['retrieves'] = $this->Dbase->ExecuteQuery($query);
                         if ($tempResult[$boxIndex]['retrieves'] === 1) {
                            $tempResult[$boxIndex]['retrieves'] = array();
@@ -797,7 +797,7 @@ class BoxStorage extends Repository{
 
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
       $query = "SELECT a.*, b.box_name, b.rack, b.rack_position" .
-              " FROM " . Config::$config['lims_extension'] . ".lcmod_retrieved_boxes AS a" .
+              " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
               " $criteria" .
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
@@ -863,7 +863,7 @@ class BoxStorage extends Repository{
 
       $startRow = ($_POST['page'] - 1) * $_POST['rp'];
       $query = "SELECT a.*, b.*" .
-              " FROM " . Config::$config['lims_extension'] . ".lcmod_boxes_def AS a" .
+              " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
               " $criteria" .
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
