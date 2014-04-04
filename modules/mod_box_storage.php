@@ -694,7 +694,7 @@ class BoxStorage extends Repository{
 
    private function getTankDetails() {
       //get tank details from azizi_lims
-      $query = "SELECT b.id, b.name FROM " . Config::$config['lims_extension'] . ".lcmod_storage_facilities AS a" .
+      $query = "SELECT * FROM " . Config::$config['lims_extension'] . ".lcmod_storage_facilities AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".storage_facilities  AS b ON a.id = b.id" .
               " WHERE a.is_tank = 1";
       $result = $this->Dbase->ExecuteQuery($query);
