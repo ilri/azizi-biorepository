@@ -113,7 +113,7 @@ class BoxStorage extends Repository{
          $this->RepositoryHomePage($this->Dbase->lastError);
          return;
       }
-      print_r(Config::$config);
+      print_r($newConfig);
       $query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
       $sampleTypes = $this->Dbase->ExecuteQuery($query);
       if($sampleTypes == 1){
