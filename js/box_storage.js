@@ -18,7 +18,7 @@ var BoxStorage = {
       return false;
    },
 
-   initiateBoxesGrid: function(){
+   initiateAddBoxesGrid: function(){
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
@@ -48,40 +48,36 @@ var BoxStorage = {
       }
       else{ $("#tank_boxes").jqxGrid({source: boxesAdapter}); }
    },
+   
+   initiateRetrievedBoxesGrid: function(){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+      };
 
-   gridPageChange: function(){
-      alert('wtf');
-   },
+      var boxesAdapter = new $.jqx.dataAdapter(source);
 
-   old_initiateBoxesGrid: function(){
-      $("#tank_boxes").flexigrid({
-         url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes",
-         dataType: 'json',
-         colModel : [
-            {display: 'Box Id', name: 'box_id', visible: false},
-            {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
-            {display: 'Sample Type', name: 'sample_name', width: 130, sortable: true, align: 'left'},
-            {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
-            {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
-            {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
-            {display: 'Added by', name: 'added_by', width: 100, sortable: true, align: 'center'}
-         ],
-         searchitems : [
-            {display: 'Box Label', name : 'box_name'},
-            {display: 'Sample Type', name : 'sample_name'}
-         ],
-         sortname : 'date_added',
-         sortorder : 'desc',
-         usepager : true,
-         title : 'Stored Boxes',
-         useRp : true,
-         rp : 10,
-         showTableToggleBtn: false,
-         rpOptions: [10, 20, 50], //allowed per-page values
-         width: 900,
-         height: 260,
-         singleSelect: true
-      });
+      // create jqxgrid
+      if($('#removed_boxes :regex(class, jqx\-grid)').length === 0){
+         $("#removed_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            theme: theme,
+            pageable: true,
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Tank Position', datafield: 'position', width: 205},
+               {text: 'Removed By', datafield: 'removed_by', width: 220},
+               {text: 'For Who', datafield: 'removed_for', width: 110},
+               {text: 'Date Removed', datafield: 'date_removed', width: 90},
+               {text: 'Date Returned', datafield: 'date_returned', width: 180}
+            ]
+         });
+      }
+      else{ $("#removed_boxes").jqxGrid({source: boxesAdapter}); }
    },
 
    submitRemoveRequest: function(){

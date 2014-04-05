@@ -86,8 +86,8 @@ class BoxStorage extends Repository{
    private function addBox($addInfo = ''){
       Repository::jqGridFiles();
 ?>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
 <?php
       if(OPTIONS_REQUESTED_ACTION === "insert_box"){
          //re-open the db connection using a profile with rw permissions
@@ -196,7 +196,7 @@ class BoxStorage extends Repository{
 <script type="text/javascript">
    $(document).ready( function() {
       BoxStorage.loadTankData(true);
-      BoxStorage.initiateBoxesGrid();
+      BoxStorage.initiateAddBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
 
@@ -232,6 +232,11 @@ class BoxStorage extends Repository{
     * @param type $addInfo
     */
    private function retrieveBox($addInfo = ''){
+      Repository::jqGridFiles();//load requisite jqGrid javascript files
+?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<?php
       if(OPTIONS_REQUESTED_ACTION === "submit_request"){
          $addInfo = $addInfo.$this->submitRemoveRequest();
       }
@@ -309,6 +314,8 @@ class BoxStorage extends Repository{
             $("#analysis_type_div").hide();
          }
       });
+      
+      BoxStorage.initiateRetrievedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
 
@@ -320,7 +327,7 @@ class BoxStorage extends Repository{
     *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
     *
     */
-   $("#removed_boxes").flexigrid({
+   /*$("#removed_boxes").flexigrid({
       url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
       dataType: 'json',
       colModel : [
@@ -347,7 +354,7 @@ class BoxStorage extends Repository{
       width: 900,
       height: 260,
       singleSelect: true
-   });
+   });*/
 </script>
       <?php
    }
@@ -778,13 +785,13 @@ class BoxStorage extends Repository{
    }
 
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by, e.description as sample_type from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
-          'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
-          'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-          'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-          'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
-
-//      echo $query;
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by, e.description as sample_type '.
+              'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
+              'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
+              'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
+              'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+              'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
+      
       $result = $this->Dbase->ExecuteQuery($query);
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
 
@@ -793,69 +800,17 @@ class BoxStorage extends Repository{
    }
 
    private function fetchRemovedBoxes() {
-      //check if search criterial provided
-      $criteriaArray = array();
-      if ($_POST['query'] != "") {
-         $criteria = "WHERE {$_POST['qtype']} LIKE '%?%'";
-         $criteriaArray[] = $_POST['query'];
-      } else {
-         $criteria = "";
-      }
-
-      $startRow = ($_POST['page'] - 1) * $_POST['rp'];
-      $query = "SELECT a.*, b.box_name, b.rack, b.rack_position" .
+      //TODO: refere to users table
+      $query = "SELECT a.id, a.removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, a.retuned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
               " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
-              " $criteria" .
-              " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
-      //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
-      $data = $this->Dbase->ExecuteQuery($query . " LIMIT $startRow, {$_POST['rp']}", $criteriaArray);
-
-      //check if any data was fetched
-      if ($data === 1)
-         die(json_encode(array('error' => true)));
-
-
-      $dataCount = $this->Dbase->ExecuteQuery($query, $criteriaArray);
-      if ($dataCount === 1)
-         die(json_encode(array('error' => true)));
-      else
-         $dataCount = sizeof($dataCount);
-
-      //reformat rows fetched from first query
-      $rows = array();
-      foreach ($data as $row) {
-         $query = "SELECT a.rack, a.rack_position, b.facility AS sector, c.name AS tank " .
-                 " FROM " . Config::$config['azizi_db'] . ".boxes_def AS a" .
-                 " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS b ON a.location = b.id" .
-                 " INNER JOIN " . Config::$config['azizi_db'] . ".storage_facilities AS c ON b.facility_id = c.id" .
-                 " WHERE a.box_id = " . $row['box_def'];
-         $result = $this->Dbase->ExecuteQuery($query);
-         $this->Dbase->CreateLogEntry('fetched row -> ' . print_r($row, true), 'debug');
-         if (count($result) === 1) {// only one row should be fetched
-            $location = $result[0]['tank'] . "  -> Sector " . $result[0]['sector'] . "  -> Rack " . $result[0]['rack'] . "  -> Position " . $row['rack_position'];
-         } else {
-            $location = "unknown";
-         }
-
-         $dateRemoved = date('d/m/Y H:i:s', strtotime($row['date_removed']));
-
-         if (is_null($row['date_returned'])) {
-            $dateReturned = "Not returned";
-            $returnedBy = $dateReturned;
-         } else {
-            $dateReturned = date('d/m/Y H:i:s', strtotime($row['date_returned']));
-            $returnedBy = $row['returned_by'];
-         }
-         $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'], "position" => $location, "removed_by" => $row["removed_by"], "returned_by" => $returnedBy, "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
-      }
-      $response = array(
-          'total' => $dataCount,
-          'page' => $_POST['page'],
-          'rows' => $rows
-      );
-
-      die(json_encode($response));
+              " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS c ON b.location = c.id";
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      header("Content-type: application/json");
+      die("{'data':" . json_encode($result) . "}");
    }
 
    private function fetchDeletedBoxes() {
