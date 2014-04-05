@@ -566,7 +566,7 @@ class BoxStorage extends Repository{
       }
       $addedBy = $userId[0]['id'];
       
-      echo $addedBy." ".$_SESSION['username'];
+      echo "<pre>" . $addedBy." ----- ".$_SESSION['username']. "</pre>";
 
       $this->Dbase->StartTrans();
       $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper)';
