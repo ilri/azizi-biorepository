@@ -561,6 +561,7 @@ class BoxStorage extends Repository{
          $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
          $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
       }
+      //for some reason session['username'] is not set for some users but surname and onames are set
       else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
          $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
          $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
@@ -571,8 +572,6 @@ class BoxStorage extends Repository{
          return;
       }
       $addedBy = $userId[0]['id'];
-      
-      echo "<pre>" . $addedBy." ----- ".$_SESSION['username']. "----".$_SESSION['surname'].$_SESSION['onames']."</pre>";
 
       $this->Dbase->StartTrans();
       $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
