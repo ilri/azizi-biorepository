@@ -558,13 +558,13 @@ class BoxStorage extends Repository{
 
       //get the user id
       $userId = 1;
-      if(isset($_SESSION['username']) && strlen($_SESSION['username']) > 0){
+      if(strlen($_SESSION['username']) > 0){
          $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
          $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
       }
-      else if(isset ($_SESSION['surname']) && strlen($_SESSION['surname']) > 0 && isset ($_SESSION['onames']) && strlen($_SESSION['onames']) > 0){
+      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
          $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['sname'], 'onames' => $_SESSION['onames']));
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
       }
       if($userId == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
