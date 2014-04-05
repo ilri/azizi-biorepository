@@ -230,7 +230,7 @@ class BoxStorage extends Repository{
     * This function displays the Remove Box screen. Submissions handled using webserver requests i.e POST and GET
     *
     * @param type $addInfo
-    */
+    */ 
    private function retrieveBox($addInfo = ''){
       Repository::jqGridFiles();//load requisite jqGrid javascript files
 ?>
