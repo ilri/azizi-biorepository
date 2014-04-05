@@ -557,8 +557,15 @@ class BoxStorage extends Repository{
       if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
       //get the user id
-      $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-      $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      $userId = 1;
+      if(isset($_SESSION['username']) && strlen($_SESSION['username']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      }
+      else if(isset ($_SESSION['surname']) && strlen($_SESSION['surname']) > 0 && isset ($_SESSION['onames']) && strlen($_SESSION['onames']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['sname'], 'onames' => $_SESSION['onames']));
+      }
       if($userId == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
          $this->homePage('There was an error while saving the box');
