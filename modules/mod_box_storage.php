@@ -539,8 +539,7 @@ class BoxStorage extends Repository{
       $message = "";
 
       //generate box size that lims can understand
-      $boxSizeInLIMS = GeneralTasks::NumericPosition2LCPosition(1, $_POST['box_size']);
-      $boxSizeInLIMS = $boxSizeInLIMS.".".GeneralTasks::NumericPosition2LCPosition($_POST['box_size'], $_POST['box_size']);
+      $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
 
       //change keeper to biorepository manger if box is in temp position
       $ownerID = $_POST['owner'];
