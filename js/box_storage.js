@@ -60,8 +60,8 @@ var BoxStorage = {
       var boxesAdapter = new $.jqx.dataAdapter(source);
 
       // create jqxgrid
-      if($('#removed_boxes :regex(class, jqx\-grid)').length === 0){
-         $("#removed_boxes").jqxGrid({
+      if($('#tank_boxes :regex(class, jqx\-grid)').length === 0){
+         $("#tank_boxes").jqxGrid({
             width: 905,
             height: 400,
             source: boxesAdapter,
