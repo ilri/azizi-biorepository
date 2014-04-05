@@ -300,7 +300,7 @@ class BoxStorage extends Repository{
       </div>
       <div class="center" id="submit_button_div"><input type="submit" value="Retrieve" name="submitButton" id="submitButton"/></div>
    </form>
-   <div id="tank_boxes"></div>
+   <div id="retrieved_boxes"></div>
 </div>
 
 <script type="text/javascript">

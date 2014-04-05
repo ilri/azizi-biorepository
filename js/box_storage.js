@@ -60,8 +60,8 @@ var BoxStorage = {
       var boxesAdapter = new $.jqx.dataAdapter(source);
 
       // create jqxgrid
-      if($('#tank_boxes').length === 0){ //element does not exist in DOM
-         $("#tank_boxes").jqxGrid({
+      if($('#retrieved_boxes').length === 0){ //element does not exist in DOM
+         $("#retrieved_boxes").jqxGrid({
             width: 905,
             height: 400,
             source: boxesAdapter,
