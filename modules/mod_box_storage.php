@@ -92,7 +92,7 @@ class BoxStorage extends Repository{
       if(OPTIONS_REQUESTED_ACTION === "insert_box"){
          //re-open the db connection using a profile with rw permissions
          Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
-         echo "<pre>".print_r(Config::$config, true)."</pre>";
+         
          $this->Dbase->InitializeConnection();
          if(is_null($this->Dbase->dbcon)) {
             ob_start();
@@ -565,6 +565,8 @@ class BoxStorage extends Repository{
          return;
       }
       $addedBy = $userId[0]['id'];
+      
+      echo $addedBy." ".$_SESSION['username'];
 
       $this->Dbase->StartTrans();
       $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper)';
