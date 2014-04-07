@@ -318,43 +318,6 @@ class BoxStorage extends Repository{
       BoxStorage.initiateRetrievedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
-
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box Label | Location | Removed By | For Who | Date Removed | Date Returned
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
-   /*$("#removed_boxes").flexigrid({
-      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
-      dataType: 'json',
-      colModel : [
-         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
-         {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
-         {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
-         {display: 'For who', name: 'removed_for', width: 120, sortable: true, align: 'center'},
-         {display: 'Date Removed', name: 'date_removed', width: 100, sortable: true, align: 'center'},
-         {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
-      ],
-      searchitems : [
-         {display: 'Box Label', name : 'box_name'},
-         {display: 'Removed by', name : 'removed_by'},
-         {display: 'For who', name : 'removed_for'}
-      ],
-      sortname : 'date_removed',
-      sortorder : 'desc',
-      usepager : true,
-      title : 'Stored Boxes',
-      useRp : true,
-      rp : 10,
-      showTableToggleBtn: false,
-      rpOptions: [10, 20, 50], //allowed per-page values
-      width: 900,
-      height: 260,
-      singleSelect: true
-   });*/
 </script>
       <?php
    }
@@ -369,31 +332,31 @@ class BoxStorage extends Repository{
 <div id="box_storage">
    <h3 class="center">Return Box</h3>
    <div id="return_div">
-      <legend>Box Information</legend>
-      <div><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
-      <div><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
+      <!--legend>Box Information</legend-->
+      <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
+      <div class="form-group left-align"><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
       <div class="center" id="submit_button_div"><button type="button" id="submitButton">Return</button></div>
    </div>
    <div id="location_div">
-      <legend>Location Information</legend>
-      <div>
-         <div>
-            <label for="tank">Tank</label>
-            <input id="tank" disabled="disabled" />
-         </div>
-         <div>
-            <label for="sector">Sector</label>
-            <input id="sector" disabled="disabled" />
-         </div>
-         <div>
-            <label for="rack">Rack</label>
-            <input id="rack" disabled="disabled" />
-         </div>
-         <div>
-            <label for="position">Position in Rack</label>
-            <input id="position" disabled="disabled" />
-         </div>
+      <!--legend>Location Information</legend-->
+      <!--div-->
+      <div class="form-group left-align">
+         <label for="tank">Tank</label>
+         <input id="tank" disabled="disabled" />
       </div>
+      <div class="form-group left-align">
+         <label for="sector">Sector</label>
+         <input id="sector" disabled="disabled" />
+      </div>
+      <div class="form-group left-align">
+         <label for="rack">Rack</label>
+         <input id="rack" disabled="disabled" />
+      </div>
+      <div class="form-group left-align">
+         <label for="position">Position in Rack</label>
+         <input id="position" disabled="disabled" />
+      </div>
+      <!--/div-->
    </div>
 
    <div id="returned_boxes"></div>
