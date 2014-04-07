@@ -314,7 +314,9 @@ var BoxStorage = {
     */
    loadTankData: function(forInsertion, boxesToShow){
       if(typeof(boxesToShow)==='undefined') boxesToShow = 0;//default boxesToShow to 0 (all boxes)
-
+      Main.forInsertion = forInsertion;
+      Main.boxesToShow = boxesToShow;
+      
       var json = BoxStorage.getTankData(false);//get tank data but dont cache the data in window.tankData
       Main.tanks = json.data;
       for(var tankIndex = 0; tankIndex < Main.tanks.length; tankIndex++){
@@ -322,8 +324,7 @@ var BoxStorage = {
                  .attr("value", Main.tanks[tankIndex].id)
                  .text(Main.tanks[tankIndex].name));
       }
-
-      Main.forInsertion = forInsertion;
+      
       //populate sector select
       $("#tank").change(BoxStorage.populateTankSectors);
 
@@ -396,10 +397,10 @@ var BoxStorage = {
             else {
                //iterate through all boxes/boxes in rack and add their positions to the available positon array
                for (var boxIndex = 0; boxIndex < boxes.length; boxIndex++) {
-                  if (boxesToShow === 0)//add all boxes
+                  if (Main.boxesToShow === 0)//add all boxes
                      availablePos.push(parseInt(boxes[boxIndex].rack_position));
 
-                  else if (boxesToShow === 1) {//just show boxes that are still in the tanks
+                  else if (Main.boxesToShow === 1) {//just show boxes that are still in the tanks
 
                      //search for an instance of remove that has not been returned
                      var safeToShow = true;
@@ -413,7 +414,7 @@ var BoxStorage = {
                      if (safeToShow)
                         availablePos.push(parseInt(boxes[boxIndex].rack_position));
                   }
-                  else if (boxesToShow === 1) {//just show boxes that have been removed from tanks
+                  else if (Main.boxesToShow === 1) {//just show boxes that have been removed from tanks
 
                      //search for an instance of remove that has not been returned
                      var safeToShow = false;
