@@ -332,7 +332,7 @@ class BoxStorage extends Repository{
 ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 
 <div id="box_storage">
    <h3 class="center">Return Box</h3>
@@ -340,7 +340,7 @@ class BoxStorage extends Repository{
       <!--legend>Box Information</legend-->
       <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
       <div class="form-group left-align"><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
-      <div class="center" id="submit_button_div"><button type="button" id="submitButton">Return</button></div>
+      <div class="center" id="submit_button_div"><button type="button" id="submitButton" class="btn btn-success">Return</button></div>
    </div>
    <div id="location_div">
       <!--legend>Location Information</legend-->
