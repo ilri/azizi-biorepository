@@ -298,7 +298,7 @@ class BoxStorage extends Repository{
             <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
          <!--/div-->
       </div>
-      <div class="center" id="submit_button_div"><input type="submit" value="Retrieve" name="submitButton" id="submitButton"/></div>
+      <div class="center" id="submit_button_div"><input type="submit" value="Retrieve" name="submitButton" id="submitButton" class="btn btn-success" /></div>
    </form>
    <div id="retrieved_boxes"></div>
 </div>
