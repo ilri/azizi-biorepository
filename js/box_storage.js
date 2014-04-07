@@ -361,7 +361,7 @@ var BoxStorage = {
                  .val('');
 
          //find all the empty positions in selected rack
-         //Do this by determining which slots are empty depending on rack size
+         //Do this by determining which slots are empty depending on rack size 
          var tankID = parseInt($("#tank").val());
          var tankIndex = BoxStorage.getTankIndex(tankID);
          var sectors = Main.tanks[tankIndex].sectors;
