@@ -435,12 +435,12 @@ class BoxStorage extends Repository{
       ?>
 <div id="box_storage">
    <h3 class="center">Delete Box</h3>
-   <div id="return_div">
+   <div id="return_div" style="margin-left: 200px;">
       <!--legend>Box Information</legend-->
       <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
       <div class="form-group left-align"><label for="delete_comment">Comment</label><textarea cols="80" rows="4" id="delete_comment"></textarea></div>
    </div>
-   <div id="location_div">
+   <div id="location_div" style="margin-left: 100px;">
       <!--legend>Location Information</legend-->
       <!--div-->
       <div class="form-group left-align">
