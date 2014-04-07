@@ -660,11 +660,26 @@ class BoxStorage extends Repository{
          }
          else{
             $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
+            
+            $userId = 1;
+            if(strlen($_SESSION['username']) > 0){
+               $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+               $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+            }
+            //for some reason session['username'] is not set for some users but surname and onames are set
+            else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+               $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+               $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+            }
+            if($userId == 1){
+               $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+               $this->homePage('There was an error while saving the box');
+               return;
+            }
+            $deletedBy = $userId[0]['id'];
+            
             $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
             $now = date('Y-m-d H:i:s');
-            $deletedBy = $_SESSION['username'];
-
-            if(strlen($deletedBy) === 0) $deletedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
 
             $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
             if($result === 1){
