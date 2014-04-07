@@ -284,7 +284,7 @@ body {
    padding-top: 30px;
 }
 
-#box_storage #meta_data_div, #box_storage #location_div, #box_storage #purpose_div, #box_storage #return_div {
+#box_storage #meta_data_div, #box_storage #purpose_div, #box_storage #return_div {
    float: left;
    margin: 2px 4px 2px 80px;
    height: 350px;
