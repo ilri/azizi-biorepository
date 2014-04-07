@@ -302,11 +302,13 @@ body {
 #box_storage input, #box_storage select{margin-left: 4px;}
 #box_details, #box_location, #location_div, #purpose_div, #return_div, hr{width: 100%;}
 #purpose_div {margin-top: 30px;}
+#return_div {clear: both;}
 #return_div .left-align{width: 150px; margin: 5px;}
 #location_div .left-align{width: 150px; margin: 5px;}
 #purpose_div .left-align{width: 150px; margin: 5px;}
 #location_div select, #location_div input {width: 120px; margin: 5px 2px;}
 #return_div select, #return_div input {width: 120px; margin: 5px 2px;}
+#return_div input {height: 30px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
 #box_details .left-align{width: 150px; margin: 5px;}
 #box_location .left-align{width: 130px; margin: 5px 2px;}
