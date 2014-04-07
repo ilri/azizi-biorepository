@@ -454,7 +454,7 @@ var BoxStorage = {
             $("#box_id").val("");
             if ($("#position").val() !== "") {
                var tankID = parseInt($("#tank").val());
-               var tankIndex = BoxStorage.getTankIndex(Main.tanks, tankID);
+               var tankIndex = BoxStorage.getTankIndex(tankID);
                var sectors = Main.tanks[tankIndex].sectors;
                var sectorID = parseInt($("#sector").val());
                var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
