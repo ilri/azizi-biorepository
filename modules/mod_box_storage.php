@@ -278,7 +278,7 @@ class BoxStorage extends Repository{
          <!--legend>Purpose</legend-->
          <!--div-->
          <div class="form-group left-align" style="width: 200px;"><label for="removed_by">Retrieved by</label><input type="text" id="removed_by" style="width: 190px;" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
-         <div class="form-group left-align"><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" /></div>
+         <div class="form-group left-align" style="width: 200px;"><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" style="width: 180px;" /></div>
          <div class="form-group left-align">
             <label for="purpose">Intended purpose</label>
             <select name="purpose" id="purpose">
