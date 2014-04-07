@@ -78,7 +78,7 @@ class BoxStorage extends Repository{
    </div>
 </div>
 <script>
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
 </script>
       <?php
    }
