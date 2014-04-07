@@ -101,8 +101,8 @@ var BoxStorage = {
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 100},
                {text: 'Tank Position', datafield: 'position', width: 205},
-               {text: 'Retrieved By', datafield: 'removed_by', width: 220},
-               {text: 'Returned By', datafield: 'returned_by', width: 110},
+               {text: 'Retrieved By', datafield: 'removed_by', width: 165},
+               {text: 'Returned By', datafield: 'returned_by', width: 165},
                {text: 'Date Retrieved', datafield: 'date_removed', width: 90},
                {text: 'Date Returned', datafield: 'date_returned', width: 180}
             ]
