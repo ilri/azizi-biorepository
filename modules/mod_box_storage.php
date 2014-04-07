@@ -274,10 +274,10 @@ class BoxStorage extends Repository{
          </div>
          <!--/div-->
       </div>
-      <div id="purpose_div" style="margin-left: 150px;">
+      <div id="purpose_div">
          <!--legend>Purpose</legend-->
          <!--div-->
-         <div class="form-group left-align"><label for="removed_by">Retrieved by</label><input type="text" id="removed_by" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
+         <div class="form-group left-align" style="width: 200px;"><label for="removed_by">Retrieved by</label><input type="text" id="removed_by" style="width: 190px;" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
          <div class="form-group left-align"><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" /></div>
          <div class="form-group left-align">
             <label for="purpose">Intended purpose</label>
@@ -333,12 +333,12 @@ class BoxStorage extends Repository{
 
 <div id="box_storage">
    <h3 class="center">Return Box</h3>
-   <div id="return_div" style="margin-left: 200px;">
+   <div id="return_div">
       <!--legend>Box Information</legend-->
       <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
       <div class="form-group left-align"><label for="return_comment">Comment</label><textarea cols="100" rows="3" id="return_comment"></textarea></div>
    </div>
-   <div id="location_div" style="margin-left: 100px;">
+   <div id="location_div">
       <!--legend>Location Information</legend-->
       <!--div-->
       <div class="form-group left-align">
@@ -399,12 +399,12 @@ class BoxStorage extends Repository{
       ?>
 <div id="box_storage">
    <h3 class="center">Delete Box</h3>
-   <div id="return_div" style="margin-left: 200px;">
+   <div id="return_div">
       <!--legend>Box Information</legend-->
       <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
       <div class="form-group left-align"><label for="delete_comment">Comment</label><textarea cols="100" rows="3" id="delete_comment"></textarea></div>
    </div>
-   <div id="location_div" style="margin-left: 100px;">
+   <div id="location_div">
       <!--legend>Location Information</legend-->
       <!--div-->
       <div class="form-group left-align">
