@@ -259,11 +259,11 @@ $content =<<< CONTENT
       <ul>
         <li>Errors</li>
 CONTENT;
-         if(count($curFile[$mainSheetIndex]->warnings)) echo "<li>Warnings</li>";
+         if(count($curFile[$mainSheetIndex]->warnings)) $content .= "<li>Warnings</li>";
          foreach($curFile as $sheet) $content .= "<li>{$sheet->sheet_name}</li>";
          $content .= '</ul>';
          $content .= "<div class='error' style='text-align: left;'>". implode("<br />\n", $mergedErrors) .'</div>';
-         if(count($curFile[$mainSheetIndex]->warnings)) echo "<div class='warnings'>". implode("<br />\n", $curFile[$mainSheetIndex]->warnings) .'</div>';
+         if(count($curFile[$mainSheetIndex]->warnings)) $content .= "<div class='warnings'>". implode("<br />\n", $curFile[$mainSheetIndex]->warnings) .'</div>';
          foreach($curFile as $sheet) $content .= "<div>{$sheet->htmlData}</div>";
          $content .= "</div>";
       }
@@ -276,10 +276,10 @@ $content = <<< CONTENT
    <div id='all_data'>
       <ul>
 CONTENT;
-         if(count($curFile[$mainSheetIndex]->warnings)) echo "<li>Warnings</li>";
+         if(count($curFile[$mainSheetIndex]->warnings)) $content .= "<li>Warnings</li>";
          foreach($curFile as $sheet) $content .= "<li>{$sheet->sheet_name}</li>\n";
          $content .= "</ul>\n";
-         if(count($curFile[$mainSheetIndex]->warnings)) echo "<div class='warnings'>". implode("<br />\n", $curFile[$mainSheetIndex]->warnings) .'</div>';
+         if(count($curFile[$mainSheetIndex]->warnings)) $content .= "<div class='warnings'>". implode("<br />\n", $curFile[$mainSheetIndex]->warnings) .'</div>';
          foreach($curFile as $sheet) $content .= "<div>{$sheet->htmlData}</div>\n";
          $content .= "</div>\n";
       }
