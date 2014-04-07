@@ -308,12 +308,12 @@ class Repository extends DBase{
       //display the credentials of the person who is logged in
       Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_type']}";
       echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a>";
-      
-      //show the howto link for LN2 engineers 
+
+      //show the howto link for LN2 engineers
       if(OPTIONS_REQUESTED_MODULE === "ln2_transfers" ){
          echo " | <a href='?page=ln2_transfers&do=howto'>Help</a>";
       }
-      
+
       echo "</span></div>";
       return 0;
    }
@@ -445,6 +445,9 @@ class Repository extends DBase{
       die();
    }
 
+   /**
+    * Include the necessary files needed for using the Flexigrid framework
+    */
    public function FlexigridFiles(){
 ?>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.flexigrid/flexigrid.pack.js' /></script>
