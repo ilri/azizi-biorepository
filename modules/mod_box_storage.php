@@ -736,7 +736,8 @@ class BoxStorage extends Repository{
 
    private function getTankDetails() {
       //get tank details from azizi_lims
-      $query = "SELECT b.id, b.name FROM " . Config::$config['dbase'] . ".lcmod_storage_facilities AS a" .
+      $query = "SELECT b.id, b.name" .
+              " FROM " . Config::$config['dbase'] . ".lcmod_storage_facilities AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".storage_facilities  AS b ON a.id = b.id" .
               " WHERE a.is_tank = 1";
       $result = $this->Dbase->ExecuteQuery($query);
@@ -748,7 +749,11 @@ class BoxStorage extends Repository{
             $result[$tankIndex]['sectors'] = $tempResult;
             for ($sectorIndex = 0; $sectorIndex < count($result[$tankIndex]['sectors']); $sectorIndex++) {
                //get all boxes in that sector
-               $query = "SELECT * FROM " . Config::$config['azizi_db'] . ".boxes_def WHERE location = " . $result[$tankIndex]['sectors'][$sectorIndex]['id'];
+               $query = "SELECT a.*" .
+                       " FROM " . Config::$config['azizi_db'] . ".boxes_def AS a" .
+                       " INNER JOIN " . Config::$config['dbase'] . ".lcmod_boxes_def AS b ON a.box_id = b.box_id" .
+                       " WHERE a.location = " . $result[$tankIndex]['sectors'][$sectorIndex]['id'] .
+                       " AND b.date_deleted IS NULL";
                $tempResult = $this->Dbase->ExecuteQuery($query);
 
                //get all unique racks in this sector
