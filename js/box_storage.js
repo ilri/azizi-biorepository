@@ -131,9 +131,9 @@ var BoxStorage = {
             pageable: true,
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 150},
-               {text: 'Deleted By', datafield: 'deleted_by', width: 200},
+               {text: 'Deleted By', datafield: 'deleted_by', width: 230},
                {text: 'Date Deleted', datafield: 'date_deleted', width: 150},
-               {text: 'Comment', datafield: 'delete_comment', width: 300}
+               {text: 'Comment', datafield: 'delete_comment', width: 380}
             ]
          });
       }
