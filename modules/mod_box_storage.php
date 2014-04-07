@@ -805,6 +805,7 @@ class BoxStorage extends Repository{
 
    private function fetchRemovedBoxes() {
       //TODO: refere to users table
+      echo "called";
       $query = "SELECT a.id, a.removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, a.retuned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
               " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
