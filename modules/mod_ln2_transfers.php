@@ -39,6 +39,7 @@ class LN2Transferer extends Repository{
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'submit_ln2_transfer') $this->submitNitrogenTrasfer ();
       else if (OPTIONS_REQUESTED_SUB_MODULE == 'fetch_ln2_transfers') $this->fetchTransferHistory ();
+      else if (OPTIONS_REQUESTED_SUB_MODULE == 'howto') $this->showHowto ();
    }
 
    /**
@@ -182,6 +183,36 @@ class LN2Transferer extends Repository{
       );
 
       die(json_encode($response));
+   }
+   
+   /**
+    * This function displays a help page for the users of the system
+    */
+   private function showHowto() {
+      ?>
+<div id='home'>
+   <h3 class="center">Help</h3>
+   <div style="margin-left: 60px; width: 750px;">
+      <p>To record a Liquid Nitrogen (LN2) transfer:</p>
+      <div style="margin-left: 20px; margin-bottom: 10px;">
+         <li> Input the production level before the transfer</li>
+         <li> Input the production level after the transfer</li>
+         <li> Input the pressure loss after the transfer</li>
+         <li> Click on the 'Submit' button</li>
+      </div>
+      <p>Your recording should be added to the table showing the last transfers made on the same page. Note that you don't have to input the amount of Liquid Nitrogen transfered. This amount will be automatically calculated by the system.</p>
+   </div>
+   <!--<div style="margin-left: 60px; margin-bottom: 100px;">
+      <p>For further assistance please contact:</p>
+      <div style="margin-left: 20px; margin-bottom: 10px;">
+         <li>Absolomon Kihara</li>
+      </div>
+   </div>-->
+</div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=ln2_transfers\'>Back</a>');
+</script>
+<?php
    }
 }
 ?>
