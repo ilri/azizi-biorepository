@@ -1,6 +1,13 @@
 <?php
 
 /**
+ * ChangeLog
+ *
+ * 2014-04-06
+ * - Add support for linked sheets, whose data will be displayed as a sub section in the the description field in Labcollector
+ */
+
+/**
  * The main class in the LIMS uploader system.
  *
  * @category   LimsUploader
@@ -90,10 +97,13 @@ class LimsUploader{
       echo $addinfo;
       $primersChecked = ($module == 'primers') ? 'checked' : '';
       $samplesChecked = ($module == 'samples') ? 'checked' : '';
+      $elisaChecked = ($module == 'elisa') ? 'checked' : '';
 ?>
 <div id="main">
    <div id="top" class="center">
-      <input type="radio" name="module" value="samples" <?php echo $samplesChecked; ?> />Samples &nbsp;&nbsp;&nbsp;<input type="radio" name="module" value="primers" <?php echo $primersChecked; ?> />Primers
+      <input type="radio" name="module" value="samples" <?php echo $samplesChecked; ?> />Samples&nbsp;&nbsp;&nbsp;
+      <input type="radio" name="module" value="primers" <?php echo $primersChecked; ?> />Primers&nbsp;&nbsp;&nbsp;
+      <input type="radio" name="module" value="elisa" <?php echo $elisaChecked; ?> />Elisa Results&nbsp;&nbsp;&nbsp;
    </div>
    <div id="uhondo">
       <div id='left_panel'>
@@ -154,31 +164,45 @@ class LimsUploader{
     */
    private function CommonFileProcessing($module, $file){
       require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.1.php';
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_spreadsheet_v0.1.php';
+      require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_spreadsheet_v0.2.php';
       if($module == 'primers') require_once 'mod_primers.php';
       elseif($module == 'samples') require_once 'mod_samples.php';
 
       //use the excel reader to read the file
       $excelData = new Spreadsheet_Excel_Reader($file);
       //look for the sheet named 'Final Samples' or 'Final Primers' which should be containing the list to upload, else get the first sheet
+      //once the main sheet has been found, we hope to link the other secondary sheets
       $mainSheeet = ($module == 'samples') ? 'Final Samples' : 'Final Primers';
       $mainSheetIndex = 0;
+      $secondarySheetsIndexes = array();
+      //there is need to determine the main sheet. This will be the first sheet or the one named 'Final Samples' or 'Final Primers'
       foreach($excelData->boundsheets as $index => $sheet){
          if($sheet['name'] == $mainSheeet) $mainSheetIndex = $index;
+         $secondarySheetsIndexes[] = $index;
       }
-      if($module == 'primers') $curFile = new Primers('', $file, $excelData->sheets[$mainSheetIndex]);
-      elseif($module == 'samples') $curFile = new Samples('', $file, $excelData->sheets[$mainSheetIndex]);
 
-      $curFile->htmlData = $excelData->dump(false, false, $mainSheetIndex);
-      $curFile->sheet_name = $excelData->boundsheets[$mainSheetIndex]['name'];
-      $curFile->sheet_index = $mainSheetIndex;
-      $curFile->type = $module;
+      //process all the sheets in the file
+      $curfile = array();
+      foreach($secondarySheetsIndexes as $index){
+         //make sure to skip the main sheet
+         if($module == 'primers') $curfile[$index] = new Primers('', $file, $excelData->sheets[$index]);
+         elseif($module == 'samples') $curfile[$index] = new Samples('', $file, $excelData->sheets[$index]);
 
-      $curFile->ValidateAndProcessFile();   //the file hasnt been uploaded and there is need to upload it
+         $curfile[$index]->htmlData = $excelData->dump(false, false, $index);
+         $curfile[$index]->sheet_name = $excelData->boundsheets[$index]['name'];
+         $curfile[$index]->sheet_index = $index;
+         if($index == $mainSheetIndex) $curfile[$index]->isMain = true;
+         else $curfile[$index]->isMain = false;
 
-      if($curFile->fillLCRef) $curFile->FillMissingData();
+         //validate and process the sheet
+         $curfile[$index]->ValidateAndProcessFile();
+//         if(!$curfile[$index]->isMain) $curfile[$index]->DumpData();
+      }
+//      die();
 
-      return $curFile;
+      if($curfile->fillLCRef) $curfile[$mainSheetIndex]->FillMissingData();
+
+      return $curfile;
    }
 
    /**
@@ -203,37 +227,57 @@ class LimsUploader{
       $file = $dataToUpload[0];
       $curFile = $this->CommonFileProcessing($module, $file);
 
-      $res = $curFile->CheckForDuplicates();   //the file hasnt been uploaded and there is need to upload it
-      if(is_string($res)){
-         $this->HomePage($res);
-         return;
+      $mergedErrors = array();
+      foreach($curFile as $sheet){
+         $res = $sheet->CheckForDuplicates();   //the file hasnt been uploaded and there is need to upload it
+         if(is_string($res)){
+            $this->HomePage($res);
+            return;
+         }
+         if(count($sheet->errors)){
+            $mergedErrors = array_merge($mergedErrors, array("<b><u>Errors from {$sheet->sheet_name}</u></b>"), $sheet->errors);
+         }
       }
 
 //      $curFile->DumpData();
 
-      if(count($curFile->errors) != 0){
+      Repository::jqGridFiles();
+      if(count($mergedErrors) != 0){
          //show the errors that we have encountered
-         $errors = implode("<br />\n", $curFile->errors);
-$content = <<< CONTENT
+$content =<<< CONTENT
    <div id='addinfo' class='error'>You have some errors in your input spreadsheet. Address them and try to upload it again!</div>
-   <div class='error'>$errors</div>
-   <div id='sheet'>{$curFile->htmlData}</div>
+   <div id='all_data'>
+      <ul>
+        <li>Errors</li>
 CONTENT;
-         $this->HomePage('', $content);
+         foreach($curFile as $sheet) $content .= "<li>{$sheet->sheet_name}</li>";
+         $content .= '</ul>';
+         $content .= "<div class='error' style='text-align: left;'>". implode("<br />\n", $mergedErrors) .'</div>';
+         foreach($curFile as $sheet) $content .= "<div>{$sheet->htmlData}</div>";
+         $content .= "</div>";
       }
       else{
          //create a confirmation step
 $content = <<< CONTENT
    <div id='addinfo'>Please review the uploaded spreadsheet and confirm whether you want to upload it the way it is!</div>
-   <div id='sheet'>{$curFile->htmlData}</div>
    <div id='footer_links'><input type='button' name='confirm' value='Confirm' /><input type='button' name='confirm' value='Cancel' /></div>
    <input type='hidden' name='uploadedFile' value='$file' /> <input type='hidden' name='curModule' value='$module' />
+   <div id='all_data'>
+      <ul>
+CONTENT;
+         foreach($curFile as $sheet) $content .= "<li>{$sheet->sheet_name}</li>\n";
+         $content .= "</ul>\n";
+         foreach($curFile as $sheet) $content .= "<div>{$sheet->htmlData}</div>\n";
+         $content .= "</div>\n";
+      }
+
+      $content .= "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."jquery/jqwidgets/jqxtabs.js'></script>";
+$content .="
    <script type='text/javascript'>
       $('[name=confirm]').click(LimsUploader.confirmUpload);
-   </script>
-CONTENT;
-         $this->HomePage('', $content);
-      }
+      $('#all_data').jqxTabs({ width: '99%', height: 500, position: 'top', theme: Main.theme });
+   </script>";
+      $this->HomePage('', $content);
    }
 
    /**
@@ -259,17 +303,24 @@ CONTENT;
       if(!is_dir($path)){
          if(!mkdir($path, 0755, true)) echo "I can't create a folder!";
       }
-      $curFile->finalUploadedFile = "$path/{$pi['basename']}";
-      $curFile->finalUploadedFileLink = "LimsUploader/{$pi['basename']}";
-      rename($file, $curFile->finalUploadedFile);
 
-      //now we upload the data
-      $curFile->NormalizeData();
+      //ensure that we have the necessary data descriptors
+      //also include data from other sheets
+      $extraData = array();
+      foreach($curFile as $index => $sheet){
+         if($sheet->isMain) $mainSheetIndex = $index;
+         else $extraData[$sheet->sheet_name] = $sheet->getData();
+      }
+      $curFile[$mainSheetIndex]->NormalizeData($extraData);
+      $curFile[$mainSheetIndex]->finalUploadedFile = "$path/{$pi['basename']}";
+      $curFile[$mainSheetIndex]->finalUploadedFileLink = "LimsUploader/{$pi['basename']}";
 
-//      $curFile->DumpMetaData();
+//      $curFile[$mainSheetIndex]->DumpData();
 //      die();
 
-      $res = $curFile->UploadData();
+      //now we upload the data
+      $res = $curFile[$mainSheetIndex]->UploadData();
+      rename($file, $curFile[$mainSheetIndex]->finalUploadedFile);
       if($res === 0){
          $this->HomePage("The data has been uploaded successfully.");
       }

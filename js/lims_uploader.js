@@ -1,5 +1,5 @@
 var Main = {
-   ajaxParams: {successMssg: undefined, div2Update: undefined}, successMssg: undefined, title: 'Label Printing'
+   ajaxParams: {successMssg: undefined, div2Update: undefined}, successMssg: undefined, title: 'Label Printing', theme: ''
 };
 
 var LimsUploader={

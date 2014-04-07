@@ -111,7 +111,7 @@ class Repository extends DBase{
                return;
             }
             if(OPTIONS_REQUEST_TYPE == 'normal') {
-               $this->RepositoryHomePage(sprintf(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS, $aka_module[OPTIONS_REQUESTED_SUB_MODULE]));
+               $this->RepositoryHomePage(sprintf(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS, $aka_module[OPTIONS_REQUESTED_SUB_MODULE], OPTIONS_REQUESTED_MODULE));
                return;
             }
             elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . sprintf(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS, $aka_module[OPTIONS_REQUESTED_SUB_MODULE]));

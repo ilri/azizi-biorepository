@@ -204,6 +204,10 @@ body {
    display: inline-block;
 }
 
+[name=upload] .links{
+   width: 100%;
+}
+
 .error{
    color: red;
    text-align: center;

@@ -31,7 +31,9 @@ class Samples extends SpreadSheet {
          array('name' =>'parent', 'regex' => '/^parent\s+sample$/i', 'required' => false),
          array('name' =>'comments', 'regex' => '/^comments$/i', 'required' => false),
          array('name' =>'owner', 'regex' => '/^owner$/i', 'data_regex' => '/^[a-z\s\']+$/i', 'required' => true),
-         array('name' =>'lc_ref', 'regex' => '/^labcollector\s+reference$/i', 'required' => false)
+         array('name' =>'lc_ref', 'regex' => '/^labcollector\s+reference$/i', 'required' => false),
+         array('name' =>'pri_key', 'regex' => '/^([a-z\s]+)(\(main\s+key\))$/i', 'required' => false, 'unique' => true),
+         array('name' =>'foreign_key', 'regex' => '/^([a-z\s]+)(\(secondary\s+key\))$/i', 'required' => false)
       )
    );
 
@@ -53,7 +55,7 @@ class Samples extends SpreadSheet {
      *
      * @global object $Repository
      */
-    public function NormalizeData(){
+    public function NormalizeData($additions){
        global $Repository;
        //get the extra columns
        foreach($this->metadata['columns'] as $key => $t){
@@ -117,12 +119,29 @@ class Samples extends SpreadSheet {
           $this->data[$key]['box_details'] = $Repository->NumericPosition2LCPosition($t['sample_pos'], 100);
 
           //create the comments from the columns which go nowhere
-          $descr = ($this->data[$key]['parent'] != '') ? $descr = "Parent Sample = {$this->data[$key]['parent']}" : '';
+          $descr = (isset($this->data[$key]['parent'])) ? "Parent Sample = {$this->data[$key]['parent']}" : '';
           foreach($this->extraCols as $col){
-             if($t[$col] == '') continue;
+             if(preg_match('/'. preg_quote($t[$col], '/') .'/i', Config::$emptyValues) === 1) continue;
+             if(preg_match('/'. preg_quote($col, '/') .'/i', Config::$columns2exclude) === 1) continue;
              $descr .= ($descr == '') ? '' : '<br />';
              $descr .= "$col = {$t[$col]}";
           }
+          //all the data in the extra spreadsheets are loaded into the description field
+//          echo '<pre>'. print_r($t, true) .'</pre>';
+
+          $sdata_desc = '';
+          $linkKey = (isset($t['pri_key'])) ? $t['pri_key'] : $t['foreign_key'];
+          foreach($additions as $sheet_name => $sheet){
+            if(isset($sheet[$linkKey])){
+               $sdata_desc = "<br /><br /><b><u>$sheet_name</u></b><br />";
+               foreach($sheet[$linkKey] as $sData){
+                  foreach($sData as $col => $dt) if(preg_match("/$col/i", Config::$columns2exclude) === 0) $sdata_desc .= "$col = $dt<br />";
+               }
+            }
+          }
+          $descr .= $sdata_desc;
+//          echo '<pre>'. $sdata_desc .'</pre>';
+
           //"http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file=entomology_uploads/zip_upload_2012-02-22_101035/CBG/Wakabhare%20%20LT%20Msqt%20CBG%2027.10.09.xls&focused=CBG000109#focused"
           $descr .= "<br /><br />Other Comments:<br />{$t['comments']}";
           //add a link to the original file we uploaded
@@ -131,18 +150,22 @@ class Samples extends SpreadSheet {
           $image = ($t['latitude'] == '') ? '' : "<div><img alt='This sample was collected from Lat:{$t['latitude']}, Long:{$t['longitude']}' src='http://maps.googleapis.com/maps/api/staticmap?center={$t['latitude']},{$t['longitude']}&zoom=$zoom_factor&size=300x300&markers=color:blue%7Clabel:S%7C{$t['latitude']},{$t['longitude']}&sensor=false' /><div>";
           $this->data[$key]['descr'] = "<div style='float:left; width:380px; margin-right:20px;'>$descr</div>$image";
        }
-//       echo '<pre>'. print_r($this->owners, true) .'</pre>'; die();
     }
 
-    public function DumpData(){
-//       echo '<pre>'. print_r($this->metadata, true) .'</pre>';
-       echo '<pre>'. print_r($this->data, true) .'</pre>';
-    }
+    /**
+     * Prints out the data held in the object
+     */
+    public function DumpData(){ echo '<pre>'. print_r($this->data, true) .'</pre>'; }
 
-    public function DumpMetaData(){
-//       echo '<pre>'. print_r($this->metadata, true) .'</pre>';
-       echo '<pre>'. print_r($this->metadata, true) .'</pre>';
-    }
+    /**
+     * Prints out the metadata held in the object
+     */
+    public function DumpMetaData(){ echo '<pre>'. print_r($this->metadata, true) .'</pre>'; }
+
+    /**
+     * Returns the data held in the object
+     */
+    public function getData(){ return $this->data; }
 
     /**
      * Uploads the data to the database. This forms the last resting place for the data
