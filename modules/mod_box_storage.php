@@ -425,6 +425,12 @@ class BoxStorage extends Repository{
    }
 
    private function deleteBox($addInfo = ''){
+      Repository::jqGridFiles();//load requisite jqGrid javascript files
+      ?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+      <?php
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
 <div id="box_storage">
