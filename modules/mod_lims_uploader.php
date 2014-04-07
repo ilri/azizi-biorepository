@@ -227,9 +227,15 @@ class LimsUploader{
       $file = $dataToUpload[0];
       $curFile = $this->CommonFileProcessing($module, $file);
 
+      /**
+       * Check for duplicates in the uploaded data. If there are duplicates, add the duplicate values in the error array
+       * Check that if we have multiple sheets, we have the necessary foreign-pri key pairs. If some are missing add them to the warnings
+       */
       $mergedErrors = array();
-      foreach($curFile as $sheet){
-         $res = $sheet->CheckForDuplicates();   //the file hasnt been uploaded and there is need to upload it
+      $extraData = array();
+      foreach($curFile as $index => $sheet){
+         //check for the duplicates
+         $res = $sheet->CheckForDuplicates();
          if(is_string($res)){
             $this->HomePage($res);
             return;
@@ -237,7 +243,10 @@ class LimsUploader{
          if(count($sheet->errors)){
             $mergedErrors = array_merge($mergedErrors, array("<b><u>Errors from {$sheet->sheet_name}</u></b>"), $sheet->errors);
          }
+         if($sheet->isMain) $mainSheetIndex = $index;
+         else $extraData[$sheet->sheet_name] = $sheet->getData();
       }
+      $curFile[$mainSheetIndex]->checkForeignConstraints($extraData);
 
 //      $curFile->DumpData();
 
@@ -250,9 +259,11 @@ $content =<<< CONTENT
       <ul>
         <li>Errors</li>
 CONTENT;
+         if(count($curFile[$mainSheetIndex]->warnings)) echo "<li>Warnings</li>";
          foreach($curFile as $sheet) $content .= "<li>{$sheet->sheet_name}</li>";
          $content .= '</ul>';
          $content .= "<div class='error' style='text-align: left;'>". implode("<br />\n", $mergedErrors) .'</div>';
+         if(count($curFile[$mainSheetIndex]->warnings)) echo "<div class='warnings'>". implode("<br />\n", $curFile[$mainSheetIndex]->warnings) .'</div>';
          foreach($curFile as $sheet) $content .= "<div>{$sheet->htmlData}</div>";
          $content .= "</div>";
       }
@@ -265,8 +276,10 @@ $content = <<< CONTENT
    <div id='all_data'>
       <ul>
 CONTENT;
+         if(count($curFile[$mainSheetIndex]->warnings)) echo "<li>Warnings</li>";
          foreach($curFile as $sheet) $content .= "<li>{$sheet->sheet_name}</li>\n";
          $content .= "</ul>\n";
+         if(count($curFile[$mainSheetIndex]->warnings)) echo "<div class='warnings'>". implode("<br />\n", $curFile[$mainSheetIndex]->warnings) .'</div>';
          foreach($curFile as $sheet) $content .= "<div>{$sheet->htmlData}</div>\n";
          $content .= "</div>\n";
       }

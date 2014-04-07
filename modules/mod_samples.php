@@ -160,6 +160,29 @@ class Samples extends SpreadSheet {
     }
 
     /**
+     * Check that all the samples have the necessary foreign/primary keys combo
+     *
+     * @param  array    $additions  An array with all the secondary spreadsheets data
+     */
+    public function checkForeignConstraints($additions){
+       foreach($this->data as $key => $t){
+          $linkKey = (isset($t['pri_key'])) ? $t['pri_key'] : $t['foreign_key'];
+          foreach($additions as $sheet_name => $sheet){
+            if(isset($sheet[$linkKey])){
+               $sdata_desc = "<br /><br /><b><u>$sheet_name</u></b><br />";
+               foreach($sheet[$linkKey] as $sData){
+                  foreach($sData as $col => $dt) if(preg_match("/$col/i", Config::$columns2exclude) === 0) $sdata_desc .= "$col = $dt<br />";
+               }
+            }
+            else{
+               //if the foreign/primary key isn't set, add it as a warning
+               $this->warnings[] = "The key '$linkKey' doesn't have a corresponding key.";
+            }
+          }
+       }
+    }
+
+    /**
      * Prints out the data held in the object
      */
     public function DumpData(){ echo '<pre>'. print_r($this->data, true) .'</pre>'; }
