@@ -477,6 +477,8 @@ class BoxStorage extends Repository{
          console.log("box_id cleared");
          BoxStorage.resetDeleteInput(false);
       });
+      
+      BoxStorage.initiateDeletedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
 
@@ -488,7 +490,7 @@ class BoxStorage extends Repository{
     *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
     *
     */
-   $("#deleted_boxes").flexigrid({
+   /*$("#deleted_boxes").flexigrid({
       url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes",
       dataType: 'json',
       colModel : [
@@ -512,7 +514,7 @@ class BoxStorage extends Repository{
       width: 900,
       height: 260,
       singleSelect: true
-   });
+   });*/
 </script>
       <?php
    }
@@ -795,49 +797,19 @@ class BoxStorage extends Repository{
    }
 
    private function fetchDeletedBoxes() {
-      //check if search criterial provided
-      $criteriaArray = array();
-      if ($_POST['query'] != "") {
-         $criteria = "WHERE {$_POST['qtype']} LIKE '%?%' AND date_deleted IS NOT NULL";
-         $criteriaArray[] = $_POST['query'];
-      } else {
-         $criteria = "WHERE date_deleted IS NOT NULL";
-      }
-
-      $startRow = ($_POST['page'] - 1) * $_POST['rp'];
       $query = "SELECT a.*, b.*" .
               " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
-              " $criteria" .
-              " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
+              " WHERE date_deleted IS NOT NULL";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
-      $data = $this->Dbase->ExecuteQuery($query . " LIMIT $startRow, {$_POST['rp']}", $criteriaArray);
-
-      //check if any data was fetched
-      if ($data === 1)
-         die(json_encode(array('error' => true)));
-
-
-      $dataCount = $this->Dbase->ExecuteQuery($query, $criteriaArray);
-      if ($dataCount === 1)
-         die(json_encode(array('error' => true)));
-      else
-         $dataCount = sizeof($dataCount);
-
-      //reformat rows fetched from first query
-      $rows = array();
-      foreach ($data as $row) {
-         $dateDeleted = date('d/m/Y H:i:s', strtotime($row['date_deleted']));
-
-         $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'], "deleted_by" => $row["deleted_by"], "date_deleted" => $dateDeleted, "delete_comment" => $row['delete_comment']));
-      }
-      $response = array(
-          'total' => $dataCount,
-          'page' => $_POST['page'],
-          'rows' => $rows
-      );
-
-      die(json_encode($response));
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      header("Content-type: application/json");
+      $this->Dbase->CreateLogEntry('mod_box_storage: Deleted boxes sent via ajax request = '.print_r($result ,true), 'debug');
+      $json = array('data'=>$result);
+      die(json_encode($json));
    }
 
    /**

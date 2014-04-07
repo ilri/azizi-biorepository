@@ -110,6 +110,35 @@ var BoxStorage = {
       }
       else{ $("#returned_boxes").jqxGrid({source: boxesAdapter}); }
    },
+   
+   initiateDeletedBoxesGrid: function(){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'comment'} ],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_deleted_boxes'}
+      };
+
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      if($('#deleted_boxes :regex(class, jqx\-grid)').length === 0){//element does not exist in DOM
+         $("#deleted_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            theme: theme,
+            pageable: true,
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Deleted By', datafield: 'deleted_by', width: 150},
+               {text: 'Date Deleted', datafield: 'date_deleted', width: 100},
+               {text: 'Comment', datafield: 'removed_for', width: 300}
+            ]
+         });
+      }
+      else{ $("#returned_boxes").jqxGrid({source: boxesAdapter}); }
+   },
 
    submitRemoveRequest: function(){
       if(this.validateRemoveInput()){
