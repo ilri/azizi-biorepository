@@ -636,6 +636,10 @@ class BoxStorage extends Repository{
          $message = "Unable to remove box for the system.";
          $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
       }
+      else{
+         $message = "Box successfully removed from the system.";
+         $this->Dbase->CreateLogEntry('mod_box_storage: Box successfully retrieved from system by '.$_SESSION['username'], 'debug');
+      }
 
       return $message;
    }
