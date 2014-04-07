@@ -328,7 +328,11 @@ class BoxStorage extends Repository{
     * @param type $addInfo
     */
    private function returnBox(){
-      ?>
+       Repository::jqGridFiles();//load requisite jqGrid javascript files
+?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+
 <div id="box_storage">
    <h3 class="center">Return Box</h3>
    <div id="return_div">
