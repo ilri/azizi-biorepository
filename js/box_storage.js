@@ -84,7 +84,7 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'returned_by'}, {name: 'removed_by'}, {name: 'date_removed'}, {name: 'date_returned'} ],
          id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
       };
 
@@ -102,7 +102,7 @@ var BoxStorage = {
                {text: 'Box Label', datafield: 'box_name', width: 100},
                {text: 'Tank Position', datafield: 'position', width: 205},
                {text: 'Retrieved By', datafield: 'removed_by', width: 220},
-               {text: 'For Who', datafield: 'removed_for', width: 110},
+               {text: 'Returned By', datafield: 'returned_by', width: 110},
                {text: 'Date Retrieved', datafield: 'date_removed', width: 90},
                {text: 'Date Returned', datafield: 'date_returned', width: 180}
             ]
