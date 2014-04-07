@@ -115,7 +115,7 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'comment'} ],
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'delete_comment'} ],
          id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_deleted_boxes'}
       };
 
@@ -130,10 +130,10 @@ var BoxStorage = {
             theme: theme,
             pageable: true,
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 100},
-               {text: 'Deleted By', datafield: 'deleted_by', width: 150},
-               {text: 'Date Deleted', datafield: 'date_deleted', width: 100},
-               {text: 'Comment', datafield: 'removed_for', width: 300}
+               {text: 'Box Label', datafield: 'box_name', width: 150},
+               {text: 'Deleted By', datafield: 'deleted_by', width: 200},
+               {text: 'Date Deleted', datafield: 'date_deleted', width: 150},
+               {text: 'Comment', datafield: 'delete_comment', width: 300}
             ]
          });
       }
