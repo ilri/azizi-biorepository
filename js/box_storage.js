@@ -8,7 +8,9 @@ var Main = {tanks: undefined};
 var BoxStorage = {
 
    /**
-    *
+    * This function submits Data from the Add a Box page. Fields are first checked before data is submitted to the server.
+    * Page refreshes after this function successfully executes
+    * 
     * @returns {Boolean}
     */
    submitInsertRequest : function(){
@@ -18,6 +20,11 @@ var BoxStorage = {
       return false;
    },
 
+   /**
+    * This function renders the JQXGrid in the Add a Box page
+    * 
+    * @returns {undefined}
+    */
    initiateAddBoxesGrid: function(){
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
@@ -49,6 +56,11 @@ var BoxStorage = {
       else{ $("#tank_boxes").jqxGrid({source: boxesAdapter}); }
    },
    
+   /**
+    * This function renders the JQXGrid in the Retrieve a Box page
+    * 
+    * @returns {undefined}
+    */
    initiateRetrievedBoxesGrid: function(){
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
@@ -80,6 +92,11 @@ var BoxStorage = {
       else{ $("#removed_boxes").jqxGrid({source: boxesAdapter}); }
    },
    
+   /**
+    * This function renders the JQXGrid in the Return a Box page
+    * 
+    * @returns {undefined}
+    */
    initiateReturnedBoxesGrid: function(){
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
@@ -111,6 +128,11 @@ var BoxStorage = {
       else{ $("#returned_boxes").jqxGrid({source: boxesAdapter}); }
    },
    
+   /**
+    * This function renders the JQXGrid in the Delete a Box page
+    * 
+    * @returns {undefined}
+    */
    initiateDeletedBoxesGrid: function(){
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes";
@@ -140,6 +162,13 @@ var BoxStorage = {
       else{ $("#returned_boxes").jqxGrid({source: boxesAdapter}); }
    },
 
+   /**
+    * This function submits data from the Retrieve a Box page to the server.
+    * Fields are first checked before submit is made.
+    * Page should reload after this function executes successfully (Returns TRUE)
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data in the form
+    */
    submitRemoveRequest: function(){
       if(this.validateRemoveInput()){
          return true;
@@ -147,6 +176,11 @@ var BoxStorage = {
       return false;
    },
 
+   /**
+    * This function submits data from the Return a Box page to the server.
+    * Fields are first checked before submit is made.
+    * Page WILL NOT reload after this function executes successfully (Returns TRUE)
+    */
    submitReturnRequest: function(){
       if(this.validateReturnInput()){
          var formData = {return_comment: $("#return_comment").val(), remove_id: $("#remove_id").val()};
@@ -172,6 +206,11 @@ var BoxStorage = {
 
    },
 
+   /**
+    * This function submits data from the Delete a Box page to the server.
+    * Fields are first checked before submit is made.
+    * Page WILL NOT RELOAD after this function is executed successfully
+    */
    submitDeleteRequest: function(){
       console.log("submited delete called");
       if(this.validateDeleteInput()){
@@ -197,6 +236,11 @@ var BoxStorage = {
       }
    },
 
+   /**
+    * This function validates form data in the Delete a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateDeleteInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -222,6 +266,11 @@ var BoxStorage = {
       return true;
    },
 
+   /**
+    * This function validates form data in the Add a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateInsertInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -264,6 +313,11 @@ var BoxStorage = {
       return BoxStorage.validateTankInformation();
    },
 
+   /**
+    * This function validates form data in the Retrieve a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateRemoveInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -307,6 +361,11 @@ var BoxStorage = {
       return true;
    },
 
+   /**
+    * This function validates form data in the Return a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateReturnInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -330,6 +389,11 @@ var BoxStorage = {
       return true;
    },
 
+   /**
+    * This function validates generic tank location information in the Add a box, Retrieve a box, Return a box and Delete a box pages
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the tank location data
+    */
    validateTankInformation: function(){
       if($("#tank").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please select a tank', error:true});
@@ -684,6 +748,11 @@ var BoxStorage = {
       return -1;
    },
 
+  /**
+   * This function sets options for removed boxes in the corresponding select tag
+   * 
+   * @returns {undefined}
+   */
    setRemovedBoxSuggestions : function(){
       BoxStorage.resetReturnInput(true);
       var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
@@ -746,6 +815,11 @@ var BoxStorage = {
       });
    },
 
+   /**
+   * This function sets options for deleted boxes in the corresponding select tag
+   * 
+   * @returns {undefined}
+   */
    setDeleteBoxSuggestions : function(){
       BoxStorage.resetDeleteInput(true);
       var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
@@ -801,6 +875,13 @@ var BoxStorage = {
       });
    },
 
+   /**
+    * This function resets fields in the Return a Box page to their default
+    * 
+    * @param {Boolean} complete  Set to TRUE if you want to competely reset all the fields (including the box label and comment fields)
+    * 
+    * @returns {undefined}
+    */
    resetReturnInput: function(complete){
       $("#tank").val('');
       $("#sector").val('');
@@ -812,7 +893,13 @@ var BoxStorage = {
          $('#return_comment').val('');
       }
    },
-
+   /**
+    * This function resets fields in the Delete a Box page to their default
+    * 
+    * @param {type} complete  Set to TRUE if you want to competely reset all the fields (including the box label and comment fields)
+    * 
+    * @returns {undefined}
+    */
    resetDeleteInput: function(complete){
       $("#tank").val('');
       $("#sector").val('');

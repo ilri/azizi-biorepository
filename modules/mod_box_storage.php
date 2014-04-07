@@ -83,6 +83,12 @@ class BoxStorage extends Repository{
       <?php
    }
 
+   /**
+    * This function renders the Add Box page in this module. Also calls relevant functions to handle POST requests if any
+    * 
+    * @param type    $addInfo Any notification info you want displayed to the user when page renders
+    * @return null   Return called to initialize the render   
+    */
    private function addBox($addInfo = ''){
       Repository::jqGridFiles();
 ?>
@@ -220,7 +226,7 @@ class BoxStorage extends Repository{
    /**
     * This function displays the Remove Box screen. Submissions handled using webserver requests i.e POST and GET
     *
-    * @param type $addInfo
+    * @param type $addInfo    Any notification information you want displayed to the user when page loads
     */ 
    private function retrieveBox($addInfo = ''){
       Repository::jqGridFiles();//load requisite jqGrid javascript files
@@ -316,7 +322,7 @@ class BoxStorage extends Repository{
    /**
     * This function displays the Return Box screen. Submissions handled using Javascript AJAX requests
     *
-    * @param type $addInfo
+    * @param type $addInfo    Any notification information you want displayed to the user when page loads
     */
    private function returnBox(){
        Repository::jqGridFiles();//load requisite jqGrid javascript files
@@ -377,6 +383,11 @@ class BoxStorage extends Repository{
       <?php
    }
 
+   /**
+    * This function displays the Delete Box page to the user
+    * 
+    * @param type $addInfo    Any notification information you want displayed to the user when page loads
+    */
    private function deleteBox($addInfo = ''){
       Repository::jqGridFiles();//load requisite jqGrid javascript files
       ?>
@@ -438,6 +449,11 @@ class BoxStorage extends Repository{
       <?php
    }
 
+   /**
+    * This function handles the POST request for inserting new box data from the Add Box page
+    * 
+    * @return string    Result of the insert into the database. Can be either positive or negative
+    */
    private function insertBox(){
       $message = "";
 
@@ -512,6 +528,11 @@ class BoxStorage extends Repository{
       return $message;
    }
 
+   /**
+    * This function handles POST requests from Retrieve a Box page. It records the data in the database
+    * 
+    * @return string    Results for handling the remove box action in the database. Can be either positive or negative
+    */
    private function submitRemoveRequest(){
       $message = "";
 
@@ -555,6 +576,13 @@ class BoxStorage extends Repository{
       return $message;
    }
 
+   /**
+    * This function handles POST request from the Return a Box page
+    * 
+    * @param Boolean $fromAjaxRequest  Set to TRUE if POST request is comming for javascripts AJAX
+    * 
+    * @return string Results for handling the return box action in the database. Can be either positive or negative
+    */
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
       
@@ -595,6 +623,13 @@ class BoxStorage extends Repository{
       else return $message;
    }
 
+   /**
+    * This function handles POST request from Delete a Box page
+    * 
+    * @param type $fromAjaxRequest  Set to TRUE if request is comming from Javascripts AJAX
+    * 
+    * @return string Results for handling the delete box action in the database. Can be either positive or negative
+    */
    private function submitDeleteRequest($fromAjaxRequest = false){
       $message = "";
       $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
@@ -653,6 +688,13 @@ class BoxStorage extends Repository{
       else return $message;
    }
 
+   /**
+    * This function gets tank details form the database and constructs a json object of the data with the following hierarchies
+    *    - tank
+    *       - sector
+    *          - rack
+    *             -box 
+    */
    private function getTankDetails() {
       //get tank details from azizi_lims
       $query = "SELECT b.id, b.name" .
@@ -736,6 +778,9 @@ class BoxStorage extends Repository{
       echo json_encode($jsonArray);
    }
 
+   /**
+    * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
+    */
    private function fetchBoxes() {
       $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
@@ -751,6 +796,9 @@ class BoxStorage extends Repository{
       die('{"data":'. json_encode($result) .'}');
    }
 
+   /**
+    * This function gets data for boxes retireved from the system using the Retrieve a Box page and constructs a json object with this data
+    */
    private function fetchRemovedBoxes() {
       //TODO: refere to users table
       $query = "SELECT a.id, CONCAT(d.onames, ' ', d.sname) AS removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, CONCAT(e.onames, ' ', e.sname) AS returned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
@@ -769,6 +817,9 @@ class BoxStorage extends Repository{
       die(json_encode($json));
    }
 
+   /**
+    * This function gets data for boxes deleted from the system using the Delete a Box page and constructs a json object with this data
+    */
    private function fetchDeletedBoxes() {
       $query = "SELECT date(a.date_deleted) AS date_deleted, a.delete_comment, b.box_name, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
               " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
@@ -787,7 +838,7 @@ class BoxStorage extends Repository{
    }
 
    /**
-    * Handles all ajax requests to this page
+    * This function fetches the available sample types from the LIMS database
     */
    private function fetchSampleTypes() {
       $message = "";
