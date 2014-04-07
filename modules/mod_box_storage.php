@@ -78,7 +78,7 @@ class BoxStorage extends Repository{
    </div>
 </div>
 <script>
-   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
    }
@@ -204,7 +204,7 @@ class BoxStorage extends Repository{
       BoxStorage.loadTankData(true);
       BoxStorage.initiateAddBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 
    $("#status").change(function(){
       if($('#status').val() === "temporary"){
@@ -378,7 +378,7 @@ class BoxStorage extends Repository{
       });
       BoxStorage.initiateReturnedBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
    }
@@ -444,7 +444,7 @@ class BoxStorage extends Repository{
       
       BoxStorage.initiateDeletedBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
    }
