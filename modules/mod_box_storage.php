@@ -248,34 +248,34 @@ class BoxStorage extends Repository{
    <h3 class="center">Retrieve a Box</h3>
    <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=box_storage&do=remove_box&action=submit_request" onsubmit="return BoxStorage.submitRemoveRequest();" >
       <div id="location_div">
-         <legend>Box Location</legend>
-         <div>
-            <div>
+         <!--legend>Box Location</legend-->
+         <!--div-->
+         <div class="form-group left-align">
                <label for="tank">Tank</label>
                <select id="tank">
                   <option value=""></option><!--NULL option-->
                </select>
-            </div>
-            <div>
-               <label for="sector">Sector</label>
-               <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
-               </select>
-            </div>
-            <div id="rack_div">
-               <label for="rack">Rack</label>
-               <select type="text" name="rack" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
-               </select>
-            </div>
-
-            <div>
-               <label for="position">Position in Rack</label>
-               <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
-               </select>
-            </div>
-            <div>
-               <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" /><input type="hidden" id="box_id" name="box_id" />
-            </div>
          </div>
+         <div class="form-group left-align">
+            <label for="sector">Sector</label>
+            <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div id="rack_div" class="form-group left-align">
+            <label for="rack">Rack</label>
+            <select type="text" name="rack" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+
+         <div class="form-group left-align">
+            <label for="position">Position in Rack</label>
+            <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div class="form-group left-align">
+            <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" /><input type="hidden" id="box_id" name="box_id" />
+         </div>
+         <!--/div-->
       </div>
       <div id="purpose_div">
          <legend>Purpose</legend>
