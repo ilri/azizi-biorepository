@@ -279,24 +279,24 @@ class BoxStorage extends Repository{
       </div>
       <div id="purpose_div">
          <legend>Purpose</legend>
-         <div>
-            <div><label for="removed_by">Retrieved by</label><input type="text" id="removed_by" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
-            <div><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" /></div>
-            <div>
-               <label for="purpose">Intended purpose</label>
-               <select name="purpose" id="purpose">
-                  <option value=""></option>
-                  <option value="analysis_on_campus">Analysis on campus</option>
-                  <option value="analysis_off_campus">Analysis off campus</option>
-                  <option value="shipment">Shipment</option>
-               </select>
-            </div>
-            <div id="analysis_type_div" hidden="true">
-               <label for="analysis_type">Specify analysis to be done</label>
-               <textarea cols="8" rows="3" id="analysis_type" name="analysis_type" ></textarea>
-            </div>
-            <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
+         <!--div-->
+         <div class="form-group left-align"><label for="removed_by">Retrieved by</label><input type="text" id="removed_by" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
+         <div class="form-group left-align"><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" /></div>
+         <div class="form-group left-align">
+            <label for="purpose">Intended purpose</label>
+            <select name="purpose" id="purpose">
+               <option value=""></option>
+               <option value="analysis_on_campus">Analysis on campus</option>
+               <option value="analysis_off_campus">Analysis off campus</option>
+               <option value="shipment">Shipment</option>
+            </select>
          </div>
+         <div id="analysis_type_div" hidden="true" class="form-group left-align">
+            <label for="analysis_type">Specify analysis to be done</label>
+            <textarea cols="8" rows="3" id="analysis_type" name="analysis_type" ></textarea>
+         </div>
+            <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
+         <!--/div-->
       </div>
       <div class="center" id="submit_button_div"><input type="submit" value="Retrieve" name="submitButton" id="submitButton"/></div>
    </form>
