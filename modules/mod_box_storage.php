@@ -596,10 +596,25 @@ class BoxStorage extends Repository{
    private function submitRemoveRequest(){
       $message = "";
 
+      $userId = 1;
+      if(strlen($_SESSION['username']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      }
+      //for some reason session['username'] is not set for some users but surname and onames are set
+      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      }
+      if($userId == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+         $this->homePage('There was an error while saving the box');
+         return;
+      }
+      $removedBy = $userId[0]['id'];
+      
       $now = date('Y-m-d H:i:s');
       $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
-      $removedBy = $_SESSION['username'];
-      if(strlen($removedBy) === 0) $removedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
 
       $colVals = array($_POST['box_id'], $removedBy, $_POST['for_who'], $_POST['purpose'], $now);
 
@@ -623,11 +638,27 @@ class BoxStorage extends Repository{
 
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
+      
+      $userId = 1;
+      if(strlen($_SESSION['username']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      }
+      //for some reason session['username'] is not set for some users but surname and onames are set
+      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      }
+      if($userId == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+         $this->homePage('There was an error while saving the box');
+         return;
+      }
+      $returnedBy = $userId[0]['id'];
+      
       //get the last remove recored for the box/box being returned
       $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
       $now = date('Y-m-d H:i:s');
-      $returnedBy = $_SESSION['username'];
-      if(strlen($returnedBy) === 0)$returnedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
 
       $result = $this->Dbase->ExecuteQuery($query, array($now, $returnedBy, $_POST['return_comment'], $_POST['remove_id']));
       if($result === 0){
