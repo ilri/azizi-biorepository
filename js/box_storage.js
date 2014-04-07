@@ -155,7 +155,7 @@ var BoxStorage = {
                {text: 'Box Label', datafield: 'box_name', width: 150},
                {text: 'Deleted By', datafield: 'deleted_by', width: 230},
                {text: 'Date Deleted', datafield: 'date_deleted', width: 150},
-               {text: 'Comment', datafield: 'delete_comment', width: 380}
+               {text: 'Comment', datafield: 'delete_comment', width: 370}
             ]
          });
       }
