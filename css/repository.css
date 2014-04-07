@@ -300,7 +300,10 @@ body {
 
 #box_storage label{margin-left: 7px;}
 #box_storage input, #box_storage select{margin-left: 4px;}
-#box_details, #box_location, #location_div, #purpose_div, #return_div, hr{width: 100%;}
+#box_details, #box_location, #location_div, #purpose_div, #return_div, hr{
+   width: 100%;
+   clear: both;
+}
 #purpose_div {margin-top: 30px;}
 #return_div {clear: both;}
 #return_div .left-align{width: 150px; margin: 5px;}
