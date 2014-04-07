@@ -200,15 +200,6 @@ class BoxStorage extends Repository{
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
 
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box label | Sample Type | Tank Location | Status
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
-
    $("#status").change(function(){
       if($('#status').val() === "temporary"){
          //if user sets position to temporary set owner to biorepository manager
@@ -382,44 +373,6 @@ class BoxStorage extends Repository{
       BoxStorage.initiateReturnedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
-
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box Label | Location | Removed By | For Who | Date Removed | Date Returned
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
-   /*$("#returned_boxes").flexigrid({
-      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
-      dataType: 'json',
-      colModel : [
-         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
-         {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
-         {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
-         {display: 'Returned by', name: 'returned_by', width: 120, sortable: true, align: 'center'},
-         {display: 'Date Removed', name: 'date_removed', width: 100, sortable: true, align: 'center'},
-         {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
-      ],
-      searchitems : [
-         {display: 'Box Label', name : 'box_name'},
-         {display: 'Returned by', name : 'returned_by'},
-         {display: 'Returned by', name : 'returned_by'},
-         {display: 'For who', name : 'removed_for'}
-      ],
-      sortname : 'date_returned',
-      sortorder : 'desc',
-      usepager : true,
-      title : 'Returned Boxes',
-      useRp : true,
-      rp : 10,
-      showTableToggleBtn: false,
-      rpOptions: [10, 20, 50], //allowed per-page values
-      width: 900,
-      height: 260,
-      singleSelect: true
-   });*/
 </script>
       <?php
    }
@@ -481,40 +434,6 @@ class BoxStorage extends Repository{
       BoxStorage.initiateDeletedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
-
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box Label | Deleted By | Date Deleted | Comment
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
-   /*$("#deleted_boxes").flexigrid({
-      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes",
-      dataType: 'json',
-      colModel : [
-         {display: 'Box Label', name: 'box_name', width: 160, sortable: true, align: 'center'},
-         {display: 'Deleted by', name: 'deleted_by', width: 160, sortable: true, align: 'center'},
-         {display: 'Date Deleted', name: 'date_deleted', width: 140, sortable: true, align: 'center'},
-         {display: 'Comment', name: 'delete_comment', width: 380, sortable: true, align: 'left'}
-      ],
-      searchitems : [
-         {display: 'Box Label', name : 'box_name'},
-         {display: 'Deleted by', name : 'deleted_by'}
-      ],
-      sortname : 'date_deleted',
-      sortorder : 'desc',
-      usepager : true,
-      title : 'Deleted Boxes',
-      useRp : true,
-      rp : 10,
-      showTableToggleBtn: false,
-      rpOptions: [10, 20, 50], //allowed per-page values
-      width: 900,
-      height: 260,
-      singleSelect: true
-   });*/
 </script>
       <?php
    }
@@ -818,7 +737,7 @@ class BoxStorage extends Repository{
    }
 
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by, e.description as sample_type '.
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
