@@ -650,7 +650,6 @@ class BoxStorage extends Repository{
       $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
       $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
       if($result !== 1 && count($result) === 1){
-         $this->Dbase->CreateLogEntry('mod_box_storage: About to delete box from '.$result[0]['id'], 'debug');
          $deletedBoxesLocId = $result[0]['id'];
          $this->Dbase->CreateLogEntry('mod_box_storage: deletedBoxesLocId = '.$deletedBoxesLocId, 'debug');
          $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
@@ -660,6 +659,7 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
          }
          else{
+            $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
             $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
             $now = date('Y-m-d H:i:s');
             $deletedBy = $_SESSION['username'];
