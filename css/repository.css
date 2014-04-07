@@ -284,7 +284,7 @@ body {
    padding-top: 30px;
 }
 
-#box_storage #meta_data_div, #box_storage #purpose_div, #box_storage #return_div {
+#box_storage #meta_data_div, #box_storage #return_div {
    float: left;
    margin: 2px 4px 2px 80px;
    height: 350px;
@@ -300,9 +300,11 @@ body {
 
 #box_storage label{margin-left: 7px;}
 #box_storage input, #box_storage select{margin-left: 4px;}
-#box_details, #box_location, #location_div, hr{width: 100%;}
+#box_details, #box_location, #location_div, #purpose_div, hr{width: 100%;}
 #location_div .left-align{width: 150px; margin: 5px;}
+#purpose_div .left-align{width: 150px; margin: 5px;}
 #location_div select, #location_div input {width: 120px; margin: 5px 2px;}
+#purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
 #box_details .left-align{width: 150px; margin: 5px;}
 #box_location .left-align{width: 130px; margin: 5px 2px;}
 #box_location select, #box_location input{width: 120px; margin: 5px 2px;}
