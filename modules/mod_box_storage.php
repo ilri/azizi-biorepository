@@ -374,6 +374,7 @@ class BoxStorage extends Repository{
          console.log("remove_id cleared");
          BoxStorage.resetReturnInput(false);
       });
+      BoxStorage.initiateReturnedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
 
@@ -385,7 +386,7 @@ class BoxStorage extends Repository{
     *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
     *
     */
-   $("#returned_boxes").flexigrid({
+   /*$("#returned_boxes").flexigrid({
       url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
       dataType: 'json',
       colModel : [
@@ -413,7 +414,7 @@ class BoxStorage extends Repository{
       width: 900,
       height: 260,
       singleSelect: true
-   });
+   });*/
 </script>
       <?php
    }

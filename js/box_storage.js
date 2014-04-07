@@ -79,6 +79,37 @@ var BoxStorage = {
       }
       else{ $("#removed_boxes").jqxGrid({source: boxesAdapter}); }
    },
+   
+   initiateReturnedBoxesGrid: function(){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+      };
+
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      if($('#returned_boxes :regex(class, jqx\-grid)').length === 0){//element does not exist in DOM
+         $("#returned_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            theme: theme,
+            pageable: true,
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Tank Position', datafield: 'position', width: 205},
+               {text: 'Removed By', datafield: 'removed_by', width: 220},
+               {text: 'For Who', datafield: 'removed_for', width: 110},
+               {text: 'Date Removed', datafield: 'date_removed', width: 90},
+               {text: 'Date Returned', datafield: 'date_returned', width: 180}
+            ]
+         });
+      }
+      else{ $("#returned_boxes").jqxGrid({source: boxesAdapter}); }
+   },
 
    submitRemoveRequest: function(){
       if(this.validateRemoveInput()){
