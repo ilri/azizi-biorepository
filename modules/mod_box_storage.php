@@ -829,10 +829,12 @@ class BoxStorage extends Repository{
 
    private function fetchRemovedBoxes() {
       //TODO: refere to users table
-      $query = "SELECT a.id, a.removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, a.returned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
+      $query = "SELECT a.id, CONCAT(d.onames, ' ', d.sname) AS removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, CONCAT(e.onames, ' ', e.sname) AS returned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
               " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
-              " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS c ON b.location = c.id";
+              " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS c ON b.location = c.id".
+              " INNER JOIN " . Config::$config['dbase'] . ".users AS d ON a.removed_by = d.id".
+              " LEFT JOIN " . Config::$config['dbase'] . ".users AS e ON a.returned_by = e.id";
       
       $result = $this->Dbase->ExecuteQuery($query);
       if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
