@@ -135,6 +135,7 @@ var BoxStorage = {
          }
          else{
             Notification.show({create:true, hide:true, updateText:false, text: "Return successfully recorded", error:false});
+            $("#returned_boxes").trigger('reloadGrid');//reload grid
          }
 
          BoxStorage.setRemovedBoxSuggestions();
