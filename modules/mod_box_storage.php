@@ -815,7 +815,8 @@ class BoxStorage extends Repository{
       
       header("Content-type: application/json");
       $this->Dbase->CreateLogEntry('mod_box_storage: Removed boxes sent via ajax request = '.print_r($result ,true), 'debug');
-      die("{'data':" . json_encode($result) . "}");
+      $json = array('data'=>$result);
+      die(json_encode($json));
    }
 
    private function fetchDeletedBoxes() {
