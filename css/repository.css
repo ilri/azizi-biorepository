@@ -319,7 +319,7 @@ body {
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
 
-#tank_boxes{margin: 5px;}
+#tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes {margin: 5px;}
 
 #odk_table td{ height: 30px; }
 #odk_table input { height: 25px; }
