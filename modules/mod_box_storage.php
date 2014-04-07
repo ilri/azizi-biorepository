@@ -330,7 +330,7 @@ class BoxStorage extends Repository{
    <div id="return_div" style="margin-left: 200px;">
       <!--legend>Box Information</legend-->
       <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
-      <div class="form-group left-align"><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
+      <div class="form-group left-align"><label for="return_comment">Comment</label><textarea cols="100" rows="3" id="return_comment"></textarea></div>
    </div>
    <div id="location_div" style="margin-left: 100px;">
       <!--legend>Location Information</legend-->
@@ -391,7 +391,7 @@ class BoxStorage extends Repository{
    <div id="return_div" style="margin-left: 200px;">
       <!--legend>Box Information</legend-->
       <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
-      <div class="form-group left-align"><label for="delete_comment">Comment</label><textarea cols="80" rows="4" id="delete_comment"></textarea></div>
+      <div class="form-group left-align"><label for="delete_comment">Comment</label><textarea cols="100" rows="3" id="delete_comment"></textarea></div>
    </div>
    <div id="location_div" style="margin-left: 100px;">
       <!--legend>Location Information</legend-->
