@@ -44,6 +44,13 @@ class Samples extends SpreadSheet {
    private $allProjects = array();
    private $owners = array();
 
+   /**
+    * The spreadsheet constructor
+    *
+    * @param   string   $path    The path to the main workbook
+    * @param   string   $name    The name of the sheet
+    * @param   object   $data    The data of the sheet
+    */
    public function __construct($path, $name, $data) {
         parent::__construct($path, $name, $data);
     }
