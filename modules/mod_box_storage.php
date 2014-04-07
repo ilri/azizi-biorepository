@@ -817,7 +817,7 @@ class BoxStorage extends Repository{
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-              'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+              'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
               'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
       
       $result = $this->Dbase->ExecuteQuery($query);
@@ -833,7 +833,7 @@ class BoxStorage extends Repository{
               " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS c ON b.location = c.id".
-              " INNER JOIN " . Config::$config['dbase'] . ".users AS d ON a.removed_by = d.id".
+              " LEFT JOIN " . Config::$config['dbase'] . ".users AS d ON a.removed_by = d.id".
               " LEFT JOIN " . Config::$config['dbase'] . ".users AS e ON a.returned_by = e.id";
       
       $result = $this->Dbase->ExecuteQuery($query);
@@ -849,7 +849,7 @@ class BoxStorage extends Repository{
       $query = "SELECT date(a.date_deleted) AS date_deleted, a.delete_comment, b.box_name, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
               " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
-              " INNER JOIN " . Config::$config['dbase'] . ".users AS c ON a.deleted_by = c.id" .
+              " LEFT JOIN " . Config::$config['dbase'] . ".users AS c ON a.deleted_by = c.id" .
               " WHERE date_deleted IS NOT NULL";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
       $result = $this->Dbase->ExecuteQuery($query);
