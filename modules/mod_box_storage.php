@@ -314,7 +314,7 @@ class BoxStorage extends Repository{
       
       BoxStorage.initiateRetrievedBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
    }
