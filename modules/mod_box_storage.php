@@ -813,7 +813,7 @@ class BoxStorage extends Repository{
    }
 
    private function fetchDeletedBoxes() {
-      $query = "SELECT date(a.date_deleted) AS date_deleted, a.delete_comment, b.*, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
+      $query = "SELECT date(a.date_deleted) AS date_deleted, a.delete_comment, b.box_name, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
               " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
               " INNER JOIN " . Config::$config['dbase'] . ".users AS c ON a.deleted_by = c.id" .
