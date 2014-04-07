@@ -8,7 +8,9 @@ var Main = {tanks: undefined};
 var BoxStorage = {
 
    /**
-    *
+    * This function submits Data from the Add a Box page. Fields are first checked before data is submitted to the server.
+    * Page refreshes after this function successfully executes
+    * 
     * @returns {Boolean}
     */
    submitInsertRequest : function(){
@@ -18,7 +20,12 @@ var BoxStorage = {
       return false;
    },
 
-   initiateBoxesGrid: function(){
+   /**
+    * This function renders the JQXGrid in the Add a Box page
+    * 
+    * @returns {undefined}
+    */
+   initiateAddBoxesGrid: function(){
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
@@ -48,42 +55,120 @@ var BoxStorage = {
       }
       else{ $("#tank_boxes").jqxGrid({source: boxesAdapter}); }
    },
+   
+   /**
+    * This function renders the JQXGrid in the Retrieve a Box page
+    * 
+    * @returns {undefined}
+    */
+   initiateRetrievedBoxesGrid: function(){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+      };
 
-   gridPageChange: function(){
-      alert('wtf');
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      if($('#retrieved_boxes :regex(class, jqx\-grid)').length === 0){//element does not exist in DOM
+         $("#retrieved_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            theme: theme,
+            pageable: true,
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Tank Position', datafield: 'position', width: 205},
+               {text: 'Retrieved By', datafield: 'removed_by', width: 165},
+               {text: 'For Who', datafield: 'removed_for', width: 165},
+               {text: 'Date Retrieved', datafield: 'date_removed', width: 90},
+               {text: 'Date Returned', datafield: 'date_returned', width: 180}
+            ]
+         });
+      }
+      else{ $("#removed_boxes").jqxGrid({source: boxesAdapter}); }
+   },
+   
+   /**
+    * This function renders the JQXGrid in the Return a Box page
+    * 
+    * @returns {undefined}
+    */
+   initiateReturnedBoxesGrid: function(){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'returned_by'}, {name: 'removed_by'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+      };
+
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      if($('#returned_boxes :regex(class, jqx\-grid)').length === 0){//element does not exist in DOM
+         $("#returned_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            theme: theme,
+            pageable: true,
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Tank Position', datafield: 'position', width: 205},
+               {text: 'Retrieved By', datafield: 'removed_by', width: 165},
+               {text: 'Returned By', datafield: 'returned_by', width: 165},
+               {text: 'Date Retrieved', datafield: 'date_removed', width: 90},
+               {text: 'Date Returned', datafield: 'date_returned', width: 180}
+            ]
+         });
+      }
+      else{ $("#returned_boxes").jqxGrid({source: boxesAdapter}); }
+   },
+   
+   /**
+    * This function renders the JQXGrid in the Delete a Box page
+    * 
+    * @returns {undefined}
+    */
+   initiateDeletedBoxesGrid: function(){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'delete_comment'} ],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_deleted_boxes'}
+      };
+
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      if($('#deleted_boxes :regex(class, jqx\-grid)').length === 0){//element does not exist in DOM
+         $("#deleted_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            theme: theme,
+            pageable: true,
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 150},
+               {text: 'Deleted By', datafield: 'deleted_by', width: 230},
+               {text: 'Date Deleted', datafield: 'date_deleted', width: 150},
+               {text: 'Comment', datafield: 'delete_comment', width: 375}
+            ]
+         });
+      }
+      else{ $("#returned_boxes").jqxGrid({source: boxesAdapter}); }
    },
 
-   old_initiateBoxesGrid: function(){
-      $("#tank_boxes").flexigrid({
-         url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes",
-         dataType: 'json',
-         colModel : [
-            {display: 'Box Id', name: 'box_id', visible: false},
-            {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
-            {display: 'Sample Type', name: 'sample_name', width: 130, sortable: true, align: 'left'},
-            {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
-            {display: 'Current Status', name: 'status', width: 100, sortable: true, align: 'center'},
-            {display: 'Date Added', name: 'date_added', width: 100, sortable: true, align: 'center'},
-            {display: 'Added by', name: 'added_by', width: 100, sortable: true, align: 'center'}
-         ],
-         searchitems : [
-            {display: 'Box Label', name : 'box_name'},
-            {display: 'Sample Type', name : 'sample_name'}
-         ],
-         sortname : 'date_added',
-         sortorder : 'desc',
-         usepager : true,
-         title : 'Stored Boxes',
-         useRp : true,
-         rp : 10,
-         showTableToggleBtn: false,
-         rpOptions: [10, 20, 50], //allowed per-page values
-         width: 900,
-         height: 260,
-         singleSelect: true
-      });
-   },
-
+   /**
+    * This function submits data from the Retrieve a Box page to the server.
+    * Fields are first checked before submit is made.
+    * Page should reload after this function executes successfully (Returns TRUE)
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data in the form
+    */
    submitRemoveRequest: function(){
       if(this.validateRemoveInput()){
          return true;
@@ -91,6 +176,11 @@ var BoxStorage = {
       return false;
    },
 
+   /**
+    * This function submits data from the Return a Box page to the server.
+    * Fields are first checked before submit is made.
+    * Page WILL NOT reload after this function executes successfully (Returns TRUE)
+    */
    submitReturnRequest: function(){
       if(this.validateReturnInput()){
          var formData = {return_comment: $("#return_comment").val(), remove_id: $("#remove_id").val()};
@@ -108,6 +198,7 @@ var BoxStorage = {
          }
          else{
             Notification.show({create:true, hide:true, updateText:false, text: "Return successfully recorded", error:false});
+            $("#returned_boxes").trigger('reloadGrid');//reload grid
          }
 
          BoxStorage.setRemovedBoxSuggestions();
@@ -115,8 +206,13 @@ var BoxStorage = {
 
    },
 
+   /**
+    * This function submits data from the Delete a Box page to the server.
+    * Fields are first checked before submit is made.
+    * Page WILL NOT RELOAD after this function is executed successfully
+    */
    submitDeleteRequest: function(){
-      console.log("submite delete called");
+      console.log("submited delete called");
       if(this.validateDeleteInput()){
          console.log("trying to delete");
          var formData = {delete_comment: $("#delete_comment").val(), box_id: $("#box_id").val()};
@@ -140,6 +236,11 @@ var BoxStorage = {
       }
    },
 
+   /**
+    * This function validates form data in the Delete a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateDeleteInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -165,6 +266,11 @@ var BoxStorage = {
       return true;
    },
 
+   /**
+    * This function validates form data in the Add a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateInsertInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -207,6 +313,11 @@ var BoxStorage = {
       return BoxStorage.validateTankInformation();
    },
 
+   /**
+    * This function validates form data in the Retrieve a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateRemoveInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -250,6 +361,11 @@ var BoxStorage = {
       return true;
    },
 
+   /**
+    * This function validates form data in the Return a Box page
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the data
+    */
    validateReturnInput: function(){
       if (typeof(String.prototype.trim) === "undefined") {
          String.prototype.trim = function()
@@ -273,6 +389,11 @@ var BoxStorage = {
       return true;
    },
 
+   /**
+    * This function validates generic tank location information in the Add a box, Retrieve a box, Return a box and Delete a box pages
+    * 
+    * @returns {Boolean}   TRUE if everything is fine with the tank location data
+    */
    validateTankInformation: function(){
       if($("#tank").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please select a tank', error:true});
@@ -318,7 +439,9 @@ var BoxStorage = {
     */
    loadTankData: function(forInsertion, boxesToShow){
       if(typeof(boxesToShow)==='undefined') boxesToShow = 0;//default boxesToShow to 0 (all boxes)
-
+      Main.forInsertion = forInsertion;
+      Main.boxesToShow = boxesToShow;
+      
       var json = BoxStorage.getTankData(false);//get tank data but dont cache the data in window.tankData
       Main.tanks = json.data;
       for(var tankIndex = 0; tankIndex < Main.tanks.length; tankIndex++){
@@ -326,8 +449,7 @@ var BoxStorage = {
                  .attr("value", Main.tanks[tankIndex].id)
                  .text(Main.tanks[tankIndex].name));
       }
-
-      Main.forInsertion = forInsertion;
+      
       //populate sector select
       $("#tank").change(BoxStorage.populateTankSectors);
 
@@ -364,7 +486,7 @@ var BoxStorage = {
                  .val('');
 
          //find all the empty positions in selected rack
-         //Do this by determining which slots are empty depending on rack size
+         //Do this by determining which slots are empty depending on rack size 
          var tankID = parseInt($("#tank").val());
          var tankIndex = BoxStorage.getTankIndex(tankID);
          var sectors = Main.tanks[tankIndex].sectors;
@@ -400,10 +522,10 @@ var BoxStorage = {
             else {
                //iterate through all boxes/boxes in rack and add their positions to the available positon array
                for (var boxIndex = 0; boxIndex < boxes.length; boxIndex++) {
-                  if (boxesToShow === 0)//add all boxes
+                  if (Main.boxesToShow === 0)//add all boxes
                      availablePos.push(parseInt(boxes[boxIndex].rack_position));
 
-                  else if (boxesToShow === 1) {//just show boxes that are still in the tanks
+                  else if (Main.boxesToShow === 1) {//just show boxes that are still in the tanks
 
                      //search for an instance of remove that has not been returned
                      var safeToShow = true;
@@ -417,7 +539,7 @@ var BoxStorage = {
                      if (safeToShow)
                         availablePos.push(parseInt(boxes[boxIndex].rack_position));
                   }
-                  else if (boxesToShow === 1) {//just show boxes that have been removed from tanks
+                  else if (Main.boxesToShow === 1) {//just show boxes that have been removed from tanks
 
                      //search for an instance of remove that has not been returned
                      var safeToShow = false;
@@ -457,7 +579,8 @@ var BoxStorage = {
             $("#box_id").val("");
             if ($("#position").val() !== "") {
                var tankID = parseInt($("#tank").val());
-               var sectors = tanks[BoxStorage.getTankIndex(tanks, tankID)].sectors;
+               var tankIndex = BoxStorage.getTankIndex(tankID);
+               var sectors = Main.tanks[tankIndex].sectors;
                var sectorID = parseInt($("#sector").val());
                var racks = sectors[BoxStorage.getSectorIndex(sectors, sectorID)].racks;
                var rackName = $("#rack").val();
@@ -625,6 +748,11 @@ var BoxStorage = {
       return -1;
    },
 
+  /**
+   * This function sets options for removed boxes in the corresponding select tag
+   * 
+   * @returns {undefined}
+   */
    setRemovedBoxSuggestions : function(){
       BoxStorage.resetReturnInput(true);
       var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
@@ -687,6 +815,11 @@ var BoxStorage = {
       });
    },
 
+   /**
+   * This function sets options for deleted boxes in the corresponding select tag
+   * 
+   * @returns {undefined}
+   */
    setDeleteBoxSuggestions : function(){
       BoxStorage.resetDeleteInput(true);
       var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
@@ -742,6 +875,13 @@ var BoxStorage = {
       });
    },
 
+   /**
+    * This function resets fields in the Return a Box page to their default
+    * 
+    * @param {Boolean} complete  Set to TRUE if you want to competely reset all the fields (including the box label and comment fields)
+    * 
+    * @returns {undefined}
+    */
    resetReturnInput: function(complete){
       $("#tank").val('');
       $("#sector").val('');
@@ -753,7 +893,13 @@ var BoxStorage = {
          $('#return_comment').val('');
       }
    },
-
+   /**
+    * This function resets fields in the Delete a Box page to their default
+    * 
+    * @param {type} complete  Set to TRUE if you want to competely reset all the fields (including the box label and comment fields)
+    * 
+    * @returns {undefined}
+    */
    resetDeleteInput: function(complete){
       $("#tank").val('');
       $("#sector").val('');

@@ -37,6 +37,7 @@ class BoxStorage extends Repository{
        *       - submit_delete_request
        *       - fetch_deleted_boxes
        *       - fetch_sample_types
+       * 
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/box_storage.js'></script>";
@@ -77,20 +78,27 @@ class BoxStorage extends Repository{
    </div>
 </div>
 <script>
-   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
 </script>
       <?php
    }
 
+   /**
+    * This function renders the Add Box page in this module. Also calls relevant functions to handle POST requests if any
+    * 
+    * @param type    $addInfo Any notification info you want displayed to the user when page renders
+    * @return null   Return called to initialize the render   
+    */
    private function addBox($addInfo = ''){
       Repository::jqGridFiles();
 ?>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
 <?php
       if(OPTIONS_REQUESTED_ACTION === "insert_box"){
          //re-open the db connection using a profile with rw permissions
          Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
+         
          $this->Dbase->InitializeConnection();
          if(is_null($this->Dbase->dbcon)) {
             ob_start();
@@ -194,18 +202,9 @@ class BoxStorage extends Repository{
 <script type="text/javascript">
    $(document).ready( function() {
       BoxStorage.loadTankData(true);
-      BoxStorage.initiateBoxesGrid();
+      BoxStorage.initiateAddBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
-
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box label | Sample Type | Tank Location | Status
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 
    $("#status").change(function(){
       if($('#status').val() === "temporary"){
@@ -227,9 +226,14 @@ class BoxStorage extends Repository{
    /**
     * This function displays the Remove Box screen. Submissions handled using webserver requests i.e POST and GET
     *
-    * @param type $addInfo
-    */
+    * @param type $addInfo    Any notification information you want displayed to the user when page loads
+    */ 
    private function retrieveBox($addInfo = ''){
+      Repository::jqGridFiles();//load requisite jqGrid javascript files
+?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<?php
       if(OPTIONS_REQUESTED_ACTION === "submit_request"){
          $addInfo = $addInfo.$this->submitRemoveRequest();
       }
@@ -241,59 +245,59 @@ class BoxStorage extends Repository{
    <h3 class="center">Retrieve a Box</h3>
    <form enctype="multipart/form-data" name="upload" class="form-horizontal odk_parser" method="POST" action="index.php?page=box_storage&do=remove_box&action=submit_request" onsubmit="return BoxStorage.submitRemoveRequest();" >
       <div id="location_div">
-         <legend>Box Location</legend>
-         <div>
-            <div>
+         <!--legend>Box Location</legend-->
+         <!--div-->
+         <div class="form-group left-align">
                <label for="tank">Tank</label>
                <select id="tank">
                   <option value=""></option><!--NULL option-->
                </select>
-            </div>
-            <div>
-               <label for="sector">Sector</label>
-               <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
-               </select>
-            </div>
-            <div id="rack_div">
-               <label for="rack">Rack</label>
-               <select type="text" name="rack" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
-               </select>
-            </div>
-
-            <div>
-               <label for="position">Position in Rack</label>
-               <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
-               </select>
-            </div>
-            <div>
-               <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" /><input type="hidden" id="box_id" name="box_id" />
-            </div>
          </div>
+         <div class="form-group left-align">
+            <label for="sector">Sector</label>
+            <select id="sector" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div id="rack_div" class="form-group left-align">
+            <label for="rack">Rack</label>
+            <select type="text" name="rack" id="rack" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+
+         <div class="form-group left-align">
+            <label for="position">Position in Rack</label>
+            <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div class="form-group left-align">
+            <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" /><input type="hidden" id="box_id" name="box_id" />
+         </div>
+         <!--/div-->
       </div>
       <div id="purpose_div">
-         <legend>Purpose</legend>
-         <div>
-            <div><label for="removed_by">Retrieved by</label><input type="text" id="removed_by" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
-            <div><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" /></div>
-            <div>
-               <label for="purpose">Intended purpose</label>
-               <select name="purpose" id="purpose">
-                  <option value=""></option>
-                  <option value="analysis_on_campus">Analysis on campus</option>
-                  <option value="analysis_off_campus">Analysis off campus</option>
-                  <option value="shipment">Shipment</option>
-               </select>
-            </div>
-            <div id="analysis_type_div" hidden="true">
-               <label for="analysis_type">Specify analysis to be done</label>
-               <textarea cols="8" rows="3" id="analysis_type" name="analysis_type" ></textarea>
-            </div>
-            <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
+         <!--legend>Purpose</legend-->
+         <!--div-->
+         <div class="form-group left-align" style="width: 200px;"><label for="removed_by">Retrieved by</label><input type="text" id="removed_by" style="width: 190px;" disabled="disabled" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
+         <div class="form-group left-align" style="width: 200px;"><label for="for_who">For Who</label><input type="text" name="for_who" id="for_who" style="width: 180px;" /></div>
+         <div class="form-group left-align">
+            <label for="purpose">Intended purpose</label>
+            <select name="purpose" id="purpose">
+               <option value=""></option>
+               <option value="analysis_on_campus">Analysis on campus</option>
+               <option value="analysis_off_campus">Analysis off campus</option>
+               <option value="shipment">Shipment</option>
+            </select>
          </div>
+         <div id="analysis_type_div" hidden="true" class="form-group left-align">
+            <label for="analysis_type">Specify analysis to be done</label>
+            <textarea cols="8" rows="3" id="analysis_type" name="analysis_type" ></textarea>
+         </div>
+            <!--<div><label for="sampling_loc">Sampling Location</label><input type="text" name="sampling_loc" id="sampling_loc" /></div>-->
+         <!--/div-->
       </div>
-      <div class="center" id="submit_button_div"><input type="submit" value="Remove" name="submitButton" id="submitButton"/></div>
+      <div class="center" id="submit_button_div"><input type="submit" value="Retrieve" name="submitButton" id="submitButton" class="btn btn-success" /></div>
    </form>
-   <div id="removed_boxes"></div>
+   <div id="retrieved_boxes"></div>
 </div>
 
 <script type="text/javascript">
@@ -307,45 +311,10 @@ class BoxStorage extends Repository{
             $("#analysis_type_div").hide();
          }
       });
+      
+      BoxStorage.initiateRetrievedBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
-
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box Label | Location | Removed By | For Who | Date Removed | Date Returned
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
-   $("#removed_boxes").flexigrid({
-      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
-      dataType: 'json',
-      colModel : [
-         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
-         {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
-         {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
-         {display: 'For who', name: 'removed_for', width: 120, sortable: true, align: 'center'},
-         {display: 'Date Removed', name: 'date_removed', width: 100, sortable: true, align: 'center'},
-         {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
-      ],
-      searchitems : [
-         {display: 'Box Label', name : 'box_name'},
-         {display: 'Removed by', name : 'removed_by'},
-         {display: 'For who', name : 'removed_for'}
-      ],
-      sortname : 'date_removed',
-      sortorder : 'desc',
-      usepager : true,
-      title : 'Stored Boxes',
-      useRp : true,
-      rp : 10,
-      showTableToggleBtn: false,
-      rpOptions: [10, 20, 50], //allowed per-page values
-      width: 900,
-      height: 260,
-      singleSelect: true
-   });
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
    }
@@ -353,39 +322,44 @@ class BoxStorage extends Repository{
    /**
     * This function displays the Return Box screen. Submissions handled using Javascript AJAX requests
     *
-    * @param type $addInfo
+    * @param type $addInfo    Any notification information you want displayed to the user when page loads
     */
    private function returnBox(){
-      ?>
+       Repository::jqGridFiles();//load requisite jqGrid javascript files
+?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+
 <div id="box_storage">
    <h3 class="center">Return Box</h3>
    <div id="return_div">
-      <legend>Box Information</legend>
-      <div><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
-      <div><label for="return_comment">Comment</label><textarea cols="80" rows="4" id="return_comment"></textarea></div>
-      <div class="center" id="submit_button_div"><button type="button" id="submitButton">Return</button></div>
+      <!--legend>Box Information</legend-->
+      <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="remove_id"/></div>
+      <div class="form-group left-align"><label for="return_comment">Comment</label><textarea cols="100" rows="3" id="return_comment"></textarea></div>
    </div>
    <div id="location_div">
-      <legend>Location Information</legend>
-      <div>
-         <div>
-            <label for="tank">Tank</label>
-            <input id="tank" disabled="disabled" />
-         </div>
-         <div>
-            <label for="sector">Sector</label>
-            <input id="sector" disabled="disabled" />
-         </div>
-         <div>
-            <label for="rack">Rack</label>
-            <input id="rack" disabled="disabled" />
-         </div>
-         <div>
-            <label for="position">Position in Rack</label>
-            <input id="position" disabled="disabled" />
-         </div>
+      <!--legend>Location Information</legend-->
+      <!--div-->
+      <div class="form-group left-align">
+         <label for="tank">Tank</label>
+         <input id="tank" disabled="disabled" />
       </div>
+      <div class="form-group left-align">
+         <label for="sector">Sector</label>
+         <input id="sector" disabled="disabled" />
+      </div>
+      <div class="form-group left-align">
+         <label for="rack">Rack</label>
+         <input id="rack" disabled="disabled" />
+      </div>
+      <div class="form-group left-align">
+         <label for="position">Position in Rack</label>
+         <input id="position" disabled="disabled" />
+      </div>
+      <!--/div-->
    </div>
+   <div class="center" id="submit_button_div"><button type="button" id="submitButton" class="btn btn-success">Return</button></div>
 
    <div id="returned_boxes"></div>
 </div>
@@ -402,82 +376,56 @@ class BoxStorage extends Repository{
          console.log("remove_id cleared");
          BoxStorage.resetReturnInput(false);
       });
+      BoxStorage.initiateReturnedBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
-
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box Label | Location | Removed By | For Who | Date Removed | Date Returned
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
-   $("#returned_boxes").flexigrid({
-      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes",
-      dataType: 'json',
-      colModel : [
-         {display: 'Box Label', name: 'box_name', width: 100, sortable: true, align: 'center'},
-         {display: 'Tank Position', name: 'position', width: 280, sortable: false, align: 'center'},
-         {display: 'Removed by', name: 'removed_by', width: 120, sortable: true, align: 'center'},
-         {display: 'Returned by', name: 'returned_by', width: 120, sortable: true, align: 'center'},
-         {display: 'Date Removed', name: 'date_removed', width: 100, sortable: true, align: 'center'},
-         {display: 'Date Returned', name: 'date_returned', width: 100, sortable: true, align: 'center'}
-      ],
-      searchitems : [
-         {display: 'Box Label', name : 'box_name'},
-         {display: 'Returned by', name : 'returned_by'},
-         {display: 'Returned by', name : 'returned_by'},
-         {display: 'For who', name : 'removed_for'}
-      ],
-      sortname : 'date_returned',
-      sortorder : 'desc',
-      usepager : true,
-      title : 'Returned Boxes',
-      useRp : true,
-      rp : 10,
-      showTableToggleBtn: false,
-      rpOptions: [10, 20, 50], //allowed per-page values
-      width: 900,
-      height: 260,
-      singleSelect: true
-   });
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
    }
 
+   /**
+    * This function displays the Delete Box page to the user
+    * 
+    * @param type $addInfo    Any notification information you want displayed to the user when page loads
+    */
    private function deleteBox($addInfo = ''){
+      Repository::jqGridFiles();//load requisite jqGrid javascript files
+      ?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+      <?php
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
 <div id="box_storage">
    <h3 class="center">Delete Box</h3>
    <div id="return_div">
-      <legend>Box Information</legend>
-      <div><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
-      <div><label for="delete_comment">Comment</label><textarea cols="80" rows="4" id="delete_comment"></textarea></div>
-      <div class="center" id="submit_button_div"><button type="button" id="submitButton">Delete</button></div>
+      <!--legend>Box Information</legend-->
+      <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
+      <div class="form-group left-align"><label for="delete_comment">Comment</label><textarea cols="100" rows="3" id="delete_comment"></textarea></div>
    </div>
    <div id="location_div">
-      <legend>Location Information</legend>
-      <div>
-         <div>
-            <label for="tank">Tank</label>
-            <input id="tank" disabled="disabled" />
-         </div>
-         <div>
-            <label for="sector">Sector</label>
-            <input id="sector" disabled="disabled" />
-         </div>
-         <div>
-            <label for="rack">Rack</label>
-            <input id="rack" disabled="disabled" />
-         </div>
-         <div>
-            <label for="position">Position in Rack</label>
-            <input id="position" disabled="disabled" />
-         </div>
+      <!--legend>Location Information</legend-->
+      <!--div-->
+      <div class="form-group left-align">
+         <label for="tank">Tank</label>
+         <input id="tank" disabled="disabled" />
+      </div>
+      <div class="form-group left-align">
+         <label for="sector">Sector</label>
+         <input id="sector" disabled="disabled" />
+      </div>
+      <div class="form-group left-align">
+         <label for="rack">Rack</label>
+         <input id="rack" disabled="disabled" />
+      </div>
+      <div class="form-group left-align">
+         <label for="position">Position in Rack</label>
+         <input id="position" disabled="disabled" />
       </div>
    </div>
+   <div class="center" id="submit_button_div"><button type="button" id="submitButton" class="btn btn-success">Delete</button></div>
+   <!--/div-->
    <div id="deleted_boxes"></div>
 </div>
 <script type="text/javascript">
@@ -493,52 +441,24 @@ class BoxStorage extends Repository{
          console.log("box_id cleared");
          BoxStorage.resetDeleteInput(false);
       });
+      
+      BoxStorage.initiateDeletedBoxesGrid();
    });
-   $('#whoisme .back').html('<a href=\'?page=box_storage\'>Back</a>');//back link
-
-   //Javascript for making table
-   /*
-    * Table looks like:
-    *    Box Label | Deleted By | Date Deleted | Comment
-    *
-    *    Tank Location is a Clever concatenation of Tank + Sector + Rack + Rack Position
-    *
-    */
-   $("#deleted_boxes").flexigrid({
-      url: "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes",
-      dataType: 'json',
-      colModel : [
-         {display: 'Box Label', name: 'box_name', width: 160, sortable: true, align: 'center'},
-         {display: 'Deleted by', name: 'deleted_by', width: 160, sortable: true, align: 'center'},
-         {display: 'Date Deleted', name: 'date_deleted', width: 140, sortable: true, align: 'center'},
-         {display: 'Comment', name: 'delete_comment', width: 380, sortable: true, align: 'left'}
-      ],
-      searchitems : [
-         {display: 'Box Label', name : 'box_name'},
-         {display: 'Deleted by', name : 'deleted_by'}
-      ],
-      sortname : 'date_deleted',
-      sortorder : 'desc',
-      usepager : true,
-      title : 'Deleted Boxes',
-      useRp : true,
-      rp : 10,
-      showTableToggleBtn: false,
-      rpOptions: [10, 20, 50], //allowed per-page values
-      width: 900,
-      height: 260,
-      singleSelect: true
-   });
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
    }
 
+   /**
+    * This function handles the POST request for inserting new box data from the Add Box page
+    * 
+    * @return string    Result of the insert into the database. Can be either positive or negative
+    */
    private function insertBox(){
       $message = "";
 
       //generate box size that lims can understand
-      $boxSizeInLIMS = GeneralTasks::NumericPosition2LCPosition(1, $_POST['box_size']);
-      $boxSizeInLIMS = $boxSizeInLIMS.".".GeneralTasks::NumericPosition2LCPosition($_POST['box_size'], $_POST['box_size']);
+      $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
 
       //change keeper to biorepository manger if box is in temp position
       $ownerID = $_POST['owner'];
@@ -555,8 +475,16 @@ class BoxStorage extends Repository{
       if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
       //get the user id
-      $query = 'select id from '. Config::$config['lims_extension'] .'.users where login = :login';
-      $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      $userId = 1;
+      if(strlen($_SESSION['username']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      }
+      //for some reason session['username'] is not set for some users but surname and onames are set
+      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      }
       if($userId == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
          $this->homePage('There was an error while saving the box');
@@ -565,18 +493,18 @@ class BoxStorage extends Repository{
       $addedBy = $userId[0]['id'];
 
       $this->Dbase->StartTrans();
-      $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper)';
-      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID);
+      $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
+      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features']);
       $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
 
       $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
       if($result !== 1) {
          $boxId = $this->Dbase->dbcon->lastInsertId();
-         //insert extra information in lims_extension database
+         //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $insertQuery = 'insert into '. Config::$config['lims_extension'] .'.lcmod_boxes_def(box_id, status, features, sample_types, date_added, added_by) values(:box_id, :status, :features, :sample_types, :date_added, :added_by)';
+         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, features, sample_types, date_added, added_by) values(:box_id, :status, :features, :sample_types, :date_added, :added_by)';
          $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'features' => $_POST['features'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy);
          $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
@@ -600,13 +528,33 @@ class BoxStorage extends Repository{
       return $message;
    }
 
+   /**
+    * This function handles POST requests from Retrieve a Box page. It records the data in the database
+    * 
+    * @return string    Results for handling the remove box action in the database. Can be either positive or negative
+    */
    private function submitRemoveRequest(){
       $message = "";
 
+      $userId = 1;
+      if(strlen($_SESSION['username']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      }
+      //for some reason session['username'] is not set for some users but surname and onames are set
+      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      }
+      if($userId == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+         $this->homePage('There was an error while saving the box');
+         return;
+      }
+      $removedBy = $userId[0]['id'];
+      
       $now = date('Y-m-d H:i:s');
       $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
-      $removedBy = $_SESSION['username'];
-      if(strlen($removedBy) === 0) $removedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
 
       $colVals = array($_POST['box_id'], $removedBy, $_POST['for_who'], $_POST['purpose'], $now);
 
@@ -614,23 +562,50 @@ class BoxStorage extends Repository{
          array_push($columns, "analysis");
          array_push($colVals, $_POST['analysis_type']);
       }
-      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['lims_extension'].".lcmod_retrieved_boxes", $columns, $colVals);
+      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['dbase'].".lcmod_retrieved_boxes", $columns, $colVals);
 
       if($result === 0){
          $message = "Unable to remove box for the system.";
          $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
       }
+      else{
+         $message = "Box successfully removed from the system.";
+         $this->Dbase->CreateLogEntry('mod_box_storage: Box successfully retrieved from system by '.$_SESSION['username'], 'debug');
+      }
 
       return $message;
    }
 
+   /**
+    * This function handles POST request from the Return a Box page
+    * 
+    * @param Boolean $fromAjaxRequest  Set to TRUE if POST request is comming for javascripts AJAX
+    * 
+    * @return string Results for handling the return box action in the database. Can be either positive or negative
+    */
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
+      
+      $userId = 1;
+      if(strlen($_SESSION['username']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      }
+      //for some reason session['username'] is not set for some users but surname and onames are set
+      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      }
+      if($userId == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+         $this->homePage('There was an error while saving the box');
+         return;
+      }
+      $returnedBy = $userId[0]['id'];
+      
       //get the last remove recored for the box/box being returned
-      $query = "UPDATE ".Config::$config['lims_extension'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
+      $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
       $now = date('Y-m-d H:i:s');
-      $returnedBy = $_SESSION['username'];
-      if(strlen($returnedBy) === 0)$returnedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
 
       $result = $this->Dbase->ExecuteQuery($query, array($now, $returnedBy, $_POST['return_comment'], $_POST['remove_id']));
       if($result === 0){
@@ -648,6 +623,13 @@ class BoxStorage extends Repository{
       else return $message;
    }
 
+   /**
+    * This function handles POST request from Delete a Box page
+    * 
+    * @param type $fromAjaxRequest  Set to TRUE if request is comming from Javascripts AJAX
+    * 
+    * @return string Results for handling the delete box action in the database. Can be either positive or negative
+    */
    private function submitDeleteRequest($fromAjaxRequest = false){
       $message = "";
       $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
@@ -662,11 +644,27 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
          }
          else{
-            $query = "UPDATE ".Config::$config['lims_extension'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
+            
+            $userId = 1;
+            if(strlen($_SESSION['username']) > 0){
+               $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+               $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+            }
+            //for some reason session['username'] is not set for some users but surname and onames are set
+            else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+               $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+               $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+            }
+            if($userId == 1){
+               $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+               $this->homePage('There was an error while saving the box');
+               return;
+            }
+            $deletedBy = $userId[0]['id'];
+            
+            $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
             $now = date('Y-m-d H:i:s');
-            $deletedBy = $_SESSION['username'];
-
-            if(strlen($deletedBy) === 0) $deletedBy = $_SESSION['surname']." ".$_SESSION['onames'];//rollback to using surname and othernames if usernames is not set
 
             $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
             if($result === 1){
@@ -690,9 +688,17 @@ class BoxStorage extends Repository{
       else return $message;
    }
 
+   /**
+    * This function gets tank details form the database and constructs a json object of the data with the following hierarchies
+    *    - tank
+    *       - sector
+    *          - rack
+    *             -box 
+    */
    private function getTankDetails() {
       //get tank details from azizi_lims
-      $query = "SELECT b.id, b.name FROM " . Config::$config['lims_extension'] . ".lcmod_storage_facilities AS a" .
+      $query = "SELECT b.id, b.name" .
+              " FROM " . Config::$config['dbase'] . ".lcmod_storage_facilities AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".storage_facilities  AS b ON a.id = b.id" .
               " WHERE a.is_tank = 1";
       $result = $this->Dbase->ExecuteQuery($query);
@@ -704,7 +710,11 @@ class BoxStorage extends Repository{
             $result[$tankIndex]['sectors'] = $tempResult;
             for ($sectorIndex = 0; $sectorIndex < count($result[$tankIndex]['sectors']); $sectorIndex++) {
                //get all boxes in that sector
-               $query = "SELECT * FROM " . Config::$config['azizi_db'] . ".boxes_def WHERE location = " . $result[$tankIndex]['sectors'][$sectorIndex]['id'];
+               $query = "SELECT a.*" .
+                       " FROM " . Config::$config['azizi_db'] . ".boxes_def AS a" .
+                       " INNER JOIN " . Config::$config['dbase'] . ".lcmod_boxes_def AS b ON a.box_id = b.box_id" .
+                       " WHERE a.location = " . $result[$tankIndex]['sectors'][$sectorIndex]['id'] .
+                       " AND b.date_deleted IS NULL";
                $tempResult = $this->Dbase->ExecuteQuery($query);
 
                //get all unique racks in this sector
@@ -720,15 +730,15 @@ class BoxStorage extends Repository{
                            $racks[$tempResult[$boxIndex]['rack']]['boxes'] = array();
                         }
 
-                        //get extra data for box in boxes_def table in lims_extension database
-                        $query = "SELECT * FROM " . Config::$config['lims_extension'] . ".lcmod_boxes_def WHERE box_id = " . $tempResult[$boxIndex]['box_id'];
+                        //get extra data for box in boxes_def table in dbase database
+                        $query = "SELECT * FROM " . Config::$config['dbase'] . ".lcmod_boxes_def WHERE box_id = " . $tempResult[$boxIndex]['box_id'];
                         $extraData = $this->Dbase->ExecuteQuery($query);
                         if (count($extraData) === 1) {
                            $tempResult[$boxIndex] = array_merge($tempResult[$boxIndex], $extraData[0]);
                         }
 
                         //get retrieves on the box
-                        $query = "SELECT * FROM " . Config::$config['lims_extension'] . ".lcmod_retrieved_boxes WHERE box_def = " . $tempResult[$boxIndex]['box_id'];
+                        $query = "SELECT * FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes WHERE box_def = " . $tempResult[$boxIndex]['box_id'];
                         $tempResult[$boxIndex]['retrieves'] = $this->Dbase->ExecuteQuery($query);
                         if ($tempResult[$boxIndex]['retrieves'] === 1) {
                            $tempResult[$boxIndex]['retrieves'] = array();
@@ -768,14 +778,17 @@ class BoxStorage extends Repository{
       echo json_encode($jsonArray);
    }
 
+   /**
+    * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
+    */
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by, e.description as sample_type from '. Config::$config['lims_extension'] .'.lcmod_boxes_def as a '.
-          'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
-          'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-          'inner join '. Config::$config['lims_extension'] .'.users as d on a.added_by = d.id '.
-          'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
-
-//      echo $query;
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type '.
+              'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
+              'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
+              'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
+              'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+              'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
+      
       $result = $this->Dbase->ExecuteQuery($query);
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
 
@@ -783,120 +796,49 @@ class BoxStorage extends Repository{
       die('{"data":'. json_encode($result) .'}');
    }
 
+   /**
+    * This function gets data for boxes retireved from the system using the Retrieve a Box page and constructs a json object with this data
+    */
    private function fetchRemovedBoxes() {
-      //check if search criterial provided
-      $criteriaArray = array();
-      if ($_POST['query'] != "") {
-         $criteria = "WHERE {$_POST['qtype']} LIKE '%?%'";
-         $criteriaArray[] = $_POST['query'];
-      } else {
-         $criteria = "";
-      }
-
-      $startRow = ($_POST['page'] - 1) * $_POST['rp'];
-      $query = "SELECT a.*, b.box_name, b.rack, b.rack_position" .
-              " FROM " . Config::$config['lims_extension'] . ".lcmod_retrieved_boxes AS a" .
+      //TODO: refere to users table
+      $query = "SELECT a.id, CONCAT(d.onames, ' ', d.sname) AS removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, CONCAT(e.onames, ' ', e.sname) AS returned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
+              " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
-              " $criteria" .
-              " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
-      //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
-      $data = $this->Dbase->ExecuteQuery($query . " LIMIT $startRow, {$_POST['rp']}", $criteriaArray);
-
-      //check if any data was fetched
-      if ($data === 1)
-         die(json_encode(array('error' => true)));
-
-
-      $dataCount = $this->Dbase->ExecuteQuery($query, $criteriaArray);
-      if ($dataCount === 1)
-         die(json_encode(array('error' => true)));
-      else
-         $dataCount = sizeof($dataCount);
-
-      //reformat rows fetched from first query
-      $rows = array();
-      foreach ($data as $row) {
-         $query = "SELECT a.rack, a.rack_position, b.facility AS sector, c.name AS tank " .
-                 " FROM " . Config::$config['azizi_db'] . ".boxes_def AS a" .
-                 " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS b ON a.location = b.id" .
-                 " INNER JOIN " . Config::$config['azizi_db'] . ".storage_facilities AS c ON b.facility_id = c.id" .
-                 " WHERE a.box_id = " . $row['box_def'];
-         $result = $this->Dbase->ExecuteQuery($query);
-         $this->Dbase->CreateLogEntry('fetched row -> ' . print_r($row, true), 'debug');
-         if (count($result) === 1) {// only one row should be fetched
-            $location = $result[0]['tank'] . "  -> Sector " . $result[0]['sector'] . "  -> Rack " . $result[0]['rack'] . "  -> Position " . $row['rack_position'];
-         } else {
-            $location = "unknown";
-         }
-
-         $dateRemoved = date('d/m/Y H:i:s', strtotime($row['date_removed']));
-
-         if (is_null($row['date_returned'])) {
-            $dateReturned = "Not returned";
-            $returnedBy = $dateReturned;
-         } else {
-            $dateReturned = date('d/m/Y H:i:s', strtotime($row['date_returned']));
-            $returnedBy = $row['returned_by'];
-         }
-         $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'], "position" => $location, "removed_by" => $row["removed_by"], "returned_by" => $returnedBy, "removed_for" => $row["removed_for"], "date_removed" => $dateRemoved, "date_returned" => $dateReturned));
-      }
-      $response = array(
-          'total' => $dataCount,
-          'page' => $_POST['page'],
-          'rows' => $rows
-      );
-
-      die(json_encode($response));
-   }
-
-   private function fetchDeletedBoxes() {
-      //check if search criterial provided
-      $criteriaArray = array();
-      if ($_POST['query'] != "") {
-         $criteria = "WHERE {$_POST['qtype']} LIKE '%?%' AND date_deleted IS NOT NULL";
-         $criteriaArray[] = $_POST['query'];
-      } else {
-         $criteria = "WHERE date_deleted IS NOT NULL";
-      }
-
-      $startRow = ($_POST['page'] - 1) * $_POST['rp'];
-      $query = "SELECT a.*, b.*" .
-              " FROM " . Config::$config['lims_extension'] . ".lcmod_boxes_def AS a" .
-              " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
-              " $criteria" .
-              " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
-      //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
-      $data = $this->Dbase->ExecuteQuery($query . " LIMIT $startRow, {$_POST['rp']}", $criteriaArray);
-
-      //check if any data was fetched
-      if ($data === 1)
-         die(json_encode(array('error' => true)));
-
-
-      $dataCount = $this->Dbase->ExecuteQuery($query, $criteriaArray);
-      if ($dataCount === 1)
-         die(json_encode(array('error' => true)));
-      else
-         $dataCount = sizeof($dataCount);
-
-      //reformat rows fetched from first query
-      $rows = array();
-      foreach ($data as $row) {
-         $dateDeleted = date('d/m/Y H:i:s', strtotime($row['date_deleted']));
-
-         $rows[] = array("id" => $row['id'], "cell" => array("box_name" => $row['box_name'], "deleted_by" => $row["deleted_by"], "date_deleted" => $dateDeleted, "delete_comment" => $row['delete_comment']));
-      }
-      $response = array(
-          'total' => $dataCount,
-          'page' => $_POST['page'],
-          'rows' => $rows
-      );
-
-      die(json_encode($response));
+              " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS c ON b.location = c.id".
+              " LEFT JOIN " . Config::$config['dbase'] . ".users AS d ON a.removed_by = d.id".
+              " LEFT JOIN " . Config::$config['dbase'] . ".users AS e ON a.returned_by = e.id";
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      header("Content-type: application/json");
+      $this->Dbase->CreateLogEntry('mod_box_storage: Removed boxes sent via ajax request = '.print_r($result ,true), 'debug');
+      $json = array('data'=>$result);
+      die(json_encode($json));
    }
 
    /**
-    * Handles all ajax requests to this page
+    * This function gets data for boxes deleted from the system using the Delete a Box page and constructs a json object with this data
+    */
+   private function fetchDeletedBoxes() {
+      $query = "SELECT date(a.date_deleted) AS date_deleted, a.delete_comment, b.box_name, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
+              " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
+              " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
+              " LEFT JOIN " . Config::$config['dbase'] . ".users AS c ON a.deleted_by = c.id" .
+              " WHERE date_deleted IS NOT NULL";
+      //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      header("Content-type: application/json");
+      $this->Dbase->CreateLogEntry('mod_box_storage: Deleted boxes sent via ajax request = '.print_r($result ,true), 'debug');
+      $json = array('data'=>$result);
+      die(json_encode($json));
+   }
+
+   /**
+    * This function fetches the available sample types from the LIMS database
     */
    private function fetchSampleTypes() {
       $message = "";
