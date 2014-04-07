@@ -439,7 +439,6 @@ class BoxStorage extends Repository{
       <!--legend>Box Information</legend-->
       <div class="form-group left-align"><label for="box_label">Box Label</label><input type="text" id="box_label" /><input type="hidden" id="box_id"/></div>
       <div class="form-group left-align"><label for="delete_comment">Comment</label><textarea cols="80" rows="4" id="delete_comment"></textarea></div>
-      <div class="center" id="submit_button_div"><button type="button" id="submitButton" class="btn btn-success">Delete</button></div>
    </div>
    <div id="location_div">
       <!--legend>Location Information</legend-->
@@ -461,6 +460,7 @@ class BoxStorage extends Repository{
          <input id="position" disabled="disabled" />
       </div>
    </div>
+   <div class="center" id="submit_button_div"><button type="button" id="submitButton" class="btn btn-success">Delete</button></div>
    <!--/div-->
    <div id="deleted_boxes"></div>
 </div>
