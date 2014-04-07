@@ -332,7 +332,7 @@ class BoxStorage extends Repository{
 ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
-<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery/jquery-1.8.3.min.js' /></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery-1.8.3.min.js" /></script>
 
 <div id="box_storage">
    <h3 class="center">Return Box</h3>
