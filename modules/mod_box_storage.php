@@ -787,7 +787,7 @@ class BoxStorage extends Repository{
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
               'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-              'left join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count'.//sample type
+              'left join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count './/sample type
               'left join '. Config::$config['azizi_db'] .'.modules_custom_values as f on a.project = f.val_id';//associated project
       
       $result = $this->Dbase->ExecuteQuery($query);
