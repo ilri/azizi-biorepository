@@ -29,7 +29,7 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'} ],
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
          id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_boxes'}
       };
 
@@ -45,9 +45,10 @@ var BoxStorage = {
             pageable: true,
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 100},
-               {text: 'Sample Type', datafield: 'sample_type', width: 205},
-               {text: 'Tank Position', datafield: 'position', width: 220},
-               {text: 'Status', datafield: 'status', width: 110},
+               {text: 'Sample Type', datafield: 'sample_type', width: 150},
+               {text: 'Project', datafield: 'project', width: 115},
+               {text: 'Tank Position', datafield: 'position', width: 180},
+               {text: 'Status', datafield: 'status', width: 90},
                {text: 'Date Added', datafield: 'date_added', width: 90},
                {text: 'Added By', datafield: 'added_by', width: 180}
             ]
