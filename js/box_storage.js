@@ -990,6 +990,6 @@ var BoxStorage = {
       $("select option").filter(function(){
          return $(this).text() == "";
       }).prop('selected', true);
-      $("#advanced_search_div").toggle();
+      $("#advanced_search_div").toggle(500);
    }
 };
