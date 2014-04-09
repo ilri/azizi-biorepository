@@ -162,7 +162,7 @@ class BoxStorage extends Repository{
             <select id="project" name="project">
                <option value=""></option>
                <?php
-                  foreach ($projects as $currProject) echo '<option value"' . $currProject['val_id'] . '">' . $currProject['value'] . "</option>\n";
+                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">' . $currProject['value'] . "</option>\n";
                ?>
             </select>
          </div>
