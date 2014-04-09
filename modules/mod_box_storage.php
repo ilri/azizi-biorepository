@@ -914,6 +914,8 @@ class BoxStorage extends Repository{
          }
       }
       
+      $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
+      
       $result = $this->Dbase->ExecuteQuery($query);
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
 
