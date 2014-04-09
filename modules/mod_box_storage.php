@@ -159,7 +159,7 @@ class BoxStorage extends Repository{
          </div>
          <div class="left-align">
             <label for="project">Project</label>
-            <select>
+            <select id="project" name="project">
                <option value=""></option>
                <?php
                   foreach ($projects as $currProject) echo '<option value"' . $currProject['val_id'] . '">' . $currProject['value'] . "</option>\n";
@@ -515,9 +515,9 @@ class BoxStorage extends Repository{
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, sample_types, date_added, added_by) values(:box_id, :status, :sample_types, :date_added, :added_by)';
-         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy);
-         $columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
+         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, sample_types, date_added, added_by, project) values(:box_id, :status, :sample_types, :date_added, :added_by, :project)';
+         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project']);
+         //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
 
          $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);

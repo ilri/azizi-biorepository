@@ -310,6 +310,11 @@ var BoxStorage = {
          $("#status").focus();
          return false;
       }
+      if($("#project").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please select the project', error:true});
+         $("#project").focus();
+         return false;
+      }
 
       return BoxStorage.validateTankInformation();
    },
