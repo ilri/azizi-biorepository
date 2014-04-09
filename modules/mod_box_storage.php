@@ -444,7 +444,7 @@ class BoxStorage extends Repository{
             <select id="keeper">
                <option value=""></option>
                <?php
-                  foreach ($keepers as $currKeeper) echo '<option value="' . $currKeeper['count'] . '">From ' . $currKeeper['name'] . " project</option>\n";
+                  foreach ($keepers as $currKeeper) echo '<option value="' . $currKeeper['count'] . '">' . $currKeeper['name'] . "</option>\n";
                ?>
             </select>
          </div>
