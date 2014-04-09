@@ -884,7 +884,7 @@ class BoxStorage extends Repository{
               'left join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count './/sample type
               'left join '. Config::$config['azizi_db'] .'.modules_custom_values as f on a.project = f.val_id';//associated project
       
-      if(isset($_POST['search'])){//check if requester whats a more specific search
+      /*if(isset($_POST['search'])){//check if requester whats a more specific search
          $query = $query . " WHERE box_name LIKE '%".$_POST['search']."%'";
          $query = $query . " AND box_features LIKE '%".$_POST['search']."%'";
          if(count($_POST['project']) > 0){
@@ -912,7 +912,7 @@ class BoxStorage extends Repository{
          if(count($_POST['keeper'])>0){
             $query = $query . " AND keeper = ".$_POST['keeper'];
          }
-      }
+      }*/
       
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
       

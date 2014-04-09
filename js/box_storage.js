@@ -135,7 +135,7 @@ var BoxStorage = {
     * @returns {undefined}
     */
    initiateSearchBoxesGrid: function(data){
-      data = typeof data !== 'undefined' ? data : {action: 'fetch_boxes'};//set default type for data
+      data = typeof data !== 'undefined' ? data : {action: 'fetch_boxes'};//set defaults for data incase not set
       
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
