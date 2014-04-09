@@ -130,6 +130,43 @@ var BoxStorage = {
    },
    
    /**
+    * This function renders the JQXGrid in the Search for a Box page
+    * 
+    * @returns {undefined}
+    */
+   initiateSearchBoxesGrid: function(){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_boxes'}
+      };
+
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      if($('#searched_boxes :regex(class, jqx\-grid)').length === 0){
+         $("#searched_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            theme: theme,
+            pageable: true,
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Sample Type', datafield: 'sample_type', width: 150},
+               {text: 'Project', datafield: 'project', width: 115},
+               {text: 'Tank Position', datafield: 'position', width: 180},
+               {text: 'Status', datafield: 'status', width: 90},
+               {text: 'Date Added', datafield: 'date_added', width: 90},
+               {text: 'Added By', datafield: 'added_by', width: 180}
+            ]
+         });
+      }
+      else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
+   },
+   
+   /**
     * This function renders the JQXGrid in the Delete a Box page
     * 
     * @returns {undefined}
@@ -820,6 +857,33 @@ var BoxStorage = {
          }
       });
    },
+   
+   setSearchBoxSuggestions : function() {
+      BoxStorage.resetReturnInput(true);
+      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+
+      //get all boxes that have been removed
+      var suggestions = new Array();
+      var tanks = tankData.data;
+      for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){//iterate through all the tanks
+         var sectors = tanks[tankIndex].sectors;
+         for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){//iterate through all the sectors
+            var racks = sectors[sectorIndex].racks;
+            for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){//iterate through all the racks
+               var boxes = racks[rackIndex].boxes;
+               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
+                  var keyValue = {value: boxes[boxIndex].box_name, key: boxes[boxIndex].box_name};
+                  suggestions.push(keyValue);
+               }
+            }
+         }
+      }
+
+      $("#search").autocomplete({
+         source: suggestions,
+         minLength: 2
+      });
+   },
 
    /**
    * This function sets options for deleted boxes in the corresponding select tag
@@ -917,4 +981,8 @@ var BoxStorage = {
          $('#return_comment').val('');
       }
    },
+   
+   searchForBox: function (){
+      
+   }
 };

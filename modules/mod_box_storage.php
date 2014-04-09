@@ -453,6 +453,18 @@ class BoxStorage extends Repository{
 
    <div id="searched_boxes"></div>
 </div>
+<script type="text/javascript">
+   $(document).ready(function(){
+      BoxStorage.setSearchBoxSuggestions();
+
+      $('#submitButton').click(function(){
+         BoxStorage.searchForBox();
+      });
+      
+      BoxStorage.initiateReturnedBoxesGrid();
+   });
+   $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
+</script>
       <?php
    }
 
