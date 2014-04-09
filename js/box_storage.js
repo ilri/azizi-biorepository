@@ -984,5 +984,12 @@ var BoxStorage = {
    
    searchForBox: function (){
       
+   },
+   
+   toggleAdvancedSearch: function() {
+      $("select option").filter(function(){
+         return $(this).text() == "";
+      }).prop('selected', true);
+      $("#advanced_search_div").toggle();
    }
 };

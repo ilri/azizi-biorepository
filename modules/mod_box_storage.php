@@ -415,10 +415,10 @@ class BoxStorage extends Repository{
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
       <!--legend>Box Information</legend-->
-      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button>
+      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
       <div id="advanced_search_div">
          <div class="search_criteria">
-            <label for="wo_projecs">Project</label>
+            <label for="projecs">Project</label>
             <select id="project">
                <option value=""></option>
                <option value="-1">Boxes with projects</option>
@@ -466,7 +466,11 @@ class BoxStorage extends Repository{
          BoxStorage.searchForBox();
       });
       
-      BoxStorage.initiateReturnedBoxesGrid();
+      $('#advanced_search_a').click(function (){
+         BoxStorage.toggleAdvancedSearch();
+      });
+      
+      BoxStorage.initiateSearchBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
