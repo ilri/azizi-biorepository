@@ -401,12 +401,43 @@ class BoxStorage extends Repository{
     * This function displays the search page
     */
    private function searchBox() {
+      $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
+      $projects = $this->Dbase->ExecuteQuery($query);
       ?>
 <div id="box_storage">
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
       <!--legend>Box Information</legend-->
       <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button>
+      <div id="advanced_search_div">
+         <div>
+            <label for="wo_projecs">Project</label>
+            <select id="project">
+               <option value=""></option>
+               <option value="-1">Boxes with projects</option>
+               <option value="-2">Boxes without projects</option>
+               <?php
+                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">From ' . $currProject['value'] . " project</option>\n";
+               ?>
+            </select>
+         </div>
+         <div>
+            <label for="status">Status</label>
+            <select id="status">
+               <option value=""></option>
+               <option value="temporary">Temporary</option>
+               <option value="">Permanent</option>
+            </select>
+         </div>
+         <div>
+            <label for="location">Location</label>
+            <select id="location">
+               <option value=""></option>
+               <option value="wi_location">With a location</option>
+               <option value="wo_location">Without a location</option>
+            </select>
+         </div>
+      </div>
    </div>
 
    <div id="searched_boxes"></div>
