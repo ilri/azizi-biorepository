@@ -403,6 +403,8 @@ class BoxStorage extends Repository{
    private function searchBox() {
       $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
       $projects = $this->Dbase->ExecuteQuery($query);
+      $query = "SELECT count, name FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";
+      $keepers = $this->Dbase->ExecuteQuery($query);
       ?>
 <div id="box_storage">
    <h3 class="center">Search for a Box</h3>
@@ -435,6 +437,15 @@ class BoxStorage extends Repository{
                <option value=""></option>
                <option value="wi_location">With a location</option>
                <option value="wo_location">Without a location</option>
+            </select>
+         </div>
+         <div class="search_criteria">
+            <label for="keeper">Sample keeper</label>
+            <select id="keeper">
+               <option value=""></option>
+               <?php
+                  foreach ($keepers as $currKeeper) echo '<option value="' . $currKeeper['count'] . '">From ' . $currKeeper['name'] . " project</option>\n";
+               ?>
             </select>
          </div>
       </div>
