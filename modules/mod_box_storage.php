@@ -518,7 +518,7 @@ class BoxStorage extends Repository{
          $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, sample_types, date_added, added_by, project) values(:box_id, :status, :sample_types, :date_added, :added_by, :project)';
          $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
-         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
+         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
          $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
          if($result === 1){
