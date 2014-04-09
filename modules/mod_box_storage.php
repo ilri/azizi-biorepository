@@ -401,11 +401,16 @@ class BoxStorage extends Repository{
     * This function displays the search page
     */
    private function searchBox() {
+      Repository::jqGridFiles();//load requisite jqGrid javascript files
+      
       $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
       $projects = $this->Dbase->ExecuteQuery($query);
       $query = "SELECT count, name FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";
       $keepers = $this->Dbase->ExecuteQuery($query);
       ?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <div id="box_storage">
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
