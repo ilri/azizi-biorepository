@@ -410,7 +410,7 @@ class BoxStorage extends Repository{
       <!--legend>Box Information</legend-->
       <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button>
       <div id="advanced_search_div">
-         <div>
+         <div class="search_criteria">
             <label for="wo_projecs">Project</label>
             <select id="project">
                <option value=""></option>
@@ -421,7 +421,7 @@ class BoxStorage extends Repository{
                ?>
             </select>
          </div>
-         <div>
+         <div class="search_criteria">
             <label for="status">Status</label>
             <select id="status">
                <option value=""></option>
@@ -429,7 +429,7 @@ class BoxStorage extends Repository{
                <option value="">Permanent</option>
             </select>
          </div>
-         <div>
+         <div class="search_criteria">
             <label for="location">Location</label>
             <select id="location">
                <option value=""></option>

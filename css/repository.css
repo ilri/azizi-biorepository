@@ -321,6 +321,7 @@ body {
 #return_div select, #return_div input {width: 200px; margin: 5px 2px;}
 #return_div input, #search_div input {height: 30px;}
 #search_div input {margin-top: 10px;}
+#search_div .search_criteria {display: inline-block;}
 #search_div {margin-left: 300px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
 #box_location .left-align{width: 130px; margin: 5px 2px;}
