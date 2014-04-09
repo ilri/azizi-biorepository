@@ -28,6 +28,7 @@ class BoxStorage extends Repository{
        *       - submit_request
        *    - return_box
        *       - submit_return
+       *    - search_box
        *    - delete_box
        *    - ajax
        *       - get_tank_details
@@ -48,6 +49,7 @@ class BoxStorage extends Repository{
       if (OPTIONS_REQUESTED_SUB_MODULE == 'add_box') $this->addBox ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_box') $this->retrieveBox (); // retrieve a box temporarily from the LN2 tanks
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return_box') $this->returnBox (); // return a box that had been removed/borrowed
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'search_box') $this->searchBox (); // search for a box in the system
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_box') $this->deleteBox (); // delete box from database (with or without it's metadata)
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "get_tank_details") $this->getTankDetails ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "fetch_boxes") $this->fetchBoxes ();
@@ -73,6 +75,7 @@ class BoxStorage extends Repository{
          <li><a href='?page=box_storage&do=add_box'>Add a box</a></li>
          <li><a href='?page=box_storage&do=remove_box'>Retrieve a box</a></li>
          <li><a href="?page=box_storage&do=return_box">Return a borrowed box</a></li>
+         <li><a href="?page=box_storage&do=search_box">Search a box</a></li>
          <li><a href='?page=box_storage&do=delete_box'>Delete a box</a></li>
       </ul>
    </div>
@@ -391,6 +394,23 @@ class BoxStorage extends Repository{
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
+      <?php
+   }
+   
+   /**
+    * This function displays the search page
+    */
+   private function searchBox() {
+      ?>
+<div id="box_storage">
+   <h3 class="center">Search for a Box</h3>
+   <div id="search_div">
+      <!--legend>Box Information</legend-->
+      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success">Search</button>
+   </div>
+
+   <div id="searched_boxes"></div>
+</div>
       <?php
    }
 
