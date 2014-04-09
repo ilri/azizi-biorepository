@@ -134,14 +134,12 @@ var BoxStorage = {
     * 
     * @returns {undefined}
     */
-   initiateSearchBoxesGrid: function(data){
-      data = typeof data !== 'undefined' ? data : {action: 'fetch_boxes'};//set defaults for data incase not set
-      
+   initiateSearchBoxesGrid: function(){
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
          datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: data
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_boxes'}
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -166,6 +164,19 @@ var BoxStorage = {
          });
       }
       else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
+   },
+   
+   updateSearchBoxesGrid: function(data){
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
+      var source = {
+         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
+         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: data
+      };
+      
+      var boxesAdapter = new $.jqx.dataAdapter();
+      $("#searched_boxes").jqxGrid({source: boxesAdapter});
+      $("#searched_boxes").jqxGrid("updatebounddata");
    },
    
    /**
@@ -992,7 +1003,7 @@ var BoxStorage = {
          location: $("#location").val(),
          keeper: $("#keeper").val()
       };
-      BoxStorage.initiateSearchBoxesGrid(data);
+      BoxStorage.updateSearchBoxesGrid(data);
    },
    
    toggleAdvancedSearch: function() {
