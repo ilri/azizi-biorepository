@@ -139,7 +139,7 @@ var BoxStorage = {
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
          datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_boxes'}
+         id: 'id', root: 'data', async: true, url: url, type: 'POST', data: {action: 'fetch_boxes'}
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
