@@ -124,7 +124,7 @@ class BoxStorage extends Repository{
          $this->RepositoryHomePage($this->Dbase->lastError);
          return;
       }
-      $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".module_custom_values";
+      $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
       $projects = $this->Dbase->ExecuteQuery($query);
 
 ?>
