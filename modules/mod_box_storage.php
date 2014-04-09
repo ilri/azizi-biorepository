@@ -876,13 +876,43 @@ class BoxStorage extends Repository{
     * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
     */
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type, f.value as project '.
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, a.project, b.box_features, b.box_name, b.keeper, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type, f.value as project '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
               'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
               'left join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count './/sample type
               'left join '. Config::$config['azizi_db'] .'.modules_custom_values as f on a.project = f.val_id';//associated project
+      
+      if(isset($_POST['search'])){//check if requester whats a more specific search
+         $query = $query . " WHERE box_name LIKE '%".$_POST['search']."%'";
+         $query = $query . " AND box_features LIKE '%".$_POST['search']."%'";
+         if(count($_POST['project']) > 0){
+            //<option value="-1">Boxes with projects</option>
+               //<option value="-2">Boxes without projects</option>
+            if($_POST['project'] == -1){//boxes associated with projects
+               $query = $query . " AND project IS NOT NULL AND project != 0";
+            }
+            else if($_POST['project'] == -2){//boxes not associated with projects
+               $query = $query . " AND project IS NULL OR project = 0";
+            }
+            else{
+               $query = $query . " AND project = ".$_POST['project'];
+            }
+         }
+         if(count($_POST['status']) > 0){
+            $query = $query . " AND status = ".$_POST['status']."'";
+         }
+         if($_POST['location'] == "wi_location"){
+            $query = $query . " AND position != ''";//TODO: not sure will work
+         }
+         else if($_POST['location'] == "wo_location"){
+            $query = $query . " AND postion = ''";//TODO: not sure will work
+         }
+         if(count($_POST['keeper'])>0){
+            $query = $query . " AND keeper = ".$_POST['keeper'];
+         }
+      }
       
       $result = $this->Dbase->ExecuteQuery($query);
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
