@@ -406,7 +406,7 @@ class BoxStorage extends Repository{
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
       <!--legend>Box Information</legend-->
-      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success">Search</button>
+      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button>
    </div>
 
    <div id="searched_boxes"></div>
