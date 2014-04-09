@@ -470,7 +470,7 @@ class BoxStorage extends Repository{
          BoxStorage.toggleAdvancedSearch();
       });
       
-      BoxStorage.initiateSearchBoxesGrid();
+      //BoxStorage.initiateSearchBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
