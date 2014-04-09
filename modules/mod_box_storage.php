@@ -124,6 +124,8 @@ class BoxStorage extends Repository{
          $this->RepositoryHomePage($this->Dbase->lastError);
          return;
       }
+      $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".module_custom_values";
+      $projects = $this->Dbase->ExecuteQuery($query);
 
 ?>
 <div id="box_storage">
@@ -153,6 +155,15 @@ class BoxStorage extends Repository{
                   echo '<option value=""></option>';//add the first blank option
                   foreach($sampleTypes as $sampleType) echo '<option value="'. $sampleType['count'] .'">'. $sampleType['description'] ."</option>\n";
               ?>
+            </select>
+         </div>
+         <div class="left-align">
+            <label for="project">Project</label>
+            <select>
+               <option value=""></option>
+               <?php
+                  foreach ($projects as $currProject) echo '<option value"' . $currProject['val_id'] . '">' . $currProject['value'] . "</option>\n";
+               ?>
             </select>
          </div>
       </div>
