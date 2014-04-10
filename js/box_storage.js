@@ -138,8 +138,14 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_boxes'}
+         datatype: 'json',
+         datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
+         id: 'id',
+         root: 'data',
+         async: false,
+         url: url, 
+         type: 'POST',
+         data: {action: 'fetch_boxes'}
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -167,17 +173,8 @@ var BoxStorage = {
    },
    
    updateSearchBoxesGrid: function(data){
-      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
-      $("#searched_boxes").jqxGrid({
-         datatype: 'json', 
-         datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
-         id: 'id', 
-         root: 'data', 
-         async: false, 
-         url: url, 
-         type: 'POST', 
-         data: data
-      });
+      //var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
+      $("#searched_boxes").source.data = data;
       $("#searched_boxes").jqxGrid("updatebounddata");
    },
    
