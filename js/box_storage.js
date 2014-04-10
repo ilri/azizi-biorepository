@@ -1036,7 +1036,7 @@ var BoxStorage = {
             $("#box_label").val(rowData.box_name);
             $("#features").val(rowData.box_features);
             $("#owner").val(rowData.keeper);
-            $("sample_types").val(rowData.sample_types);
+            $("#sample_types").val(rowData.sample_types);
          }
       });
    },
