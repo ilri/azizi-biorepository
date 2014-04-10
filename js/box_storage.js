@@ -188,6 +188,8 @@ var BoxStorage = {
       var boxesAdapter = new $.jqx.dataAdapter(source);
       $("#searched_boxes").jqxGrid({source: boxesAdapter});
       $("#searched_boxes").jqxGrid("updatebounddata");
+      
+      this.initSearchSelectedListener();
    },
    
    /**
@@ -1022,5 +1024,12 @@ var BoxStorage = {
          return $(this).text() == "";
       }).prop('selected', true);
       $("#advanced_search_div").toggle(500);
+   },
+   
+   initSearchSelectedListener: function() {
+      $("#searched_boxes").bind('rowselect', function (event){
+         $("#search_div").hide();
+         $("#edit_div").unhide();
+      });
    }
 };
