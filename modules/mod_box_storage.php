@@ -35,6 +35,7 @@ class BoxStorage extends Repository{
        *       - fetch_boxes
        *       - fetch_removed_boxes
        *       - submit_return_request
+       *       - submit_update_request
        *       - submit_delete_request
        *       - fetch_deleted_boxes
        *       - fetch_sample_types
@@ -56,6 +57,7 @@ class BoxStorage extends Repository{
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_removed_boxes") $this->fetchRemovedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_deleted_boxes") $this->fetchDeletedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_return_request") die($this->submitReturnRequest(TRUE));
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_update_request") die($this->updateBox());
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_delete_request") die($this->submitDeleteRequest(TRUE));
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_sample_types") $this->fetchSampleTypes ();
       //TODO: check if you need another sub module for viewing boxes
@@ -710,6 +712,7 @@ class BoxStorage extends Repository{
    
    private function updateBox(){
       $message = "";
+      $error= 0;//set to 1 if error occures
 
       //generate box size that lims can understand
       $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
@@ -747,39 +750,45 @@ class BoxStorage extends Repository{
       $addedBy = $userId[0]['id'];
 
       $this->Dbase->StartTrans();
-      $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
-      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features']);
-      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
+      $updateQuery = 'update '. Config::$config['azizi_db'] .'.boxes_def set box_name=:box_name, size=:size, box_type=:box_type, location=:location, rack=:rack, rack_position=:rack_position, keeper=:keeper, box_features=:features where box_id=:box_id';
+      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features'], 'box_id' => $_POST['box_id']);
+      //$columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
       $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
 
-      $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
+      $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
       if($result !== 1) {
          $boxId = $this->Dbase->dbcon->lastInsertId();
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, sample_types, date_added, added_by, project) values(:box_id, :status, :sample_types, :date_added, :added_by, :project)';
-         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project']);
+         $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, sample_types=:sample_types, date_added=:date_added, added_by=:added_by, project=:project where box_id=:box_id';
+         $columns = array('status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project'], 'box_id' => $boxId);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
-         $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
+         $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
          if($result === 1){
             $this->Dbase->RollBackTrans();
             $message = "Unable to add some information from the last request";
+            $error = 1;
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
          else{
             $this->Dbase->CommitTrans();
-            $message = "The box '{$_POST['box_label']}' was added successfully";
+            $error = 1;
+            $message = "The box '{$_POST['box_label']}' was updated successfully";
          }
       }
       else{
          $this->Dbase->RollBackTrans();
          $message = "Unable to add the last request. Try again later";
+         $error = 1;
          $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
       }
-      return $message;
+      $json = array();
+      $json["message"] = $message;
+      $json["error"] = $error;
+      return json_encode($json);
    }
 
    /**

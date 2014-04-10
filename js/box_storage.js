@@ -1106,18 +1106,19 @@ var BoxStorage = {
          };
 
          var responseText = $.ajax({
-            url: "mod_ajax.php?page=box_storage&do=ajax&action=submit_delete_request",
+            url: "mod_ajax.php?page=box_storage&do=ajax&action=submit_update_request",
             type: "POST",
             data: formData,
             async: false
          }).responseText;
          var responseJson = $.parseJSON(responseText);
 
-         if(responseJson.error_message.length > 0){
-            Notification.show({create:true, hide:true, updateText:false, text: responseJson.error_message, error:true});
+         if(responseJson.error = 1){
+            Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:true});
          }
          else{
-            Notification.show({create:true, hide:true, updateText:false, text: "Box successfully deleted", error:false});
+            Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:false});
+            BoxStorage.toggleSearchModes();
          }
       }
    }
