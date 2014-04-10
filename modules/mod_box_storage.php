@@ -762,7 +762,7 @@ class BoxStorage extends Repository{
          $now = date('Y-m-d H:i:s');
 
          $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, sample_types=:sample_types, date_added=:date_added, added_by=:added_by, project=:project where box_id=:box_id';
-         $columns = array('status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project'], 'box_id' => $boxId);
+         $columns = array('status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project'], 'box_id' => $_POST['box_id']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
