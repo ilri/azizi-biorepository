@@ -188,6 +188,8 @@ var BoxStorage = {
    },
    
    updateSearchBoxesGrid: function(data){
+      data = typeof data !== 'undefined' ? data : {action:"fetch_boxes"};
+      
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
          datatype: 'json',
@@ -1124,6 +1126,7 @@ var BoxStorage = {
             Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:false});
             BoxStorage.toggleSearchModes();
             BoxStorage.loadTankData(true);
+            BoxStorage.updateSearchBoxesGrid();
          }
       }
    }
