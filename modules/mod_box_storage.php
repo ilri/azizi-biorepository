@@ -460,7 +460,7 @@ class BoxStorage extends Repository{
    <div id="searched_boxes"></div>
    <div id="edit_div" style="display: none;">
       <div id="box_details">
-         <div class="form-group left-align"><label for="box_label">Box Label</label><input class='input-medium' type="text" name="box_label" id="box_label" /></div>
+         <div class="form-group left-align"><label for="box_label">Box Label</label><input class='input-medium' type="text" name="box_label" id="box_label" /><input type="hidden" id="box_id" /></div>
          <div class="form-group left-align" style="width: 220px;"><label for="features">Features</label><input type="text" name="features" id="features" /></div>
          <div class='left-align' style="width: 120px;">
             <label>Box Size</label>
@@ -554,6 +554,9 @@ class BoxStorage extends Repository{
       $('#cancel_button').click(function (){
          BoxStorage.toggleSearchModes();
       });
+      $('#edit_button').click(function (){
+         BoxStorage.submitBoxUpdate();
+      });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
@@ -632,6 +635,80 @@ class BoxStorage extends Repository{
     * @return string    Result of the insert into the database. Can be either positive or negative
     */
    private function insertBox(){
+      $message = "";
+
+      //generate box size that lims can understand
+      $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
+
+      //change keeper to biorepository manger if box is in temp position
+      $ownerID = $_POST['owner'];
+      if($_POST['status'] === 'temporary'){
+         $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
+         $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
+         if($result !== 1){
+            $ownerID = $result[0]['count'];
+         }
+      }
+
+      //check if user specified the rack manually
+      $rack = $_POST['rack'];
+      if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
+
+      //get the user id
+      $userId = 1;
+      if(strlen($_SESSION['username']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+      }
+      //for some reason session['username'] is not set for some users but surname and onames are set
+      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      }
+      if($userId == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+         $this->homePage('There was an error while saving the box');
+         return;
+      }
+      $addedBy = $userId[0]['id'];
+
+      $this->Dbase->StartTrans();
+      $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
+      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features']);
+      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
+      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
+
+      $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
+      if($result !== 1) {
+         $boxId = $this->Dbase->dbcon->lastInsertId();
+         //insert extra information in dbase database
+         $now = date('Y-m-d H:i:s');
+
+         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, sample_types, date_added, added_by, project) values(:box_id, :status, :sample_types, :date_added, :added_by, :project)';
+         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project']);
+         //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
+         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
+
+         $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
+         if($result === 1){
+            $this->Dbase->RollBackTrans();
+            $message = "Unable to add some information from the last request";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+         }
+         else{
+            $this->Dbase->CommitTrans();
+            $message = "The box '{$_POST['box_label']}' was added successfully";
+         }
+      }
+      else{
+         $this->Dbase->RollBackTrans();
+         $message = "Unable to add the last request. Try again later";
+         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      }
+      return $message;
+   }
+   
+   private function updateBox(){
       $message = "";
 
       //generate box size that lims can understand

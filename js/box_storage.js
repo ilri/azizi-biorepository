@@ -151,7 +151,8 @@ var BoxStorage = {
             {name: 'keeper'}, 
             {name: 'sample_types'},
             {name: 'project_id'},
-            {name: 'size'}
+            {name: 'size'},
+            {name: 'box_id'}
          ],
          id: 'id',
          root: 'data',
@@ -1046,6 +1047,10 @@ var BoxStorage = {
             
             var row = event.args.rowindex;
             var rowData = $("#searched_boxes").jqxGrid('getrowdata', row);
+            
+            console.log(rowData.box_id);
+            $("#box_id").val(rowData.box_id);
+            
             $("#box_label").val(rowData.box_name);
             $("#features").val(rowData.box_features);
             $("#owner").val(rowData.keeper);
@@ -1075,7 +1080,45 @@ var BoxStorage = {
       //you only need to process the last part of the size ie J:10
       var lastPos = limsDimensions[1];
       var posParts = lastPos.split(":");
-      var asciiPart1  = posParts[0].charCodeAt(0) - 65;
+      var asciiPart1  = posParts[0].charCodeAt(0) - 64;
       return asciiPart1 * posParts[1]; 
+   },
+   
+   submitBoxUpdate: function(){
+      if(BoxStorage.validateInsertInput()){
+         console.log("trying to update");
+         //#box_label#box_size#sample_types#owner#status#project#features
+         //#tank#sector#rack#rack_spec#position
+         var formData = {
+            box_label: $("#box_label").val(),
+            box_size: $("#box_size").val(),
+            sample_types: $("#sample_types").val(),
+            owner: $("#owner").val(),
+            status: $("#status").val(),
+            project: $("#project").val(),
+            features: $("#features").val(),
+            tank: $("#tank").val(),
+            sector: $("#sector").val(),
+            rack: $("#rack").val(),
+            rack_spec: $("#rack_spec").val(),
+            position: $("#position").val(),
+            box_id: $("#box_id").val()
+         };
+
+         var responseText = $.ajax({
+            url: "mod_ajax.php?page=box_storage&do=ajax&action=submit_delete_request",
+            type: "POST",
+            data: formData,
+            async: false
+         }).responseText;
+         var responseJson = $.parseJSON(responseText);
+
+         if(responseJson.error_message.length > 0){
+            Notification.show({create:true, hide:true, updateText:false, text: responseJson.error_message, error:true});
+         }
+         else{
+            Notification.show({create:true, hide:true, updateText:false, text: "Box successfully deleted", error:false});
+         }
+      }
    }
 };
