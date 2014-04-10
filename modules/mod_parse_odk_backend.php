@@ -206,7 +206,7 @@ class Parser {
       $this->sheets = array();
       $this->idPrefix = "";
       $this->selectIDs = array();
-      $this->authURL = "http://hpc.ilri.cgiar.org/aggregate/local_login.html?redirect=";
+      $this->authURL = $this->settings['auth_url'];
       
       //$this->rootDirURI = "/~jason/ilri/ODKParser/";
       $this->rootDirURI = $this->settings['root_uri'];
