@@ -753,7 +753,7 @@ class BoxStorage extends Repository{
       $updateQuery = 'update '. Config::$config['azizi_db'] .'.boxes_def set box_name=:box_name, size=:size, box_type=:box_type, location=:location, rack=:rack, rack_position=:rack_position, keeper=:keeper, box_features=:features where box_id=:box_id';
       $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features'], 'box_id' => $_POST['box_id']);
       //$columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
-      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
+      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
       $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
       if($result !== 1) {
@@ -775,7 +775,6 @@ class BoxStorage extends Repository{
          }
          else{
             $this->Dbase->CommitTrans();
-            $error = 1;
             $message = "The box '{$_POST['box_label']}' was updated successfully";
          }
       }
