@@ -170,6 +170,7 @@ var BoxStorage = {
          });
       }
       else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
+      BoxStorage.initSearchSelectedListener();
    },
    
    updateSearchBoxesGrid: function(data){
@@ -188,8 +189,6 @@ var BoxStorage = {
       var boxesAdapter = new $.jqx.dataAdapter(source);
       $("#searched_boxes").jqxGrid({source: boxesAdapter});
       $("#searched_boxes").jqxGrid("updatebounddata");
-      
-      this.initSearchSelectedListener();
    },
    
    /**
@@ -1029,9 +1028,10 @@ var BoxStorage = {
    initSearchSelectedListener: function() {
       $("#searched_boxes").jqxGrid({selectionmode: 'singlerow'});
       $("#searched_boxes").bind('rowselect', function (event){
-         console.log("row selected");
-         //$("#search_div").hide();
-         //$("#edit_div").unhide();
+         if($("#search_div").is(":visible") === true && $("#edit_div").is(":visible") === false ){//do this check because the rowselect event handler is called several times when event occures. Process only once
+            $("#search_div").hide();
+            $("#edit_div").unhide();
+         }
       });
    }
 };
