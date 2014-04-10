@@ -520,6 +520,8 @@ var BoxStorage = {
     * @returns {undefined}
     */
    loadTankData: function(forInsertion, boxesToShow){
+      $("#tank").prop("disabled", "disabled");
+      
       if(typeof(boxesToShow)==='undefined') boxesToShow = 0;//default boxesToShow to 0 (all boxes)
       Main.forInsertion = forInsertion;
       Main.boxesToShow = boxesToShow;
@@ -540,6 +542,8 @@ var BoxStorage = {
 
       //populate position select
       $("#rack").change(BoxStorage.populateSelectedPosition);
+      
+      $("#tank").prop("disabled", false);
    },
 
    /**
@@ -1119,6 +1123,7 @@ var BoxStorage = {
          else{
             Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:false});
             BoxStorage.toggleSearchModes();
+            BoxStorage.loadTankData(true);
          }
       }
    }
