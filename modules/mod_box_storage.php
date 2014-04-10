@@ -217,22 +217,22 @@ class BoxStorage extends Repository{
    $(document).ready( function() {
       BoxStorage.loadTankData(true);
       BoxStorage.initiateAddBoxesGrid();
+      
+      $("#status").change(function(){
+         if($('#status').val() === "temporary"){
+            //if user sets position to temporary set owner to biorepository manager
+            $("#owner").prop('disabled', 'disabled');
+         }
+         else{
+            $("#owner").prop('disabled', false);
+         }
+      });
+      $("#cancelAnchor").click(function (){
+         $("#rack_spec_div").hide();
+         $("#rack_div").show();
+      });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
-
-   $("#status").change(function(){
-      if($('#status').val() === "temporary"){
-         //if user sets position to temporary set owner to biorepository manager
-         $("#owner").prop('disabled', 'disabled');
-      }
-      else{
-         $("#owner").prop('disabled', false);
-      }
-   });
-   $("#cancelAnchor").click(function (){
-      $("#rack_spec_div").hide();
-      $("#rack_div").show();
-   });
 </script>
       <?php
    }
@@ -536,6 +536,7 @@ class BoxStorage extends Repository{
 <script type="text/javascript">
    $(document).ready(function(){
       BoxStorage.setSearchBoxSuggestions();
+      BoxStorage.loadTankData(true);
 
       $('#submitButton').click(function(){
          BoxStorage.searchForBox();
