@@ -1102,7 +1102,7 @@ var BoxStorage = {
             rack: $("#rack").val(),
             rack_spec: $("#rack_spec").val(),
             position: $("#position").val(),
-            box_id: $("#box_id").val()
+            box_id: $("#box_id").val() 
          };
 
          var responseText = $.ajax({
