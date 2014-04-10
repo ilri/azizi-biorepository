@@ -433,7 +433,7 @@ class BoxStorage extends Repository{
             <select id="status">
                <option value=""></option>
                <option value="temporary">Temporary</option>
-               <option value="">Permanent</option>
+               <option value="permanent">Permanent</option>
             </select>
          </div>
          <div class="search_criteria">
@@ -901,7 +901,7 @@ class BoxStorage extends Repository{
             }
          }
          if(strlen($_POST['status']) > 0){
-            $query = $query . " AND a.status = ".$_POST['status']."'";
+            $query = $query . " AND a.status = '".$_POST['status']."'";
          }
          if($_POST['location'] == "wi_location"){
             $query = $query . " AND position != ''";//TODO: not sure will work
