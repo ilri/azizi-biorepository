@@ -153,7 +153,7 @@ var BoxStorage = {
             {name: 'project_id'},
             {name: 'size'},
             {name: 'box_id'}
-         ],
+         ],//make sure you update these fields when you update those of the update fetch
          id: 'id',
          root: 'data',
          async: false,
@@ -193,7 +193,21 @@ var BoxStorage = {
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
          datatype: 'json',
-         datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
+         datafields: [ 
+            {name: 'box_name'}, 
+            {name: 'sample_type'}, 
+            {name: 'position'}, 
+            {name: 'status'}, 
+            {name: 'date_added'}, 
+            {name: 'added_by'}, 
+            {name: 'project'}, 
+            {name: 'box_features'}, 
+            {name: 'keeper'}, 
+            {name: 'sample_types'},
+            {name: 'project_id'},
+            {name: 'size'},
+            {name: 'box_id'}
+         ],//make sure you update these fields when you update those for the initial fetch
          id: 'id',
          root: 'data',
          async: false,
