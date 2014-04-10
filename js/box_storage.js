@@ -44,10 +44,10 @@ var BoxStorage = {
             theme: theme,
             pageable: true,
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Box Label', datafield: 'box_name', width: 80},
                {text: 'Sample Type', datafield: 'sample_type', width: 150},
-               {text: 'Project', datafield: 'project', width: 115},
-               {text: 'Tank Position', datafield: 'position', width: 180},
+               {text: 'Project', datafield: 'project', width: 105},
+               {text: 'Tank Position', datafield: 'position', width: 210},
                {text: 'Status', datafield: 'status', width: 90},
                {text: 'Date Added', datafield: 'date_added', width: 90},
                {text: 'Added By', datafield: 'added_by', width: 180}
@@ -173,10 +173,10 @@ var BoxStorage = {
             theme: theme,
             pageable: true,
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Box Label', datafield: 'box_name', width: 80},
                {text: 'Sample Type', datafield: 'sample_type', width: 150},
-               {text: 'Project', datafield: 'project', width: 115},
-               {text: 'Tank Position', datafield: 'position', width: 180},
+               {text: 'Project', datafield: 'project', width: 105},
+               {text: 'Tank Position', datafield: 'position', width: 210},
                {text: 'Status', datafield: 'status', width: 90},
                {text: 'Date Added', datafield: 'date_added', width: 90},
                {text: 'Added By', datafield: 'added_by', width: 180}
