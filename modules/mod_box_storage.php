@@ -885,9 +885,9 @@ class BoxStorage extends Repository{
               'left join '. Config::$config['azizi_db'] .'.modules_custom_values as f on a.project = f.val_id';//associated project
       
       if(isset($_POST['search'])){//check if requester whats a more specific search
-         $query = $query . " WHERE box_name LIKE '%".$_POST['search']."%'";
-         $query = $query . " AND box_features LIKE '%".$_POST['search']."%'";
-         if(count($_POST['project']) > 0){
+         $query = $query . " WHERE (box_name LIKE '%".$_POST['search']."%'";
+         $query = $query . " OR box_features LIKE '%".$_POST['search']."%')";
+         if($_POST['project'] !== ""){
             //<option value="-1">Boxes with projects</option>
                //<option value="-2">Boxes without projects</option>
             if($_POST['project'] == -1){//boxes associated with projects
