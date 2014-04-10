@@ -456,7 +456,7 @@ class BoxStorage extends Repository{
       </div>
    </div>
    <div id="searched_boxes"></div>
-   <div id="edit_div">
+   <div id="edit_div" style="display: block;">
       <div id="box_details">
          <div class="form-group left-align"><label for="box_label">Box Label</label><input class='input-medium' type="text" name="box_label" id="box_label" /></div>
          <div class="form-group left-align" style="width: 220px;"><label for="features">Features</label><input type="text" name="features" id="features" /></div>
