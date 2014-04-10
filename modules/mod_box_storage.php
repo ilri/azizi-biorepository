@@ -407,6 +407,8 @@ class BoxStorage extends Repository{
       $projects = $this->Dbase->ExecuteQuery($query);
       $query = "SELECT count, name FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";
       $keepers = $this->Dbase->ExecuteQuery($query);
+      $query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
+      $sampleTypes = $this->Dbase->ExecuteQuery($query);
       ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
