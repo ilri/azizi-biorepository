@@ -517,7 +517,7 @@ class BoxStorage extends Repository{
                <!--Disabled until parent select is selected-->
             </select>
          </div>
-         <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px;">
+         <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px; display: none;">
             <label for="rack">Rack</label>
             <input type="text" id="rack_spec" name="rack_spec" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
          </div>
