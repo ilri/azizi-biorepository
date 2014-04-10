@@ -464,10 +464,10 @@ class BoxStorage extends Repository{
       <div id="box_details">
          <div class="form-group left-align"><label for="box_label">Box Label</label><input class='input-medium' type="text" name="box_label" id="box_label" /><input type="hidden" id="box_id" /></div>
          <div class="form-group left-align" style="width: 220px;"><label for="features">Features</label><input type="text" name="features" id="features" /></div>
-         <div class='left-align' style="width: 120px;">
+         <div class='left-align' style="width: 140px;">
             <label>Box Size</label>
-            <div class="radio-inline"><label><input type="radio" name="box_size" id="size_81" value="81">9x9</label></div>
-            <div class="radio-inline"><label><input type="radio" name="box_size" id="size_100" value="100">10x10</label></div>
+            <div class="radio-inline" style="width: 70px;"><label><input type="radio" name="box_size" id="size_81" value="81">9x9</label></div>
+            <div class="radio-inline" style="width: 70px;"><label><input type="radio" name="box_size" id="size_100" value="100">10x10</label></div>
          </div>
          <div class='left-align' style="width: 180px;">
             <label for="owner">Sample Keeper</label>
