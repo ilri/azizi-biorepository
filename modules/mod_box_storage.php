@@ -887,7 +887,7 @@ class BoxStorage extends Repository{
       if(isset($_POST['search'])){//check if requester whats a more specific search
          $query = $query . " WHERE (box_name LIKE '%".$_POST['search']."%'";
          $query = $query . " OR box_features LIKE '%".$_POST['search']."%')";
-         if($_POST['project'] !== ""){
+         if(strlen($_POST['project']) > 0){
             //<option value="-1">Boxes with projects</option>
                //<option value="-2">Boxes without projects</option>
             if($_POST['project'] == -1){//boxes associated with projects
@@ -900,7 +900,7 @@ class BoxStorage extends Repository{
                $query = $query . " AND project = ".$_POST['project'];
             }
          }
-         if(count($_POST['status']) > 0){
+         if(strlen($_POST['status']) > 0){
             $query = $query . " AND status = ".$_POST['status']."'";
          }
          if($_POST['location'] == "wi_location"){
@@ -909,7 +909,7 @@ class BoxStorage extends Repository{
          else if($_POST['location'] == "wo_location"){
             $query = $query . " AND postion = ''";//TODO: not sure will work
          }
-         if(count($_POST['keeper'])>0){
+         if(strlen($_POST['keeper'])>0){
             $query = $query . " AND keeper = ".$_POST['keeper'];
          }
       }
