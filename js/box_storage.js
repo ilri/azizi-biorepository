@@ -1113,7 +1113,7 @@ var BoxStorage = {
          }).responseText;
          var responseJson = $.parseJSON(responseText);
 
-         if(responseJson.error = 1){
+         if(responseJson.error === 1){
             Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:true});
          }
          else{
