@@ -1030,6 +1030,9 @@ var BoxStorage = {
       $("#searched_boxes").bind('rowselect', function (event){
          if($("#search_div").is(":visible") === true && $("#edit_div").is(":visible") === false ){//do this check because the rowselect event handler is called several times when event occures. Process only once
             BoxStorage.toggleSearchModes();
+            
+            var rowData = $("#searched_boxes").jqxGrid('getrowdata', row);
+            console.log(rowData);
          }
       });
    },
