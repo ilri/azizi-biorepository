@@ -139,7 +139,7 @@ var BoxStorage = {
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
          datatype: 'json',
-         datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
+         datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}, {name: 'box_features'}, {name: 'keeper'}],
          id: 'id',
          root: 'data',
          async: false,
@@ -1031,8 +1031,10 @@ var BoxStorage = {
          if($("#search_div").is(":visible") === true && $("#edit_div").is(":visible") === false ){//do this check because the rowselect event handler is called several times when event occures. Process only once
             BoxStorage.toggleSearchModes();
             
+            var row = event.args.rowindex;
             var rowData = $("#searched_boxes").jqxGrid('getrowdata', row);
-            console.log(rowData);
+            $("#box_label").val(rowData.box_name);
+            $
          }
       });
    },
