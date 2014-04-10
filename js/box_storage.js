@@ -1051,7 +1051,7 @@ var BoxStorage = {
             $("#owner").val(rowData.keeper);
             $("#sample_types").val(rowData.sample_types);
             $("#project").val(rowData.project_id);
-            $("input[name='box_size']").val(BoxStorage.convertBoxSize(rowData.size));
+            $("input[name='box_size'][value='"+BoxStorage.convertBoxSize(rowData.size)+"']").prop("checked", true);
          }
       });
    },
