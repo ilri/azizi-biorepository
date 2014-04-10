@@ -175,7 +175,22 @@ var BoxStorage = {
       };
       
       var boxesAdapter = new $.jqx.dataAdapter();
-      $("#searched_boxes").jqxGrid({source: boxesAdapter});
+      $("#searched_boxes").jqxGrid({
+         width: 905,
+         height: 400,
+         source: boxesAdapter,
+         theme: theme,
+         pageable: true,
+         columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 100},
+               {text: 'Sample Type', datafield: 'sample_type', width: 150},
+               {text: 'Project', datafield: 'project', width: 115},
+               {text: 'Tank Position', datafield: 'position', width: 180},
+               {text: 'Status', datafield: 'status', width: 90},
+               {text: 'Date Added', datafield: 'date_added', width: 90},
+               {text: 'Added By', datafield: 'added_by', width: 180}
+            ]
+      });
       $("#searched_boxes").jqxGrid("updatebounddata");
    },
    
