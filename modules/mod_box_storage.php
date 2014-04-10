@@ -891,17 +891,17 @@ class BoxStorage extends Repository{
             //<option value="-1">Boxes with projects</option>
                //<option value="-2">Boxes without projects</option>
             if($_POST['project'] == -1){//boxes associated with projects
-               $query = $query . " AND project IS NOT NULL AND project != 0";
+               $query = $query . " AND a.project IS NOT NULL AND a.project != 0";
             }
             else if($_POST['project'] == -2){//boxes not associated with projects
-               $query = $query . " AND project IS NULL OR project = 0";
+               $query = $query . " AND (a.project IS NULL OR a.project = 0)";
             }
             else{
-               $query = $query . " AND project = ".$_POST['project'];
+               $query = $query . " AND a.project = ".$_POST['project'];
             }
          }
          if(strlen($_POST['status']) > 0){
-            $query = $query . " AND status = ".$_POST['status']."'";
+            $query = $query . " AND a.status = ".$_POST['status']."'";
          }
          if($_POST['location'] == "wi_location"){
             $query = $query . " AND position != ''";//TODO: not sure will work
