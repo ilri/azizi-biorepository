@@ -139,7 +139,18 @@ var BoxStorage = {
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
          datatype: 'json',
-         datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}, {name: 'box_features'}, {name: 'keeper'}, {name: 'sample_types'}],
+         datafields: [ 
+            {name: 'box_name'}, 
+            {name: 'sample_type'}, 
+            {name: 'position'}, 
+            {name: 'status'}, 
+            {name: 'date_added'}, 
+            {name: 'added_by'}, 
+            {name: 'project'}, 
+            {name: 'box_features'}, 
+            {name: 'keeper'}, 
+            {name: 'sample_types'}
+         ],
          id: 'id',
          root: 'data',
          async: false,
@@ -1037,6 +1048,7 @@ var BoxStorage = {
             $("#features").val(rowData.box_features);
             $("#owner").val(rowData.keeper);
             $("#sample_types").val(rowData.sample_types);
+            $("#project").val(rowData.project);
          }
       });
    },
