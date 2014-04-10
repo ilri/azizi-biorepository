@@ -149,7 +149,8 @@ var BoxStorage = {
             {name: 'project'}, 
             {name: 'box_features'}, 
             {name: 'keeper'}, 
-            {name: 'sample_types'}
+            {name: 'sample_types'},
+            {name: 'project_id'}
          ],
          id: 'id',
          root: 'data',
@@ -1048,7 +1049,7 @@ var BoxStorage = {
             $("#features").val(rowData.box_features);
             $("#owner").val(rowData.keeper);
             $("#sample_types").val(rowData.sample_types);
-            $("#project").val(rowData.project);
+            $("#project").val(rowData.project_id);
          }
       });
    },

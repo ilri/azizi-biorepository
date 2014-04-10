@@ -959,7 +959,7 @@ class BoxStorage extends Repository{
     * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
     */
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, a.project, a.sample_types, b.box_features, b.box_name, b.keeper, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type, f.value as project '.
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, a.project as project_id, a.sample_types, b.box_features, b.box_name, b.keeper, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type, f.value as project '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
