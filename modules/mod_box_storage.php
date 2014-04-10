@@ -418,8 +418,8 @@ class BoxStorage extends Repository{
       <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
       <div id="advanced_search_div" style="display: none;">
          <div class="search_criteria">
-            <label for="projecs">Project</label>
-            <select id="project">
+            <label for="search_project">Project</label>
+            <select id="search_project">
                <option value=""></option>
                <option value="-1">Boxes with projects</option>
                <option value="-2">Boxes without projects</option>
@@ -429,24 +429,24 @@ class BoxStorage extends Repository{
             </select>
          </div>
          <div class="search_criteria">
-            <label for="status">Status</label>
-            <select id="status">
+            <label for="search_status">Status</label>
+            <select id="search_status">
                <option value=""></option>
                <option value="temporary">Temporary</option>
                <option value="permanent">Permanent</option>
             </select>
          </div>
          <div class="search_criteria">
-            <label for="location">Location</label>
-            <select id="location">
+            <label for="search_location">Location</label>
+            <select id="search_location">
                <option value=""></option>
                <option value="wi_location">With a location</option>
                <option value="wo_location">Without a location</option>
             </select>
          </div>
          <div class="search_criteria">
-            <label for="keeper">Sample keeper</label>
-            <select id="keeper">
+            <label for="search_keeper">Sample keeper</label>
+            <select id="search_keeper">
                <option value=""></option>
                <?php
                   foreach ($keepers as $currKeeper) echo '<option value="' . $currKeeper['count'] . '">' . $currKeeper['name'] . "</option>\n";
@@ -456,7 +456,7 @@ class BoxStorage extends Repository{
       </div>
    </div>
    <div id="searched_boxes"></div>
-   <div id="edit_div" style="display: none;">
+   <div id="edit_div">
       <div id="box_details">
          <div class="form-group left-align"><label for="box_label">Box Label</label><input class='input-medium' type="text" name="box_label" id="box_label" /></div>
          <div class="form-group left-align" style="width: 220px;"><label for="features">Features</label><input type="text" name="features" id="features" /></div>

@@ -1009,10 +1009,10 @@ var BoxStorage = {
    searchForBox: function (){
       var data = {
          search: $("#search").val(),
-         project: $("#project").val(),
-         status: $("#status").val(),
-         location: $("#location").val(),
-         keeper: $("#keeper").val()
+         project: $("#search_project").val(),
+         status: $("#search_status").val(),
+         location: $("#search_location").val(),
+         keeper: $("#search_keeper").val()
       };
       BoxStorage.updateSearchBoxesGrid(data);
    },
