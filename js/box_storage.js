@@ -187,6 +187,13 @@ var BoxStorage = {
       BoxStorage.initSearchSelectedListener();
    },
    
+   /**
+    * This function updates the JQXGrid on the search page
+    * 
+    * @param {Array} data Optional post data to be used by the server as a filter for the data
+    * 
+    * @returns {undefined}
+    */
    updateSearchBoxesGrid: function(data){
       data = typeof data !== 'undefined' ? data : {action:"fetch_boxes"};
       
@@ -1041,6 +1048,11 @@ var BoxStorage = {
       }
    },
    
+   /**
+    * This function formats the post data to be used in searching for a box from the server
+    * 
+    * @returns {undefined}
+    */
    searchForBox: function (){
       var data = {
          search: $("#search").val(),
@@ -1052,6 +1064,11 @@ var BoxStorage = {
       BoxStorage.updateSearchBoxesGrid(data);
    },
    
+   /**
+    * This function hides/shows the different areas of the search page depending on wheter users wants an advanced search or not
+    * 
+    * @returns {undefined}
+    */
    toggleAdvancedSearch: function() {
       $("select option").filter(function(){
          return $(this).text() == "";
@@ -1059,6 +1076,11 @@ var BoxStorage = {
       $("#advanced_search_div").toggle(500);
    },
    
+   /**
+    * This function initializes a listener for monitoring when rows are selected in the search page's JQXGrid
+    * 
+    * @returns {undefined}
+    */
    initSearchSelectedListener: function() {
       $("#searched_boxes").jqxGrid({selectionmode: 'singlerow'});
       $("#searched_boxes").bind('rowselect', function (event){
@@ -1081,6 +1103,11 @@ var BoxStorage = {
       });
    },
    
+   /**
+    * This function toggles the search page between edit mode and search mode depending on what the user is doing
+    * 
+    * @returns {undefined}
+    */
    toggleSearchModes: function(){
       if($("#search_div").is(":visible")){
          $("#search_div").hide(400);
@@ -1094,6 +1121,14 @@ var BoxStorage = {
       }
    },
    
+   /**
+    * This function converts box sizes used by the LIMS system readable sizes 
+    *       (e.g A:1.J:10 = 100)
+    * 
+    * @param {String} limsSize Size of the box in the LIMS format e.g A:1.J:10
+    * 
+    * @returns {Number} The size of the box as a number
+    */
    convertBoxSize: function(limsSize) {
       var limsDimensions = limsSize.split(".");
       
@@ -1104,6 +1139,12 @@ var BoxStorage = {
       return asciiPart1 * posParts[1]; 
    },
    
+   /**
+    * This function submits updated box data to the server as an AJAX request. 
+    * The Search page will not refresh after this function executes
+    * 
+    * @returns {undefined}
+    */
    submitBoxUpdate: function(){
       if(BoxStorage.validateInsertInput()){
          console.log("trying to update");

@@ -192,7 +192,7 @@ class BoxStorage extends Repository{
                <!--Disabled until parent select is selected-->
             </select>
          </div>
-         <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px;">
+         <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px; display: none;">
             <label for="rack">Rack</label>
             <input type="text" id="rack_spec" name="rack_spec" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
          </div>
@@ -714,6 +714,12 @@ class BoxStorage extends Repository{
       return $message;
    }
    
+   /**
+    * This function performs an update operation for a box.
+    * Most likely called from an AJAX request
+    * 
+    * @return JSON Returns a json object with the result (wheter successful or not) and the message from the server
+    */
    private function updateBox(){
       $message = "";
       $error= 0;//set to 1 if error occures
