@@ -415,7 +415,7 @@ class BoxStorage extends Repository{
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
       <!--legend>Box Information</legend-->
-      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-default" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
+      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
       <div id="advanced_search_div" style="display: none;">
          <div class="search_criteria">
             <label for="projecs">Project</label>
@@ -455,8 +455,83 @@ class BoxStorage extends Repository{
          </div>
       </div>
    </div>
-
    <div id="searched_boxes"></div>
+   <div id="edit_div">
+      <div id="box_details">
+         <div class="form-group left-align"><label for="box_label">Box Label</label><input class='input-medium' type="text" name="box_label" id="box_label" /></div>
+         <div class="form-group left-align" style="width: 220px;"><label for="features">Features</label><input type="text" name="features" id="features" /></div>
+         <div class='left-align' style="width: 120px;">
+            <label>Box Size</label>
+            <div class="radio-inline"><label><input type="radio" name="box_size" id="size_81" value="81">9x9</label></div>
+            <div class="radio-inline"><label><input type="radio" name="box_size" id="size_100" value="100">10x10</label></div>
+         </div>
+         <div class='left-align' style="width: 180px;">
+            <label for="owner">Sample Keeper</label>
+            <select name="owner" id="owner" class='form-control'>
+            <?php
+                  echo '<option value="Select Box Owner"></option>';//add the first blank option
+                  foreach($keepers as $contact) echo '<option value="'. $contact['count'] .'">'. $contact['name'] ."</option>\n";
+              ?>
+            </select>
+         </div>
+         <div class='left-align'>
+            <label for="sample_types">Sample Types</label>
+            <select name="sample_types" id="sample_types" class='form-control'>
+            <?php
+                  echo '<option value=""></option>';//add the first blank option
+                  foreach($sampleTypes as $sampleType) echo '<option value="'. $sampleType['count'] .'">'. $sampleType['description'] ."</option>\n";
+              ?>
+            </select>
+         </div>
+         <div class="left-align">
+            <label for="project">Project</label>
+            <select id="project" name="project">
+               <option value=""></option>
+               <?php
+                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">' . $currProject['value'] . "</option>\n";
+               ?>
+            </select>
+         </div>
+      </div>
+
+      <div id="box_location">
+         <div class="form-group left-align">
+            <label for="tank">Tank</label>
+            <select id="tank" class="input-medium">
+               <option value=""></option>
+            </select>
+         </div>
+         <div class="form-group left-align">
+            <label for="sector">Sector</label>
+            <select id="sector" name="sector" disabled="disabled">
+               <!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div id="rack_div" class="form-group left-align">
+            <label for="rack">Rack</label>
+            <select type="text" name="rack" id="rack" disabled="disabled">
+               <!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px;">
+            <label for="rack">Rack</label>
+            <input type="text" id="rack_spec" name="rack_spec" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
+         </div>
+         <div class="form-group left-align">
+            <label for="position">Position in Rack</label>
+            <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+            </select>
+         </div>
+         <div class="form-group left-align">
+            <label for="status">Status</label>
+            <select type="text" name="status" id="status">
+               <option value=""></option><!--NULL option-->
+               <option value="Temporary">Temporary</option>
+               <option value="Permanent">Permanent</option>
+            </select>
+         </div>
+       </div>
+   </div>
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
