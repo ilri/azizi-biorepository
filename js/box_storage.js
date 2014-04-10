@@ -186,7 +186,7 @@ var BoxStorage = {
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
-      $("#searched_boxes").jqxGrid({source: boxesAdapter})data = data;
+      $("#searched_boxes").jqxGrid({source: boxesAdapter});
       $("#searched_boxes").jqxGrid("updatebounddata");
    },
    
