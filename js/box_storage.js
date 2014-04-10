@@ -1034,7 +1034,8 @@ var BoxStorage = {
             var row = event.args.rowindex;
             var rowData = $("#searched_boxes").jqxGrid('getrowdata', row);
             $("#box_label").val(rowData.box_name);
-            $
+            $("#features").val(rowData.box_features);
+            $("#owner option[value='" + rowData.keeper + "']").html();
          }
       });
    },
