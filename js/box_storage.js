@@ -150,7 +150,8 @@ var BoxStorage = {
             {name: 'box_features'}, 
             {name: 'keeper'}, 
             {name: 'sample_types'},
-            {name: 'project_id'}
+            {name: 'project_id'},
+            {name: 'size'}
          ],
          id: 'id',
          root: 'data',
@@ -1050,6 +1051,7 @@ var BoxStorage = {
             $("#owner").val(rowData.keeper);
             $("#sample_types").val(rowData.sample_types);
             $("#project").val(rowData.project_id);
+            $("input[name='box_size']").val(BoxStorage.convertBoxSize(rowData.size));
          }
       });
    },
@@ -1065,5 +1067,15 @@ var BoxStorage = {
          $("#searched_boxes").show(400);
          $("#edit_div").hide(400);
       }
+   },
+   
+   convertBoxSize: function(limsSize) {
+      var limsDimensions = limsSize.split(".");
+      
+      //you only need to process the last part of the size ie J:10
+      var lastPos = limsDimensions[1];
+      var posParts = lastPos.split(":");
+      var asciiPart1  = posParts[0].charCodeAt(0) - 65;
+      return asciiPart1 * posParts[1]; 
    }
 };
