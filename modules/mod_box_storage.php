@@ -559,6 +559,10 @@ class BoxStorage extends Repository{
       $('#edit_button').click(function (){
          BoxStorage.submitBoxUpdate();
       });
+      $("#cancelAnchor").click(function (){
+         $("#rack_spec_div").hide();
+         $("#rack_div").show();
+      });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
