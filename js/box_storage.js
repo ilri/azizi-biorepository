@@ -1029,8 +1029,9 @@ var BoxStorage = {
    initSearchSelectedListener: function() {
       $("#searched_boxes").jqxGrid({selectionmode: 'singlerow'});
       $("#searched_boxes").bind('rowselect', function (event){
-         $("#search_div").hide();
-         $("#edit_div").unhide();
+         console.log("row selected");
+         //$("#search_div").hide();
+         //$("#edit_div").unhide();
       });
    }
 };
