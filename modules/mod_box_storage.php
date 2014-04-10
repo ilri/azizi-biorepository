@@ -1082,10 +1082,10 @@ class BoxStorage extends Repository{
             $query = $query . " AND a.status = '".$_POST['status']."'";
          }
          if($_POST['location'] == "wi_location"){
-            $query = $query . " AND concat(c.facility, b.rack, b.rack_position) != ''";
+            $query = $query . " AND (c.facility != '' AND b.rack != '' AND b.rack_position != '')";
          }
          else if($_POST['location'] == "wo_location"){
-            $query = $query . " AND concat(c.facility, b.rack, b.rack_position) = ''";
+            $query = $query . " AND (c.facility = '' OR b.rack = '' OR b.rack_position = '')";
          }
          if(strlen($_POST['keeper'])>0){
             $query = $query . " AND keeper = ".$_POST['keeper'];
