@@ -1095,7 +1095,7 @@ var BoxStorage = {
          //#tank#sector#rack#rack_spec#position
          var formData = {
             box_label: $("#box_label").val(),
-            box_size: $("input[name='box_size']").val(),
+            box_size: $("input[name='box_size']:checked").val(),
             sample_types: $("#sample_types").val(),
             owner: $("#owner").val(),
             status: $("#status").val(),
