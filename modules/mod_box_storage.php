@@ -415,7 +415,7 @@ class BoxStorage extends Repository{
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
       <!--legend>Box Information</legend-->
-      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-success" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
+      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-primary" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
       <div id="advanced_search_div" style="display: none;">
          <div class="search_criteria">
             <label for="search_project">Project</label>
@@ -531,7 +531,7 @@ class BoxStorage extends Repository{
             </select>
          </div>
        </div>
-      <div class="center" id="submit_button_div"><button type="button" class="btn btn-cancel" id="cancel_button" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Edit</button></div>
+      <div class="center" id="submit_button_div"><button type="button" class="btn btn-danger" id="cancel_button" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Edit</button></div>
    </div>
 </div>
 <script type="text/javascript">
