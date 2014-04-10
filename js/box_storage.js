@@ -1029,10 +1029,21 @@ var BoxStorage = {
       $("#searched_boxes").jqxGrid({selectionmode: 'singlerow'});
       $("#searched_boxes").bind('rowselect', function (event){
          if($("#search_div").is(":visible") === true && $("#edit_div").is(":visible") === false ){//do this check because the rowselect event handler is called several times when event occures. Process only once
-            $("#search_div").hide(400);
-            $("#searched_boxes").hide(400);
-            $("#edit_div").show(400);
+            BoxStorage.toggleSearchModes();
          }
       });
+   },
+   
+   toggleSearchModes: function(){
+      if($("#search_div").is(":visible")){
+         $("#search_div").hide(400);
+         $("#searched_boxes").hide(400);
+         $("#edit_div").show(400);
+      }
+      else{
+         $("#search_div").show(400);
+         $("#searched_boxes").show(400);
+         $("#edit_div").hide(400);
+      }
    }
 };

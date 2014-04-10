@@ -531,7 +531,7 @@ class BoxStorage extends Repository{
             </select>
          </div>
        </div>
-      <div class="center" id="submit_button_div"><button type="button" class="btn btn-cancel" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Edit</button></div>
+      <div class="center" id="submit_button_div"><button type="button" class="btn btn-cancel" id="cancel_button" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Edit</button></div>
    </div>
 </div>
 <script type="text/javascript">
@@ -548,6 +548,10 @@ class BoxStorage extends Repository{
       });
       
       BoxStorage.initiateSearchBoxesGrid();
+      
+      $('#cancel_button').click(function (){
+         BoxStorage.toggleSearchModes();
+      });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
