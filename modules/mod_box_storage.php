@@ -531,6 +531,7 @@ class BoxStorage extends Repository{
             </select>
          </div>
        </div>
+      <div class="center" id="submit_button_div"><button type="button" class="btn btn-cancel" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Edit</button></div>
    </div>
 </div>
 <script type="text/javascript">
