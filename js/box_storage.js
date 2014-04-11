@@ -1050,8 +1050,8 @@ var BoxStorage = {
          status: $("#search_status").val(),
          location: $("#search_location").val(),
          keeper: $("#search_keeper").val(),
-         boxes_wo_names: $("#boxes_wo_names").is("checked"),
-         boxes_wo_samples: $("#boxes_wo_samples").is("checked")
+         boxes_wo_names: $("#boxes_wo_names").is(":checked"),
+         boxes_wo_samples: $("#boxes_wo_samples").is(":checked")
          
       };
       BoxStorage.updateSearchBoxesGrid(data);
