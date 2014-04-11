@@ -445,8 +445,12 @@ class BoxStorage extends Repository{
             <input type="checkbox" id="boxes_wo_names" />
          </div>
          <div class="search_criteria">
-            <label for="boxes_wo_names">Boxes without samples</label>
-            <input type="checkbox" id="boxes_wo_samples" />
+            <label for="samples">Samples</label>
+            <select id="samples">
+               <option value=""></option>
+               <option value="wo_samples">Boxes without samples</option>
+               <option value="ex_samples">Boxes with excess samples</option>
+            </select>
          </div>
       </div>
    </div>
@@ -1039,6 +1043,21 @@ class BoxStorage extends Repository{
       $groupBy = " group by a.box_id";
       $having = "";
       if(isset($_POST['search'])){//check if requester whats a more specific search
+         //check samples
+         /*
+          * <option value="wo_samples">Boxes without samples</option>
+          * <option value="ex_samples">Boxes with excess samples</option>
+          */
+         if($_POST['samples'] === "wo_samples"){
+            if(strlen($having) === 0)
+               $having = " having count(e.count) < 1";
+            else
+               $having = " and count(e.count) < 1";
+         }
+         else if($_POST['samples'] === "ex_samples"){
+
+         }
+         
          if($_POST['boxes_wo_names'] === "false"){
             $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
          }
@@ -1055,7 +1074,7 @@ class BoxStorage extends Repository{
                   $having = " having count(distinct(e.Project)) > 1";
                }
                else
-                  $having = ", count(distinct(e.Project)) > 1";
+                  $having = " and count(distinct(e.Project)) > 1";
             }
             else if($_POST['project'] == -2){//boxes not associated with projects
                //SELECT boxes_def.* from boxes_def right join samples on boxes_def.box_id = samples.box_id where samples.Project is null group by boxes_def.box_id;
@@ -1093,6 +1112,8 @@ class BoxStorage extends Repository{
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
       
       $result = $this->Dbase->ExecuteQuery($query);
+      
+      
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
 
       header("Content-type: application/json");
