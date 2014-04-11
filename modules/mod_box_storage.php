@@ -535,6 +535,14 @@ class BoxStorage extends Repository{
          $("#rack_spec_div").hide();
          $("#rack_div").show();
       });
+      $("#boxes_wo_names").click(function (){
+         if($("#boxes_wo_names".is(":checked"))){
+            $("#search").prop("disabled", true);
+         }
+         else{
+            $("#search").prop("disabled", false);
+         }
+      });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
