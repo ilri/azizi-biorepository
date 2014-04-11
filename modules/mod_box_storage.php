@@ -118,19 +118,19 @@ class BoxStorage extends Repository{
       echo $addInfo;
       //get the list of sample keepers
       $query = "SELECT count, name FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";
-      $keepers = $this->Dbase->ExecuteQuery($query);
+      $keepers = $this->Dbase->ExecuteQuery($query);//TODO: link this to users in lims db
       if($keepers == 1){
          $this->RepositoryHomePage($this->Dbase->lastError);
          return;
       }
-      $query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
+      /*$query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
       $sampleTypes = $this->Dbase->ExecuteQuery($query);
       if($sampleTypes == 1){
          $this->RepositoryHomePage($this->Dbase->lastError);
          return;
       }
       $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
-      $projects = $this->Dbase->ExecuteQuery($query);
+      $projects = $this->Dbase->ExecuteQuery($query);*/
 
 ?>
 <div id="box_storage">
@@ -151,24 +151,6 @@ class BoxStorage extends Repository{
                   echo '<option value="Select Box Owner"></option>';//add the first blank option
                   foreach($keepers as $contact) echo '<option value="'. $contact['count'] .'">'. $contact['name'] ."</option>\n";
               ?>
-            </select>
-         </div>
-         <div class='left-align'>
-            <label for="sample_types">Sample Types</label>
-            <select name="sample_types" id="sample_types" class='form-control'>
-            <?php
-                  echo '<option value=""></option>';//add the first blank option
-                  foreach($sampleTypes as $sampleType) echo '<option value="'. $sampleType['count'] .'">'. $sampleType['description'] ."</option>\n";
-              ?>
-            </select>
-         </div>
-         <div class="left-align">
-            <label for="project">Project</label>
-            <select id="project" name="project">
-               <option value=""></option>
-               <?php
-                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">' . $currProject['value'] . "</option>\n";
-               ?>
             </select>
          </div>
       </div>
@@ -407,10 +389,10 @@ class BoxStorage extends Repository{
       
       $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
       $projects = $this->Dbase->ExecuteQuery($query);
-      $query = "SELECT count, name FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";
+      $query = "SELECT count, name FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";//TODO: link this to users from lims db
       $keepers = $this->Dbase->ExecuteQuery($query);
-      $query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
-      $sampleTypes = $this->Dbase->ExecuteQuery($query);
+      /*$query = "SELECT count, description FROM ".Config::$config['azizi_db'].".sample_types_def WHERE description != ''";
+      $sampleTypes = $this->Dbase->ExecuteQuery($query);*/
       ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
@@ -428,7 +410,7 @@ class BoxStorage extends Repository{
                <option value="-1">Boxes with projects</option>
                <option value="-2">Boxes without projects</option>
                <?php
-                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">From ' . $currProject['value'] . " project</option>\n";
+                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">With samples from ' . $currProject['value'] . " project</option>\n";
                ?>
             </select>
          </div>
@@ -476,24 +458,6 @@ class BoxStorage extends Repository{
                   echo '<option value="Select Box Owner"></option>';//add the first blank option
                   foreach($keepers as $contact) echo '<option value="'. $contact['count'] .'">'. $contact['name'] ."</option>\n";
               ?>
-            </select>
-         </div>
-         <div class='left-align'>
-            <label for="sample_types">Sample Types</label>
-            <select name="sample_types" id="sample_types" class='form-control'>
-            <?php
-                  echo '<option value=""></option>';//add the first blank option
-                  foreach($sampleTypes as $sampleType) echo '<option value="'. $sampleType['count'] .'">'. $sampleType['description'] ."</option>\n";
-              ?>
-            </select>
-         </div>
-         <div class="left-align">
-            <label for="project">Project</label>
-            <select id="project" name="project">
-               <option value=""></option>
-               <?php
-                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">' . $currProject['value'] . "</option>\n";
-               ?>
             </select>
          </div>
       </div>
@@ -639,6 +603,7 @@ class BoxStorage extends Repository{
     * This function handles the POST request for inserting new box data from the Add Box page
     * 
     * @return string    Result of the insert into the database. Can be either positive or negative
+    * @todo link owner to users in lims db and not miscdb
     */
    private function insertBox(){
       $message = "";
@@ -690,8 +655,8 @@ class BoxStorage extends Repository{
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, sample_types, date_added, added_by, project) values(:box_id, :status, :sample_types, :date_added, :added_by, :project)';
-         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project']);
+         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by) values(:box_id, :status, :date_added, :added_by)';
+         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
@@ -719,6 +684,7 @@ class BoxStorage extends Repository{
     * Most likely called from an AJAX request
     * 
     * @return JSON Returns a json object with the result (wheter successful or not) and the message from the server
+    * @todo link owner to users in lims db and not miscdb
     */
    private function updateBox(){
       $message = "";
@@ -771,8 +737,8 @@ class BoxStorage extends Repository{
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, sample_types=:sample_types, date_added=:date_added, added_by=:added_by, project=:project where box_id=:box_id';
-         $columns = array('status' => $_POST['status'], 'sample_types' => $_POST['sample_types'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $_POST['project'], 'box_id' => $_POST['box_id']);
+         $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, date_added=:date_added, added_by=:added_by where box_id=:box_id';
+         $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'box_id' => $_POST['box_id']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
@@ -1054,18 +1020,16 @@ class BoxStorage extends Repository{
     * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
     */
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, a.project as project_id, a.sample_types, b.box_features, b.box_name, b.keeper, b.size, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, e.description as sample_type, f.value as project '.
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-              'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-              'left join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count './/sample type
-              'left join '. Config::$config['azizi_db'] .'.modules_custom_values as f on a.project = f.val_id';//associated project
+              'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id ';
       
       if(isset($_POST['search'])){//check if requester whats a more specific search
          $query = $query . " WHERE (box_name LIKE '%".$_POST['search']."%'";
          $query = $query . " OR box_features LIKE '%".$_POST['search']."%')";
-         if(strlen($_POST['project']) > 0){
+         /*if(strlen($_POST['project']) > 0){
             //<option value="-1">Boxes with projects</option>
                //<option value="-2">Boxes without projects</option>
             if($_POST['project'] == -1){//boxes associated with projects
@@ -1077,7 +1041,7 @@ class BoxStorage extends Repository{
             else{
                $query = $query . " AND a.project = ".$_POST['project'];
             }
-         }
+         }*/
          if(strlen($_POST['status']) > 0){
             $query = $query . " AND a.status = '".$_POST['status']."'";
          }

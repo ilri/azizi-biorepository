@@ -29,8 +29,20 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'}, {name: 'project'}],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_boxes'}
+         datatype: 'json',
+         datafields: [ 
+            {name: 'box_name'},
+            {name: 'position'}, 
+            {name: 'status'},
+            {name: 'date_added'},
+            {name: 'added_by'}
+         ],
+         id: 'id',
+         root: 'data',
+         async: false,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_boxes'}
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -44,9 +56,7 @@ var BoxStorage = {
             theme: theme,
             pageable: true,
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 80},
-               {text: 'Sample Type', datafield: 'sample_type', width: 150},
-               {text: 'Project', datafield: 'project', width: 105},
+               {text: 'Box Label', datafield: 'box_name', width: 130},
                {text: 'Tank Position', datafield: 'position', width: 210},
                {text: 'Status', datafield: 'status', width: 90},
                {text: 'Date Added', datafield: 'date_added', width: 90},
@@ -141,16 +151,12 @@ var BoxStorage = {
          datatype: 'json',
          datafields: [ 
             {name: 'box_name'}, 
-            {name: 'sample_type'}, 
             {name: 'position'}, 
             {name: 'status'}, 
             {name: 'date_added'}, 
-            {name: 'added_by'}, 
-            {name: 'project'}, 
+            {name: 'added_by'},
             {name: 'box_features'}, 
-            {name: 'keeper'}, 
-            {name: 'sample_types'},
-            {name: 'project_id'},
+            {name: 'keeper'},
             {name: 'size'},
             {name: 'box_id'}
          ],//make sure you update these fields when you update those of the update fetch
@@ -173,9 +179,7 @@ var BoxStorage = {
             theme: theme,
             pageable: true,
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 80},
-               {text: 'Sample Type', datafield: 'sample_type', width: 150},
-               {text: 'Project', datafield: 'project', width: 105},
+               {text: 'Box Label', datafield: 'box_name', width: 130},
                {text: 'Tank Position', datafield: 'position', width: 210},
                {text: 'Status', datafield: 'status', width: 90},
                {text: 'Date Added', datafield: 'date_added', width: 90},
@@ -201,17 +205,13 @@ var BoxStorage = {
       var source = {
          datatype: 'json',
          datafields: [ 
-            {name: 'box_name'}, 
-            {name: 'sample_type'}, 
+            {name: 'box_name'},  
             {name: 'position'}, 
             {name: 'status'}, 
             {name: 'date_added'}, 
             {name: 'added_by'}, 
-            {name: 'project'}, 
             {name: 'box_features'}, 
             {name: 'keeper'}, 
-            {name: 'sample_types'},
-            {name: 'project_id'},
             {name: 'size'},
             {name: 'box_id'}
          ],//make sure you update these fields when you update those for the initial fetch
@@ -394,11 +394,6 @@ var BoxStorage = {
          $("#box_size").focus();
          return false;
       }
-      if($("#sample_types").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the main sample type', error:true});
-         $("#sample_types").focus();
-         return false;
-      }
       if($('#owner').is(':disabled')=== false && $("#owner").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please specify the owner of the box', error:true});
          $("#owner").focus();
@@ -407,11 +402,6 @@ var BoxStorage = {
       if($("#status").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please select the box\'s status', error:true});
          $("#status").focus();
-         return false;
-      }
-      if($("#project").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please select the project', error:true});
-         $("#project").focus();
          return false;
       }
 
@@ -1096,8 +1086,6 @@ var BoxStorage = {
             $("#box_label").val(rowData.box_name);
             $("#features").val(rowData.box_features);
             $("#owner").val(rowData.keeper);
-            $("#sample_types").val(rowData.sample_types);
-            $("#project").val(rowData.project_id);
             $("input[name='box_size'][value='"+BoxStorage.convertBoxSize(rowData.size)+"']").prop("checked", true);
          }
       });
@@ -1148,15 +1136,13 @@ var BoxStorage = {
    submitBoxUpdate: function(){
       if(BoxStorage.validateInsertInput()){
          console.log("trying to update");
-         //#box_label#box_size#sample_types#owner#status#project#features
+         //#box_label#box_size#owner#status#features
          //#tank#sector#rack#rack_spec#position
          var formData = {
             box_label: $("#box_label").val(),
             box_size: $("input[name='box_size']:checked").val(),
-            sample_types: $("#sample_types").val(),
             owner: $("#owner").val(),
             status: $("#status").val(),
-            project: $("#project").val(),
             features: $("#features").val(),
             tank: $("#tank").val(),
             sector: $("#sector").val(),
