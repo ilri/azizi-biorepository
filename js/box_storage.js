@@ -226,7 +226,13 @@ var BoxStorage = {
             {name: 'keeper'},
             {name: 'size'},
             {name: 'box_id'},
-            {name: 'no_samples'}
+            {name: 'no_samples'},
+            {name: 'tank_id'},
+            {name: 'tank_name'},
+            {name: 'sector_id'},
+            {name: 'sector_name'},
+            {name: 'rack'},
+            {name: 'rack_position'}
          ],//make sure you update these fields when you update those for the initial fetch
          id: 'id',
          root: 'data',
@@ -1110,7 +1116,25 @@ var BoxStorage = {
             
             //tank details
             $("#tank").val(rowData.tank_id);
+            $('#sector').find('option').remove().end()
+               .append('<option value=""></option>')//append a null option
+               .val('');
+            $("#sector").append($("<option></option>").attr("value", rowData.sector_id).text(rowData.sector_name));
+            $('#sector').prop('disabled', false);
             
+            $('#rack').find('option').remove().end()
+               .append('<option value=""></option>')//append a null option
+               .val('');
+            $("#rack").append($("<option></option>").attr("value", rowData.rack).text("Rack "+rowData.rack));
+            $('#rack').prop('disabled', false);
+            
+            $('#position').find('option').remove().end()
+               .append('<option value=""></option>')//append a null option
+               .val('');
+            $("#position").append($("<option></option>").attr("value", rowData.rack_position).text("Position "+rowData.rack_position));
+            $('#position').prop('disabled', false);
+            
+            $("#status").val(rowData.status);
          }
       });
    },
