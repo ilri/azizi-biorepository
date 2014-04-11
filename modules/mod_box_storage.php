@@ -1048,7 +1048,7 @@ class BoxStorage extends Repository{
                $query = $query . " AND e.Project is null";
             }
             else{
-               $query = $query . " AND a.project = ".$_POST['project'];
+               $query = $query . " AND e.Project = ".$_POST['project'];
             }
          }
          if(strlen($_POST['status']) > 0){
