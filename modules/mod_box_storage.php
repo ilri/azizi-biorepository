@@ -1025,7 +1025,7 @@ class BoxStorage extends Repository{
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
               'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-              'right join '. Config::$config['dbase'] .'.samples as e on a.box_id = e.box_id';
+              'right join '. Config::$config['azizi_db'] .'.samples as e on a.box_id = e.box_id';
       
       $groupBy = " group by a.box_id";
       $having = "";
