@@ -439,6 +439,14 @@ class BoxStorage extends Repository{
                ?>
             </select>
          </div>
+         <div class="search_criteria">
+            <label for="boxes_wo_names">Boxes without names</label>
+            <input type="radio" id="boxes_wo_names" />
+         </div>
+         <div class="search_criteria">
+            <label for="boxes_wo_names">Boxes without samples</label>
+            <input type="radio" id="boxes_wo_samples" />
+         </div>
       </div>
    </div>
    <div id="searched_boxes"></div>
