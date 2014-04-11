@@ -441,11 +441,11 @@ class BoxStorage extends Repository{
          </div>
          <div class="search_criteria">
             <label for="boxes_wo_names">Boxes without names</label>
-            <input type="radio" id="boxes_wo_names" />
+            <input type="checkbox" id="boxes_wo_names" />
          </div>
          <div class="search_criteria">
             <label for="boxes_wo_names">Boxes without samples</label>
-            <input type="radio" id="boxes_wo_samples" />
+            <input type="checkbox" id="boxes_wo_samples" />
          </div>
       </div>
    </div>
