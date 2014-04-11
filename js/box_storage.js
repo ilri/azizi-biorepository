@@ -176,7 +176,6 @@ var BoxStorage = {
          $("#searched_boxes").jqxGrid({
             width: 905,
             height: 400,
-            autoheight: true,
             columnsresize: true,
             source: boxesAdapter,
             theme: theme,
