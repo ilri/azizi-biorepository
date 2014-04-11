@@ -1114,7 +1114,11 @@ class BoxStorage extends Repository{
       //no_samples size
       if($_POST['samples'] === "ex_samples"){
          $index = 0;
+         $count2 = 0;
          while($index < count($result)){
+            $count2++;
+            if($count2 == 10)
+               break;
             $size = GeneralTasks::LCSize2NumericSize($result[$index]['size']);
             $this->Dbase->CreateLogEntry('box_storage: index of box =  ' . $index . ' and array size = '.  count($result), 'debug');
             if($size >= $result[$index]['no_samples']){
