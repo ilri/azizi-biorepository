@@ -1107,6 +1107,10 @@ var BoxStorage = {
             $("#features").val(rowData.box_features);
             $("#owner").val(rowData.keeper);
             $("input[name='box_size'][value='"+BoxStorage.convertBoxSize(rowData.size)+"']").prop("checked", true);
+            
+            //tank details
+            $("#tank").val(rowData.tank_id);
+            
          }
       });
    },
