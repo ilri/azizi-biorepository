@@ -527,6 +527,11 @@ class BoxStorage extends Repository{
       $('#submitButton').click(function(){
          BoxStorage.searchForBox();
       });
+      $("#search").live("keypress", function(e) {
+        if (e.keyCode == 13) {
+           BoxStorage.searchForBox();
+        }
+      });
       
       $('#advanced_search_a').click(function (){
          BoxStorage.toggleAdvancedSearch();
