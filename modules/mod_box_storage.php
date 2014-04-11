@@ -1115,7 +1115,7 @@ class BoxStorage extends Repository{
       if($_POST['samples'] === "ex_samples"){
          for($index = 0; $index < count($result); $index++){
             $size = GeneralTasks::LCSize2NumericSize($result[$index]['size']);
-            $this->Dbase->CreateLogEntry('box_storage: size of box =  ' . $size, 'debug');
+            $this->Dbase->CreateLogEntry('box_storage: index of box =  ' . $index . ' and array size = '.  count($result), 'debug');
             if($size >= $result[$index]['no_samples']){
                //we only need boxes with excell samples, remove this one 
                $result = array_splice($result, $index, 1);
