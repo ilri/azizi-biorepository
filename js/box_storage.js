@@ -945,7 +945,10 @@ var BoxStorage = {
 
       $("#search").autocomplete({
          source: suggestions,
-         minLength: 2
+         minLength: 2,
+         select: function(){
+            BoxStorage.searchForBox();
+         }
       });
    },
 

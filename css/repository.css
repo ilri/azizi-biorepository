@@ -321,7 +321,6 @@ body {
 #return_div select, #return_div input {width: 200px; margin: 5px 2px;}
 #return_div input, #search_div input, #edit_div input {height: 30px;}
 #search_div input {margin-top: 10px;}
-#ui-autocomplete li {list-style-type: none;}
 #search_div .search_criteria {display: inline-block;}
 #search_div .search_criteria select{width: 150px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
