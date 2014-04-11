@@ -511,8 +511,8 @@ class BoxStorage extends Repository{
             <label for="status">Status</label>
             <select type="text" name="status" id="status">
                <option value=""></option><!--NULL option-->
-               <option value="Temporary">Temporary</option>
-               <option value="Permanent">Permanent</option>
+               <option value="temporary">Temporary</option>
+               <option value="permanent">Permanent</option>
             </select>
          </div>
        </div>
