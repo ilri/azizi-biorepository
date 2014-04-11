@@ -536,7 +536,7 @@ class BoxStorage extends Repository{
          $("#rack_div").show();
       });
       $("#boxes_wo_names").click(function (){
-         if($("#boxes_wo_names").is(":checked"))){
+         if($("#boxes_wo_names").is(":checked")){
             $("#search").prop("disabled", true);
          }
          else{
