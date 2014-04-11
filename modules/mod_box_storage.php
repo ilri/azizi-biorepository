@@ -407,8 +407,8 @@ class BoxStorage extends Repository{
             <label for="search_project">Project</label>
             <select id="search_project">
                <option value=""></option>
-               <option value="-1">Boxes with projects</option>
                <option value="-2">Boxes without projects</option>
+               <option value="-1">Boxes linked to multiple projects</option>
                <?php
                   foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">With samples from ' . $currProject['value'] . " project</option>\n";
                ?>
@@ -625,7 +625,7 @@ class BoxStorage extends Repository{
       $rack = $_POST['rack'];
       if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
-      //get the user id
+      //get the user id for person responsible for adding the box
       $userId = 1;
       if(strlen($_SESSION['username']) > 0){
          $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
@@ -707,7 +707,7 @@ class BoxStorage extends Repository{
       $rack = $_POST['rack'];
       if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
-      //get the user id
+      //get the user id for person responsible for updating the box
       $userId = 1;
       if(strlen($_SESSION['username']) > 0){
          $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
@@ -1024,24 +1024,33 @@ class BoxStorage extends Repository{
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-              'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id ';
+              'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+              'right join '. Config::$config['dbase'] .'.samples as e on a.box_id = e.box_id';
       
+      $groupBy = " group by a.box_id";
+      $having = "";
       if(isset($_POST['search'])){//check if requester whats a more specific search
          $query = $query . " WHERE (box_name LIKE '%".$_POST['search']."%'";
          $query = $query . " OR box_features LIKE '%".$_POST['search']."%')";
-         /*if(strlen($_POST['project']) > 0){
-            //<option value="-1">Boxes with projects</option>
-               //<option value="-2">Boxes without projects</option>
-            if($_POST['project'] == -1){//boxes associated with projects
-               $query = $query . " AND a.project IS NOT NULL AND a.project != 0";
+         if(strlen($_POST['project']) > 0){
+            //<option value="-1">Boxes linked to multiple projects</option>
+            //<option value="-2">Boxes without projects</option>
+            if($_POST['project'] == -1){//boxes associated with multiple projects
+               //SELECT boxes_def.*, count(distinct(samples.project)) from boxes_def right join samples on boxes_def.box_id = samples.box_id group by(boxes_def.box_id) HAVING count(distinct(samples.Project)) > 1;
+               if(strlen($having) == 0 ){
+                  $having = " having count(distinct(e.Project)) > 1";
+               }
+               else
+                  $having = ", count(distinct(e.Project)) > 1";
             }
             else if($_POST['project'] == -2){//boxes not associated with projects
-               $query = $query . " AND (a.project IS NULL OR a.project = 0)";
+               //SELECT boxes_def.* from boxes_def right join samples on boxes_def.box_id = samples.box_id where samples.Project is null group by boxes_def.box_id;
+               $query = $query . " AND e.Project is null";
             }
             else{
                $query = $query . " AND a.project = ".$_POST['project'];
             }
-         }*/
+         }
          if(strlen($_POST['status']) > 0){
             $query = $query . " AND a.status = '".$_POST['status']."'";
          }
@@ -1052,9 +1061,11 @@ class BoxStorage extends Repository{
             $query = $query . " AND (c.facility = '' OR b.rack = '' OR b.rack_position = '')";
          }
          if(strlen($_POST['keeper'])>0){
-            $query = $query . " AND keeper = ".$_POST['keeper'];
+            $query = $query . " AND b.keeper = ".$_POST['keeper'];
          }
       }
+      
+      $query = $query . $groupBy . $having;
       
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
       
