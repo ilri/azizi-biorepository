@@ -1075,7 +1075,7 @@ class BoxStorage extends Repository{
           * <option value="wo_rack_loc">With both location and rack not specified</option>
           */
          if($_POST['location'] == "wo_location"){
-            $query = $query . " AND c.facility IS NULL";
+            $query = $query . " AND b.location IS NULL";
          }
          else if($_POST['location'] == "wo_rack"){
             $query = $query . " AND (b.rack IS NULL OR b.rack_position IS NULL)";
