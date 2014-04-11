@@ -158,7 +158,8 @@ var BoxStorage = {
             {name: 'box_features'}, 
             {name: 'keeper'},
             {name: 'size'},
-            {name: 'box_id'}
+            {name: 'box_id'},
+            {name: 'no_samples'}
          ],//make sure you update these fields when you update those of the update fetch
          id: 'id',
          root: 'data',
@@ -182,8 +183,8 @@ var BoxStorage = {
                {text: 'Box Label', datafield: 'box_name', width: 130},
                {text: 'Tank Position', datafield: 'position', width: 210},
                {text: 'Status', datafield: 'status', width: 90},
-               {text: 'Date Added', datafield: 'date_added', width: 90},
-               {text: 'Added By', datafield: 'added_by', width: 180}
+               {text: 'Number of samples', datafield: 'no_samples', width: 90},
+               {text: 'Date Added', datafield: 'date_added', width: 90}
             ]
          });
       }
