@@ -1123,7 +1123,7 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('box_storage: index of box =  ' . $index . ' and array size = '.  count($result), 'debug');
             if($size >= $result[$index]['no_samples']){
                //we only need boxes with excell samples, remove this one 
-               $result = array_splice($result, $index);
+               $result = array_splice($result, $index, 1);
             }
             else{
                $index++;
