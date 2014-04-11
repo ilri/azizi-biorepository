@@ -445,16 +445,16 @@ class BoxStorage extends Repository{
             </select>
          </div>
          <div class="search_criteria">
-            <label for="boxes_wo_names">Boxes without names</label>
-            <input type="checkbox" id="boxes_wo_names" />
-         </div>
-         <div class="search_criteria">
             <label for="samples">Samples</label>
             <select id="samples">
                <option value=""></option>
                <option value="wo_samples">Boxes without samples</option>
                <option value="ex_samples">Boxes with excess samples</option>
             </select>
+         </div>
+         <div class="search_criteria">
+            <label for="boxes_wo_names">Boxes without names</label>
+            <input type="checkbox" id="boxes_wo_names" />
          </div>
       </div>
    </div>
