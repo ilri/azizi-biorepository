@@ -53,6 +53,7 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
             columns: [
@@ -88,6 +89,7 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
             columns: [
@@ -124,6 +126,7 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
             columns: [
@@ -253,6 +256,7 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
             columns: [
