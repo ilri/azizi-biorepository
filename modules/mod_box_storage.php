@@ -1125,9 +1125,7 @@ class BoxStorage extends Repository{
                //we only need boxes with excell samples, remove this one 
                unset($result[$index]);
             }
-            else{
                $index++;
-            }
          }
       }
       
