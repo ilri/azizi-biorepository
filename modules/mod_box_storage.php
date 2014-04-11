@@ -426,8 +426,9 @@ class BoxStorage extends Repository{
             <label for="search_location">Location</label>
             <select id="search_location">
                <option value=""></option>
-               <option value="wi_location">With a location</option>
-               <option value="wo_location">Without a location</option>
+               <option value="wo_location">With location not specified</option>
+               <option value="wo_rack">With rack not specified</option>
+               <option value="wo_rack_loc">With both location and rack not specified</option>
             </select>
          </div>
          <div class="search_criteria">
@@ -1067,11 +1068,20 @@ class BoxStorage extends Repository{
          if(strlen($_POST['status']) > 0){
             $query = $query . " AND a.status = '".$_POST['status']."'";
          }
-         if($_POST['location'] == "wi_location"){
-            $query = $query . " AND (c.facility != '' AND b.rack != '' AND b.rack_position != '')";
+         
+         /*
+          * <option value="wo_location">With location not specified</option>
+          * <option value="wo_rack">With rack not specified</option>
+          * <option value="wo_rack_loc">With both location and rack not specified</option>
+          */
+         if($_POST['location'] == "wo_location"){
+            $query = $query . " AND c.facility IS NULL";
          }
-         else if($_POST['location'] == "wo_location"){
-            $query = $query . " AND (c.facility = '' OR b.rack = '' OR b.rack_position = '')";
+         else if($_POST['location'] == "wo_rack"){
+            $query = $query . " AND (b.rack IS NULL OR b.rack_position IS NULL)";
+         }
+         else if($_POST['location'] == "wo_rack_loc"){
+            $query = $query . " AND c.facility IS NULL AND (b.rack IS NULL OR b.rack_position IS NULL)";
          }
          if(strlen($_POST['keeper'])>0){
             $query = $query . " AND b.keeper = ".$_POST['keeper'];
