@@ -175,8 +175,7 @@ var BoxStorage = {
       if($('#searched_boxes :regex(class, jqx\-grid)').length === 0){
          $("#searched_boxes").jqxGrid({
             width: 905,
-            height: 400, 
-            columnsresize: true,
+            height: 400,
             source: boxesAdapter,
             theme: theme,
             pageable: true,
@@ -190,6 +189,7 @@ var BoxStorage = {
          });
       }
       else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
+      $("#searched_boxes").jqxGrid('autoresizecolumns');
       BoxStorage.initSearchSelectedListener();
    },
    
