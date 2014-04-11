@@ -58,7 +58,7 @@ var BoxStorage = {
             pageable: true,
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 250},
-               {text: 'Tank Position', datafield: 'position', width: 300},
+               {text: 'Tank Position', datafield: 'position', width: 250},
                {text: 'Status', datafield: 'status', width: 90},
                {text: 'Date Added', datafield: 'date_added', width: 120},
                {text: 'Added By', datafield: 'added_by', width: 200}
