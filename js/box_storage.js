@@ -1115,7 +1115,7 @@ var BoxStorage = {
             $("input[name='box_size'][value='"+BoxStorage.convertBoxSize(rowData.size)+"']").prop("checked", true);
             
             //tank details
-            $("#tank").val(rowData.tank_id);
+            /*$("#tank").val(rowData.tank_id);
             $('#sector').find('option').remove().end()
                .append('<option value=""></option>')//append a null option
                .val('');
@@ -1135,9 +1135,20 @@ var BoxStorage = {
                .val('');
             $("#position").append($("<option></option>").attr("value", rowData.rack_position).text("Position "+rowData.rack_position));
             $('#position').prop('disabled', false);
+            $("#position").val(rowData.rack_position);*/
+            
+            $("#tank").val(rowData.tank_id);
+            BoxStorage.populateTankSectors();
+            $("#sector").val(rowData.sector_id);
+            BoxStorage.populateSectorRacks();
+            $("#rack").val(rowData.rack);
+            BoxStorage.populateSelectedPosition();
+            $("#position").append($("<option></option>").attr("value", rowData.rack_position).text("Position "+rowData.rack_position));
             $("#position").val(rowData.rack_position);
             
+            
             $("#status").val(rowData.status);
+            
          }
       });
    },
