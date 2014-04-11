@@ -175,6 +175,7 @@ var BoxStorage = {
       if($('#searched_boxes :regex(class, jqx\-grid)').length === 0){
          $("#searched_boxes").jqxGrid({
             width: 905,
+            height: 400,
             autoheight: true,
             columnsresize: true,
             source: boxesAdapter,
