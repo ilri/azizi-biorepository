@@ -1111,27 +1111,6 @@ var BoxStorage = {
             $("input[name='box_size'][value='"+BoxStorage.convertBoxSize(rowData.size)+"']").prop("checked", true);
             
             //tank details
-            /*$("#tank").val(rowData.tank_id);
-            $('#sector').find('option').remove().end()
-               .append('<option value=""></option>')//append a null option
-               .val('');
-            $("#sector").append($("<option></option>").attr("value", rowData.sector_id).text(rowData.sector_name));
-            $('#sector').prop('disabled', false);
-            $("#sector").val(rowData.sector_id);
-            
-            $('#rack').find('option').remove().end()
-               .append('<option value=""></option>')//append a null option
-               .val('');
-            $("#rack").append($("<option></option>").attr("value", rowData.rack).text("Rack "+rowData.rack));
-            $('#rack').prop('disabled', false);
-            $("#rack").val(rowData.rack);
-            
-            $('#position').find('option').remove().end()
-               .append('<option value=""></option>')//append a null option
-               .val('');
-            $("#position").append($("<option></option>").attr("value", rowData.rack_position).text("Position "+rowData.rack_position));
-            $('#position').prop('disabled', false);
-            $("#position").val(rowData.rack_position);*/
             
             $("#tank").val(rowData.tank_id);
             BoxStorage.populateTankSectors();
@@ -1139,6 +1118,7 @@ var BoxStorage = {
             BoxStorage.populateSectorRacks();
             $("#rack").val(rowData.rack);
             BoxStorage.populateSelectedPosition();
+            //add the boxes position to position select because populateSelectPosition function did not add it because 'it has a box :)'
             $("#position").append($("<option></option>").attr("value", rowData.rack_position).text("Position "+rowData.rack_position));
             $("#position").val(rowData.rack_position);
             
