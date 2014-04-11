@@ -1042,7 +1042,7 @@ class BoxStorage extends Repository{
             $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
          }
          else{
-            $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '' OR b.box_features LIKE '%".$_POST['search']."%')";
+            $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
          }
          
          if(strlen($_POST['project']) > 0){
