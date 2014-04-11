@@ -184,11 +184,11 @@ var BoxStorage = {
             theme: theme,
             pageable: true,
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 130},
-               {text: 'Tank Position', datafield: 'position', width: 210},
+               {text: 'Box Label', datafield: 'box_name', width: 245},
+               {text: 'Tank Position', datafield: 'position', width: 320},
                {text: 'Status', datafield: 'status', width: 90},
-               {text: 'Number of samples', datafield: 'no_samples', width: 90},
-               {text: 'Date Added', datafield: 'date_added', width: 90}
+               {text: 'Number of samples', datafield: 'no_samples', width: 50},
+               {text: 'Date Added', datafield: 'date_added', width: 200}
             ]
          });
       }
