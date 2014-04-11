@@ -1124,6 +1124,7 @@ class BoxStorage extends Repository{
             if($size >= $result[$index]['no_samples']){
                //we only need boxes with excell samples, remove this one 
                unset($result[$index]);
+               $index--;
             }
                $index++;
          }
