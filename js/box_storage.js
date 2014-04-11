@@ -206,15 +206,16 @@ var BoxStorage = {
       var source = {
          datatype: 'json',
          datafields: [ 
-            {name: 'box_name'},  
+            {name: 'box_name'}, 
             {name: 'position'}, 
             {name: 'status'}, 
             {name: 'date_added'}, 
-            {name: 'added_by'}, 
+            {name: 'added_by'},
             {name: 'box_features'}, 
-            {name: 'keeper'}, 
+            {name: 'keeper'},
             {name: 'size'},
-            {name: 'box_id'}
+            {name: 'box_id'},
+            {name: 'no_samples'}
          ],//make sure you update these fields when you update those for the initial fetch
          id: 'id',
          root: 'data',

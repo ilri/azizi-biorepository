@@ -1111,12 +1111,10 @@ class BoxStorage extends Repository{
       $result = $this->Dbase->ExecuteQuery($query);
       
       //check boxes with excess samples
-      //no_samples size
       if($_POST['samples'] === "ex_samples"){
          $index = 0;
          while($index < count($result)){
             $size = GeneralTasks::LCSize2NumericSize($result[$index]['size']);
-            $this->Dbase->CreateLogEntry('box_storage: index of box =  ' . $index . ' and array size = '.  count($result), 'debug');
             if($size >= $result[$index]['no_samples']){
                //we only need boxes with excell samples, remove this one 
                array_splice($result, $index, 1);
@@ -1125,7 +1123,6 @@ class BoxStorage extends Repository{
                $index++;
             }
          }
-         $this->Dbase->CreateLogEntry('box_storage: array size = '.  count($result), 'debug');
       }
       
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
