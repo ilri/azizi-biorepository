@@ -453,8 +453,8 @@ class BoxStorage extends Repository{
             </select>
          </div>
          <div class="search_criteria">
-            <label for="boxes_wo_names" style="margin-top: 13px; margin-right: 5px; display: inline;">Boxes without names</label>
-            <input type="checkbox" id="boxes_wo_names" />
+            <label for="boxes_wo_names" style="margin-right: 5px; display: inline;">Boxes without names</label>
+            <input type="checkbox" id="boxes_wo_names" style="margin-bottom: 10px;"/>
          </div>
       </div>
    </div>
