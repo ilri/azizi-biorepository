@@ -1129,6 +1129,7 @@ class BoxStorage extends Repository{
                $index++;
             }
          }
+         $this->Dbase->CreateLogEntry('box_storage: array size = '.  count($result), 'debug');
       }
       
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
