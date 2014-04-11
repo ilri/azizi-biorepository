@@ -1121,18 +1121,21 @@ var BoxStorage = {
                .val('');
             $("#sector").append($("<option></option>").attr("value", rowData.sector_id).text(rowData.sector_name));
             $('#sector').prop('disabled', false);
+            $("#sector").val(rowData.sector_id);
             
             $('#rack').find('option').remove().end()
                .append('<option value=""></option>')//append a null option
                .val('');
             $("#rack").append($("<option></option>").attr("value", rowData.rack).text("Rack "+rowData.rack));
             $('#rack').prop('disabled', false);
+            $("#rack").val(rowData.rack);
             
             $('#position').find('option').remove().end()
                .append('<option value=""></option>')//append a null option
                .val('');
             $("#position").append($("<option></option>").attr("value", rowData.rack_position).text("Position "+rowData.rack_position));
             $('#position').prop('disabled', false);
+            $("#position").val(rowData.rack_position);
             
             $("#status").val(rowData.status);
          }
