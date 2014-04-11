@@ -535,14 +535,6 @@ class BoxStorage extends Repository{
          $("#rack_spec_div").hide();
          $("#rack_div").show();
       });
-      $("#boxes_wo_names").click(function (){
-         if($("#boxes_wo_names").is(":checked")){
-            $("#search").prop("disabled", true);
-         }
-         else{
-            $("#search").prop("disabled", false);
-         }
-      });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
@@ -1046,8 +1038,13 @@ class BoxStorage extends Repository{
       $groupBy = " group by a.box_id";
       $having = "";
       if(isset($_POST['search'])){//check if requester whats a more specific search
-         $query = $query . " WHERE (box_name LIKE '%".$_POST['search']."%'";
-         $query = $query . " OR box_features LIKE '%".$_POST['search']."%')";
+         if($_POST['boxes_wo_names'] === "false"){
+            $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
+         }
+         else{
+            $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '' OR b.box_features LIKE '%".$_POST['search']."%')";
+         }
+         
          if(strlen($_POST['project']) > 0){
             //<option value="-1">Boxes linked to multiple projects</option>
             //<option value="-2">Boxes without projects</option>
