@@ -33,6 +33,7 @@ class BoxStorage extends Repository{
        *    - ajax
        *       - get_tank_details
        *       - fetch_boxes
+       *       - search_boxes
        *       - fetch_removed_boxes
        *       - submit_return_request
        *       - submit_update_request
@@ -54,6 +55,7 @@ class BoxStorage extends Repository{
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_box') $this->deleteBox (); // delete box from database (with or without it's metadata)
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "get_tank_details") $this->getTankDetails ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "fetch_boxes") $this->fetchBoxes ();
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "search_boxes") $this->searchBoxes ();
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_removed_boxes") $this->fetchRemovedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_deleted_boxes") $this->fetchDeletedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_return_request") die($this->submitReturnRequest(TRUE));
@@ -1040,97 +1042,131 @@ class BoxStorage extends Repository{
 
    /**
     * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
+    * 
     */
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, f.id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, CONCAT(d.onames, " ", d.sname) as added_by, count(e.count) as no_samples '.
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by, e.description as sample_type '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
-              'left join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
-              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-              'left join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-              'left join '. Config::$config['azizi_db'] .'.samples as e on a.box_id = e.box_id '.
-              'left join '. Config::$config['azizi_db'] .'.storage_facilities as f on c.facility_id = f.id ';
+              'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
+              'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
+              'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+              'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
       
-      $groupBy = " group by a.box_id";
-      $having = "";
-      if(isset($_POST['search'])){//check if requester whats a more specific search
-         //check samples
-         /*
-          * <option value="wo_samples">Boxes without samples</option>
-          * <option value="ex_samples">Boxes with excess samples</option>
-          */
-         if($_POST['samples'] === "wo_samples"){
-            if(strlen($having) === 0)
-               $having = " having count(e.count) < 1";
-            else
-               $having = " and count(e.count) < 1";
-         }
-         
-         if($_POST['boxes_wo_names'] === "false"){
-            $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
-         }
-         else{
-            $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
-         }
-         
-         if(strlen($_POST['project']) > 0){
-            //<option value="-1">Boxes linked to multiple projects</option>
-            //<option value="-2">Boxes without projects</option>
-            if($_POST['project'] == -1){//boxes associated with multiple projects
-               //SELECT boxes_def.*, count(distinct(samples.project)) from boxes_def right join samples on boxes_def.box_id = samples.box_id group by(boxes_def.box_id) HAVING count(distinct(samples.Project)) > 1;
-               if(strlen($having) == 0 ){
-                  $having = " having count(distinct(e.Project)) > 1";
-               }
-               else
-                  $having = " and count(distinct(e.Project)) > 1";
-            }
-            else if($_POST['project'] == -2){//boxes not associated with projects
-               //SELECT boxes_def.* from boxes_def right join samples on boxes_def.box_id = samples.box_id where samples.Project is null group by boxes_def.box_id;
-               $query = $query . " AND e.Project is null";
-            }
-            else{
-               $query = $query . " AND e.Project = ".$_POST['project'];
-            }
-         }
-         if(strlen($_POST['status']) > 0){
-            $query = $query . " AND a.status = '".$_POST['status']."'";
-         }
-         
-         /*
-          * <option value="wo_location">With location not specified</option>
-          * <option value="wo_rack">With rack not specified</option>
-          * <option value="wo_rack_loc">With both location and rack not specified</option>
-          */
-         if($_POST['location'] == "wo_location"){
-            $query = $query . " AND b.location IS NULL";
-         }
-         else if($_POST['location'] == "wo_rack"){
-            $query = $query . " AND (b.rack IS NULL OR b.rack_position IS NULL)";
-         }
-         else if($_POST['location'] == "wo_rack_loc"){
-            $query = $query . " AND c.facility IS NULL AND (b.rack IS NULL OR b.rack_position IS NULL)";
-         }
-         if(strlen($_POST['keeper'])>0){
-            $query = $query . " AND b.keeper = ".$_POST['keeper'];
-         }
+      $result = $this->Dbase->ExecuteQuery($query);
+      if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
+
+      header("Content-type: application/json");
+      die('{"data":'. json_encode($result) .'}');
+   }
+
+   /**
+    * This function searches for boxes using certain criteria
+    */
+   private function searchBoxes() {
+      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
+              'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
+              'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
+              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id ';//fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
+      
+      /*
+       * Optimization:
+       *  - no need to fetch data on the actual tank (storage_facility). That can be obtained from the cached tank info on the client side
+       *  - fetching samples from the database in a join is a NO-NO. There are about 200000 samples in the db and growing
+       *    Fetch the sample data in a another query and append no_samples there
+       */
+
+      if($_POST['boxes_wo_names'] === "false"){
+         $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
+      }
+      else{
+         $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
       }
       
-      $query = $query . $groupBy . $having;
+      if(strlen($_POST['status']) > 0){
+         $query = $query . " AND a.status = '".$_POST['status']."'";
+      }
+
+      /*
+       * <option value="wo_location">With location not specified</option>
+       * <option value="wo_rack">With rack not specified</option>
+       * <option value="wo_rack_loc">With both location and rack not specified</option>
+       */
+      if($_POST['location'] == "wo_location"){
+         $query = $query . " AND b.location IS NULL";
+      }
+      else if($_POST['location'] == "wo_rack"){
+         $query = $query . " AND (b.rack IS NULL OR b.rack_position IS NULL)";
+      }
+      else if($_POST['location'] == "wo_rack_loc"){
+         $query = $query . " AND c.location IS NULL AND (b.rack IS NULL OR b.rack_position IS NULL)";
+      }
+      if(strlen($_POST['keeper'])>0){
+         $query = $query . " AND b.keeper = ".$_POST['keeper'];
+      }
       
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
       
       $result = $this->Dbase->ExecuteQuery($query);
       
-      //check boxes with excess samples
-      if($_POST['samples'] === "ex_samples"){
-         $index = 0;
-         while($index < count($result)){
-            $size = GeneralTasks::LCSize2NumericSize($result[$index]['size']);
-            if($size >= $result[$index]['no_samples']){
-               //we only need boxes with excell samples, remove this one 
-               array_splice($result, $index, 1);
+      $query = "select boxes_def.box_id, boxes_def.size, samples.project as project_id, count(distinct(samples.project)) as no_projects, count(samples.box_id) as no_samples".
+              " from boxes_def inner join samples on boxes_def.box_id = samples.box_id group by boxes_def.box_id";
+      $allBoxes = $this->Dbase->ExecuteQuery($query);
+      
+      
+      for($resultIndex = 0; $resultIndex < count($result); $resultIndex++){
+         $indexInAB = -1;
+         
+         //search for the box in all the boxes
+         for($boxIndex = 0; $boxIndex < count($allBoxes); $boxIndex++){
+            if($allBoxes[$boxIndex]['box']['box_id'] === $result[$resultIndex]['box_id']){
+               $indexInAB = $boxIndex;
             }
-            else{
-               $index++;
+         }
+         
+         if($indexInAB !== -1){
+            if($_POST['project'] === -1){//boxes associated with multiple projects
+               if($allBoxes[$indexInAB]['no_projects']<=1){
+                  //remove this box, we only need boxes associated with multiple projects
+                  array_splice($result, $resultIndex, 1);
+                  array_splice($allBoxes, $indexInAB, 1);
+                  $resultIndex--;
+                  break;
+               }
+            }
+            else if($_POST['project'] === -2){//boxes not associated with any projects
+               if($allBoxes[$indexInAB]['no_projects']>0){
+                  //remove this box, we only need boxes not associated with projects
+                  array_splice($result, $resultIndex, 1);
+                  array_splice($allBoxes, $indexInAB, 1);
+                  $resultIndex--;
+                  break;
+               }
+            }
+            else if(strlen($_POST['project']) > 0){//if we have reached this point, the box is associated to only one project. Check if user specified a project
+               if($allBoxes[$indexInAB]['project_id'] !== $_POST['project']){//box not from the user specified project
+                  array_splice($result, $resultIndex, 1);
+                  array_splice($allBoxes, $indexInAB, 1);
+                  $resultIndex--;
+                  break;
+               }
+            }
+            
+            if($_POST['samples'] === "ex_samples"){
+               $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
+               if($boxSize > $allBoxes[$indexInAB]['no_samples']){//box does not have excess samples
+                  array_splice($result, $resultIndex, 1);
+                  array_splice($allBoxes, $indexInAB, 1);
+                  $resultIndex--;
+                  break;
+               }
+            }
+            else if($_POST['samples'] === "wo_samples"){
+               if($allBoxes[$indexInAB]['no_samples'] > 0){//box has samples in it
+                  array_splice($result, $resultIndex, 1);
+                  array_splice($allBoxes, $indexInAB, 1);
+                  $resultIndex--;
+                  break;
+               }
             }
          }
       }

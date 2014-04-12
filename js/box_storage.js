@@ -149,15 +149,14 @@ var BoxStorage = {
     */
    initiateSearchBoxesGrid: function(){
       var theme = '';
-      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
       var source = {
          datatype: 'json',
          datafields: [ 
             {name: 'box_name'}, 
             {name: 'position'}, 
             {name: 'status'}, 
-            {name: 'date_added'}, 
-            {name: 'added_by'},
+            {name: 'date_added'},
             {name: 'box_features'}, 
             {name: 'keeper'},
             {name: 'size'},
@@ -173,7 +172,7 @@ var BoxStorage = {
          async: false,
          url: url, 
          type: 'POST',
-         data: {action: 'fetch_boxes'}
+         data: {action: 'search_boxes'}
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -209,17 +208,16 @@ var BoxStorage = {
     * @returns {undefined}
     */
    updateSearchBoxesGrid: function(data){
-      data = typeof data !== 'undefined' ? data : {action:"fetch_boxes"};
+      data = typeof data !== 'undefined' ? data : {action:"search_boxes"};
       
-      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
       var source = {
          datatype: 'json',
          datafields: [ 
             {name: 'box_name'}, 
             {name: 'position'}, 
             {name: 'status'}, 
-            {name: 'date_added'}, 
-            {name: 'added_by'},
+            {name: 'date_added'},
             {name: 'box_features'}, 
             {name: 'keeper'},
             {name: 'size'},
