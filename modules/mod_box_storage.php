@@ -1075,11 +1075,12 @@ class BoxStorage extends Repository{
        *    Fetch the sample data in a another query and append no_samples there
        */
 
-      if($_POST['boxes_wo_names'] === "false"){
-         $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
-      }
-      else{
+      
+      if($_POST['boxes_wo_names'] === "true"){
          $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
+      }
+      else if($_POST['boxes_wo_names'] === "false"){
+         $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
       }
       
       if(strlen($_POST['status']) > 0){
@@ -1130,7 +1131,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
-                  break;
+                  continue;
                }
             }
             else if($_POST['project'] === -2){//boxes not associated with any projects
@@ -1139,7 +1140,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
-                  break;
+                  continue;
                }
             }
             else if(strlen($_POST['project']) > 0){//if we have reached this point, the box is associated to only one project. Check if user specified a project
@@ -1147,7 +1148,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
-                  break;
+                  continue;
                }
             }
             
@@ -1157,7 +1158,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
-                  break;
+                  continue;
                }
             }
             else if($_POST['samples'] === "wo_samples"){
@@ -1165,7 +1166,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
-                  break;
+                  continue;
                }
             }
          }
