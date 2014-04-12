@@ -149,7 +149,7 @@ var BoxStorage = {
     */
    initiateSearchBoxesGrid: function(){
       var theme = '';
-      var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
          datatype: 'json',
          datafields: [ 
@@ -172,7 +172,7 @@ var BoxStorage = {
          async: false,
          url: url, 
          type: 'POST',
-         data: {action: 'search_boxes'}
+         data: {action: 'fetch_boxes'}
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
