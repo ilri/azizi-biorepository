@@ -85,8 +85,17 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+         datatype: 'json',
+         datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id', 
+         root: 'data', 
+         async: true,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_removed_boxes'},
+         beforeprocessing: function (data){
+            source.totalrecords = data.data[0].total_row_count;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -100,6 +109,10 @@ var BoxStorage = {
             columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 100},
                {text: 'Tank Position', datafield: 'position', width: 205},
@@ -122,8 +135,17 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'returned_by'}, {name: 'removed_by'}, {name: 'date_removed'}, {name: 'date_returned'} ],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+         datatype: 'json',
+         datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'returned_by'}, {name: 'removed_by'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id',
+         root: 'data',
+         async: true,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_removed_boxes'},
+         beforeprocessing: function (data){
+            source.totalrecords = data.data[0].total_row_count;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -137,6 +159,10 @@ var BoxStorage = {
             columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 100},
                {text: 'Tank Position', datafield: 'position', width: 205},
@@ -274,8 +300,17 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'delete_comment'} ],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_deleted_boxes'}
+         datatype: 'json',
+         datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'delete_comment'} ],
+         id: 'id',
+         root: 'data',
+         async: true,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_deleted_boxes'},
+         beforeprocessing: function (data){
+            source.totalrecords = data.data[0].total_row_count;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -289,6 +324,10 @@ var BoxStorage = {
             columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 150},
                {text: 'Deleted By', datafield: 'deleted_by', width: 230},
