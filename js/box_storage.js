@@ -185,7 +185,7 @@ var BoxStorage = {
             source: boxesAdapter,
             columnsresize: true,
             theme: theme,
-            pageable: true, 
+            pageable: true,
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 245},
                {text: 'Tank Position', datafield: 'position', width: 320},
@@ -198,7 +198,10 @@ var BoxStorage = {
       else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
       //$("#searched_boxes").jqxGrid('autoresizecolumns');
       
-      $("#searched_boxes").on("pagechanged", function(event){
+      $("#searched_boxes").bind("pagechanged", function(event){
+         BoxStorage.searchForBox();
+      });
+      $("#searched_boxes").bind("pagesizechanged", function(event){
          BoxStorage.searchForBox();
       });
       BoxStorage.initSearchSelectedListener();
