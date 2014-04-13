@@ -197,6 +197,10 @@ var BoxStorage = {
       }
       else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
       //$("#searched_boxes").jqxGrid('autoresizecolumns');
+      
+      $("#searched_boxes").on("pagechanged", function(event){
+         BoxStorage.searchForBox();
+      });
       BoxStorage.initSearchSelectedListener();
    },
    
