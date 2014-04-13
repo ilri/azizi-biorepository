@@ -35,14 +35,18 @@ var BoxStorage = {
             {name: 'position'}, 
             {name: 'status'},
             {name: 'date_added'},
-            {name: 'added_by'}
+            {name: 'added_by'},
+            {name: 'total_row_count'}
          ],
          id: 'id',
          root: 'data',
-         async: false,
+         async: true,
          url: url,
          type: 'POST',
-         data: {action: 'fetch_boxes'}
+         data: {action: 'fetch_boxes'},
+         beforeprocessing: function(data){
+            source.totalrecords = data.data[0].total_row_count;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -56,6 +60,10 @@ var BoxStorage = {
             columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 245},
                {text: 'Tank Position', datafield: 'position', width: 250},

@@ -1045,17 +1045,28 @@ class BoxStorage extends Repository{
     * 
     */
    private function fetchBoxes() {
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by '.
+      $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
+      $pageSize = $_POST['pagesize'];
+      $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-              'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id ';
+              'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+              'limit '.$fromRow.','.$pageSize;
       
       $this->Dbase->CreateLogEntry('mod_box_storage: fetch boxes query = '.$query, 'debug');
       
       $result = $this->Dbase->ExecuteQuery($query);
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
-
+      
+      $query = "SELECT FOUND_ROWS() AS found_rows";
+      $foundRows = $this->Dbase->ExecuteQuery($query);
+      $totalRowCount = $foundRows[0]['found_rows'];
+      
+      if(count($result) > 0){
+         $result[0]['total_row_count'] = $totalRowCount;
+      }
+      
       header("Content-type: application/json");
       die('{"data":'. json_encode($result) .'}');
    }
@@ -1211,16 +1222,27 @@ class BoxStorage extends Repository{
     * This function gets data for boxes retireved from the system using the Retrieve a Box page and constructs a json object with this data
     */
    private function fetchRemovedBoxes() {
-      //TODO: refere to users table
-      $query = "SELECT a.id, CONCAT(d.onames, ' ', d.sname) AS removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, CONCAT(e.onames, ' ', e.sname) AS returned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
+      $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
+      $pageSize = $_POST['pagesize'];
+      
+      $query = "SELECT SQL_CALC_FOUND_ROWS a.id, CONCAT(d.onames, ' ', d.sname) AS removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, CONCAT(e.onames, ' ', e.sname) AS returned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
               " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_local_def AS c ON b.location = c.id".
               " LEFT JOIN " . Config::$config['dbase'] . ".users AS d ON a.removed_by = d.id".
-              " LEFT JOIN " . Config::$config['dbase'] . ".users AS e ON a.returned_by = e.id";
+              " LEFT JOIN " . Config::$config['dbase'] . ".users AS e ON a.returned_by = e.id".
+              ' LIMIT '.$fromRow.','.$pageSize;
       
       $result = $this->Dbase->ExecuteQuery($query);
       if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      $query = "SELECT FOUND_ROWS() AS found_rows";
+      $foundRows = $this->Dbase->ExecuteQuery($query);
+      $totalRowCount = $foundRows[0]['found_rows'];
+      
+      if(count($result) > 0){
+         $result[0]['total_row_count'] = $totalRowCount;
+      }
       
       header("Content-type: application/json");
       $this->Dbase->CreateLogEntry('mod_box_storage: Removed boxes sent via ajax request = '.print_r($result ,true), 'debug');
@@ -1232,15 +1254,27 @@ class BoxStorage extends Repository{
     * This function gets data for boxes deleted from the system using the Delete a Box page and constructs a json object with this data
     */
    private function fetchDeletedBoxes() {
-      $query = "SELECT date(a.date_deleted) AS date_deleted, a.delete_comment, b.box_name, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
+      $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
+      $pageSize = $_POST['pagesize'];
+      
+      $query = "SELECT SQL_CALC_FOUND_ROWS date(a.date_deleted) AS date_deleted, a.delete_comment, b.box_name, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
               " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
               " LEFT JOIN " . Config::$config['dbase'] . ".users AS c ON a.deleted_by = c.id" .
-              " WHERE date_deleted IS NOT NULL";
+              " WHERE date_deleted IS NOT NULL".
+              ' LIMIT '.$fromRow.','.$pageSize;
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
       $result = $this->Dbase->ExecuteQuery($query);
       
       if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      $query = "SELECT FOUND_ROWS() AS found_rows";
+      $foundRows = $this->Dbase->ExecuteQuery($query);
+      $totalRowCount = $foundRows[0]['found_rows'];
+      
+      if(count($result) > 0){
+         $result[0]['total_row_count'] = $totalRowCount;
+      }
       
       header("Content-type: application/json");
       $this->Dbase->CreateLogEntry('mod_box_storage: Deleted boxes sent via ajax request = '.print_r($result ,true), 'debug');
