@@ -169,7 +169,7 @@ var BoxStorage = {
          ],//make sure you update these fields when you update those of the update fetch
          id: 'id',
          root: 'data',
-         async: false,
+         async: true,
          url: url, 
          type: 'POST',
          data: {action: 'search_boxes'}
