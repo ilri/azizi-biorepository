@@ -1052,6 +1052,8 @@ class BoxStorage extends Repository{
               'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
               'inner join '. Config::$config['azizi_db'] .'.sample_types_def as e on a.sample_types=e.count';
       
+      $this->Dbase->CreateLogEntry('mod_box_storage: fetch boxes query = '.$query, 'debug');
+      
       $result = $this->Dbase->ExecuteQuery($query);
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
 
