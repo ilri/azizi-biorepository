@@ -283,7 +283,10 @@ var BoxStorage = {
          async: true,
          url: url, 
          type: 'POST',
-         data: data
+         data: data,
+         beforeprocessing: function (data){
+            source.totalrecords = data.data[0].total_row_count;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
