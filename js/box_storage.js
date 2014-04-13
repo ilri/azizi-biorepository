@@ -165,8 +165,7 @@ var BoxStorage = {
             {name: 'tank_id'},
             {name: 'sector_id'},
             {name: 'rack'},
-            {name: 'rack_position'},
-            {name: 'total_row_count'}
+            {name: 'rack_position'}
          ],//make sure you update these fields when you update those of the update fetch
          id: 'box_id',
          root: 'data',
@@ -176,7 +175,7 @@ var BoxStorage = {
          data: {action: 'search_boxes'},
          beforeprocessing: function (data){
             console.log(data);
-            source.totalrecords = 13;
+            source.totalrecords = data[0].total_row_count;
          }
       };
 
