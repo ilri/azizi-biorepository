@@ -1171,7 +1171,7 @@ class BoxStorage extends Repository{
                }
             }
          }
-         else{
+         /*else{
             if($_POST['project'] !== -2){//boxes not associated with any projects
                 array_splice($result, $resultIndex, 1);
                 $resultIndex--;
@@ -1183,7 +1183,7 @@ class BoxStorage extends Repository{
                 $resultIndex--;
                 continue;
             }
-         }
+         }*/
       }
       
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
