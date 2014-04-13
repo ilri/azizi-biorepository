@@ -175,7 +175,7 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'search_boxes'},
          beforeprocessing: function (data){
-            console.log(data);
+            console.log(data[0]);
             source.totalrecords = data[0].total_row_count;
          }
       };
