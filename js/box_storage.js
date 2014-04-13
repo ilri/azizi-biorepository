@@ -191,6 +191,9 @@ var BoxStorage = {
             theme: theme,
             pageable: true,
             virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 245},
                {text: 'Tank Position', datafield: 'position', width: 320},
