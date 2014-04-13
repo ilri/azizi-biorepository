@@ -1171,6 +1171,19 @@ class BoxStorage extends Repository{
                }
             }
          }
+         else{
+            if($_POST['project'] !== -2){//boxes not associated with any projects
+                array_splice($result, $resultIndex, 1);
+                $resultIndex--;
+                continue;
+            }
+            if($_POST['samples'] === "ex_samples"){
+               $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
+               array_splice($result, $resultIndex, 1);
+                $resultIndex--;
+                continue;
+            }
+         }
       }
       
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
