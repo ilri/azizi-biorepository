@@ -185,7 +185,7 @@ var BoxStorage = {
             source: boxesAdapter,
             columnsresize: true,
             theme: theme,
-            pageable: true,
+            pageable: true, 
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 245},
                {text: 'Tank Position', datafield: 'position', width: 320},
