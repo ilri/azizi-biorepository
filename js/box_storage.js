@@ -165,7 +165,8 @@ var BoxStorage = {
             {name: 'tank_id'},
             {name: 'sector_id'},
             {name: 'rack'},
-            {name: 'rack_position'}
+            {name: 'rack_position'},
+            {name: 'total_row_count'}
          ],//make sure you update these fields when you update those of the update fetch
          id: 'box_id',
          root: 'data',
