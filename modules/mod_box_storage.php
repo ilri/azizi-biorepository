@@ -1066,7 +1066,7 @@ class BoxStorage extends Repository{
    private function searchBoxes() {
       $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
       $pageSize = $_POST['pagesize'];
-      $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
+      $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
               'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
@@ -1113,6 +1113,10 @@ class BoxStorage extends Repository{
       
       $result = $this->Dbase->ExecuteQuery($query);
       
+      $query = "SELECT FOUND_ROWS() AS found_rows";
+      $foundRows = $this->Dbase->ExecuteQuery($query);
+      $totalRowCount = $foundRows[0]['found_rows'];
+      
       $query = "select boxes_def.box_id, boxes_def.size, samples.project as project_id, count(distinct(samples.project)) as no_projects, count(samples.box_id) as no_samples".
               " from boxes_def inner join samples on boxes_def.box_id = samples.box_id group by boxes_def.box_id";
       $allBoxes = $this->Dbase->ExecuteQuery($query);
@@ -1135,6 +1139,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
+                  $totalRowCount--;
                   continue;
                }
             }
@@ -1144,6 +1149,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
+                  $totalRowCount--;
                   continue;
                }
             }
@@ -1152,6 +1158,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
+                  $totalRowCount--;
                   continue;
                }
             }
@@ -1162,6 +1169,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
+                  $totalRowCount--;
                   continue;
                }
             }
@@ -1170,6 +1178,7 @@ class BoxStorage extends Repository{
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
+                  $totalRowCount--;
                   continue;
                }
             }
@@ -1189,6 +1198,9 @@ class BoxStorage extends Repository{
          }*/
       }
       
+      if(count($result)> 0){
+         $result[0]['total_row_count'] = $totalRowCount;
+      }
       if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
 
       header("Content-type: application/json");

@@ -165,14 +165,18 @@ var BoxStorage = {
             {name: 'tank_id'},
             {name: 'sector_id'},
             {name: 'rack'},
-            {name: 'rack_position'}
+            {name: 'rack_position'},
+            {name: 'total_row_count'}
          ],//make sure you update these fields when you update those of the update fetch
-         id: 'id',
+         id: 'box_id',
          root: 'data',
          async: true,
          url: url, 
          type: 'POST',
-         data: {action: 'search_boxes'}
+         data: {action: 'search_boxes'},
+         beforeprocessing: function (data){
+            source.totalrecords = data[0].total_row_count;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -234,9 +238,10 @@ var BoxStorage = {
             {name: 'tank_id'},
             {name: 'sector_id'},
             {name: 'rack'},
-            {name: 'rack_position'}
+            {name: 'rack_position'},
+            {name: 'total_row_count'}
          ],//make sure you update these fields when you update those for the initial fetch
-         id: 'id',
+         id: 'box_id',
          root: 'data',
          async: true,
          url: url, 
