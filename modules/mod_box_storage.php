@@ -1065,7 +1065,7 @@ class BoxStorage extends Repository{
     */
    private function searchBoxes() {
       $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
-      $pageSize = $_POST['pagesize'] + 1;
+      $pageSize = $_POST['pagesize'];
       $query = 'select a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc

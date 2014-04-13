@@ -186,6 +186,7 @@ var BoxStorage = {
             columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 245},
                {text: 'Tank Position', datafield: 'position', width: 320},
@@ -237,7 +238,7 @@ var BoxStorage = {
          ],//make sure you update these fields when you update those for the initial fetch
          id: 'id',
          root: 'data',
-         async: false,
+         async: true,
          url: url, 
          type: 'POST',
          data: data
