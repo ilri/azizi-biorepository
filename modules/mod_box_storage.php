@@ -1081,8 +1081,7 @@ class BoxStorage extends Repository{
       $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
-              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-              'limit '.$fromRow.','.$pageSize;//fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
+              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id ';//fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
       
       /*
        * Optimization:
@@ -1121,6 +1120,7 @@ class BoxStorage extends Repository{
          $query = $query . " AND b.keeper = ".$_POST['keeper'];
       }
       
+      $query = $query . ' limit '.$fromRow.','.$pageSize;
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
       
       $result = $this->Dbase->ExecuteQuery($query);
