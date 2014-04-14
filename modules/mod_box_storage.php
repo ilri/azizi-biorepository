@@ -197,7 +197,7 @@ class BoxStorage extends Repository{
                <option value="Permanent">Permanent</option>
             </select>
          </div>
-         <div class="form-group left-align loc_divs" style="display: none;">
+         <div class="form-group left-align loc_divs">
             <label for="status">Status</label>
             <select id="search_project">
                <option value=""></option>
