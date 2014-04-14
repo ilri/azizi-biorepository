@@ -88,7 +88,7 @@ class BoxStorage extends Repository{
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
    $(document).ready( function() {
       BoxStorage.getTankData(true);//get tank data from the server and cache to cookie
-   }
+   });
 </script>
       <?php
    }
