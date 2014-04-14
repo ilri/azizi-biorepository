@@ -532,6 +532,7 @@ class BoxStorage extends Repository{
          BoxStorage.searchForBox();
       });
       $("#search").live("keypress", function(e) {
+         console.log("key");
         if (e.keyCode == 13) {//enter key pressed
            BoxStorage.searchForBox();
         }
