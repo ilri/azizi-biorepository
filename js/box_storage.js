@@ -1325,7 +1325,7 @@ var BoxStorage = {
       var date = new Date();
       date.setTime(date.getTime()+(daysToExpire*24*60*60*1000));
       var expires = "expires="+date.toGMTString();
-      document.cookie = name + "=" + value + "; " + expires;
+      document.cookie = name + "=" + value + "; " + expires + "; path=/";
       console.log("saved cookie "+name+" as "+value);
    },
    
