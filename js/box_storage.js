@@ -314,7 +314,7 @@ var BoxStorage = {
             return boxesAdapter.records;
          }
       });
-      $("#searched_boxes").jqxGrid("updatebounddata");
+      //$("#searched_boxes").jqxGrid("updatebounddata");
       
       Main.searchOnGoing = false;
    },
