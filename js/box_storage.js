@@ -894,6 +894,7 @@ var BoxStorage = {
     */
    getTankData : function(fromServer){
       if(fromServer){
+         console.log("getting tank data from the server");
          var jsonText = $.ajax({
             type: "GET",
             url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
