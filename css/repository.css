@@ -345,4 +345,5 @@ body {
 .issue_inv select{width: 170px; height: 28px !important; }
 ul.ui-autocomplete {
     list-style-type: none!important;
+    z-index: 1000!important;
 }
