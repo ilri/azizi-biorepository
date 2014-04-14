@@ -907,6 +907,7 @@ var BoxStorage = {
       }
       else{
          var jsonText = BoxStorage.getCookie("tankData");
+         console.log("value of jsonText = "+jsonText);
          if(jsonText === -1){//cookie has not been set or is empty
             return BoxStorage.getTankData(true);
          }
@@ -1326,6 +1327,7 @@ var BoxStorage = {
       d.setTime(d.getTime()+(exdays*24*60*60*1000));
       var expires = "expires="+d.toGMTString();
       document.cookie = cname + "=" + cvalue + "; " + expires + "; path=/";
+      console.log("saved "+cname+" as a cookie");
    },
    
    getCookie: function(cname) {
