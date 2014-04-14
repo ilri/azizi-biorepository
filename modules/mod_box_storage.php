@@ -170,23 +170,23 @@ class BoxStorage extends Repository{
          </div>
          <div class="form-group left-align">
             <label for="sector">Sector</label>
-            <select id="sector" name="sector" disabled="disabled">
+            <select id="sector" name="sector" disabled="disabled" class="input-medium">
                <!--Disabled until parent select is selected-->
             </select>
          </div>
          <div id="rack_div" class="form-group left-align">
             <label for="rack">Rack</label>
-            <select type="text" name="rack" id="rack" disabled="disabled">
+            <select type="text" name="rack" id="rack" disabled="disabled" class="input-medium">
                <!--Disabled until parent select is selected-->
             </select>
          </div>
          <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px; display: none;">
             <label for="rack">Rack</label>
-            <input type="text" id="rack_spec" name="rack_spec" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
+            <input type="text" id="rack_spec" name="rack_spec" class="input-medium" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
          </div>
          <div class="form-group left-align">
             <label for="position">Position in Rack</label>
-            <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+            <select type="text" name="position" id="position" disabled="disabled" class="input-medium"><!--Disabled until parent select is selected-->
             </select>
          </div>
          <div class="form-group left-align">
