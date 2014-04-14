@@ -305,16 +305,14 @@ var BoxStorage = {
                source.totalrecords;
          }
       };
-      console.log("1");
       var boxesAdapter = new $.jqx.dataAdapter(source);
       $("#searched_boxes").jqxGrid({
-         source: boxesAdapter,
+         source: boxesAdapter/*,
          virtualmode: true,
          rendergridrows: function() {
             return boxesAdapter.records;
-         }
+         }*/
       });
-      console.log("2");
       //$("#searched_boxes").jqxGrid("updatebounddata");
       
       Main.searchOnGoing = false;
