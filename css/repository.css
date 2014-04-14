@@ -343,3 +343,6 @@ body {
 .issue_inv label{ width: 350px !important; }
 .issue_inv input[type="text"], .odk_parser select, .odk_parser input[type="file"]{ height: 25px !important; margin-left: 7px !important; }
 .issue_inv select{width: 170px; height: 28px !important; }
+ul.ui-autocomplete {
+    list-style-type: none!important;
+}
