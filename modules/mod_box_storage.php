@@ -162,34 +162,34 @@ class BoxStorage extends Repository{
       </div>
 
       <div id="box_location">
-         <div class="form-group left-align">
+         <div class="form-group left-align loc_divs">
             <label for="tank">Tank</label>
             <select id="tank" class="input-medium">
                <option value=""></option>
             </select>
          </div>
-         <div class="form-group left-align">
+         <div class="form-group left-align loc_divs">
             <label for="sector">Sector</label>
             <select id="sector" name="sector" disabled="disabled" class="input-medium">
                <!--Disabled until parent select is selected-->
             </select>
          </div>
-         <div id="rack_div" class="form-group left-align">
+         <div id="rack_div" class="form-group left-align loc_divs">
             <label for="rack">Rack</label>
             <select type="text" name="rack" id="rack" disabled="disabled" class="input-medium">
                <!--Disabled until parent select is selected-->
             </select>
          </div>
-         <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px; display: none;">
+         <div id="rack_spec_div" class="form-group left-align hidden loc_divs" style="width: 160px; display: none;">
             <label for="rack">Rack</label>
             <input type="text" id="rack_spec" name="rack_spec" class="input-medium" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
          </div>
-         <div class="form-group left-align">
+         <div class="form-group left-align loc_divs">
             <label for="position">Position in Rack</label>
             <select type="text" name="position" id="position" disabled="disabled" class="input-medium"><!--Disabled until parent select is selected-->
             </select>
          </div>
-         <div class="form-group left-align">
+         <div class="form-group left-align loc_divs">
             <label for="status">Status</label>
             <select type="text" name="status" id="status">
                <option value=""></option><!--NULL option-->
