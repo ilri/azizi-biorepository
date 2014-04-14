@@ -1325,6 +1325,7 @@ var BoxStorage = {
       date.setTime(date.getTime()+(daysToExpire*24*60*60*1000));
       var expires = "expires="+date.toGMTString();
       document.cookie = name + "=" + value + "; " + expires;
+      console.log("saved cookie "+name+" as "+value);
    },
    
    getCookie: function(name){
@@ -1332,7 +1333,11 @@ var BoxStorage = {
       var allCookies = document.cookie.split(';');
       for(var i=0; i<allCookies.length; i++) {
          var c = allCookies[i].trim();
-         if (c.indexOf(name)===0) return c.substring(name.length,c.length);
+         if (c.indexOf(name)===0) {
+            var cookieValue = c.substring(name.length,c.length);
+            console.log("cookie "+name+" = "+cookieValue);
+            return cookieValue;
+         }
       }
       return -1;
    }
