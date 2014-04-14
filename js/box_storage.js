@@ -908,11 +908,12 @@ var BoxStorage = {
       }
       else{
          var jsonText = BoxStorage.getDataCache("tankData");
-         console.log("value of jsonText = "+jsonText);
          if(jsonText === -1){//cookie has not been set or is empty
+            console.log("Could not get cached data. Probably means your browser does not support HTML5 sessionStorage");
             return BoxStorage.getTankData(true);
          }
          else{
+            console.log("Cached data gotten from sessionStorage");
             return jQuery.parseJSON(jsonText);
             //return jsonText;
          }
