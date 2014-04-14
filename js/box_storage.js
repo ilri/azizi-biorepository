@@ -15,7 +15,7 @@ var BoxStorage = {
     */
    submitInsertRequest : function(){
       if(this.validateInsertInput() === true){
-         BoxStorage.setDataCache("tankData", -1);
+         BoxStorage.deleteDataCache("tankData");
          return true;
       }
       return false;
@@ -1368,5 +1368,15 @@ var BoxStorage = {
          if (c.indexOf(name)==0) return c.substring(name.length,c.length);
       }
       return -1;*/
-}
+   },
+   
+   deleteDataCache: function(name){
+      if(typeof(Storage) !== "undefined"){//browers supports HTML5 localstorage
+         sessionStorage.removeItem(name);
+         console.log("Data successfully deleted from sessionStorage");
+      }
+      else{
+         console.log("browser does not support HTML5 sessionStorage");
+      }
+   }
 };
