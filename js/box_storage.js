@@ -903,11 +903,11 @@ var BoxStorage = {
 
          var json = jQuery.parseJSON(jsonText);
          console.log(encodeURI(jsonText));
-         BoxStorage.setCookie("tankData", json);//set cookie. make expire after one day
+         BoxStorage.setDataCache("tankData", json);//set cookie. make expire after one day
          return json;
       }
       else{
-         var jsonText = BoxStorage.getCookie("tankData");
+         var jsonText = BoxStorage.getDataCache("tankData");
          console.log("value of jsonText = "+jsonText);
          if(jsonText === -1){//cookie has not been set or is empty
             return BoxStorage.getTankData(true);
@@ -1324,9 +1324,12 @@ var BoxStorage = {
       }
    },
    
-   setCookie: function(cname,cvalue){
+   setDataCache: function(cname,cvalue){
       if(typeof(Storage) !== "undefined"){//browers supports HTML5 localstorage
          sessionStorage.setItem(cname, cvalue);
+      }
+      else{
+         console.log("browser does not support HTML5 sessionStorage");
       }
       /*var d = new Date();
       d.setTime(d.getTime()+(exdays*24*60*60*1000));
@@ -1335,11 +1338,14 @@ var BoxStorage = {
       console.log("saved "+cname+" as a cookie");*/
    },
    
-   getCookie: function(cname) {
+   getDataCache: function(cname) {
       var cached = -1;
       if(typeof(Storage) !== "undefined"){
          cached = sessionStorage.getItem(cname);
          if(cached === null) cached = -1;
+      }
+      else{
+         console.log("browser does not support HTML5 sessionStorage");
       }
       return cached;
       /*var name = cname + "=";
