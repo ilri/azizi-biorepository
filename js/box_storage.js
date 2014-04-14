@@ -902,17 +902,17 @@ var BoxStorage = {
          }).responseText;
 
          var json = jQuery.parseJSON(jsonText);
-         BoxStorage.setCookie("tankData", jsonText, 1);//set cookie. make expire after one day
+         BoxStorage.setCookie("tankData", json, 1);//set cookie. make expire after one day
          return json;
       }
       else{
-         var jsonText = BoxStorage.getCookie("tankData");
-         console.log("value of jsonText = "+jsonText);
-         if(jsonText === -1){//cookie has not been set or is empty
+         var json = BoxStorage.getCookie("tankData");
+         console.log("value of jsonText = "+json);
+         if(json === -1){//cookie has not been set or is empty
             return BoxStorage.getTankData(true);
          }
          else{
-            return jQuery.parseJSON(jsonText);
+            return json;
          }
       }
    },
