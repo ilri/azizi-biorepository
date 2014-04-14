@@ -536,6 +536,7 @@ class BoxStorage extends Repository{
            BoxStorage.searchForBox();
         }
         else{
+           console.log($("#search").val().length);
            if($("#search").val().length > 2){
               console.log("search");
                BoxStorage.searchForBox();
