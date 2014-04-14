@@ -134,9 +134,9 @@ class BoxStorage extends Repository{
       if($sampleTypes == 1){
          $this->RepositoryHomePage($this->Dbase->lastError);
          return;
-      }
+      }*/
       $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
-      $projects = $this->Dbase->ExecuteQuery($query);*/
+      $projects = $this->Dbase->ExecuteQuery($query);
 
 ?>
 <div id="box_storage">
@@ -197,6 +197,15 @@ class BoxStorage extends Repository{
                <option value="Permanent">Permanent</option>
             </select>
          </div>
+         <div class="form-group left-align loc_divs" style="display: none;">
+            <label for="status">Status</label>
+            <select id="search_project">
+               <option value=""></option>
+               <?php
+                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">With samples from ' . $currProject['value'] . " project</option>\n";
+               ?>
+            </select>
+         </div>
        </div>
       <div class="center" id="submit_button_div"><button type="submit" class="btn btn-success">Save</button></div>
    </form>
@@ -212,9 +221,11 @@ class BoxStorage extends Repository{
          if($('#status').val() === "temporary"){
             //if user sets position to temporary set owner to biorepository manager
             $("#owner").prop('disabled', 'disabled');
+            $("#project").prop('disabled', false);
          }
          else{
             $("#owner").prop('disabled', false);
+            $("#project").prop('disabled', 'disabled');
          }
       });
       $("#cancelAnchor").click(function (){
