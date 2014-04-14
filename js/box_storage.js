@@ -211,7 +211,8 @@ var BoxStorage = {
             {name: 'sector_id'},
             {name: 'rack'},
             {name: 'rack_position'},
-            {name: 'total_row_count'}
+            {name: 'total_row_count'},
+            {name: 'project'}
          ],//make sure you update these fields when you update those of the update fetch
          id: 'box_id',
          root: 'data',
@@ -291,7 +292,8 @@ var BoxStorage = {
             {name: 'sector_id'},
             {name: 'rack'},
             {name: 'rack_position'},
-            {name: 'total_row_count'}
+            {name: 'total_row_count'},
+            {name: 'project'}
          ],//make sure you update these fields when you update those for the initial fetch
          id: 'box_id',
          root: 'data',
@@ -912,7 +914,7 @@ var BoxStorage = {
       else{
          var jsonText = BoxStorage.getDataCache("tankData");
          if(jsonText === -1){//cookie has not been set or is empty
-            console.log("Could not get cached data. Probably means your browser does not support HTML5 sessionStorage");
+            console.log("Could not get cached data. Probably means your browser does not support HTML5 sessionStorage or variable was invalidated some in recent past.");
             return BoxStorage.getTankData(true);
          }
          else{
@@ -1249,7 +1251,11 @@ var BoxStorage = {
             
             
             $("#status").val(rowData.status);
-            
+            if(rowData.status === "temporary"){
+               if(isNaN(rowData.project) === false){//project set
+                  $("#project").val(rowData.project);
+               }
+            }
          }
       });
    },
@@ -1312,7 +1318,8 @@ var BoxStorage = {
             rack: $("#rack").val(),
             rack_spec: $("#rack_spec").val(),
             position: $("#position").val(),
-            box_id: $("#box_id").val() 
+            box_id: $("#box_id").val(),
+            project: $("#project").val()
          };
 
          var responseText = $.ajax({

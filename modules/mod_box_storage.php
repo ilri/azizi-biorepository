@@ -533,6 +533,15 @@ class BoxStorage extends Repository{
                <option value="permanent">Permanent</option>
             </select>
          </div>
+         <div class="form-group left-align">
+            <label for="status">Project</label>
+            <select id="project" name="project">
+               <option value=""></option>
+               <?php
+                  foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">' . $currProject['value'] . " project</option>\n";
+               ?>
+            </select>
+         </div>
        </div>
       <div class="center" id="submit_button_div"><button type="button" class="btn btn-danger" id="cancel_button" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Edit</button></div>
    </div>
@@ -590,6 +599,18 @@ class BoxStorage extends Repository{
       $("#cancelAnchor").click(function (){
          $("#rack_spec_div").hide();
          $("#rack_div").show();
+      });
+      
+      $("#status").change(function(){
+         if($('#status').val() === "temporary"){
+            //if user sets position to temporary set owner to biorepository manager
+            $("#owner").prop('disabled', 'disabled');
+            $("#project").prop('disabled', false);
+         }
+         else{
+            $("#owner").prop('disabled', false);
+            $("#project").prop('disabled', 'disabled');
+         }
       });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
@@ -805,9 +826,13 @@ class BoxStorage extends Repository{
          $boxId = $this->Dbase->dbcon->lastInsertId();
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
+         
+         $project = NULL;
+         if($_POST['status'] === "temporary")
+            $project = $_POST['project'];
 
-         $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, date_added=:date_added, added_by=:added_by where box_id=:box_id';
-         $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'box_id' => $_POST['box_id']);
+         $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, date_added=:date_added, added_by=:added_by, project=:project where box_id=:box_id';
+         $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
@@ -1123,7 +1148,7 @@ class BoxStorage extends Repository{
    private function searchBoxes() {
       $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
       $pageSize = $_POST['pagesize'];
-      $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
+      $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, a.status, a.project, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
               'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id ';//fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
@@ -1191,9 +1216,9 @@ class BoxStorage extends Repository{
          
          if($indexInAB !== -1){
             $this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
-            if($_POST['project'] === "-1"){//boxes associated with multiple projects
-               if($allBoxes[$indexInAB]['no_projects']<=1){
-                  //remove this box, we only need boxes associated with multiple projects
+            if($_POST['project'] === "-1"){//user wants boxes associated with multiple projects
+               if($allBoxes[$indexInAB]['no_projects']<=1 || $result[$resultIndex]['status'] === 'temporary'){
+                  //remove this box, we only need boxes associated with multiple projects. There is no way a temporary box can be associated with multiple projects
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
@@ -1201,8 +1226,8 @@ class BoxStorage extends Repository{
                   continue;
                }
             }
-            else if($_POST['project'] === "-2"){//boxes not associated with any projects
-               if($allBoxes[$indexInAB]['no_projects']>0){
+            else if($_POST['project'] === "-2"){//user wants boxes not associated with any projects
+               if(($result[$resultIndex]['status'] === 'temporary' && $result[$resultIndex]['project'] !== NULL) || $allBoxes[$indexInAB]['no_projects']>0){
                   //remove this box, we only need boxes not associated with projects
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
@@ -1211,8 +1236,9 @@ class BoxStorage extends Repository{
                   continue;
                }
             }
-            else if(strlen($_POST['project']) > 0){//if we have reached this point, the box is associated to only one project. Check if user specified a project
-               if($allBoxes[$indexInAB]['project_id'] !== $_POST['project']){//box not from the user specified project
+            else if(strlen($_POST['project']) > 0){//user wants boxes associated with a particular box. If we have reached this point, the box is associated to only one project
+               if(($result[$resultIndex]['status'] === 'temporary' && $result[$resultIndex]['project'] !== $_POST['project']) || $allBoxes[$indexInAB]['project_id'] !== $_POST['project']){//box not from the user specified project
+                  //box is either (in a teporary location not associated with the specified project) or none of its samples associated with the specified project
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
@@ -1243,7 +1269,33 @@ class BoxStorage extends Repository{
          }
          else{//box does not have samples
             $this->Dbase->CreateLogEntry('mod_box_storage: Box does not have samples '.$resultIndex.' box count = '.count($result), 'debug');
-            if(strlen($_POST['project']) > 0 && $_POST['project'] !== "-2"){//user wants box related to at least one project. This box is not associated to any
+            if($result[$resultIndex]['status'] === 'temporary'){
+               if($_POST['project'] === "-2"){//user wants boxes not associated with any projects
+                  if($result[$resultIndex]['project'] !== NULL){//box associated with a project
+                     array_splice($result, $resultIndex, 1);
+                     $resultIndex--;
+                     $totalRowCount--;
+                     continue;
+                  }
+               }
+               else if($_POST['project'] === "-1"){//user wants boxes associated with more than one project
+                  //this is not possible if box in temporary position
+                  array_splice($result, $resultIndex, 1);
+                  $resultIndex--;
+                  $totalRowCount--;
+                  continue;
+               }
+               else if(strlen($_POST['project'])>0){//user has specified the id of the project he/she wants boxes associated to
+                  if($result[$resultIndex]['project'] !== $_POST['project']){//box not associated to the project
+                     array_splice($result, $resultIndex, 1);
+                     $resultIndex--;
+                     $totalRowCount--;
+                     continue;
+                  }
+               }
+            }
+            else if(strlen($_POST['project']) > 0 && $_POST['project'] !== "-2"){//box in permanent position
+               //user wants box related to at least one project. This box (in a permanent location) is not associated to any samples and therefore no project
                $this->Dbase->CreateLogEntry('mod_box_storage: POST"project" = '.$_POST['project'], 'debug');
                 array_splice($result, $resultIndex, 1);
                 $resultIndex--;
