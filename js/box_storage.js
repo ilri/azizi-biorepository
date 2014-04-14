@@ -45,7 +45,10 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'fetch_boxes'},
          beforeprocessing: function(data){
-            source.totalrecords = data.data[0].total_row_count;
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
          }
       };
 
@@ -94,7 +97,10 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'fetch_removed_boxes'},
          beforeprocessing: function (data){
-            source.totalrecords = data.data[0].total_row_count;
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
          }
       };
 
@@ -144,7 +150,10 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'fetch_removed_boxes'},
          beforeprocessing: function (data){
-            source.totalrecords = data.data[0].total_row_count;
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
          }
       };
 
@@ -209,7 +218,10 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'search_boxes'},
          beforeprocessing: function (data){
-            source.totalrecords = data.data[0].total_row_count;
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
          }
       };
 
@@ -285,7 +297,10 @@ var BoxStorage = {
          type: 'POST',
          data: data,
          beforeprocessing: function (data){
-            source.totalrecords = data.data[0].total_row_count;
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
          }
       };
 
@@ -318,7 +333,10 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'fetch_deleted_boxes'},
          beforeprocessing: function (data){
-            source.totalrecords = data.data[0].total_row_count;
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
          }
       };
 
