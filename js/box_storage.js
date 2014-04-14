@@ -506,6 +506,11 @@ var BoxStorage = {
          $("#status").focus();
          return false;
       }
+      if($("#status").val() === "temporary" && $("#project").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the project', error:true});
+         $("#project").focus();
+         return false;
+      }
 
       return BoxStorage.validateTankInformation();
    },
