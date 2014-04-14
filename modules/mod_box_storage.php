@@ -191,7 +191,7 @@ class BoxStorage extends Repository{
          </div>
          <div class="form-group left-align loc_divs">
             <label for="status">Status</label>
-            <select type="text" name="status" id="status">
+            <select type="text" name="status" id="status" class="input-medium">
                <option value=""></option><!--NULL option-->
                <option value="Temporary">Temporary</option>
                <option value="Permanent">Permanent</option>
