@@ -307,13 +307,8 @@ var BoxStorage = {
       };
       var boxesAdapter = new $.jqx.dataAdapter(source);
       $("#searched_boxes").jqxGrid({
-         source: boxesAdapter/*,
-         virtualmode: true,
-         rendergridrows: function() {
-            return boxesAdapter.records;
-         }*/
+         source: boxesAdapter
       });
-      //$("#searched_boxes").jqxGrid("updatebounddata");
       
       Main.searchOnGoing = false;
    },
