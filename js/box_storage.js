@@ -1330,7 +1330,7 @@ var BoxStorage = {
    getCookie: function(name){
       name = name + "=";
       var allCookies = document.cookie.split(';');
-      for(var i=0; i<ca.length; i++) {
+      for(var i=0; i<allCookies.length; i++) {
          var c = allCookies[i].trim();
          if (c.indexOf(name)===0) return c.substring(name.length,c.length);
       }
