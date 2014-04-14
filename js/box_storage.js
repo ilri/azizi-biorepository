@@ -191,6 +191,7 @@ var BoxStorage = {
     * @returns {undefined}
     */
    initiateSearchBoxesGrid: function(){
+      console.log("initiateSearchBoxGrid called");
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
       var source = {
@@ -269,6 +270,7 @@ var BoxStorage = {
     * @returns {undefined}
     */
    updateSearchBoxesGrid: function(data){
+      console.log("updateSearchBoxesGrid called");
       data = typeof data !== 'undefined' ? data : {action:"search_boxes"};
       
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
