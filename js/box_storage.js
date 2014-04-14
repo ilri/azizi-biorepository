@@ -1179,6 +1179,7 @@ var BoxStorage = {
     */
    searchForBox: function (){
       //first check if request has already gone to server and has not been responded to
+      console.log(Main.searchOnGoing);
       if(typeof  Main.searchOnGoing === 'undefined' || Main.searchOnGoing === false){
          Main.searchOnGoing = true;
          var data = {
