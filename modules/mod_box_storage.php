@@ -540,6 +540,8 @@ class BoxStorage extends Repository{
          if($("#search").val().length > 3){
             BoxStorage.searchForBox();
          }
+         else
+            console.log("bump");
       });
       $("#search_project").change(function (){
          BoxStorage.searchForBox();
