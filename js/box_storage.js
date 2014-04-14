@@ -985,7 +985,7 @@ var BoxStorage = {
       }
       
       if(suggestions.length > 10){
-         suggestions.slice(0, 10);// a maximum of 10 suggestions
+         suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
       }
 
       $("#box_label").autocomplete({
@@ -1044,7 +1044,7 @@ var BoxStorage = {
       }
       
       if(suggestions.length > 10){
-         suggestions.slice(0, 10);//a maximum of 10 suggestions
+         suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
       }
 
       $("#search").autocomplete({
@@ -1083,7 +1083,7 @@ var BoxStorage = {
       }
       
       if(suggestions.length > 10){
-         suggestions.slice(0,10);//maximum of 10 suggestions
+         suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
       }
 
       $("#box_label").autocomplete({
