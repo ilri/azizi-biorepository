@@ -536,6 +536,11 @@ class BoxStorage extends Repository{
            BoxStorage.searchForBox();
         }
       });
+      $("#search").change(function (){
+         if($("#search").val().length > 3){
+            BoxStorage.searchForBox();
+         }
+      });
       $("#search_project").change(function (){
          BoxStorage.searchForBox();
       });
