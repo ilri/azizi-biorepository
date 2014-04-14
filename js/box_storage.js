@@ -912,7 +912,8 @@ var BoxStorage = {
             return BoxStorage.getTankData(true);
          }
          else{
-            return jQuery.parseJSON(jsonText);
+            //return jQuery.parseJSON(jsonText);
+            return jsonText;
          }
       }
    },
