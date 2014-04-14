@@ -486,34 +486,34 @@ class BoxStorage extends Repository{
       <div id="box_location">
          <div class="form-group left-align">
             <label for="tank">Tank</label>
-            <select id="tank" class="input-medium">
+            <select id="tank" class="input-large">
                <option value=""></option>
             </select>
          </div>
          <div class="form-group left-align">
             <label for="sector">Sector</label>
-            <select id="sector" name="sector" disabled="disabled">
+            <select id="sector" name="sector" disabled="disabled" class="input-large">
                <!--Disabled until parent select is selected-->
             </select>
          </div>
          <div id="rack_div" class="form-group left-align">
             <label for="rack">Rack</label>
-            <select type="text" name="rack" id="rack" disabled="disabled">
+            <select type="text" name="rack" id="rack" disabled="disabled" class="input-large">
                <!--Disabled until parent select is selected-->
             </select>
          </div>
          <div id="rack_spec_div" class="form-group left-align hidden" style="width: 160px; display: none;">
             <label for="rack">Rack</label>
-            <input type="text" id="rack_spec" name="rack_spec" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
+            <input type="text" id="rack_spec" name="rack_spec" class="input-large" /><a href="#" id="cancelAnchor" ><img src='images/close.png' /></a>
          </div>
          <div class="form-group left-align">
             <label for="position">Position in Rack</label>
-            <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
+            <select type="text" name="position" id="position" disabled="disabled" class="input-large"><!--Disabled until parent select is selected-->
             </select>
          </div>
          <div class="form-group left-align">
             <label for="status">Status</label>
-            <select type="text" name="status" id="status">
+            <select type="text" name="status" id="status" class="input-large">
                <option value=""></option><!--NULL option-->
                <option value="temporary">Temporary</option>
                <option value="permanent">Permanent</option>
