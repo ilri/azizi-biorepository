@@ -532,10 +532,29 @@ class BoxStorage extends Repository{
          BoxStorage.searchForBox();
       });
       $("#search").live("keypress", function(e) {
-        if (e.keyCode == 13) {
+        if (e.keyCode == 13) {//enter key pressed
            BoxStorage.searchForBox();
         }
       });
+      $("#search_project").change(function (){
+         BoxStorage.searchForBox();
+      });
+      $("#search_status").change(function (){
+         BoxStorage.searchForBox();
+      });
+      $("#search_location").change(function (){
+         BoxStorage.searchForBox();
+      });
+      $("#search_keeper").change(function (){
+         BoxStorage.searchForBox();
+      });
+      $("#samples").change(function (){
+         BoxStorage.searchForBox();
+      });
+      $("#boxes_wo_names").change(function (){
+         BoxStorage.searchForBox();
+      });
+      
       
       $('#advanced_search_a').click(function (){
          BoxStorage.toggleAdvancedSearch();
