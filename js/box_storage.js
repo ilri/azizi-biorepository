@@ -901,16 +901,16 @@ var BoxStorage = {
          }).responseText;
 
          var json = jQuery.parseJSON(jsonText);
-         BoxStorage.setCookie("tankData", json, 1);//set cookie. make expire after one day
+         BoxStorage.setCookie("tankData", jsonText, 1);//set cookie. make expire after one day
          return json;
       }
       else{
-         var json = BoxStorage.getCookie("tankData");
-         if(json === -1){//cookie has not been set or is empty
+         var jsonText = BoxStorage.getCookie("tankData");
+         if(jsonText === -1){//cookie has not been set or is empty
             return BoxStorage.getTankData(true);
          }
          else{
-            return json;
+            return jQuery.parseJSON(jsonText);
          }
       }
    },
