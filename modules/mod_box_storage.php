@@ -535,13 +535,11 @@ class BoxStorage extends Repository{
         if (e.keyCode == 13) {//enter key pressed
            BoxStorage.searchForBox();
         }
-      });
-      $("#search").change(function (){
-         if($("#search").val().length > 3){
-            BoxStorage.searchForBox();
-         }
-         else
-            console.log("bump");
+        else{
+           if($("#search").val().length > 3){
+               BoxStorage.searchForBox();
+            }
+        }
       });
       $("#search_project").change(function (){
          BoxStorage.searchForBox();
