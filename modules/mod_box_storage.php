@@ -533,7 +533,7 @@ class BoxStorage extends Repository{
       });
       $("#search").keyup( function(event) {
          console.log(event);
-      }
+      });
       /*$("#search").live("keypress", function(e) {
          console.log(e.keyCode);
         if (e.keyCode == 13) {//enter key pressed
