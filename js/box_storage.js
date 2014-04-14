@@ -902,7 +902,8 @@ var BoxStorage = {
          }).responseText;
 
          var json = jQuery.parseJSON(jsonText);
-         BoxStorage.setCookie("tankData", "encodeURI(jsonText)", 1);//set cookie. make expire after one day
+         console.log(encodeURI(jsonText));
+         BoxStorage.setCookie("tankData", , 1);//set cookie. make expire after one day
          return json;
       }
       else{
