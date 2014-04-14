@@ -532,19 +532,15 @@ class BoxStorage extends Repository{
          BoxStorage.searchForBox();
       });
       $("#search").keyup( function(event) {
-         console.log(event.which);
-      });
-      /*$("#search").live("keypress", function(e) {
-         console.log(e.keyCode);
-        if (e.keyCode == 13) {//enter key pressed
-           BoxStorage.searchForBox();
-        }
-        else{
-           if($("#search").val().length > 2){
+         if(event.which === 8 || event.which === 13){//backspace or enter pressed
+            BoxStorage.searchForBox();
+         }
+         else{
+            if($("#search").val().length > 2){
                BoxStorage.searchForBox();
             }
-        }
-      });*/
+         }
+      });
       $("#search_project").change(function (){
          BoxStorage.searchForBox();
       });
