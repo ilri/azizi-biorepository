@@ -313,6 +313,8 @@ var BoxStorage = {
          }
       });
       $("#searched_boxes").jqxGrid("updatebounddata");
+      
+      Main.searchOnGoing = false;
    },
    
    /**
@@ -1176,17 +1178,24 @@ var BoxStorage = {
     * @returns {undefined}
     */
    searchForBox: function (){
-      var data = {
-         search: $("#search").val(),
-         project: $("#search_project").val(),
-         status: $("#search_status").val(),
-         location: $("#search_location").val(),
-         keeper: $("#search_keeper").val(),
-         boxes_wo_names: $("#boxes_wo_names").is(":checked"),
-         samples: $("#samples").val()
-         
-      };
-      BoxStorage.updateSearchBoxesGrid(data);
+      //first check if request has already gone to server and has not been responded to
+      if(typeof  Main.searchOnGoing === 'undefined' || Main.searchOnGoing === false){
+         Main.searchOnGoing = true;
+         var data = {
+            search: $("#search").val(),
+            project: $("#search_project").val(),
+            status: $("#search_status").val(),
+            location: $("#search_location").val(),
+            keeper: $("#search_keeper").val(),
+            boxes_wo_names: $("#boxes_wo_names").is(":checked"),
+            samples: $("#samples").val()
+
+         };
+         BoxStorage.updateSearchBoxesGrid(data);
+      }
+      else{
+         console.log("Search ongoing. This request will be ignored");
+      }
    },
    
    /**
