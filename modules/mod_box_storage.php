@@ -436,7 +436,7 @@ class BoxStorage extends Repository{
                <option value=""></option>
                <option value="wo_location">With sector not specified</option>
                <option value="wo_rack">With rack not specified</option>
-               <option value="wo_rack_pos">With both rack position not specified</option>
+               <option value="wo_rack_pos">With rack position not specified</option>
             </select>
          </div>
          <div class="search_criteria">
