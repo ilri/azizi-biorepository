@@ -1252,9 +1252,15 @@ var BoxStorage = {
             
             $("#status").val(rowData.status);
             if(rowData.status === "temporary"){
+               $("#project").prop("disabled", false);
+               $("#owner").prop("disabled", true);
                if(isNaN(rowData.project) === false){//project set
                   $("#project").val(rowData.project);
                }
+            }
+            else{
+               $("#project").prop("disabled", true);
+               $("#owner").prop("disabled", false);
             }
          }
       });
