@@ -892,18 +892,27 @@ var BoxStorage = {
     *
     * @returns {JSONObject} Returns a JSONObject with the tank data
     */
-   getTankData : function(saveInWindow){
-      var jsonText = $.ajax({
-         type: "GET",
-         url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
-         async: false
-      }).responseText;
+   getTankData : function(fromServer){
+      if(fromServer){
+         var jsonText = $.ajax({
+            type: "GET",
+            url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
+            async: false
+         }).responseText;
 
-      var json = jQuery.parseJSON(jsonText);
-      if(saveInWindow){
-         window.tankData = json;
+         var json = jQuery.parseJSON(jsonText);
+         BoxStorage.setCookie("tankData", json, 1);//set cookie. make expire after one day
+         return json;
       }
-      return json;
+      else{
+         var json = BoxStorage.getCookie("tankData");
+         if(json === -1){//cookie has not been set or is empty
+            return BoxStorage.getTankData(true);
+         }
+         else{
+            return json;
+         }
+      }
    },
 
    /**
@@ -958,7 +967,7 @@ var BoxStorage = {
    */
    setRemovedBoxSuggestions : function(){
       BoxStorage.resetReturnInput(true);
-      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+      var tankData = BoxStorage.getTankData(false);//cache fetched tank data into document.tankData so that you wont need to fetch it again
 
       //get all boxes that have been removed
       var suggestions = new Array();
@@ -1024,7 +1033,7 @@ var BoxStorage = {
    
    setSearchBoxSuggestions : function() {
       BoxStorage.resetReturnInput(true);
-      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+      var tankData = BoxStorage.getTankData(false);//cache fetched tank data into document.tankData so that you wont need to fetch it again
 
       //get all boxes that have been removed
       var suggestions = new Array();
@@ -1063,7 +1072,7 @@ var BoxStorage = {
    */
    setDeleteBoxSuggestions : function(){
       BoxStorage.resetDeleteInput(true);
-      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+      var tankData = BoxStorage.getTankData(false);//cache fetched tank data into document.tankData so that you wont need to fetch it again
 
       //get all boxes that have been removed
       var suggestions = new Array();
@@ -1304,9 +1313,27 @@ var BoxStorage = {
          else{
             Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:false});
             BoxStorage.toggleSearchModes();
+            BoxStorage.getTankData(true);//get tank data from the server
             BoxStorage.loadTankData(true);
             BoxStorage.updateSearchBoxesGrid();
          }
       }
+   },
+   
+   setCookie: function(name, value, daysToExpire){
+      var date = new Date();
+      date.setTime(date.getTime()+(daysToExpire*24*60*60*1000));
+      var expires = "expires="+d.toGMTString();
+      document.cookie = name + "=" + value + "; " + expires;
+   },
+   
+   getCookie: function(name){
+      name = name + "=";
+      var allCookies = document.cookie.split(';');
+      for(var i=0; i<ca.length; i++) {
+         var c = allCookies[i].trim();
+         if (c.indexOf(name)===0) return c.substring(name.length,c.length);
+      }
+      return -1;
    }
 };
