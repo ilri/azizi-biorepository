@@ -15,6 +15,7 @@ var BoxStorage = {
     */
    submitInsertRequest : function(){
       if(this.validateInsertInput() === true){
+         BoxStorage.setDataCache("tankData", -1);
          return true;
       }
       return false;
