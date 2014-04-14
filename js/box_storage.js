@@ -903,7 +903,7 @@ var BoxStorage = {
 
          var json = jQuery.parseJSON(jsonText);
          console.log(encodeURI(jsonText));
-         BoxStorage.setCookie("tankData", 'test', 1);//set cookie. make expire after one day
+         BoxStorage.setCookie("tankData", json);//set cookie. make expire after one day
          return json;
       }
       else{
@@ -913,8 +913,8 @@ var BoxStorage = {
             return BoxStorage.getTankData(true);
          }
          else{
-            return jQuery.parseJSON(jsonText);
-            //return jsonText;
+            //return jQuery.parseJSON(jsonText);
+            return jsonText;
          }
       }
    },
@@ -1324,21 +1324,30 @@ var BoxStorage = {
       }
    },
    
-   setCookie: function(cname,cvalue,exdays){
-      var d = new Date();
+   setCookie: function(cname,cvalue){
+      if(typeof(Storage) !== "undefined"){//browers supports HTML5 localstorage
+         sessionStorage.setItem(cname, cvalue);
+      }
+      /*var d = new Date();
       d.setTime(d.getTime()+(exdays*24*60*60*1000));
       var expires = "expires="+d.toGMTString();
       document.cookie = cname + "=" + cvalue + "; " + expires + "; path=/";
-      console.log("saved "+cname+" as a cookie");
+      console.log("saved "+cname+" as a cookie");*/
    },
    
    getCookie: function(cname) {
-      var name = cname + "=";
+      var cached = -1;
+      if(typeof(Storage) !== "undefined"){
+         cached = sessionStorage.getItem(cname);
+         if(cached === null) cached = -1;
+      }
+      return cached;
+      /*var name = cname + "=";
       var ca = document.cookie.split(';');
       for(var i=0; i<ca.length; i++) {
          var c = ca[i].trim();
          if (c.indexOf(name)==0) return c.substring(name.length,c.length);
       }
-      return -1;
+      return -1;*/
 }
 };
