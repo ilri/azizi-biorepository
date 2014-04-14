@@ -1195,19 +1195,19 @@ class BoxStorage extends Repository{
                }
             }
          }
-         /*else{
-            if($_POST['project'] !== -2){//boxes not associated with any projects
+         else{
+            if(strlen($_POST['project']) > 0 && $_POST['project'] !== -2){//boxes not associated with any projects
                 array_splice($result, $resultIndex, 1);
                 $resultIndex--;
                 continue;
             }
-            if($_POST['samples'] === "ex_samples"){
+            if(strlen($_POST['samples']) > 0 && $_POST['samples'] === "ex_samples"){
                $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
                array_splice($result, $resultIndex, 1);
                 $resultIndex--;
                 continue;
             }
-         }*/
+         }
       }
       
       if(count($result)> 0){
