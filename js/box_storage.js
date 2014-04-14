@@ -983,6 +983,10 @@ var BoxStorage = {
             }
          }
       }
+      
+      if(suggestions.length > 10){
+         suggestions.slice(0, 10);// a maximum of 10 suggestions
+      }
 
       $("#box_label").autocomplete({
          source: suggestions,
@@ -1038,6 +1042,10 @@ var BoxStorage = {
             }
          }
       }
+      
+      if(suggestions.length > 10){
+         suggestions.slice(0, 10);//a maximum of 10 suggestions
+      }
 
       $("#search").autocomplete({
          source: suggestions,
@@ -1072,6 +1080,10 @@ var BoxStorage = {
                }
             }
          }
+      }
+      
+      if(suggestions.length > 10){
+         suggestions.slice(0,10);//maximum of 10 suggestions
       }
 
       $("#box_label").autocomplete({
