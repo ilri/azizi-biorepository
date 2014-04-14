@@ -1327,6 +1327,7 @@ var BoxStorage = {
       var expires = "expires="+date.toGMTString();
       document.cookie = name + "=" + value + "; " + expires + "; path=/";
       console.log("saved cookie "+name+" as "+value);
+      console.log("gotten cookie = " +BoxStorage.getCookie(name));
    },
    
    getCookie: function(name){
