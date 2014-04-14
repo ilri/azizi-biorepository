@@ -1146,7 +1146,7 @@ class BoxStorage extends Repository{
          
          if($indexInAB !== -1){
             $this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
-            if($_POST['project'] === -1){//boxes associated with multiple projects
+            if($_POST['project'] === "-1"){//boxes associated with multiple projects
                if($allBoxes[$indexInAB]['no_projects']<=1){
                   //remove this box, we only need boxes associated with multiple projects
                   array_splice($result, $resultIndex, 1);
@@ -1156,7 +1156,7 @@ class BoxStorage extends Repository{
                   continue;
                }
             }
-            else if($_POST['project'] === -2){//boxes not associated with any projects
+            else if($_POST['project'] === "-2"){//boxes not associated with any projects
                if($allBoxes[$indexInAB]['no_projects']>0){
                   //remove this box, we only need boxes not associated with projects
                   array_splice($result, $resultIndex, 1);
@@ -1198,7 +1198,7 @@ class BoxStorage extends Repository{
          }
          else{//box does not have samples
             $this->Dbase->CreateLogEntry('mod_box_storage: Box does not have samples '.$resultIndex.' box count = '.count($result), 'debug');
-            if(strlen($_POST['project']) > 0 && $_POST['project'] !== -2){//user wants box related to at least one project. This box is not associated to any
+            if(strlen($_POST['project']) > 0 && $_POST['project'] !== "-2"){//user wants box related to at least one project. This box is not associated to any
                $this->Dbase->CreateLogEntry('mod_box_storage: POST"project" = '.$_POST['project'], 'debug');
                 array_splice($result, $resultIndex, 1);
                 $resultIndex--;
