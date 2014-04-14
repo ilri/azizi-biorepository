@@ -902,7 +902,6 @@ var BoxStorage = {
          }).responseText;
 
          var json = jQuery.parseJSON(jsonText);
-         console.log(encodeURI(jsonText));
          BoxStorage.setDataCache("tankData", jsonText);//set cookie. make expire after one day
          return json;
       }
@@ -1328,6 +1327,7 @@ var BoxStorage = {
    setDataCache: function(cname,cvalue){
       if(typeof(Storage) !== "undefined"){//browers supports HTML5 localstorage
          sessionStorage.setItem(cname, cvalue);
+         console.log("Data successfully cached into sessionStorage");
       }
       else{
          console.log("browser does not support HTML5 sessionStorage");
