@@ -902,7 +902,7 @@ var BoxStorage = {
          }).responseText;
 
          var json = jQuery.parseJSON(jsonText);
-         BoxStorage.setCookie("tankData", json, 1);//set cookie. make expire after one day
+         BoxStorage.setCookie("tankData", jsonText, 1);//set cookie. make expire after one day
          return json;
       }
       else{
@@ -912,8 +912,8 @@ var BoxStorage = {
             return BoxStorage.getTankData(true);
          }
          else{
-            //return jQuery.parseJSON(jsonText);
-            return jsonText;
+            return jQuery.parseJSON(jsonText);
+            //return jsonText;
          }
       }
    },
