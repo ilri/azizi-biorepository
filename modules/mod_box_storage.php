@@ -1068,7 +1068,7 @@ class BoxStorage extends Repository{
       }
       $jsonArray['data'] = $result;
       //$this->Dbase->CreateLogEntry('bod_box_storage: json for tank information -> '.print_r($result, true), 'debug');
-      setcookie("tankData", json_encode($jsonArray), 0, "/");
+      //setcookie("tankData", json_encode($jsonArray), 0, "/");
       echo json_encode($jsonArray);
    }
 
