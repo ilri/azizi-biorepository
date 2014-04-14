@@ -532,7 +532,7 @@ class BoxStorage extends Repository{
          BoxStorage.searchForBox();
       });
       $("#search").keyup( function(event) {
-         console.log(event);
+         console.log(event.which);
       });
       /*$("#search").live("keypress", function(e) {
          console.log(e.keyCode);
