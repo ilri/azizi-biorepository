@@ -1133,7 +1133,7 @@ class BoxStorage extends Repository{
               " from boxes_def inner join samples on boxes_def.box_id = samples.box_id group by boxes_def.box_id";
       $allBoxes = $this->Dbase->ExecuteQuery($query);
       
-      
+      $this->Dbase->CreateLogEntry('mod_box_storage: box count = '.count($result), 'debug');
       for($resultIndex = 0; $resultIndex < count($result); $resultIndex++){
          $indexInAB = -1;
          
