@@ -1326,7 +1326,7 @@ var BoxStorage = {
       var d = new Date();
       d.setTime(d.getTime()+(exdays*24*60*60*1000));
       var expires = "expires="+d.toGMTString();
-      document.cookie = cname + "=" + cvalue + "; " + expires + "; domain=azizi.ilri.cgiar.org; path=/";
+      document.cookie = cname + "=" + cvalue + "; " + expires + "; path=/";
       console.log("saved "+cname+" as a cookie");
    },
    
