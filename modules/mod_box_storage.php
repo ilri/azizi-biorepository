@@ -757,6 +757,10 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
          else{
+            if(!isset($_SESSION['addedBoxes'])){
+               $_SESSION['addedBoxes'] = array();
+            }
+            array_push($_SESSION['addedBoxes'], $boxId);
             $this->Dbase->CommitTrans();
             $message = "The box '{$_POST['box_label']}' was added successfully";
          }
@@ -1116,30 +1120,36 @@ class BoxStorage extends Repository{
     * 
     */
    private function fetchBoxes() {
-      $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
-      $pageSize = $_POST['pagesize'];
-      $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by '.
-              'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
-              'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
-              'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
-              'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-              'limit '.$fromRow.','.$pageSize;
-      
-      $this->Dbase->CreateLogEntry('mod_box_storage: fetch boxes query = '.$query, 'debug');
-      
-      $result = $this->Dbase->ExecuteQuery($query);
-      if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
-      
-      $query = "SELECT FOUND_ROWS() AS found_rows";
-      $foundRows = $this->Dbase->ExecuteQuery($query);
-      $totalRowCount = $foundRows[0]['found_rows'];
-      
-      if(count($result) > 0){
-         $result[0]['total_row_count'] = $totalRowCount;
+      if(isset($_SESSION['addedBoxes']) && count($_SESSION['addedBoxes'])>0){
+         $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
+         $pageSize = $_POST['pagesize'];
+         $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by '.
+                 'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
+                 'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
+                 'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
+                 'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+                 'where a.box_id IN(' . implode(", ", $_SESSION['addedBoxes']) . ') ';
+                 'limit '.$fromRow.','.$pageSize;
+
+         $this->Dbase->CreateLogEntry('mod_box_storage: fetch boxes query = '.$query, 'debug');
+
+         $result = $this->Dbase->ExecuteQuery($query);
+         if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
+
+         $query = "SELECT FOUND_ROWS() AS found_rows";
+         $foundRows = $this->Dbase->ExecuteQuery($query);
+         $totalRowCount = $foundRows[0]['found_rows'];
+
+         if(count($result) > 0){
+            $result[0]['total_row_count'] = $totalRowCount;
+         }
+
+         header("Content-type: application/json");
+         die('{"data":'. json_encode($result) .'}');
       }
-      
-      header("Content-type: application/json");
-      die('{"data":'. json_encode($result) .'}');
+      else{
+         die('{"data":'. json_encode(array()) .'}');
+      }
    }
 
    /**
