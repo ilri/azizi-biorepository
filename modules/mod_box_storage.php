@@ -243,11 +243,13 @@ class BoxStorage extends Repository{
     * @param type $addInfo    Any notification information you want displayed to the user when page loads
     */ 
    private function retrieveBox($addInfo = ''){
-      Repository::jqGridFiles();//load requisite jqGrid javascript files
+      //Repository::jqGridFiles();//load requisite jqGrid javascript files
 ?>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<!--script type="text/javascript" src="<?php //echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php //echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php //echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script-->
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <?php
       if(OPTIONS_REQUESTED_ACTION === "submit_request"){
          $addInfo = $addInfo.$this->submitRemoveRequest();
@@ -262,6 +264,9 @@ class BoxStorage extends Repository{
       <div id="location_div">
          <!--legend>Box Location</legend-->
          <!--div-->
+         <div class="form-group left-align">
+            <label for="box_label">Box label</label><input type="text" id="box_label" /><input type="hidden" id="box_id" name="box_id" />
+         </div>
          <div class="form-group left-align">
                <label for="tank">Tank</label>
                <select id="tank">
@@ -283,9 +288,6 @@ class BoxStorage extends Repository{
             <label for="position">Position in Rack</label>
             <select type="text" name="position" id="position" disabled="disabled"><!--Disabled until parent select is selected-->
             </select>
-         </div>
-         <div class="form-group left-align">
-            <label for="box_label">Box label</label><input type="text" id="box_label" disabled="disabled" /><input type="hidden" id="box_id" name="box_id" />
          </div>
          <!--/div-->
       </div>
@@ -312,7 +314,7 @@ class BoxStorage extends Repository{
       </div>
       <div class="center" id="submit_button_div"><input type="submit" value="Retrieve" name="submitButton" id="submitButton" class="btn btn-success" /></div>
    </form>
-   <div id="retrieved_boxes"></div>
+   <!--div id="retrieved_boxes"></div-->
 </div>
 
 <script type="text/javascript">
@@ -327,7 +329,8 @@ class BoxStorage extends Repository{
          }
       });
       
-      BoxStorage.initiateRetrievedBoxesGrid();
+      BoxStorage.setRetrievedBoxSuggestions();
+      //BoxStorage.initiateRetrievedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
@@ -342,9 +345,9 @@ class BoxStorage extends Repository{
    private function returnBox(){
        Repository::jqGridFiles();//load requisite jqGrid javascript files
 ?>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<!--script type="text/javascript" src="<?php //echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php //echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php //echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script-->
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 
@@ -378,7 +381,7 @@ class BoxStorage extends Repository{
    </div>
    <div class="center" id="submit_button_div"><button type="button" id="submitButton" class="btn btn-success">Return</button></div>
 
-   <div id="returned_boxes"></div>
+   <!--div id="returned_boxes"></div-->
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
@@ -393,7 +396,7 @@ class BoxStorage extends Repository{
          console.log("remove_id cleared");
          BoxStorage.resetReturnInput(false);
       });
-      BoxStorage.initiateReturnedBoxesGrid();
+      //BoxStorage.initiateReturnedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
