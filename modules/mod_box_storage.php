@@ -1119,7 +1119,7 @@ class BoxStorage extends Repository{
     * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
     * 
     */
-   private function fetchBoxes() {
+   private function fetchBoxes() { 
       if(isset($_SESSION['addedBoxes']) && count($_SESSION['addedBoxes'])>0){
          $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
          $pageSize = $_POST['pagesize'];
