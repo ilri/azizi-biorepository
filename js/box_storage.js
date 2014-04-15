@@ -258,9 +258,9 @@ var BoxStorage = {
       $("#searched_boxes").bind("pagechanged", function(event){
          BoxStorage.searchForBox();
       });
-      $("#searched_boxes").bind("pagesizechanged", function(event){
+      /*$("#searched_boxes").bind("pagesizechanged", function(event){
          BoxStorage.searchForBox();
-      });
+      });*/
       BoxStorage.initSearchSelectedListener();
    },
    
