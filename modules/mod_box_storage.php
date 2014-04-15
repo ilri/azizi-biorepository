@@ -207,7 +207,7 @@ class BoxStorage extends Repository{
             </select>
          </div>
        </div>
-      <div class="center" id="submit_button_div"><button type="submit" class="btn btn-success">Save</button></div>
+      <div class="center" id="submit_button_div"><button type="submit" class="btn btn-success" style="margin-top: 20px;">Save</button></div>
    </form>
 </div>
 <div id="tank_boxes"></div>
