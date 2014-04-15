@@ -224,7 +224,7 @@ var BoxStorage = {
             if(data.data.length > 0)
                source.totalrecords = data.data[0].total_row_count;
             else
-               source.totalrecords;
+               source.totalrecords = 0;
          }
       };
 
@@ -304,7 +304,7 @@ var BoxStorage = {
             if(data.data.length > 0)
                source.totalrecords = data.data[0].total_row_count;
             else
-               source.totalrecords;
+               source.totalrecords = 0;
          }
       };
       var boxesAdapter = new $.jqx.dataAdapter(source);
