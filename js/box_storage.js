@@ -255,9 +255,11 @@ var BoxStorage = {
       else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
       //$("#searched_boxes").jqxGrid('autoresizecolumns');
       
-      /*$("#searched_boxes").bind("pagechanged", function(event){
-         BoxStorage.searchForBox();
-      });*/
+      $("#searched_boxes").bind("pagechanged", function(event){
+         if(event.pagenum > 0){
+            BoxStorage.searchForBox();
+         }
+      });
       /*$("#searched_boxes").bind("pagesizechanged", function(event){
          BoxStorage.searchForBox();
       });*/
