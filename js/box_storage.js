@@ -1244,7 +1244,7 @@ var BoxStorage = {
     */
    searchForBox: function (){
       //first check if request has already gone to server and has not been responded to
-      Main.searchOnGoing = true;
+      $("#searched_boxes").jqxGrid('gotopage', 0);
       var data = {
          search: $("#search").val(),
          project: $("#search_project").val(),
