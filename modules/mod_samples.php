@@ -143,6 +143,7 @@ class Samples extends SpreadSheet {
                $sdata_desc = "<br /><br /><b><u>$sheet_name</u></b><br />";
                foreach($sheet[$linkKey] as $sData){
                   foreach($sData as $col => $dt) if(preg_match("/$col/i", Config::$columns2exclude) === 0) $sdata_desc .= "$col = $dt<br />";
+                  $sdata_desc .= "<br />";
                }
             }
             $descr .= $sdata_desc;
