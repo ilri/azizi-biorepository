@@ -757,8 +757,8 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
          else{
+            session_start();
             if(!isset($_SESSION['addedBoxes'])){
-               session_start();
                $_SESSION['addedBoxes'] = array();
             }
             array_push($_SESSION['addedBoxes'], $boxId);
@@ -1122,6 +1122,7 @@ class BoxStorage extends Repository{
     * 
     */
    private function fetchBoxes() { 
+      session_start();
       if(isset($_SESSION['addedBoxes']) && count($_SESSION['addedBoxes'])>0){
          $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
          $pageSize = $_POST['pagesize'];
