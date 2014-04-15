@@ -256,11 +256,6 @@ var BoxStorage = {
       //$("#searched_boxes").jqxGrid('autoresizecolumns');
       
       $("#searched_boxes").bind("pagechanged", function(event){
-            $("#searched_boxes").jqxGrid({
-               rendergridrows: function() {
-                  return boxesAdapter.records;
-               }
-         });
       });
       /*$("#searched_boxes").bind("pagesizechanged", function(event){
          BoxStorage.searchForBox();
@@ -314,7 +309,11 @@ var BoxStorage = {
       };
       var boxesAdapter = new $.jqx.dataAdapter(source);
       $("#searched_boxes").jqxGrid({
-         source: boxesAdapter
+         source: boxesAdapter,
+         rendergridrows: function() {
+            return boxesAdapter.records;
+         },
+         virtualmode: true
       });
    },
    
