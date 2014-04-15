@@ -757,11 +757,11 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
          else{
-            if(!isset($_SESSION['addedBoxes'])){
-               $_SESSION['addedBoxes'] = array();
+            if(!isset($this->Dbase->session['addedBoxes'])){
+               $this->Dbase->session['addedBoxes'] = array();
             }
-            array_push($_SESSION['addedBoxes'], $boxId);
-            $this->Dbase->CreateLogEntry('mod_box_storage: addedBoxes = '. print_r($_SESSION['addedBoxes'], true), 'debug');
+            array_push($this->Dbase->session['addedBoxes'], $boxId);
+            $this->Dbase->CreateLogEntry('mod_box_storage: addedBoxes = '. print_r($this->Dbase->session['addedBoxes'], true), 'debug');
             $this->Dbase->CommitTrans();
             $message = "The box '{$_POST['box_label']}' was added successfully";
          }
@@ -1121,7 +1121,7 @@ class BoxStorage extends Repository{
     * 
     */
    private function fetchBoxes() { 
-      if(isset($_SESSION['addedBoxes']) && count($_SESSION['addedBoxes'])>0){
+      if(isset($this->Dbase->session['addedBoxes']) && count($this->Dbase->session['addedBoxes'])>0){
          $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
          $pageSize = $_POST['pagesize'];
          $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by '.
@@ -1129,7 +1129,7 @@ class BoxStorage extends Repository{
                  'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
                  'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
                  'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-                 'where a.box_id IN(' . implode(", ", $_SESSION['addedBoxes']) . ') ';
+                 'where a.box_id IN(' . implode(", ", $this->Dbase->session['addedBoxes']) . ') ';
                  'limit '.$fromRow.','.$pageSize;
 
          $this->Dbase->CreateLogEntry('mod_box_storage: fetch boxes query = '.$query, 'debug');
