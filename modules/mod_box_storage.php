@@ -18,7 +18,7 @@ class BoxStorage extends Repository{
    }
 
    public function TrafficController() {
-
+      $this->Dbase->CreateLogEntry('mod_box_storage: session details at tc = '. print_r($_SESSION, true), 'debug');
       /*
        * Hierarchical GET requests handled by this file (box_storage)
        * - box_storage (page)
@@ -761,7 +761,6 @@ class BoxStorage extends Repository{
                $_SESSION['addedBoxes'] = array();
             }
             array_push($_SESSION['addedBoxes'], $boxId);
-            $_SESSION['addedBoxes'] = "test";
             $this->Dbase->CreateLogEntry('mod_box_storage: addedBoxes'. print_r($_SESSION['addedBoxes'], true), 'debug');
             //$this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
             $this->Dbase->CommitTrans();
