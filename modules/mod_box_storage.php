@@ -761,6 +761,7 @@ class BoxStorage extends Repository{
                $_SESSION['addedBoxes'] = array();
             }
             array_push($_SESSION['addedBoxes'], $boxId);
+            $this->Dbase->CreateLogEntry('mod_box_storage: addedBoxes = '. print_r($_SESSION['addedBoxes'], true), 'debug');
             $this->Dbase->CommitTrans();
             $message = "The box '{$_POST['box_label']}' was added successfully";
          }
@@ -1148,6 +1149,7 @@ class BoxStorage extends Repository{
          die('{"data":'. json_encode($result) .'}');
       }
       else{
+         $this->Dbase->CreateLogEntry('mod_box_storage: added Boxes session variable empty', 'debug');
          die('{"data":'. json_encode(array()) .'}');
       }
    }
