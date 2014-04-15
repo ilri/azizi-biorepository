@@ -377,6 +377,7 @@ var BoxStorage = {
     */
    submitRemoveRequest: function(){
       if(this.validateRemoveInput()){
+         BoxStorage.deleteDataCache("tankData");
          return true;
       }
       return false;
@@ -389,6 +390,7 @@ var BoxStorage = {
     */
    submitReturnRequest: function(){
       if(this.validateReturnInput()){
+         BoxStorage.deleteDataCache("tankData");
          var formData = {return_comment: $("#return_comment").val(), remove_id: $("#remove_id").val()};
 
          var responseText = $.ajax({
@@ -420,6 +422,7 @@ var BoxStorage = {
    submitDeleteRequest: function(){
       //console.log("submited delete called");
       if(this.validateDeleteInput()){
+         BoxStorage.deleteDataCache("tankData");
          //console.log("trying to delete");
          var formData = {delete_comment: $("#delete_comment").val(), box_id: $("#box_id").val()};
 
@@ -1364,6 +1367,7 @@ var BoxStorage = {
     */
    submitBoxUpdate: function(){
       if(BoxStorage.validateInsertInput()){
+         BoxStorage.deleteDataCache("tankData");
          //console.log("trying to update");
          //#box_label#box_size#owner#status#features
          //#tank#sector#rack#rack_spec#position
