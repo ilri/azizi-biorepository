@@ -107,6 +107,7 @@ class BoxStorage extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
 <?php
       if(OPTIONS_REQUESTED_ACTION === "insert_box"){
+         $_SESSION['wtf'] = 'wtf';
          //re-open the db connection using a profile with rw permissions
          Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
          
