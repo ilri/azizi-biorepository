@@ -761,6 +761,7 @@ class BoxStorage extends Repository{
                $_SESSION['addedBoxes'] = array();
             }
             array_push($_SESSION['addedBoxes'], $boxId);
+            $_SESSION['addedBoxes'] = "test";
             $this->Dbase->CreateLogEntry('mod_box_storage: addedBoxes'. print_r($_SESSION['addedBoxes'], true), 'debug');
             //$this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
             $this->Dbase->CommitTrans();
