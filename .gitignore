@@ -7,3 +7,4 @@ uploads
 config/repository_config
 download
 tmp
+run.sh

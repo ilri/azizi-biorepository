@@ -18,7 +18,6 @@ class BoxStorage extends Repository{
    }
 
    public function TrafficController() {
-      $this->Dbase->CreateLogEntry('mod_box_storage: session details at tc = '. print_r($_SESSION, true), 'debug');
       /*
        * Hierarchical GET requests handled by this file (box_storage)
        * - box_storage (page)
@@ -107,7 +106,6 @@ class BoxStorage extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
 <?php
       if(OPTIONS_REQUESTED_ACTION === "insert_box"){
-         $_SESSION['wtf'] = 'wtf';
          //re-open the db connection using a profile with rw permissions
          Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
          
@@ -758,12 +756,6 @@ class BoxStorage extends Repository{
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
          else{
-            if(!isset($_SESSION['addedBoxes'])){
-               $_SESSION['addedBoxes'] = array();
-            }
-            array_push($_SESSION['addedBoxes'], $boxId);
-            $this->Dbase->CreateLogEntry('mod_box_storage: addedBoxes'. print_r($_SESSION['addedBoxes'], true), 'debug');
-            //$this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
             $this->Dbase->CommitTrans();
             $message = "The box '{$_POST['box_label']}' was added successfully";
          }
@@ -1123,22 +1115,26 @@ class BoxStorage extends Repository{
     * 
     */
    private function fetchBoxes() { 
-      //$this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
-      $this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($_SESSION, true), 'debug');
-      if(isset($_SESSION['addedBoxes']) && count($_SESSION['addedBoxes'])>0){
+      //fetch boxes added during this session
+      $query = "SELECT * FROM ".  Config::$config['dbase'] . ".sessions WHERE session_id =:session_id";
+      $result = $this->Dbase->ExecuteQuery($query, array('session_id' => session_id()));
+      if(is_array($result) && count($result) === 1){//should fetch only data for one session
+         $startTime = $result[0]['updated_at'];
+         $query = "SELECT * FROM ".  Config::$config['dbase'] . ".sessions WHERE session_id = ";
          $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
          $pageSize = $_POST['pagesize'];
+         $this->Dbase->CreateLogEntry('mod_box_storage: start time = '.$startTime, 'debug');
          $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by '.
                  'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
                  'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
                  'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
                  'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
-                 'where a.box_id IN(' . implode(", ", $_SESSION['addedBoxes']) . ') ';
+                 'where a.date_added >= "' . date( 'Y-m-d', $_SERVER['REQUEST_TIME']) . '" './/fetch boxes inserted today
                  'limit '.$fromRow.','.$pageSize;
 
          $this->Dbase->CreateLogEntry('mod_box_storage: fetch boxes query = '.$query, 'debug');
 
-         $result = $this->Dbase->ExecuteQuery($query);
+         $result = $this->Dbase->ExecuteQuery($query, array("start_time" => $startTime));
          if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
 
          $query = "SELECT FOUND_ROWS() AS found_rows";
@@ -1153,9 +1149,9 @@ class BoxStorage extends Repository{
          die('{"data":'. json_encode($result) .'}');
       }
       else{
-         $this->Dbase->CreateLogEntry('mod_box_storage: added Boxes session variable empty', 'debug');
          die('{"data":'. json_encode(array()) .'}');
       }
+      
    }
 
    /**
