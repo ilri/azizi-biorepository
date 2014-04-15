@@ -192,7 +192,7 @@ var BoxStorage = {
     * @returns {undefined}
     */
    initiateSearchBoxesGrid: function(){
-      console.log("initiateSearchBoxGrid called");
+      //console.log("initiateSearchBoxGrid called");
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
       var source = {
@@ -271,7 +271,7 @@ var BoxStorage = {
     * @returns {undefined}
     */
    updateSearchBoxesGrid: function(data){
-      console.log("updateSearchBoxesGrid called");
+      //console.log("updateSearchBoxesGrid called");
       data = typeof data !== 'undefined' ? data : {action:"search_boxes"};
       
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
@@ -418,9 +418,9 @@ var BoxStorage = {
     * Page WILL NOT RELOAD after this function is executed successfully
     */
    submitDeleteRequest: function(){
-      console.log("submited delete called");
+      //console.log("submited delete called");
       if(this.validateDeleteInput()){
-         console.log("trying to delete");
+         //console.log("trying to delete");
          var formData = {delete_comment: $("#delete_comment").val(), box_id: $("#box_id").val()};
 
          var responseText = $.ajax({
@@ -901,7 +901,7 @@ var BoxStorage = {
     */
    getTankData : function(fromServer){
       if(fromServer){
-         console.log("getting tank data from the server");
+         //console.log("getting tank data from the server");
          var jsonText = $.ajax({
             type: "GET",
             url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
@@ -915,11 +915,11 @@ var BoxStorage = {
       else{
          var jsonText = BoxStorage.getDataCache("tankData");
          if(jsonText === -1){//cookie has not been set or is empty
-            console.log("Could not get cached data. Probably means your browser does not support HTML5 sessionStorage or variable was invalidated some in recent past.");
+            //console.log("Could not get cached data. Probably means your browser does not support HTML5 sessionStorage or variable was invalidated some in recent past.");
             return BoxStorage.getTankData(true);
          }
          else{
-            console.log("Cached data gotten from sessionStorage");
+            //console.log("Cached data gotten from sessionStorage");
             return jQuery.parseJSON(jsonText);
             //return jsonText;
          }
@@ -1077,7 +1077,6 @@ var BoxStorage = {
                parentIndexes[i] = parseInt(parentIndexes[i]);
             }
             if(parentIndexes.length === 4){
-               console.log("boom");
                //set values of tank position inputs
                $("#tank").val(tanks[parentIndexes[0]].id);
                BoxStorage.populateTankSectors();
@@ -1284,7 +1283,7 @@ var BoxStorage = {
             var row = event.args.rowindex;
             var rowData = $("#searched_boxes").jqxGrid('getrowdata', row);
             
-            console.log(rowData.box_id);
+//            /console.log(rowData.box_id);
             $("#box_id").val(rowData.box_id);
             
             $("#box_label").val(rowData.box_name);
@@ -1365,7 +1364,7 @@ var BoxStorage = {
     */
    submitBoxUpdate: function(){
       if(BoxStorage.validateInsertInput()){
-         console.log("trying to update");
+         //console.log("trying to update");
          //#box_label#box_size#owner#status#features
          //#tank#sector#rack#rack_spec#position
          var formData = {
@@ -1407,10 +1406,10 @@ var BoxStorage = {
    setDataCache: function(cname,cvalue){
       if(typeof(Storage) !== "undefined"){//browers supports HTML5 localstorage
          sessionStorage.setItem(cname, cvalue);
-         console.log("Data successfully cached into sessionStorage");
+         //console.log("Data successfully cached into sessionStorage");
       }
       else{
-         console.log("browser does not support HTML5 sessionStorage");
+         //console.log("browser does not support HTML5 sessionStorage");
       }
       /*var d = new Date();
       d.setTime(d.getTime()+(exdays*24*60*60*1000));
@@ -1426,7 +1425,7 @@ var BoxStorage = {
          if(cached === null) cached = -1;
       }
       else{
-         console.log("browser does not support HTML5 sessionStorage");
+         //console.log("browser does not support HTML5 sessionStorage");
       }
       return cached;
       /*var name = cname + "=";
@@ -1441,10 +1440,10 @@ var BoxStorage = {
    deleteDataCache: function(name){
       if(typeof(Storage) !== "undefined"){//browers supports HTML5 localstorage
          sessionStorage.removeItem(name);
-         console.log("Data successfully deleted from sessionStorage");
+         //console.log("Data successfully deleted from sessionStorage");
       }
       else{
-         console.log("browser does not support HTML5 sessionStorage");
+         //console.log("browser does not support HTML5 sessionStorage");
       }
    }
 };
