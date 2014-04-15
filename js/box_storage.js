@@ -995,7 +995,8 @@ var BoxStorage = {
                   for(var removeIndex = 0; removeIndex < retrieves.length; removeIndex++){
                      if(typeof(retrieves[removeIndex].date_returned) === 'undefined' || retrieves[removeIndex].date_returned === null){
                         var keyValue = {value: boxes[boxIndex].box_name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex+'-'+removeIndex};
-                        suggestions.push(keyValue);
+                        if(suggestions.length < 11)
+                           suggestions.push(keyValue);
                         break;//you should only have one remove without a return date associated with a box/box
                      }
                   }
@@ -1004,9 +1005,9 @@ var BoxStorage = {
          }
       }
       
-      if(suggestions.length > 10){
+      /*if(suggestions.length > 10){
          suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
-      }
+      }*/
 
       $("#box_label").autocomplete({
          source: suggestions,
@@ -1056,7 +1057,8 @@ var BoxStorage = {
                for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
                   var key = tankIndex + "-" + sectorIndex + "-" + rackIndex + "-" + boxIndex;
                   var keyValue = {value: boxes[boxIndex].box_name, key: key};
-                  suggestions.push(keyValue);
+                  if(suggestions.length < 11)
+                     suggestions.push(keyValue);
                }
             }
          }
@@ -1113,15 +1115,16 @@ var BoxStorage = {
                var boxes = racks[rackIndex].boxes;
                for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
                   var keyValue = {value: boxes[boxIndex].box_name, key: boxes[boxIndex].box_name};
-                  suggestions.push(keyValue);
+                  if(suggestions.length < 11)
+                     suggestions.push(keyValue);
                }
             }
          }
       }
       
-      if(suggestions.length > 10){
+      /*if(suggestions.length > 10){
          suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
-      }
+      }*/
 
       $("#search").autocomplete({
          source: suggestions,
@@ -1152,15 +1155,16 @@ var BoxStorage = {
                var boxes = racks[rackIndex].boxes;
                for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
                   var keyValue = {value: boxes[boxIndex].box_name, key: tankIndex+'-'+sectorIndex+'-'+rackIndex+'-'+boxIndex};
-                  suggestions.push(keyValue);
+                  if(suggestions.length < 11)
+                     suggestions.push(keyValue);
                }
             }
          }
       }
       
-      if(suggestions.length > 10){
+      /*if(suggestions.length > 10){
          suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
-      }
+      }*/
 
       $("#box_label").autocomplete({
          source: suggestions,
