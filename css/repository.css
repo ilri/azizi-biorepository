@@ -319,14 +319,16 @@ body {
 #purpose_div .left-align{width: 150px; margin: 5px;}
 #location_div select, #location_div input {width: 120px; margin: 5px 2px;}
 #return_div select, #return_div input {width: 200px; margin: 5px 2px;}
-#return_div input {height: 30px;}
+#return_div input, #search_div input, #edit_div input {height: 30px;}
+#search_div input {margin-top: 10px;}
+#search_div .search_criteria {display: inline-block;}
+#search_div .search_criteria select{width: 150px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
-#box_location .left-align{width: 130px; margin: 5px 2px;}
-#box_location select, #box_location input{width: 120px; margin: 5px 2px;}
+#box_location .left-align{margin: 5px 2px;}
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
 
-#tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes {margin: 5px;}
+#tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes {margin: 5px;}
 
 #odk_table td{ height: 30px; }
 #odk_table input { height: 25px; }
@@ -340,3 +342,4 @@ body {
 .issue_inv label{ width: 350px !important; }
 .issue_inv input[type="text"], .odk_parser select, .odk_parser input[type="file"]{ height: 25px !important; margin-left: 7px !important; }
 .issue_inv select{width: 170px; height: 28px !important; }
+ul.ui-autocomplete {z-index: 1000!important; }

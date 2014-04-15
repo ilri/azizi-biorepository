@@ -29,8 +29,27 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'sample_type'}, {name: 'position'}, {name: 'status'}, {name: 'date_added'}, {name: 'added_by'} ],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_boxes'}
+         datatype: 'json',
+         datafields: [ 
+            {name: 'box_name'},
+            {name: 'position'}, 
+            {name: 'status'},
+            {name: 'date_added'},
+            {name: 'added_by'},
+            {name: 'total_row_count'}
+         ],
+         id: 'id',
+         root: 'data',
+         async: true,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_boxes'},
+         beforeprocessing: function(data){
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -41,15 +60,19 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 100},
-               {text: 'Sample Type', datafield: 'sample_type', width: 205},
-               {text: 'Tank Position', datafield: 'position', width: 220},
-               {text: 'Status', datafield: 'status', width: 110},
-               {text: 'Date Added', datafield: 'date_added', width: 90},
-               {text: 'Added By', datafield: 'added_by', width: 180}
+               {text: 'Box Label', datafield: 'box_name', width: 245},
+               {text: 'Tank Position', datafield: 'position', width: 250},
+               {text: 'Status', datafield: 'status', width: 90},
+               {text: 'Date Added', datafield: 'date_added', width: 120},
+               {text: 'Added By', datafield: 'added_by', width: 200}
             ]
          });
       }
@@ -65,8 +88,20 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+         datatype: 'json',
+         datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'removed_by'}, {name: 'removed_for'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id', 
+         root: 'data', 
+         async: true,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_removed_boxes'},
+         beforeprocessing: function (data){
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -77,8 +112,13 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 100},
                {text: 'Tank Position', datafield: 'position', width: 205},
@@ -101,8 +141,20 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_removed_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'returned_by'}, {name: 'removed_by'}, {name: 'date_removed'}, {name: 'date_returned'} ],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_removed_boxes'}
+         datatype: 'json',
+         datafields: [ {name: 'box_name'}, {name: 'position'}, {name: 'returned_by'}, {name: 'removed_by'}, {name: 'date_removed'}, {name: 'date_returned'} ],
+         id: 'id',
+         root: 'data',
+         async: true,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_removed_boxes'},
+         beforeprocessing: function (data){
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -113,8 +165,13 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 100},
                {text: 'Tank Position', datafield: 'position', width: 205},
@@ -129,6 +186,134 @@ var BoxStorage = {
    },
    
    /**
+    * This function renders the JQXGrid in the Search for a Box page
+    * 
+    * @returns {undefined}
+    */
+   initiateSearchBoxesGrid: function(){
+      console.log("initiateSearchBoxGrid called");
+      var theme = '';
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
+      var source = {
+         datatype: 'json',
+         datafields: [ 
+            {name: 'box_name'}, 
+            {name: 'position'}, 
+            {name: 'status'}, 
+            {name: 'date_added'},
+            {name: 'box_features'}, 
+            {name: 'keeper'},
+            {name: 'size'},
+            {name: 'box_id'},
+            {name: 'no_samples'},
+            {name: 'tank_id'},
+            {name: 'sector_id'},
+            {name: 'rack'},
+            {name: 'rack_position'},
+            {name: 'total_row_count'}
+         ],//make sure you update these fields when you update those of the update fetch
+         id: 'box_id',
+         root: 'data',
+         async: true,
+         url: url, 
+         type: 'POST',
+         data: {action: 'search_boxes'},
+         beforeprocessing: function (data){
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
+         }
+      };
+
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      if($('#searched_boxes :regex(class, jqx\-grid)').length === 0){
+         $("#searched_boxes").jqxGrid({
+            width: 905,
+            height: 400,
+            source: boxesAdapter,
+            columnsresize: true,
+            theme: theme,
+            pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
+            columns: [
+               {text: 'Box Label', datafield: 'box_name', width: 245},
+               {text: 'Tank Position', datafield: 'position', width: 320},
+               {text: 'Status', datafield: 'status', width: 90},
+               {text: 'Number of samples', datafield: 'no_samples', width: 50},
+               {text: 'Date Added', datafield: 'date_added', width: 200}
+            ]
+         });
+      }
+      else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
+      //$("#searched_boxes").jqxGrid('autoresizecolumns');
+      
+      /*$("#searched_boxes").bind("pagechanged", function(event){
+         BoxStorage.searchForBox();
+      });
+      $("#searched_boxes").bind("pagesizechanged", function(event){
+         BoxStorage.searchForBox();
+      });*/
+      BoxStorage.initSearchSelectedListener();
+   },
+   
+   /**
+    * This function updates the JQXGrid on the search page
+    * 
+    * @param {Array} data Optional post data to be used by the server as a filter for the data
+    * 
+    * @returns {undefined}
+    */
+   updateSearchBoxesGrid: function(data){
+      console.log("updateSearchBoxesGrid called");
+      data = typeof data !== 'undefined' ? data : {action:"search_boxes"};
+      
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=search_boxes";
+      var source = {
+         datatype: 'json',
+         datafields: [ 
+            {name: 'box_name'}, 
+            {name: 'position'}, 
+            {name: 'status'}, 
+            {name: 'date_added'},
+            {name: 'box_features'}, 
+            {name: 'keeper'},
+            {name: 'size'},
+            {name: 'box_id'},
+            {name: 'no_samples'},
+            {name: 'tank_id'},
+            {name: 'sector_id'},
+            {name: 'rack'},
+            {name: 'rack_position'},
+            {name: 'total_row_count'}
+         ],//make sure you update these fields when you update those for the initial fetch
+         id: 'box_id',
+         root: 'data',
+         async: true,
+         url: url, 
+         type: 'POST',
+         data: data,
+         beforeprocessing: function (data){
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
+         }
+      };
+      var boxesAdapter = new $.jqx.dataAdapter(source);
+      $("#searched_boxes").jqxGrid({
+         source: boxesAdapter
+      });
+      
+      Main.searchOnGoing = false;
+   },
+   
+   /**
     * This function renders the JQXGrid in the Delete a Box page
     * 
     * @returns {undefined}
@@ -137,8 +322,20 @@ var BoxStorage = {
       var theme = '';
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=fetch_deleted_boxes";
       var source = {
-         datatype: 'json', datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'delete_comment'} ],
-         id: 'id', root: 'data', async: false, url: url, type: 'POST', data: {action: 'fetch_deleted_boxes'}
+         datatype: 'json',
+         datafields: [ {name: 'box_name'}, {name: 'deleted_by'}, {name: 'date_deleted'}, {name: 'delete_comment'} ],
+         id: 'id',
+         root: 'data',
+         async: true,
+         url: url,
+         type: 'POST',
+         data: {action: 'fetch_deleted_boxes'},
+         beforeprocessing: function (data){
+            if(data.data.length > 0)
+               source.totalrecords = data.data[0].total_row_count;
+            else
+               source.totalrecords;
+         }
       };
 
       var boxesAdapter = new $.jqx.dataAdapter(source);
@@ -149,8 +346,13 @@ var BoxStorage = {
             width: 905,
             height: 400,
             source: boxesAdapter,
+            columnsresize: true,
             theme: theme,
             pageable: true,
+            virtualmode: true,
+            rendergridrows: function() {
+               return boxesAdapter.records;
+            },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 150},
                {text: 'Deleted By', datafield: 'deleted_by', width: 230},
@@ -294,11 +496,6 @@ var BoxStorage = {
          $("#box_size").focus();
          return false;
       }
-      if($("#sample_types").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the main sample type', error:true});
-         $("#sample_types").focus();
-         return false;
-      }
       if($('#owner').is(':disabled')=== false && $("#owner").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please specify the owner of the box', error:true});
          $("#owner").focus();
@@ -438,6 +635,8 @@ var BoxStorage = {
     * @returns {undefined}
     */
    loadTankData: function(forInsertion, boxesToShow){
+      $("#tank").prop("disabled", "disabled");
+      
       if(typeof(boxesToShow)==='undefined') boxesToShow = 0;//default boxesToShow to 0 (all boxes)
       Main.forInsertion = forInsertion;
       Main.boxesToShow = boxesToShow;
@@ -458,6 +657,8 @@ var BoxStorage = {
 
       //populate position select
       $("#rack").change(BoxStorage.populateSelectedPosition);
+      
+      $("#tank").prop("disabled", false);
    },
 
    /**
@@ -689,18 +890,31 @@ var BoxStorage = {
     *
     * @returns {JSONObject} Returns a JSONObject with the tank data
     */
-   getTankData : function(saveInWindow){
-      var jsonText = $.ajax({
-         type: "GET",
-         url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
-         async: false
-      }).responseText;
+   getTankData : function(fromServer){
+      if(fromServer){
+         console.log("getting tank data from the server");
+         var jsonText = $.ajax({
+            type: "GET",
+            url: "mod_ajax.php?page=box_storage&do=ajax&action=get_tank_details",
+            async: false
+         }).responseText;
 
-      var json = jQuery.parseJSON(jsonText);
-      if(saveInWindow){
-         window.tankData = json;
+         var json = jQuery.parseJSON(jsonText);
+         BoxStorage.setDataCache("tankData", jsonText);//set cookie. make expire after one day
+         return json;
       }
-      return json;
+      else{
+         var jsonText = BoxStorage.getDataCache("tankData");
+         if(jsonText === -1){//cookie has not been set or is empty
+            console.log("Could not get cached data. Probably means your browser does not support HTML5 sessionStorage");
+            return BoxStorage.getTankData(true);
+         }
+         else{
+            console.log("Cached data gotten from sessionStorage");
+            return jQuery.parseJSON(jsonText);
+            //return jsonText;
+         }
+      }
    },
 
    /**
@@ -755,7 +969,7 @@ var BoxStorage = {
    */
    setRemovedBoxSuggestions : function(){
       BoxStorage.resetReturnInput(true);
-      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+      var tankData = BoxStorage.getTankData(false);//cache fetched tank data into document.tankData so that you wont need to fetch it again
 
       //get all boxes that have been removed
       var suggestions = new Array();
@@ -779,6 +993,10 @@ var BoxStorage = {
                }
             }
          }
+      }
+      
+      if(suggestions.length > 10){
+         suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
       }
 
       $("#box_label").autocomplete({
@@ -814,6 +1032,40 @@ var BoxStorage = {
          }
       });
    },
+   
+   setSearchBoxSuggestions : function() {
+      BoxStorage.resetReturnInput(true);
+      var tankData = BoxStorage.getTankData(false);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+
+      //get all boxes that have been removed
+      var suggestions = new Array();
+      var tanks = tankData.data;
+      for(var tankIndex = 0; tankIndex < tanks.length; tankIndex++){//iterate through all the tanks
+         var sectors = tanks[tankIndex].sectors;
+         for(var sectorIndex = 0; sectorIndex < sectors.length; sectorIndex++){//iterate through all the sectors
+            var racks = sectors[sectorIndex].racks;
+            for(var rackIndex = 0; rackIndex < racks.length; rackIndex++){//iterate through all the racks
+               var boxes = racks[rackIndex].boxes;
+               for(var boxIndex = 0; boxIndex < boxes.length; boxIndex++){//iterate through all the boxes
+                  var keyValue = {value: boxes[boxIndex].box_name, key: boxes[boxIndex].box_name};
+                  suggestions.push(keyValue);
+               }
+            }
+         }
+      }
+      
+      if(suggestions.length > 10){
+         suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
+      }
+
+      $("#search").autocomplete({
+         source: suggestions,
+         minLength: 2,
+         select: function(){
+            BoxStorage.searchForBox();
+         }
+      });
+   },
 
    /**
    * This function sets options for deleted boxes in the corresponding select tag
@@ -822,7 +1074,7 @@ var BoxStorage = {
    */
    setDeleteBoxSuggestions : function(){
       BoxStorage.resetDeleteInput(true);
-      var tankData = BoxStorage.getTankData(true);//cache fetched tank data into document.tankData so that you wont need to fetch it again
+      var tankData = BoxStorage.getTankData(false);//cache fetched tank data into document.tankData so that you wont need to fetch it again
 
       //get all boxes that have been removed
       var suggestions = new Array();
@@ -839,6 +1091,10 @@ var BoxStorage = {
                }
             }
          }
+      }
+      
+      if(suggestions.length > 10){
+         suggestions = suggestions.slice(0,10);//maximum of 10 suggestions
       }
 
       $("#box_label").autocomplete({
@@ -911,4 +1167,200 @@ var BoxStorage = {
          $('#return_comment').val('');
       }
    },
+   
+   /**
+    * This function formats the post data to be used in searching for a box from the server
+    * 
+    * @returns {undefined}
+    */
+   searchForBox: function (){
+      //first check if request has already gone to server and has not been responded to
+      console.log(Main.searchOnGoing);
+      if(typeof  Main.searchOnGoing === 'undefined' || Main.searchOnGoing === false){
+         Main.searchOnGoing = true;
+         var data = {
+            search: $("#search").val(),
+            project: $("#search_project").val(),
+            status: $("#search_status").val(),
+            location: $("#search_location").val(),
+            keeper: $("#search_keeper").val(),
+            boxes_wo_names: $("#boxes_wo_names").is(":checked"),
+            samples: $("#samples").val()
+
+         };
+         BoxStorage.updateSearchBoxesGrid(data);
+      }
+      else{
+         console.log("Search ongoing. This request will be ignored");
+      }
+   },
+   
+   /**
+    * This function hides/shows the different areas of the search page depending on wheter users wants an advanced search or not
+    * 
+    * @returns {undefined}
+    */
+   toggleAdvancedSearch: function() {
+      $("select option").filter(function(){
+         return $(this).text() == "";
+      }).prop('selected', true);
+      $("#advanced_search_div").toggle(500);
+   },
+   
+   /**
+    * This function initializes a listener for monitoring when rows are selected in the search page's JQXGrid
+    * 
+    * @returns {undefined}
+    */
+   initSearchSelectedListener: function() {
+      $("#searched_boxes").jqxGrid({selectionmode: 'singlerow'});
+      $("#searched_boxes").bind('rowselect', function (event){
+         if($("#search_div").is(":visible") === true && $("#edit_div").is(":visible") === false ){//do this check because the rowselect event handler is called several times when event occures. Process only once
+            BoxStorage.toggleSearchModes();
+            
+            var row = event.args.rowindex;
+            var rowData = $("#searched_boxes").jqxGrid('getrowdata', row);
+            
+            console.log(rowData.box_id);
+            $("#box_id").val(rowData.box_id);
+            
+            $("#box_label").val(rowData.box_name);
+            $("#features").val(rowData.box_features);
+            $("#owner").val(rowData.keeper);
+            $("input[name='box_size'][value='"+BoxStorage.convertBoxSize(rowData.size)+"']").prop("checked", true);
+            
+            //tank details
+            
+            $("#tank").val(rowData.tank_id);
+            BoxStorage.populateTankSectors();
+            $("#sector").val(rowData.sector_id);
+            BoxStorage.populateSectorRacks();
+            $("#rack").val(rowData.rack);
+            BoxStorage.populateSelectedPosition();
+            //add the boxes position to position select because populateSelectPosition function did not add it because 'it has a box :)'
+            $("#position").append($("<option></option>").attr("value", rowData.rack_position).text("Position "+rowData.rack_position));
+            $("#position").val(rowData.rack_position);
+            
+            
+            $("#status").val(rowData.status);
+            
+         }
+      });
+   },
+   
+   /**
+    * This function toggles the search page between edit mode and search mode depending on what the user is doing
+    * 
+    * @returns {undefined}
+    */
+   toggleSearchModes: function(){
+      if($("#search_div").is(":visible")){
+         $("#search_div").hide(400);
+         $("#searched_boxes").hide(400);
+         $("#edit_div").show(400);
+      }
+      else{
+         $("#search_div").show(400);
+         $("#searched_boxes").show(400);
+         $("#edit_div").hide(400);
+      }
+   },
+   
+   /**
+    * This function converts box sizes used by the LIMS system readable sizes 
+    *       (e.g A:1.J:10 = 100)
+    * 
+    * @param {String} limsSize Size of the box in the LIMS format e.g A:1.J:10
+    * 
+    * @returns {Number} The size of the box as a number
+    */
+   convertBoxSize: function(limsSize) {
+      var limsDimensions = limsSize.split(".");
+      
+      //you only need to process the last part of the size ie J:10
+      var lastPos = limsDimensions[1];
+      var posParts = lastPos.split(":");
+      var asciiPart1  = posParts[0].charCodeAt(0) - 64;
+      return asciiPart1 * posParts[1]; 
+   },
+   
+   /**
+    * This function submits updated box data to the server as an AJAX request. 
+    * The Search page will not refresh after this function executes
+    * 
+    * @returns {undefined}
+    */
+   submitBoxUpdate: function(){
+      if(BoxStorage.validateInsertInput()){
+         console.log("trying to update");
+         //#box_label#box_size#owner#status#features
+         //#tank#sector#rack#rack_spec#position
+         var formData = {
+            box_label: $("#box_label").val(),
+            box_size: $("input[name='box_size']:checked").val(),
+            owner: $("#owner").val(),
+            status: $("#status").val(),
+            features: $("#features").val(),
+            tank: $("#tank").val(),
+            sector: $("#sector").val(),
+            rack: $("#rack").val(),
+            rack_spec: $("#rack_spec").val(),
+            position: $("#position").val(),
+            box_id: $("#box_id").val() 
+         };
+
+         var responseText = $.ajax({
+            url: "mod_ajax.php?page=box_storage&do=ajax&action=submit_update_request",
+            type: "POST",
+            data: formData,
+            async: false
+         }).responseText;
+         var responseJson = $.parseJSON(responseText);
+
+         if(responseJson.error === 1){
+            Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:true});
+         }
+         else{
+            Notification.show({create:true, hide:true, updateText:false, text: responseJson.message, error:false});
+            BoxStorage.toggleSearchModes();
+            BoxStorage.getTankData(true);//get tank data from the server
+            BoxStorage.loadTankData(true);
+            BoxStorage.updateSearchBoxesGrid();
+         }
+      }
+   },
+   
+   setDataCache: function(cname,cvalue){
+      if(typeof(Storage) !== "undefined"){//browers supports HTML5 localstorage
+         sessionStorage.setItem(cname, cvalue);
+         console.log("Data successfully cached into sessionStorage");
+      }
+      else{
+         console.log("browser does not support HTML5 sessionStorage");
+      }
+      /*var d = new Date();
+      d.setTime(d.getTime()+(exdays*24*60*60*1000));
+      var expires = "expires="+d.toGMTString();
+      document.cookie = cname + "=" + cvalue + "; " + expires + "; path=/";
+      console.log("saved "+cname+" as a cookie");*/
+   },
+   
+   getDataCache: function(cname) {
+      var cached = -1;
+      if(typeof(Storage) !== "undefined"){
+         cached = sessionStorage.getItem(cname);
+         if(cached === null) cached = -1;
+      }
+      else{
+         console.log("browser does not support HTML5 sessionStorage");
+      }
+      return cached;
+      /*var name = cname + "=";
+      var ca = document.cookie.split(';');
+      for(var i=0; i<ca.length; i++) {
+         var c = ca[i].trim();
+         if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+      }
+      return -1;*/
+}
 };
