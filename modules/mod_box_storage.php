@@ -552,35 +552,35 @@ class BoxStorage extends Repository{
       BoxStorage.loadTankData(true);
 
       $('#submitButton').click(function(){
-         BoxStorage.searchForBox(false);
+         BoxStorage.searchForBox();
       });
       $("#search").keyup( function(event) {
          if(event.which === 8 || event.which === 13){//backspace or enter pressed
-            BoxStorage.searchForBox(false);
+            BoxStorage.searchForBox();
          }
          else{
             if($("#search").val().length > 2){
-               BoxStorage.searchForBox(false);
+               BoxStorage.searchForBox();
             }
          }
       });
       $("#search_project").change(function (){
-         BoxStorage.searchForBox(false);
+         BoxStorage.searchForBox();
       });
       $("#search_status").change(function (){
-         BoxStorage.searchForBox(false);
+         BoxStorage.searchForBox();
       });
       $("#search_location").change(function (){
-         BoxStorage.searchForBox(false);
+         BoxStorage.searchForBox();
       });
       $("#search_keeper").change(function (){
-         BoxStorage.searchForBox(false);
+         BoxStorage.searchForBox();
       });
       $("#samples").change(function (){
-         BoxStorage.searchForBox(false);
+         BoxStorage.searchForBox();
       });
       $("#boxes_wo_names").change(function (){
-         BoxStorage.searchForBox(false);
+         BoxStorage.searchForBox();
       });
       
       

@@ -270,8 +270,7 @@ var BoxStorage = {
     * 
     * @returns {undefined}
     */
-   updateSearchBoxesGrid: function(data, rerenderRows){
-      if(typeof rerenderRows === 'undefined') rerenderRows = true;
+   updateSearchBoxesGrid: function(data){
       console.log("updateSearchBoxesGrid called");
       data = typeof data !== 'undefined' ? data : {action:"search_boxes"};
       
@@ -309,20 +308,13 @@ var BoxStorage = {
          }
       };
       var boxesAdapter = new $.jqx.dataAdapter(source);
-      if(rerenderRows){
-         $("#searched_boxes").jqxGrid({
-            source: boxesAdapter,
-            rendergridrows: function() {
-               return boxesAdapter.records;
-            },
-            virtualmode: true
-         });
-      }
-      else{
-         $("#searched_boxes").jqxGrid({
-         source: boxesAdapter
+      $("#searched_boxes").jqxGrid({
+         source: boxesAdapter,
+         rendergridrows: function() {
+            return boxesAdapter.records;
+         },
+         virtualmode: true
       });
-      }
    },
    
    /**
@@ -1190,7 +1182,7 @@ var BoxStorage = {
     * 
     * @returns {undefined}
     */
-   searchForBox: function (rerender){
+   searchForBox: function (){
       //first check if request has already gone to server and has not been responded to
       Main.searchOnGoing = true;
       var data = {
@@ -1203,10 +1195,7 @@ var BoxStorage = {
          samples: $("#samples").val()
 
       };
-      if(typeof rerender === 'undefined')
-         BoxStorage.updateSearchBoxesGrid(data);
-      else
-         BoxStorage.updateSearchBoxesGrid(data, rerender);
+      BoxStorage.updateSearchBoxesGrid(data);
    },
    
    /**
