@@ -136,18 +136,18 @@ class Samples extends SpreadSheet {
           //all the data in the extra spreadsheets are loaded into the description field
 //          echo '<pre>'. print_r($t, true) .'</pre>';
 
-          $sdata_desc = '';
           $linkKey = (isset($t['pri_key'])) ? $t['pri_key'] : $t['foreign_key'];
           foreach($additions as $sheet_name => $sheet){
+            $sdata_desc = '';
             if(isset($sheet[$linkKey])){
                $sdata_desc = "<br /><br /><b><u>$sheet_name</u></b><br />";
                foreach($sheet[$linkKey] as $sData){
                   foreach($sData as $col => $dt) if(preg_match("/$col/i", Config::$columns2exclude) === 0) $sdata_desc .= "$col = $dt<br />";
+                  $sdata_desc .= "<br />";
                }
             }
+            $descr .= $sdata_desc;
           }
-          $descr .= $sdata_desc;
-//          echo '<pre>'. $sdata_desc .'</pre>';
 
           //"http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file=entomology_uploads/zip_upload_2012-02-22_101035/CBG/Wakabhare%20%20LT%20Msqt%20CBG%2027.10.09.xls&focused=CBG000109#focused"
           $descr .= "<br /><br />Other Comments:<br />{$t['comments']}";
