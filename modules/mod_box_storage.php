@@ -762,7 +762,7 @@ class BoxStorage extends Repository{
             }
             array_push($_SESSION['addedBoxes'], $boxId);
             $this->Dbase->CreateLogEntry('mod_box_storage: addedBoxes'. print_r($_SESSION['addedBoxes'], true), 'debug');
-            $this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
+            //$this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
             $this->Dbase->CommitTrans();
             $message = "The box '{$_POST['box_label']}' was added successfully";
          }
@@ -1122,7 +1122,8 @@ class BoxStorage extends Repository{
     * 
     */
    private function fetchBoxes() { 
-      $this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
+      //$this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($this->Dbase->ReadSession(session_id()), true), 'debug');
+      $this->Dbase->CreateLogEntry('mod_box_storage: session details = '. print_r($_SESSION, true), 'debug');
       if(isset($_SESSION['addedBoxes']) && count($_SESSION['addedBoxes'])>0){
          $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
          $pageSize = $_POST['pagesize'];
