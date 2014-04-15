@@ -256,9 +256,11 @@ var BoxStorage = {
       //$("#searched_boxes").jqxGrid('autoresizecolumns');
       
       $("#searched_boxes").bind("pagechanged", function(event){
-         if(event.pagenum > 0){
-            BoxStorage.searchForBox();
-         }
+            $("#searched_boxes").jqxGrid({
+               rendergridrows: function() {
+                  return boxesAdapter.records;
+               }
+         });
       });
       /*$("#searched_boxes").bind("pagesizechanged", function(event){
          BoxStorage.searchForBox();
