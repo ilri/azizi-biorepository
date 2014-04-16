@@ -18,6 +18,7 @@ class BoxStorage extends Repository{
    }
 
    public function TrafficController() {
+      global $Repository;
       /*
        * Hierarchical GET requests handled by this file (box_storage)
        * - box_storage (page)
@@ -39,7 +40,7 @@ class BoxStorage extends Repository{
        *       - submit_delete_request
        *       - fetch_deleted_boxes
        *       - fetch_sample_types
-       * 
+       *
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/box_storage.js'></script>";
@@ -58,7 +59,19 @@ class BoxStorage extends Repository{
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_removed_boxes") $this->fetchRemovedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_deleted_boxes") $this->fetchDeletedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_return_request") die($this->submitReturnRequest(TRUE));
-      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_update_request") die($this->updateBox());
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_update_request"){
+         //lets re-open the db connection with the right credentials
+         Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
+         $this->Dbase->InitializeConnection();
+         if(is_null($this->Dbase->dbcon)) {
+            ob_start();
+            $Repository->LoginPage(OPTIONS_MSSG_DB_CON_ERROR);
+            $Repository->errorPage = ob_get_contents();
+            ob_end_clean();
+            return;
+         }
+         die($this->updateBox());
+      }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_delete_request") die($this->submitDeleteRequest(TRUE));
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_sample_types") $this->fetchSampleTypes ();
       //TODO: check if you need another sub module for viewing boxes
@@ -94,9 +107,9 @@ class BoxStorage extends Repository{
 
    /**
     * This function renders the Add Box page in this module. Also calls relevant functions to handle POST requests if any
-    * 
+    *
     * @param type    $addInfo Any notification info you want displayed to the user when page renders
-    * @return null   Return called to initialize the render   
+    * @return null   Return called to initialize the render
     */
    private function addBox($addInfo = ''){
       Repository::jqGridFiles();
@@ -108,7 +121,7 @@ class BoxStorage extends Repository{
       if(OPTIONS_REQUESTED_ACTION === "insert_box"){
          //re-open the db connection using a profile with rw permissions
          Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
-         
+
          $this->Dbase->InitializeConnection();
          if(is_null($this->Dbase->dbcon)) {
             ob_start();
@@ -215,7 +228,7 @@ class BoxStorage extends Repository{
    $(document).ready( function() {
       BoxStorage.loadTankData(true);
       BoxStorage.initiateAddBoxesGrid();
-      
+
       $("#status").change(function(){
          if($('#status').val() === "temporary"){
             //if user sets position to temporary set owner to biorepository manager
@@ -241,7 +254,7 @@ class BoxStorage extends Repository{
     * This function displays the Remove Box screen. Submissions handled using webserver requests i.e POST and GET
     *
     * @param type $addInfo    Any notification information you want displayed to the user when page loads
-    */ 
+    */
    private function retrieveBox($addInfo = ''){
       //Repository::jqGridFiles();//load requisite jqGrid javascript files
 ?>
@@ -328,7 +341,7 @@ class BoxStorage extends Repository{
             $("#analysis_type_div").hide();
          }
       });
-      
+
       BoxStorage.setRetrievedBoxSuggestions();
       //BoxStorage.initiateRetrievedBoxesGrid();
    });
@@ -402,13 +415,13 @@ class BoxStorage extends Repository{
 </script>
       <?php
    }
-   
+
    /**
     * This function displays the search page
     */
    private function searchBox() {
       Repository::jqGridFiles();//load requisite jqGrid javascript files
-      
+
       $query = "SELECT val_id, value FROM " . Config::$config['azizi_db'] . ".modules_custom_values";
       $projects = $this->Dbase->ExecuteQuery($query);
       $query = "SELECT count, name FROM ".Config::$config['azizi_db'].".contacts WHERE name != ''";//TODO: link this to users from lims db
@@ -584,14 +597,14 @@ class BoxStorage extends Repository{
       $("#boxes_wo_names").change(function (){
          BoxStorage.searchForBox();
       });
-      
-      
+
+
       $('#advanced_search_a').click(function (){
          BoxStorage.toggleAdvancedSearch();
       });
-      
+
       BoxStorage.initiateSearchBoxesGrid();
-      
+
       $('#cancel_button').click(function (){
          BoxStorage.toggleSearchModes();
       });
@@ -602,7 +615,7 @@ class BoxStorage extends Repository{
          $("#rack_spec_div").hide();
          $("#rack_div").show();
       });
-      
+
       $("#status").change(function(){
          if($('#status').val() === "temporary"){
             //if user sets position to temporary set owner to biorepository manager
@@ -622,7 +635,7 @@ class BoxStorage extends Repository{
 
    /**
     * This function displays the Delete Box page to the user
-    * 
+    *
     * @param type $addInfo    Any notification information you want displayed to the user when page loads
     */
    private function deleteBox($addInfo = ''){
@@ -680,7 +693,7 @@ class BoxStorage extends Repository{
          console.log("box_id cleared");
          BoxStorage.resetDeleteInput(false);
       });
-      
+
       BoxStorage.initiateDeletedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
@@ -690,7 +703,7 @@ class BoxStorage extends Repository{
 
    /**
     * This function handles the POST request for inserting new box data from the Add Box page
-    * 
+    *
     * @return string    Result of the insert into the database. Can be either positive or negative
     * @todo link owner to users in lims db and not miscdb
     */
@@ -743,7 +756,7 @@ class BoxStorage extends Repository{
          $boxId = $this->Dbase->dbcon->lastInsertId();
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
-         
+
          $project = NULL;
          if($_POST['status'] === 'temporary')
             $project = $_POST['project'];
@@ -770,11 +783,11 @@ class BoxStorage extends Repository{
       }
       return $message;
    }
-   
+
    /**
     * This function performs an update operation for a box.
     * Most likely called from an AJAX request
-    * 
+    *
     * @return JSON Returns a json object with the result (wheter successful or not) and the message from the server
     * @todo link owner to users in lims db and not miscdb
     */
@@ -828,7 +841,7 @@ class BoxStorage extends Repository{
          $boxId = $this->Dbase->dbcon->lastInsertId();
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
-         
+
          $project = NULL;
          if($_POST['status'] === "temporary")
             $project = $_POST['project'];
@@ -864,7 +877,7 @@ class BoxStorage extends Repository{
 
    /**
     * This function handles POST requests from Retrieve a Box page. It records the data in the database
-    * 
+    *
     * @return string    Results for handling the remove box action in the database. Can be either positive or negative
     */
    private function submitRemoveRequest(){
@@ -886,7 +899,7 @@ class BoxStorage extends Repository{
          return;
       }
       $removedBy = $userId[0]['id'];
-      
+
       $now = date('Y-m-d H:i:s');
       $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
 
@@ -912,14 +925,14 @@ class BoxStorage extends Repository{
 
    /**
     * This function handles POST request from the Return a Box page
-    * 
+    *
     * @param Boolean $fromAjaxRequest  Set to TRUE if POST request is comming for javascripts AJAX
-    * 
+    *
     * @return string Results for handling the return box action in the database. Can be either positive or negative
     */
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
-      
+
       $userId = 1;
       if(strlen($_SESSION['username']) > 0){
          $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
@@ -936,7 +949,7 @@ class BoxStorage extends Repository{
          return;
       }
       $returnedBy = $userId[0]['id'];
-      
+
       //get the last remove recored for the box/box being returned
       $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
       $now = date('Y-m-d H:i:s');
@@ -959,9 +972,9 @@ class BoxStorage extends Repository{
 
    /**
     * This function handles POST request from Delete a Box page
-    * 
+    *
     * @param type $fromAjaxRequest  Set to TRUE if request is comming from Javascripts AJAX
-    * 
+    *
     * @return string Results for handling the delete box action in the database. Can be either positive or negative
     */
    private function submitDeleteRequest($fromAjaxRequest = false){
@@ -979,7 +992,7 @@ class BoxStorage extends Repository{
          }
          else{
             $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
-            
+
             $userId = 1;
             if(strlen($_SESSION['username']) > 0){
                $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
@@ -996,7 +1009,7 @@ class BoxStorage extends Repository{
                return;
             }
             $deletedBy = $userId[0]['id'];
-            
+
             $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
             $now = date('Y-m-d H:i:s');
 
@@ -1027,7 +1040,7 @@ class BoxStorage extends Repository{
     *    - tank
     *       - sector
     *          - rack
-    *             -box 
+    *             -box
     */
    private function getTankDetails() {
       //get tank details from azizi_lims
@@ -1115,9 +1128,9 @@ class BoxStorage extends Repository{
 
    /**
     * This function fetched boxes added to the system from the "Add a Box" page and returns a json object with this info
-    * 
+    *
     */
-   private function fetchBoxes() { 
+   private function fetchBoxes() {
       //fetch boxes added during this session
       $query = "SELECT * FROM ".  Config::$config['dbase'] . ".sessions WHERE session_id =:session_id";
       $result = $this->Dbase->ExecuteQuery($query, array('session_id' => session_id()));
@@ -1154,7 +1167,7 @@ class BoxStorage extends Repository{
       else{
          die('{"data":'. json_encode(array()) .'}');
       }
-      
+
    }
 
    /**
@@ -1167,7 +1180,7 @@ class BoxStorage extends Repository{
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
               'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
               'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id ';//fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
-      
+
       /*
        * Optimization:
        *  - no need to fetch data on the actual tank (storage_facility). That can be obtained from the cached tank info on the client side
@@ -1175,14 +1188,14 @@ class BoxStorage extends Repository{
        *    Fetch the sample data in a another query and append no_samples there
        */
 
-      
+
       if($_POST['boxes_wo_names'] === "true"){
          $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
       }
       else if($_POST['boxes_wo_names'] === "false"){
          $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
       }
-      
+
       if(strlen($_POST['status']) > 0){
          $query = $query . " AND a.status = '".$_POST['status']."'";
       }
@@ -1204,31 +1217,31 @@ class BoxStorage extends Repository{
       if(strlen($_POST['keeper'])>0){
          $query = $query . " AND b.keeper = ".$_POST['keeper'];
       }
-      
+
       $query = $query . ' limit '.$fromRow.','.$pageSize;
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       $query = "SELECT FOUND_ROWS() AS found_rows";
       $foundRows = $this->Dbase->ExecuteQuery($query);
       $totalRowCount = $foundRows[0]['found_rows'];
-      
+
       $query = "select boxes_def.box_id, boxes_def.size, samples.project as project_id, count(distinct(samples.project)) as no_projects, count(samples.box_id) as no_samples".
               " from boxes_def inner join samples on boxes_def.box_id = samples.box_id group by boxes_def.box_id";
       $allBoxes = $this->Dbase->ExecuteQuery($query);
-      
+
       $this->Dbase->CreateLogEntry('mod_box_storage: box count = '.count($result), 'debug');
       for($resultIndex = 0; $resultIndex < count($result); $resultIndex++){
          $indexInAB = -1;
-         
+
          //search for the box in all the boxes
          for($boxIndex = 0; $boxIndex < count($allBoxes); $boxIndex++){
             if($allBoxes[$boxIndex]['box']['box_id'] === $result[$resultIndex]['box_id']){
                $indexInAB = $boxIndex;
             }
          }
-         
+
          if($indexInAB !== -1){
             $this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
             if($_POST['project'] === "-1"){//user wants boxes associated with multiple projects
@@ -1261,7 +1274,7 @@ class BoxStorage extends Repository{
                   continue;
                }
             }
-            
+
             if($_POST['samples'] === "ex_samples"){
                $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
                if($boxSize > $allBoxes[$indexInAB]['no_samples']){//box does not have excess samples
@@ -1326,7 +1339,7 @@ class BoxStorage extends Repository{
             }
          }
       }
-      
+
       if(count($result)> 0){
          $result[0]['total_row_count'] = $totalRowCount;
       }
@@ -1342,7 +1355,7 @@ class BoxStorage extends Repository{
    private function fetchRemovedBoxes() {
       $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
       $pageSize = $_POST['pagesize'];
-      
+
       $query = "SELECT SQL_CALC_FOUND_ROWS a.id, CONCAT(d.onames, ' ', d.sname) AS removed_by, a.removed_for, a.purpose, a.analysis, date(a.date_removed) AS date_removed, date(a.date_returned) AS date_returned, a.return_comment, CONCAT(e.onames, ' ', e.sname) AS returned_by, b.box_name, concat(c.facility, ' >> ', b.rack, ' >> ', b.rack_position) as position" .
               " FROM " . Config::$config['dbase'] . ".lcmod_retrieved_boxes AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_def = b.box_id" .
@@ -1350,18 +1363,18 @@ class BoxStorage extends Repository{
               " LEFT JOIN " . Config::$config['dbase'] . ".users AS d ON a.removed_by = d.id".
               " LEFT JOIN " . Config::$config['dbase'] . ".users AS e ON a.returned_by = e.id".
               ' LIMIT '.$fromRow.','.$pageSize;
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
       if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
-      
+
       $query = "SELECT FOUND_ROWS() AS found_rows";
       $foundRows = $this->Dbase->ExecuteQuery($query);
       $totalRowCount = $foundRows[0]['found_rows'];
-      
+
       if(count($result) > 0){
          $result[0]['total_row_count'] = $totalRowCount;
       }
-      
+
       header("Content-type: application/json");
       $this->Dbase->CreateLogEntry('mod_box_storage: Removed boxes sent via ajax request = '.print_r($result ,true), 'debug');
       $json = array('data'=>$result);
@@ -1374,7 +1387,7 @@ class BoxStorage extends Repository{
    private function fetchDeletedBoxes() {
       $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
       $pageSize = $_POST['pagesize'];
-      
+
       $query = "SELECT SQL_CALC_FOUND_ROWS date(a.date_deleted) AS date_deleted, a.delete_comment, b.box_name, CONCAT(c.onames, ' ', c.sname) AS deleted_by" .
               " FROM " . Config::$config['dbase'] . ".lcmod_boxes_def AS a" .
               " INNER JOIN " . Config::$config['azizi_db'] . ".boxes_def AS b ON a.box_id = b.box_id" .
@@ -1383,17 +1396,17 @@ class BoxStorage extends Repository{
               ' LIMIT '.$fromRow.','.$pageSize;
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result === 1) die(json_decode(array('data' => $this->Dbase->lastError)));
-      
+
       $query = "SELECT FOUND_ROWS() AS found_rows";
       $foundRows = $this->Dbase->ExecuteQuery($query);
       $totalRowCount = $foundRows[0]['found_rows'];
-      
+
       if(count($result) > 0){
          $result[0]['total_row_count'] = $totalRowCount;
       }
-      
+
       header("Content-type: application/json");
       $this->Dbase->CreateLogEntry('mod_box_storage: Deleted boxes sent via ajax request = '.print_r($result ,true), 'debug');
       $json = array('data'=>$result);
