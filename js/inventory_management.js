@@ -14,6 +14,7 @@ var InventoryManager = {
       }
 
       $("#item").val($("#item").val().trim());
+      $("#quantity").val($("#quantity").val().trim());
       $("#date").val($("#date").val().trim());
       $("#issued_to").val($("#issued_to").val().trim());
       $("#project").val($("#project").val().trim());
@@ -25,7 +26,17 @@ var InventoryManager = {
          $("#item").focus();
          return false;
       }
-      else if($("#issued_to").val().split(" ").length<2) {
+      if($("#quantity").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the quantity of the item', error:true});
+         $("#quantity").focus();
+         return false;
+      }
+      else if(isNaN($("#quantity").val()) || !isFinite($("#quantity").val())){//if quantity is not a number or is not a finite number
+         Notification.show({create:true, hide:true, updateText:false, text:'Quantity should be a number', error:true});
+         $("#quantity").focus();
+         return false;
+      }
+      if($("#issued_to").val().split(" ").length<2) {
          Notification.show({create:true, hide:true, updateText:false, text:'You have to enter at least two names', error:true});
          $("#issued_to").focus();
          return false;

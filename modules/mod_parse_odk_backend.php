@@ -903,8 +903,12 @@ class Parser {
      * @param  type  $secondaryKey  Key that will associate the data in the html page to the parent data in the main_sheet
      */
     private function parseHTMLTable($url, $sheetName, $secondaryKey) {
+        //"http://azizi.ilri.cgiar.org/ODKAggregate/local_login.html?redirect="
+        //http://azizi.ilri.cgiar.org/ODKAggregate/view/formMultipleValue?formId=LamuChickens-v01%5B%40version%3Dnull+and+%40uiVersion%3Dnull%5D%2Fchicken%5B%40key%3Duuid%3Ae3983629-8faa-4531-b61a-34d756bbcbd9%5D%2Fsamples
+        $splitURL = preg_split("/\/view\//i", $url);
+        $authURI = $this->settings['auth_uri'];
         $encodedURL = urlencode($url);
-        $authURL = $this->authURL.$encodedURL;
+        $authURL = $splitURL[0].$authURI.$encodedURL;
         $sheetNames = array_keys($this->nextRowName);
         if(!in_array($sheetName, $sheetNames)){
             $this->nextRowName[$sheetName] = 0;
@@ -1002,8 +1006,18 @@ class Parser {
                                          $linkSegments = preg_split("/['\"]\s*target\s*=\s*.*$/i", $linkSegments);
                                          if(count($linkSegments) === 2)
                                             $rowColumns[$columnIndex] = $linkSegments[0];
-                                         else
-                                            $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell (removing last part)');
+                                         else{
+                                            //probably means that we are parsing from an older version of aggregate
+                                            $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell. Using a different strategy');
+                                            $linkSegments = $linkSegments[0];
+                                            $linkSegments = preg_split("/['\"]>view<\/a>/i", $linkSegments);
+                                            if(count($linkSegments) === 2){
+                                               $rowColumns[$columnIndex] = $linkSegments[0];
+                                            }
+                                            else{
+                                               $this->logHandler->log(2, $this->TAG, 'Latter method for extracting image url failed. Something might be wrong with the url');
+                                            }
+                                         }
                                       }
                                       else
                                          $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell (removing first part)');

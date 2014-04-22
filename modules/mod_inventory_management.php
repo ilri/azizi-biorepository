@@ -18,6 +18,11 @@ class InventoryManager extends Repository{
    }
 
    public function TrafficController() {
+      /*
+       * Request heirarchy looks something like
+       *    - issue
+       *    - fetch
+       */
 
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/inventory_management.js'></script>";
@@ -55,46 +60,49 @@ class InventoryManager extends Repository{
    <h3 class="center">Inventory Management</h3>
    <hr />
    <?php echo $addinfo?>
-   <form class="form-horizontal issue_inv" enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=inventory&do=issue" onsubmit="return InventoryManager.submitNewIssueance();" >
-       <div class="form-group">
-           <label for="item" class="control-label">Name of issued item</label>
-           <div class=""><input type="text" class="form-control" name="item" id="item" /></div>
-        </div>
-       <div class="form-group">
-            <label for="date" class="control-label">Date Issued</label>
-            <div class=""><input type="text" name="date" id="date" value="<?php echo date("d-m-Y")?>" class="form-control" /></div>
-        </div>
-       <div class="form-group">
-           <label for="issued_to" class="control-label">Item issued to</label>
-           <div class=""><input type="text" class="form-control" name="issued_to" id="issued_to" value="" /></div>
+   <form class="form-horizontal issue_inv" id="inventory_form" enctype="multipart/form-data" name="upload" method="POST" action="index.php?page=inventory&do=issue" onsubmit="return InventoryManager.submitNewIssueance();" >
+       <div class="form-group left-align">
+           <label for="item">Name of issued item</label>
+           <input type="text" name="item" id="item" />
        </div>
-       <div class="form-group">
-           <label for="issued_by" class="control-label">Item issued by</label>
-           <div class=""><input type="text" class="form-control" name="issued_by" id="issued_by" disabled="true" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" /></div>
+       <div class="form-group left-align">
+           <label for="item">Quantity</label>
+           <input type="text" class="input-medium" name="quantity" id="quantity" />
+        </div>
+       <div class="form-group left-align">
+            <label for="date">Date Issued</label>
+            <input type="text" class="input-medium" name="date" id="date" value="<?php echo date("d-m-Y")?>" class="form-control" />
+        </div>
+       <div class="form-group left-align">
+           <label for="issued_to">Item issued to</label>
+           <input type="text" class="input-medium" name="issued_to" id="issued_to" value="" />
        </div>
-       <div class="form-group">
-            <label for="borrowed" class="control-label">Item to be returned?</label>
-            <select name="borrowed" id="borrowed" onchange="InventoryManager.toggleBorrowMode();" style="margin-left: 5px;">
+       <div class="form-group left-align">
+           <label for="issued_by">Item issued by</label>
+           <input type="text" class="input-medium" name="issued_by" id="issued_by" disabled="true" value="<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>" />
+       </div>
+       <div class="form-group left-align">
+            <label for="borrowed">Item to be returned?</label>
+            <select name="borrowed" id="borrowed" class="input-medium" onchange="InventoryManager.toggleBorrowMode();" style="margin-left: 5px;">
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
             </select>
         </div>
        <div id="borrowed_sec" class="form-group">
-           <!--<label for="item_returned" class="control-label">Item returned?</label>
+           <!--<label for="item_returned" >Item returned?</label>
            <div class=""><input type="checkbox" class="form-control" name="item_returned" id="item_returned" style="width: 20px; height: 20px; margin-left: 5px;" /></div>-->
        </div>
-       <div id="not_borrowed_sec" class="form-group" style="display: none;">
-           <div><label for="pp_unit" class="control-label">Price per unit</label><input type="text" name="pp_unit" id="pp_unit" value="USD" /></div>
-           <div><label for="project" class="control-label">Project</label><input type="text" name="project" id="project" value="" disabled="true" size="50" class="form-control" /></div>
-           <div><label for="chargeCode" class="control-label">Charge Code</label><input type="text" name="chargeCode" id="chargeCode" value="" class="form-control" /></div>
+       <div id="not_borrowed_sec" style="display: none;">
+          <div class="form-group left-align"><label for="pp_unit">Price per unit</label><input type="text" name="pp_unit" id="pp_unit" value="KES" class="input-medium" /></div>
+           <div class="form-group left-align"><label for="project">Full Charge Code</label><input type="text" name="project" id="project" value="" disabled="true" size="50" class="form-control" class="input-medium" /></div>
+           <div class="form-group left-align"><label for="chargeCode">Activity Code</label><input type="text" name="chargeCode" id="chargeCode" value="" class="form-control" class="input-medium" /></div>
         </div>
-       <div class="form-group">
-           <label for="comment" class="control-label">Comment</label>
+       <div class="form-group left-align">
+           <label for="comment" >Comment</label>
            <textarea id="comment" name="comment" cols="30" rows="2" class="form-control" style="margin-left: 5px;"></textarea>
        </div>
         <div class="center">
            <input type="submit" value="Submit" name="submitButton" id="submitButton"/>
-           <input type="reset" value="Cancel" name="cancelButton" id="cancelButton"/>
         </div>
    </form>
    <div id="issued_items">&nbsp;</div>
@@ -126,11 +134,11 @@ class InventoryManager extends Repository{
       colModel : [
          {display: 'Date', name: 'date_issued', width: 100, sortable: true, align: 'center'},
          {display: 'Item', name: 'item', width: 100, sortable: false, align: 'center'},
-         {display: 'Issued by', name: 'issued_by', width: 100, sortable: true, align: 'left'},
-         {display: 'Issued to', name: 'issued_to', width: 100, sortable: false, align: 'center'},
+         {display: 'Quantity', name: 'quantity', width: 100, sortable: false, align: 'center'},
+         {display: 'Issued by', name: 'issued_by', width: 150, sortable: true, align: 'left'},
+         {display: 'Issued to', name: 'issued_to', width: 150, sortable: false, align: 'center'},
          {display: 'Item borrowed', name: 'item_borrowed', width: 100, sortable: false, align: 'center'},
-         {display: 'Item returned', name: 'item_returned', width: 100, sortable: false, align: 'left' },
-         {display: 'Comment', name: 'comment', width: 220, sortable: false, align: 'center'},
+         {display: 'Item returned', name: 'item_returned', width: 100, sortable: false, align: 'left' }
       ],
       searchitems : [
          {display: 'Issued by', name : 'a.issued_by'},
@@ -159,24 +167,25 @@ class InventoryManager extends Repository{
    }
 
    /**
-    * Submits Nitrogen Acquisition Request to database
+    * This function writes borrow/asset issuance to the database
     */
    private function submitIssuance() {
       $message = "";
       //$userID = $this->addUserIfNotExists($_POST['user']);
-      $date = date('Y-m-d', strtotime(str_replace("-", "/", $_POST['date'])));
+      $date = date('Y-m-d', strtotime($_POST['date']));
+      $this->Dbase->CreateLogEntry("mod_inventory_management: date = ".$date, 'debug', true);
       $projectID = $this->getProjectID($_POST['chargeCode']);
       if($projectID !== 0 && $_POST['borrowed'] === "no"){//item not borrowed and chargecode in database
-         $cols = array("chargecode_id", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed");
-         $colVals = array($projectID, $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], FALSE);
+         $cols = array("chargecode_id", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
+         $colVals = array($projectID, $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], FALSE, $_POST['quantity']);
          $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
          }
       }
       else if($projectID === 0 && $_POST['borrowed'] === "no") {//user entered a charge code not in the database
-         $cols = array("alt_ccode", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed");
-         $colVals = array($_POST['chargeCode'], $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], FALSE);
+         $cols = array("alt_ccode", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
+         $colVals = array($_POST['chargeCode'], $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], FALSE, $_POST['quantity']);
          $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
@@ -184,8 +193,8 @@ class InventoryManager extends Repository{
 
       }
       else {//the item has been borrowed
-         $cols = array("date_issued","item","issued_to","issued_by","comment", "item_borrowed");
-         $colVals = array($date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], TRUE);
+         $cols = array("date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
+         $colVals = array($date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], TRUE, $_POST['quantity']);
          $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
          if($res === 0) {
             $message = "Unable to add the last request. Try again later";
@@ -223,6 +232,8 @@ class InventoryManager extends Repository{
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
+      
+      $this->Dbase->CreateLogEntry("mod_inventory_management: About to run the following query ".$query, 'debug', true);
       $data = $this->Dbase->ExecuteQuery($query." LIMIT $startRow, {$_POST['rp']}" , $criteriaArray);
 
       //check if any data was fetched
@@ -247,7 +258,7 @@ class InventoryManager extends Repository{
          if($row['item_borrowed'] === "No") $row['item_returned'] = "N/A";
          else if($row['item_returned'] == TRUE) $row['item_returned'] = "Yes";
          else if($row['item_returned'] == FALSE) $row['item_returned'] = "No";
-         $rows[] = array("id" => $row['id'], "cell" => array("date_issued" => $row['date_issued'],"issued_by" => $row['issued_by'],"issued_to" => $row["issued_to"], "item" => $row["item"], "item_borrowed" => $row["item_borrowed"], "item_returned" => $row["item_returned"], "comment" => $row['comment']));
+         $rows[] = array("id" => $row['id'], "cell" => array("date_issued" => $row['date_issued'],"issued_by" => $row['issued_by'],"issued_to" => $row["issued_to"], "item" => $row["item"], "item_borrowed" => $row["item_borrowed"], "item_returned" => $row["item_returned"], "comment" => $row['comment'], "quantity" => $row['quantity']));
       }
       $response = array(
           'total' => $dataCount,
