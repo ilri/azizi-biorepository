@@ -432,6 +432,7 @@ class BoxStorage extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="box_storage">
@@ -1227,6 +1228,9 @@ class BoxStorage extends Repository{
       }
 
       //$query = $query . ' limit '.$fromRow.','.$pageSize;
+      if(isset($_POST['sort_column']) && strlen($_POST['sort_column']) > 0){
+         $query = $query . " order by ".$_POST['sort_column']." ".$_POST['sort_direction'];
+      }
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
 
       $result = $this->Dbase->ExecuteQuery($query);

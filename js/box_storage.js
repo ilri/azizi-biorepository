@@ -238,6 +238,7 @@ var BoxStorage = {
             source: boxesAdapter,
             columnsresize: true,
             theme: theme,
+            sortable: true,
             pageable: true,
             virtualmode: true,
             rendergridrows: function() {
@@ -245,17 +246,28 @@ var BoxStorage = {
             },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 245},
-               {text: 'Tank Position', datafield: 'position', width: 320},
-               {text: 'Status', datafield: 'status', width: 90},
-               {text: 'Number of samples', datafield: 'no_samples', width: 50},
-               {text: 'Date Added', datafield: 'date_added', width: 200}
+               {text: 'Tank Position', datafield: 'position', width: 320, sortable: false},
+               {text: 'Status', datafield: 'status', width: 90, sortable: false},
+               {text: 'Number of samples', datafield: 'no_samples', width: 50, sortable: false},
+               {text: 'Date Added', datafield: 'date_added', width: 200, sortable: false}
             ]
          });
       }
       else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
       //$("#searched_boxes").jqxGrid('autoresizecolumns');
       
-      $("#searched_boxes").bind("pagechanged", function(event){
+      $("#searched_boxes").bind("sort", function(event){
+         var sortinformation = event.args.sortinformation;
+         if(sortinformation.sortdirection.ascending === false && sortinformation.sortdirection.descending === false){
+            BoxStorage.searchForBox("","");
+         }
+         else{
+            var sortDirection = "asc";
+            if(sortinformation.sortdirection.ascending === false){
+               sortDirection = "desc";
+            }
+            BoxStorage.searchForBox(sortinformation.sortcolumn, sortDirection);
+         }
       });
       /*$("#searched_boxes").bind("pagesizechanged", function(event){
          BoxStorage.searchForBox();
@@ -1244,7 +1256,11 @@ var BoxStorage = {
     * 
     * @returns {undefined}
     */
-   searchForBox: function (){
+   searchForBox: function (sortColumn, sortDirection){
+      if(typeof sortColumn === 'undefined'){
+         sortColumn = "";
+         sortDirection = "";
+      }
       //first check if request has already gone to server and has not been responded to
       $("#searched_boxes").jqxGrid('gotopage', 0);
       var data = {
@@ -1254,8 +1270,9 @@ var BoxStorage = {
          location: $("#search_location").val(),
          keeper: $("#search_keeper").val(),
          boxes_wo_names: $("#boxes_wo_names").is(":checked"),
-         samples: $("#samples").val()
-
+         samples: $("#samples").val(),
+         sort_column: sortColumn,
+         sort_direction: sortDirection
       };
       BoxStorage.updateSearchBoxesGrid(data);
    },
