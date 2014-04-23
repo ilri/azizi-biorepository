@@ -438,7 +438,7 @@ class BoxStorage extends Repository{
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
       <!--legend>Box Information</legend-->
-      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-primary" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
+      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-primary" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a><a href="#" id="clear_a" style="margin-left: 30px;">Clear search</a>
       <div id="advanced_search_div" style="display: none;">
          <div class="search_criteria">
             <label for="search_project">Project</label>
@@ -601,6 +601,10 @@ class BoxStorage extends Repository{
 
       $('#advanced_search_a').click(function (){
          BoxStorage.toggleAdvancedSearch();
+      });
+      
+      $('#clear_a').click(function (){
+         BoxStorage.clearSearch();
       });
 
       BoxStorage.initiateSearchBoxesGrid();
@@ -1291,8 +1295,6 @@ class BoxStorage extends Repository{
                   $totalRowCount--;
                   continue;
                }
-               else
-                  $this->Dbase->CreateLogEntry("******* Box has excess samples = ".$boxSize, "debug");
             }
             else if($_POST['samples'] === "wo_samples"){
                if($allBoxes[$indexInAB]['no_samples'] > 0){//box has samples in it

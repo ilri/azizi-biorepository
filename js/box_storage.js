@@ -1449,5 +1449,18 @@ var BoxStorage = {
       else{
          //console.log("browser does not support HTML5 sessionStorage");
       }
+   },
+   
+   clearSearch: function(){
+      $("#search").val("");
+      $("#search_project").val("");
+      $("#search_status").val("");
+      $("#search_location").val("");
+      $("#search_keeper").val();
+      $("#boxes_wo_names").prop('checked', false);
+      $("#samples").val();
+      $("#advanced_search_div").hide(500);
+      
+      BoxStorage.searchForBox();
    }
 };
