@@ -846,7 +846,9 @@ class BoxStorage extends Repository{
          if($_POST['status'] === "temporary")
             $project = $_POST['project'];
 
-         $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, date_added=:date_added, added_by=:added_by, project=:project where box_id=:box_id';
+         $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project) '.
+                 'values(:box_id, :status, :date_added, :added_by, :project) '.
+                 'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project)';
          $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
@@ -1178,8 +1180,10 @@ class BoxStorage extends Repository{
       $pageSize = $_POST['pagesize'];
       $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, a.status, a.project, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
-              'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
-              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id ';//fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
+              'right join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
+              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id './/fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
+              'left join '. Config::$config['dbase'] .'.lcmod_storage_facilities as d on c.facility_id = d.id '.
+              'where (c.id is null or d.is_tank = 1)';//select boxes which are not associated to any sector and those in LN2 tanks
 
       /*
        * Optimization:
@@ -1190,10 +1194,10 @@ class BoxStorage extends Repository{
 
 
       if($_POST['boxes_wo_names'] === "true"){
-         $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
+         $query = $query . " AND (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
       }
       else if($_POST['boxes_wo_names'] === "false"){
-         $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
+         $query = $query . " AND (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
       }
 
       if(strlen($_POST['status']) > 0){
@@ -1222,7 +1226,7 @@ class BoxStorage extends Repository{
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
 
       $result = $this->Dbase->ExecuteQuery($query);
-
+      
       $query = "SELECT FOUND_ROWS() AS found_rows";
       $foundRows = $this->Dbase->ExecuteQuery($query);
       $totalRowCount = $foundRows[0]['found_rows'];
