@@ -1231,23 +1231,26 @@ class BoxStorage extends Repository{
       $foundRows = $this->Dbase->ExecuteQuery($query);
       $totalRowCount = $foundRows[0]['found_rows'];
 
-      $query = "select boxes_def.box_id, boxes_def.size, samples.project as project_id, count(distinct(samples.project)) as no_projects, count(samples.box_id) as no_samples".
-              " from boxes_def inner join samples on boxes_def.box_id = samples.box_id group by boxes_def.box_id";
+      $query = "select a.box_id, a.size, b.project as project_id, count(distinct(b.project)) as no_projects, count(b.box_id) as no_samples".
+              " from ".Config::$config['azizi_db'].".boxes_def as a inner join ".Config::$config['azizi_db'].".samples as b on a.box_id = b.box_id group by a.box_id";
       $allBoxes = $this->Dbase->ExecuteQuery($query);
-
-      $this->Dbase->CreateLogEntry('mod_box_storage: box count = '.count($result), 'debug');
+      
+      $this->Dbase->CreateLogEntry("box_storage: all boxes = ".count($allBoxes), "debug");
+      
       for($resultIndex = 0; $resultIndex < count($result); $resultIndex++){
          $indexInAB = -1;
 
          //search for the box in all the boxes
          for($boxIndex = 0; $boxIndex < count($allBoxes); $boxIndex++){
-            if($allBoxes[$boxIndex]['box']['box_id'] === $result[$resultIndex]['box_id']){
+            if($allBoxes[$boxIndex]['box_id'] === $result[$resultIndex]['box_id']){
                $indexInAB = $boxIndex;
             }
          }
 
          if($indexInAB !== -1){
-            $this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
+            //$this->Dbase->CreateLogEntry("mod_box_storage: current box ".  print_r($result[$resultIndex], true) ,"debug");
+            //$this->Dbase->CreateLogEntry("mod_box_storage: box found in boxes with samples array ".  print_r($allBoxes[$indexInAB], true) ,"debug");
+            //$this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
             if($_POST['project'] === "-1"){//user wants boxes associated with multiple projects
                if($allBoxes[$indexInAB]['no_projects']<=1 || $result[$resultIndex]['status'] === 'temporary'){
                   //remove this box, we only need boxes associated with multiple projects. There is no way a temporary box can be associated with multiple projects
