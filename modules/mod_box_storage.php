@@ -1222,7 +1222,7 @@ class BoxStorage extends Repository{
          $query = $query . " AND b.keeper = ".$_POST['keeper'];
       }
 
-      $query = $query . ' limit '.$fromRow.','.$pageSize;
+      //$query = $query . ' limit '.$fromRow.','.$pageSize;
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
 
       $result = $this->Dbase->ExecuteQuery($query);
@@ -1284,13 +1284,15 @@ class BoxStorage extends Repository{
 
             if($_POST['samples'] === "ex_samples"){
                $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
-               if($boxSize > $allBoxes[$indexInAB]['no_samples']){//box does not have excess samples
+               if($boxSize === 0 || $boxSize > $allBoxes[$indexInAB]['no_samples']){//box does not have excess samples
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
                   $totalRowCount--;
                   continue;
                }
+               else
+                  $this->Dbase->CreateLogEntry("******* Box has excess samples = ".$boxSize, "debug");
             }
             else if($_POST['samples'] === "wo_samples"){
                if($allBoxes[$indexInAB]['no_samples'] > 0){//box has samples in it
@@ -1303,7 +1305,7 @@ class BoxStorage extends Repository{
             }
          }
          else{//box does not have samples
-            $this->Dbase->CreateLogEntry('mod_box_storage: Box does not have samples '.$resultIndex.' box count = '.count($result), 'debug');
+            //$this->Dbase->CreateLogEntry('mod_box_storage: Box does not have samples '.$resultIndex.' box count = '.count($result), 'debug');
             if($result[$resultIndex]['status'] === 'temporary'){
                if($_POST['project'] === "-2"){//user wants boxes not associated with any projects
                   if($result[$resultIndex]['project'] !== NULL){//box associated with a project
@@ -1347,13 +1349,19 @@ class BoxStorage extends Repository{
          }
       }
 
-      if(count($result)> 0){
-         $result[0]['total_row_count'] = $totalRowCount;
-      }
-      if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
-
       header("Content-type: application/json");
-      die('{"data":'. json_encode($result) .'}');
+      if(count($result)> 0){
+         //$result[0]['total_row_count'] = $totalRowCount;
+         $totalRowCount = count($result);
+         $finalResult = array_slice($result, $fromRow, $pageSize);
+         if(count($finalResult) > 0) $finalResult[0]['total_row_count'] = $totalRowCount;
+         $this->Dbase->CreateLogEntry("final result = ".print_r($finalResult, true), "debug");
+         //die('{"data":'. json_encode($result) .'}');
+         die('{"data":'. json_encode($finalResult) .'}');
+      }
+      else if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      die('{"data":'. json_encode(array()) .'}');
    }
 
    /**
