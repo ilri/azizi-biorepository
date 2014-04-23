@@ -1402,7 +1402,7 @@ var BoxStorage = {
             BoxStorage.toggleSearchModes();
             BoxStorage.getTankData(true);//get tank data from the server
             BoxStorage.loadTankData(true);
-            BoxStorage.updateSearchBoxesGrid();
+            BoxStorage.searchForBox();
          }
       }
    },
