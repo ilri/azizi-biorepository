@@ -163,42 +163,68 @@ class LimsUploader{
     * @return  object   Returns a reference to the object which was created after processing the parsed file
     */
    private function CommonFileProcessing($module, $file){
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.1.php';
+      set_include_path(get_include_path() . PATH_SEPARATOR . '/www/common/PHPExcel/Classes/');     //add the classes path to the include path
+
+      include 'PHPExcel/IOFactory.php';      //add the PHPExcel_IOFactory
+//      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.2.php';
       require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_spreadsheet_v0.2.php';
       if($module == 'primers') require_once 'mod_primers.php';
       elseif($module == 'samples') require_once 'mod_samples.php';
+      elseif($module == 'elisa') require_once 'mod_elisa.php';
 
-      //use the excel reader to read the file
-      $excelData = new Spreadsheet_Excel_Reader($file);
+      //determine the type of file that was uploaded
+      $inputFileType = PHPExcel_IOFactory::identify($file);
+      $objExcelReader = PHPExcel_IOFactory::createReader($inputFileType);
+      //load all the sheets
+      $objExcelReader->setLoadAllSheets();
+      $excelReader = $objExcelReader->load($file);
+
       //look for the sheet named 'Final Samples' or 'Final Primers' which should be containing the list to upload, else get the first sheet
       //once the main sheet has been found, we hope to link the other secondary sheets
-      $mainSheeet = ($module == 'samples') ? 'Final Samples' : 'Final Primers';
-      $mainSheetIndex = 0;
-      $secondarySheetsIndexes = array();
+      if ($module == 'samples') $mainSheeet = 'Final Samples';
+      else if ($module == 'primers') $mainSheeet = 'Final Primers';
+      else if ($module == 'elisa') $mainSheeet = 'Final Elisa';
+
+      $secondarySheetsNames = array();
       //there is need to determine the main sheet. This will be the first sheet or the one named 'Final Samples' or 'Final Primers'
-      foreach($excelData->boundsheets as $index => $sheet){
-         if($sheet['name'] == $mainSheeet) $mainSheetIndex = $index;
-         $secondarySheetsIndexes[] = $index;
+      $loadedSheetNames = $excelReader->getSheetNames();
+      $mainSheetName = $loadedSheetNames[0];
+      $mainSheetIndex = 0;
+      foreach($loadedSheetNames as $sheetIndex => $sheetName) {
+         if($sheetName == $mainSheeet){
+            $mainSheetName = $sheetName;
+            $mainSheetIndex = $sheetIndex;
+         }
+         $secondarySheetsNames[] = $sheetName;
       }
+
+//      $sheetData = $excelReader->getSheetByName($mainSheetName)->toArray(null,true,true,true);
 
       //process all the sheets in the file
       $curfile = array();
-      foreach($secondarySheetsIndexes as $index){
+      foreach($loadedSheetNames as $index => $sheetName){
          //make sure to skip the main sheet
-         if($module == 'primers') $curfile[$index] = new Primers('', $file, $excelData->sheets[$index]);
-         elseif($module == 'samples') $curfile[$index] = new Samples('', $file, $excelData->sheets[$index]);
+         $sheetData = $excelReader->getSheetByName($sheetName)->toArray(null,true,true,true);
 
-         $curfile[$index]->htmlData = $excelData->dump(false, false, $index);
-         $curfile[$index]->sheet_name = $excelData->boundsheets[$index]['name'];
+         if($module == 'primers') $curfile[$index] = new Primers('', $file, $sheetData);
+         elseif($module == 'samples') $curfile[$index] = new Samples('', $file, $sheetData);
+         elseif($module == 'elisa') $curfile[$index] = new Elisa('', $file, $sheetData);
+
+         $writer = PHPExcel_IOFactory::createWriter($excelReader, 'HTML');
+         $curfile[$index]->htmlData = $writer->setSheetIndex($index)->generateSheetData();
+         $curfile[$index]->sheet_name = $sheetName;
          $curfile[$index]->sheet_index = $index;
-         if($index == $mainSheetIndex) $curfile[$index]->isMain = true;
+
+         if($sheetName == $mainSheetName) $curfile[$index]->isMain = true;
          else $curfile[$index]->isMain = false;
+
+         $curfile[$index]->DumpData();
+         die();
 
          //validate and process the sheet
          $curfile[$index]->ValidateAndProcessFile();
-//         if(!$curfile[$index]->isMain) $curfile[$index]->DumpData();
+         if($module == 'elisa') $curfile[$index]->NormalizeData(array());
       }
-//      die();
 
       if($curfile->fillLCRef) $curfile[$mainSheetIndex]->FillMissingData();
 
@@ -213,7 +239,7 @@ class LimsUploader{
       //save the uploaded files
       $module = $_POST['module'];
       //some crazy shit happening here! An excel file saved by libre office gets an application/pdf attribute..... STRANGE BED FELLOWS
-      $allowedFiles = array('application/vnd.ms-excel', 'application/ms-excel', 'application/pdf');
+      $allowedFiles = array('application/vnd.ms-excel', 'application/ms-excel', 'application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       $dataToUpload = GeneralTasks::CustomSaveUploads('uploads/', 'data', $allowedFiles, 10485760, array(session_id() .'.xls'));
       if(is_string($dataToUpload)){
          $this->HomePage($dataToUpload, '', $module);
@@ -259,9 +285,11 @@ $content =<<< CONTENT
       <ul>
         <li>Errors</li>
 CONTENT;
+         //create the warnings tab if we have some warnings
          if(count($curFile[$mainSheetIndex]->warnings)) $content .= "<li>Warnings</li>";
          foreach($curFile as $sheet) $content .= "<li>{$sheet->sheet_name}</li>";
          $content .= '</ul>';
+         //output the errors
          $content .= "<div class='error' style='text-align: left;'>". implode("<br />\n", $mergedErrors) .'</div>';
          if(count($curFile[$mainSheetIndex]->warnings)) $content .= "<div class='warnings'>". implode("<br />\n", $curFile[$mainSheetIndex]->warnings) .'</div>';
          foreach($curFile as $sheet) $content .= "<div>{$sheet->htmlData}</div>";
@@ -322,9 +350,10 @@ $content .="
       $extraData = array();
       foreach($curFile as $index => $sheet){
          if($sheet->isMain) $mainSheetIndex = $index;
-         else $extraData[$sheet->sheet_name] = $sheet->getData();
+         else if($sheet->hasLinkedSheets()) $extraData[$sheet->sheet_name] = $sheet->getData();
+         if($_GET['module'] == 'elisa') $sheet->NormalizeData(array());
       }
-      $curFile[$mainSheetIndex]->NormalizeData($extraData);
+      if($_GET['module'] != 'elisa') $curFile[$mainSheetIndex]->NormalizeData($extraData);
       $curFile[$mainSheetIndex]->finalUploadedFile = "$path/{$pi['basename']}";
       $curFile[$mainSheetIndex]->finalUploadedFileLink = "LimsUploader/{$pi['basename']}";
 
