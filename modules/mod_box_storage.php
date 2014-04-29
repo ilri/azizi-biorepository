@@ -432,13 +432,14 @@ class BoxStorage extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="box_storage">
    <h3 class="center">Search for a Box</h3>
    <div id="search_div">
       <!--legend>Box Information</legend-->
-      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-primary" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a>
+      <input type="text" id="search" /><button type="button" id="submitButton" class="btn btn-primary" style="margin-left: 20px;">Search</button><a href="#" id="advanced_search_a" style="margin-left: 30px;">Toggle Advanced search</a><a href="#" id="clear_a" style="margin-left: 30px;">Clear search</a>
       <div id="advanced_search_div" style="display: none;">
          <div class="search_criteria">
             <label for="search_project">Project</label>
@@ -558,7 +559,7 @@ class BoxStorage extends Repository{
             </select>
          </div>
        </div>
-      <div class="center" id="submit_button_div"><button type="button" class="btn btn-danger" id="cancel_button" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Edit</button></div>
+      <div class="center" id="submit_button_div"><button type="button" class="btn btn-danger" id="cancel_button" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Update</button></div>
    </div>
 </div>
 <script type="text/javascript">
@@ -601,6 +602,10 @@ class BoxStorage extends Repository{
 
       $('#advanced_search_a').click(function (){
          BoxStorage.toggleAdvancedSearch();
+      });
+      
+      $('#clear_a').click(function (){
+         BoxStorage.clearSearch();
       });
 
       BoxStorage.initiateSearchBoxesGrid();
@@ -846,10 +851,12 @@ class BoxStorage extends Repository{
          if($_POST['status'] === "temporary")
             $project = $_POST['project'];
 
-         $updateQuery = 'update '. Config::$config['dbase'] .'.lcmod_boxes_def set status=:status, date_added=:date_added, added_by=:added_by, project=:project where box_id=:box_id';
+         $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project) '.
+                 'values(:box_id, :status, :date_added, :added_by, :project) '.
+                 'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project)';
          $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
-         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
+         $this->Dbase->CreateLogEntry('Update query = '.$updateQuery, 'debug');
 
          $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
          if($result === 1){
@@ -1176,10 +1183,12 @@ class BoxStorage extends Repository{
    private function searchBoxes() {
       $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
       $pageSize = $_POST['pagesize'];
-      $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, a.status, a.project, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
+      $query = 'select SQL_CALC_FOUND_ROWS b.box_id, a.status, date(a.date_added) as date_added, a.status, a.project, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
               'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
-              'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
-              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id ';//fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
+              'right join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
+              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id './/fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
+              'left join '. Config::$config['dbase'] .'.lcmod_storage_facilities as d on c.facility_id = d.id '.
+              'where (c.id is null or d.is_tank = 1)';//select boxes which are not associated to any sector and those in LN2 tanks
 
       /*
        * Optimization:
@@ -1190,10 +1199,10 @@ class BoxStorage extends Repository{
 
 
       if($_POST['boxes_wo_names'] === "true"){
-         $query = $query . " WHERE (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
+         $query = $query . " AND (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
       }
       else if($_POST['boxes_wo_names'] === "false"){
-         $query = $query . " WHERE (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
+         $query = $query . " AND (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
       }
 
       if(strlen($_POST['status']) > 0){
@@ -1218,32 +1227,38 @@ class BoxStorage extends Repository{
          $query = $query . " AND b.keeper = ".$_POST['keeper'];
       }
 
-      $query = $query . ' limit '.$fromRow.','.$pageSize;
+      //$query = $query . ' limit '.$fromRow.','.$pageSize;
+      if(isset($_POST['sort_column']) && strlen($_POST['sort_column']) > 0){
+         $query = $query . " order by ".$_POST['sort_column']." ".$_POST['sort_direction'];
+      }
       $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
 
       $result = $this->Dbase->ExecuteQuery($query);
-
+      
       $query = "SELECT FOUND_ROWS() AS found_rows";
       $foundRows = $this->Dbase->ExecuteQuery($query);
       $totalRowCount = $foundRows[0]['found_rows'];
 
-      $query = "select boxes_def.box_id, boxes_def.size, samples.project as project_id, count(distinct(samples.project)) as no_projects, count(samples.box_id) as no_samples".
-              " from boxes_def inner join samples on boxes_def.box_id = samples.box_id group by boxes_def.box_id";
+      $query = "select a.box_id, a.size, b.project as project_id, count(distinct(b.project)) as no_projects, count(b.box_id) as no_samples".
+              " from ".Config::$config['azizi_db'].".boxes_def as a inner join ".Config::$config['azizi_db'].".samples as b on a.box_id = b.box_id group by a.box_id";
       $allBoxes = $this->Dbase->ExecuteQuery($query);
-
-      $this->Dbase->CreateLogEntry('mod_box_storage: box count = '.count($result), 'debug');
+      
+      $this->Dbase->CreateLogEntry("box_storage: all boxes = ".count($allBoxes), "debug");
+      
       for($resultIndex = 0; $resultIndex < count($result); $resultIndex++){
          $indexInAB = -1;
 
          //search for the box in all the boxes
          for($boxIndex = 0; $boxIndex < count($allBoxes); $boxIndex++){
-            if($allBoxes[$boxIndex]['box']['box_id'] === $result[$resultIndex]['box_id']){
+            if($allBoxes[$boxIndex]['box_id'] === $result[$resultIndex]['box_id']){
                $indexInAB = $boxIndex;
             }
          }
 
          if($indexInAB !== -1){
-            $this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
+            //$this->Dbase->CreateLogEntry("mod_box_storage: current box ".  print_r($result[$resultIndex], true) ,"debug");
+            //$this->Dbase->CreateLogEntry("mod_box_storage: box found in boxes with samples array ".  print_r($allBoxes[$indexInAB], true) ,"debug");
+            //$this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
             if($_POST['project'] === "-1"){//user wants boxes associated with multiple projects
                if($allBoxes[$indexInAB]['no_projects']<=1 || $result[$resultIndex]['status'] === 'temporary'){
                   //remove this box, we only need boxes associated with multiple projects. There is no way a temporary box can be associated with multiple projects
@@ -1277,7 +1292,7 @@ class BoxStorage extends Repository{
 
             if($_POST['samples'] === "ex_samples"){
                $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
-               if($boxSize > $allBoxes[$indexInAB]['no_samples']){//box does not have excess samples
+               if($boxSize === 0 || $boxSize > $allBoxes[$indexInAB]['no_samples']){//box does not have excess samples
                   array_splice($result, $resultIndex, 1);
                   array_splice($allBoxes, $indexInAB, 1);
                   $resultIndex--;
@@ -1296,7 +1311,7 @@ class BoxStorage extends Repository{
             }
          }
          else{//box does not have samples
-            $this->Dbase->CreateLogEntry('mod_box_storage: Box does not have samples '.$resultIndex.' box count = '.count($result), 'debug');
+            //$this->Dbase->CreateLogEntry('mod_box_storage: Box does not have samples '.$resultIndex.' box count = '.count($result), 'debug');
             if($result[$resultIndex]['status'] === 'temporary'){
                if($_POST['project'] === "-2"){//user wants boxes not associated with any projects
                   if($result[$resultIndex]['project'] !== NULL){//box associated with a project
@@ -1340,13 +1355,19 @@ class BoxStorage extends Repository{
          }
       }
 
-      if(count($result)> 0){
-         $result[0]['total_row_count'] = $totalRowCount;
-      }
-      if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
-
       header("Content-type: application/json");
-      die('{"data":'. json_encode($result) .'}');
+      if(count($result)> 0){
+         //$result[0]['total_row_count'] = $totalRowCount;
+         $totalRowCount = count($result);
+         $finalResult = array_slice($result, $fromRow, $pageSize);
+         if(count($finalResult) > 0) $finalResult[0]['total_row_count'] = $totalRowCount;
+         $this->Dbase->CreateLogEntry("final result = ".print_r($finalResult, true), "debug");
+         //die('{"data":'. json_encode($result) .'}');
+         die('{"data":'. json_encode($finalResult) .'}');
+      }
+      else if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
+      
+      die('{"data":'. json_encode(array()) .'}');
    }
 
    /**

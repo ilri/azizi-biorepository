@@ -331,6 +331,9 @@ body {
 
 #tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes {margin: 5px;}
 
+#inventory_form .left-align {width: 240px;}
+#inventory_form {margin: 20px;}
+
 #odk_table td{ height: 30px; }
 #odk_table input { height: 25px; }
 #odk_heading { text-align: center; margin: 10px 0px 0px 0px; }

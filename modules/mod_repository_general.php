@@ -240,7 +240,7 @@ class Repository extends DBase{
 <div class="user_options">
    <ul>
       <li><a href='?page=ln2_requests'>Request Liquid Nitrogen</a></li>
-      <li><a href='?page=inventory'>Inventory Management</a></li>
+      <!--li><a href='?page=inventory'>Inventory Management</a></li-->
 <?php
       $this->HomeLinks($_SESSION['user_type']);
 ?>
@@ -257,6 +257,7 @@ class Repository extends DBase{
    private function HomeLinks($userType){
       //fetch all keys in $userPermissions
       $allModules = array_keys(Config::$userPermissions);
+      
       foreach ($allModules as $currentModuleName) {
          if($currentModuleName!=="ln2_transfers" && isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && (in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))){
             echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
