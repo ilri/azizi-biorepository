@@ -163,7 +163,7 @@ class LimsUploader{
     * @return  object   Returns a reference to the object which was created after processing the parsed file
     */
    private function CommonFileProcessing($module, $file){
-      set_include_path(get_include_path() . PATH_SEPARATOR . '/www/common/PHPExcel/Classes/');     //add the classes path to the include path
+      set_include_path(get_include_path() . PATH_SEPARATOR . '/var/www/html/common/PHPExcel/Classes/' . PATH_SEPARATOR . '/var/www/common/PHPExcel/Classes/');     //add the classes path to the include path
 
       include 'PHPExcel/IOFactory.php';      //add the PHPExcel_IOFactory
 //      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.2.php';
@@ -217,9 +217,6 @@ class LimsUploader{
 
          if($sheetName == $mainSheetName) $curfile[$index]->isMain = true;
          else $curfile[$index]->isMain = false;
-
-         $curfile[$index]->DumpData();
-         die();
 
          //validate and process the sheet
          $curfile[$index]->ValidateAndProcessFile();
