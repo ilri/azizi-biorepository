@@ -148,6 +148,11 @@ class Repository extends DBase{
          $ParseODK = new ParseODK();
          $ParseODK->TrafficController();
       }
+      elseif(OPTIONS_REQUESTED_MODULE == 'odk_uploader'){
+         require_once './mod_upload_odk_form.php';
+         $UploadODK = new UploadODK();
+         $UploadODK->TrafficController();
+      }
       elseif(OPTIONS_REQUESTED_MODULE == 'labels'){
          require_once 'mod_label_printing.php';
          $LabelsPrinter = new LabelPrinter($this->Dbase);
