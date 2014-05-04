@@ -149,8 +149,8 @@ class Repository extends DBase{
          $ParseODK->TrafficController();
       }
       elseif(OPTIONS_REQUESTED_MODULE == 'odk_uploader'){
-         require_once './mod_upload_odk_form.php';
-         $UploadODK = new UploadODK();
+         require_once 'mod_upload_odk_form.php';
+         $UploadODK = new UploadODK($this->Dbase);
          $UploadODK->TrafficController();
       }
       elseif(OPTIONS_REQUESTED_MODULE == 'labels'){
