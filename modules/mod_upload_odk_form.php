@@ -147,7 +147,7 @@ class UploadODK extends Repository{
                //authenticate user
                $formUploadURL = "http://azizi.ilri.cgiar.org/aggregate/formUpload";
                if(file_exists($this->authCookies) === FALSE){
-                  $authURL = "http://azizi.ilri.cgiar.org/aggregate/local_login.html";
+                  $authURL = Config::$config['odkAuthURL'];
                   touch($this->authCookies);
                   chmod($this->authCookies, 0777);
                   $authCh = curl_init($authURL);
@@ -189,10 +189,17 @@ class UploadODK extends Repository{
                   $possibleInstanceIDs = array();
                   
                   //get the name of the form
-                  preg_match_all("/<instance>[\s\n]*<.+\s+id=[\"'](.*)[\"']>/i", $xmlString, $possibleInstanceIDs);
+                  preg_match_all("/<instance>[\s\n]*<(.+)\s+id=[\"'](.*)[\"']>/i", $xmlString, $possibleInstanceIDs);
                   
-                  if(isset($possibleInstanceIDs[1]) && count($possibleInstanceIDs[1]) > 0){
-                     $instanceID = $possibleInstanceIDs[1][0];
+                  if(isset($possibleInstanceIDs[1]) && count($possibleInstanceIDs[1]) == 1 && isset($possibleInstanceIDs[2]) && count($possibleInstanceIDs[2]) == 1){
+                     $topElement = $possibleInstanceIDs[1][0];
+                     $instanceID = $possibleInstanceIDs[2][0];
+                     
+                     preg_match_all("/<h:title>(.*)<\/h:title>/i", $xmlString, $possibleTitle);
+                     $formTitle = "";
+                     
+                     if(isset($possibleTitle[1]) && count($possibleTitle[1]) == 1)
+                        $formTitle = $possibleTitle[1][0];
                      
                      //save upload to database
                      //1. check if form has already been uploaded before
@@ -214,7 +221,7 @@ class UploadODK extends Repository{
                      else{//this is probably the first time the form is being uploaded
                         $this->Dbase->CreateLogEntry("First time form with instance id = ".$instanceID." is being uploaded", "fatal");
                         
-                        $query = "INSERT INTO odk_forms(instance_id, created_by, email_address) VALUES(:instance_id, :user, :email)";
+                        $query = "INSERT INTO odk_forms(instance_id, created_by, email_address, top_element, form_name) VALUES(:instance_id, :user, :email, :top_element, :form_name)";
                         $username = $_SESSION['username'];
                         if(strlen($username) === 0)
                            $username = $_SESSION['onames']." ".$_SESSION['sname'];
@@ -222,7 +229,7 @@ class UploadODK extends Repository{
                         if(strlen($username) === 0)
                            $username = "unknown";
                         
-                        $result = $this->Dbase->ExecuteQuery($query, array("instance_id" => $instanceID, "user" => $username, "email" => $_POST['email']));
+                        $result = $this->Dbase->ExecuteQuery($query, array("instance_id" => $instanceID, "user" => $username, "email" => $_POST['email'], "top_element" => $topElement, "form_name" => $formTitle));
                         
                         $query = "SELECT id FROM odk_forms WHERE instance_id = :instance_id";//form names are unique in database
                         $result = $this->Dbase->ExecuteQuery($query, array("instance_id"=>$instanceID));
@@ -235,7 +242,7 @@ class UploadODK extends Repository{
                      }
                      
                      //email uploader
-                     $this->sendInstructionEmail($instanceID, $_POST['email']);
+                     $this->sendInstructionEmail($formTitle,$instanceID, $_POST['email']);
                   }
                   else{
                      $this->Dbase->CreateLogEntry("Unabe to find name of form in xml file just uploaded to ODK aggregate. XML = ".$xmlString, "fatal");
@@ -265,12 +272,12 @@ class UploadODK extends Repository{
       }
    }
    
-   private function sendInstructionEmail($formName, $address) {
+   private function sendInstructionEmail($formName, $instanceID,  $address) {
       $emailSubject = "Upload of ".$formName." Form on Azizi's ODK Server";
       $timeLimit = "";
       if($_POST['upload_type'] === "testing") $timeLimit = " You however have ".  $this->maxTestingTime . " minutes to download it in ODK Collect.";
       
-      $message = "Hi ".$_SESSION['onames'].",\n".$formName." has been successfully uploaded onto the Azizi ODK Server.".
+      $message = "Hi ".$_SESSION['onames'].",\n".$formName." (with insance_id as ".$instanceID.") has been successfully uploaded onto the Azizi ODK Server.".
               " You can now download the form in ODK Collect on you Android device.".
               $timeLimit.
               " If you do not have ODK Collect download on your Android device, you can download it from http://goo.gl/cGVSxc . Once installed, ensure the following ODK Collect settings are set correctly:\n\n".

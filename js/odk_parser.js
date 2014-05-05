@@ -4,35 +4,49 @@
  */
 function Parse() {
    window.parse = this;
-   
    this.serverURL = "./modules/mod_parse_odk_backend.php";
+   this.procFormOnServerURL = "mod_ajax.php?page=odk_parser&do=proc_odk_form";
    
+   this.formOnServerID = $("#form_on_server").val();
    this.name = $("#name").val();
    this.email = $("#email").val();
    this.fileName = $("#file_name").val();
    this.parseType = $("#parseType").val();
    this.dwnldImages = $("#dwnldImages").val();
-   
-   if(this.validateInput()) {
-      var jsonFileRegex = /.+\.json$/i
-      var csvFileRegex = /.+\.csv/i
-      this.jsonText = "";
-      this.csvText = "";
-      if(jsonFileRegex.test($("#data_file").val()) === true){
-          var jsonFile = document.getElementById("data_file").files[0];
-          this.firstFileLoaded = false;
-          this.readFile(jsonFile, "json");
-      }
-      else if(csvFileRegex.test($("#data_file").val()) === true){
-          var csvFile = document.getElementById("data_file").files[0];
-          this.firstFileLoaded = false;
-          this.readFile(csvFile, "csv");
-      }
       
+   //check if user selected form on server or provided files
+   if($("#data_file_div").is(":visible") && $("#xml_file_div").is(":visible") ){//user provided files
 
-      var xmlFile = document.getElementById("xml_file").files[0];
-      this.xmlText = "";
-      this.readFile(xmlFile, "xml");
+      if(this.validateInput()) {
+         var jsonFileRegex = /.+\.json$/i
+         var csvFileRegex = /.+\.csv/i
+         this.jsonText = "";
+         this.csvText = "";
+         if(jsonFileRegex.test($("#data_file").val()) === true){
+             var jsonFile = document.getElementById("data_file").files[0];
+             this.firstFileLoaded = false;
+             this.readFile(jsonFile, "json");
+         }
+         else if(csvFileRegex.test($("#data_file").val()) === true){
+             var csvFile = document.getElementById("data_file").files[0];
+             this.firstFileLoaded = false;
+             this.readFile(csvFile, "csv");
+         }
+
+
+         var xmlFile = document.getElementById("xml_file").files[0];
+         this.xmlText = "";
+         this.readFile(xmlFile, "xml");
+      }
+   }
+   else{//user selected 
+      if($("#form_on_server").val() !== ""){
+         this.sendFormOnServerProcReq();
+      }
+      else{
+         Notification.show({create:true, hide:true, updateText:false, text:'Please select a form', error:true});
+         $("#form_on_server").focus();
+      }
    }
 }
 
@@ -93,6 +107,23 @@ Parse.prototype.sendToServer = function () {
    });
    alert("It may take some time to process the files you have provided. An email with the excel file will be sent to the email you have provided when the processing is done");
    //location.reload();
+};
+
+Parse.prototype.sendFormOnServerProcReq = function() {
+   jQuery.ajax({
+      url: window.parse.procFormOnServerURL,
+      type: 'POST',
+      async: true,
+      data: {
+         creator: window.parse.name,
+         email: window.parse.email,
+         fileName: window.parse.fileName,
+         formOnServerID: window.parse.formOnServerID,
+         parseType: window.parse.parseType,
+         dwnldImages: window.parse.dwnldImages,
+      }
+   });
+   alert("It may take some time to process the ODK form specified. An email with the ouput file will be sent to the email you have provided when the processing is done");
 };
 
 Parse.prototype.validateInput = function () {

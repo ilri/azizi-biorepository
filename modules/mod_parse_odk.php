@@ -11,7 +11,9 @@
  */
 class ParseODK extends Repository{
 
-   public function __construct() {
+   public $Dbase;
+   public function __construct($Dbase) {
+      $this->Dbase = $Dbase;
    }
 
    public function TrafficController() {
@@ -23,20 +25,40 @@ class ParseODK extends Repository{
       }
 
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
+      if (OPTIONS_REQUESTED_SUB_MODULE == 'proc_odk_form') $this->procODKForm();
    }
 
    /**
     * Creates the home page to the parser function
     */
    private function HomePage() {
+      //get all odk forms uploaded by this user
+      $username = $_SESSION['username'];
+      if(strlen($username) === 0)
+         $username = $_SESSION['onames']." ". $_SESSION['sname'];
+      
+      $query = "SELECT * FROM odk_forms WHERE created_by = :user";
+      $forms = $this->Dbase->ExecuteQuery($query, array("user" => $username));
 ?>
 <h3 id="odk_heading">ODK Parser</h3>
 <form class="form-horizontal odk_parser">
    <div class="form-group">
+      <label for="form_on_server" class="control-label">Form on ODK Aggregate</label>
+      <div class="">
+         <select class="form-control" id="form_on_server">
+            <option value=""></option>
+            <?php
+            foreach ($forms as $currForm)
+               echo "<option value='".$currForm['id']."'>".$currForm['form_name']."</option>"
+            ?>
+         </select>
+      </div>
+   </div>
+   <div class="form-group" id="data_file_div">
       <label for="json_file" class="control-label">JSON or CSV File</label>
       <div class=""><input type="file" class="form-control" id="data_file" placeholder="JSON or CSV File"></div>
    </div>
-   <div class="form-group">
+   <div class="form-group" id="xml_file_div">
       <label for="xml_file" class="control-label">XML File</label>
       <div class=""><input type="file" class="form-control" id="xml_file" name="xml_file" placeholder="XML file"></div>
    </div>
@@ -75,6 +97,19 @@ class ParseODK extends Repository{
 
 <script>
    $(document).ready( function() {
+      $("#form_on_server").change(function(){
+         if($("#form_on_server").val() === ""){//
+            $("#data_file_div").show(250);
+            $("#xml_file_div").show(250);
+            $("#file_name").val("");
+         }
+         else{
+            $("#data_file_div").hide(250);
+            $("#xml_file_div").hide(250);
+            $("#file_name").val($("#form_on_server option:selected").html());
+         }
+      });
+      
       $("#generate_b").click(function (){ var parser = new Parse(); });
       $("#xml_file").change(function (){
          $("#file_name").val( $('#xml_file').val().split('\\').pop().split('.').shift() );
@@ -83,6 +118,11 @@ class ParseODK extends Repository{
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
 </script>
 <?php
+   }
+   
+   private function procODKForm(){
+      include_once 'mod_proc_onserv_odk_form.php';
+      $procODKFormOnServer = new ProcODKForm($this->Dbase);
    }
 }
 ?>
