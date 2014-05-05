@@ -212,7 +212,7 @@ class Parser {
       $this->rootDirURI = $this->settings['root_uri'];
       
       $this->loadXML();
-      include_once $this->settings['common_lib_dir'].'PHPExcel/PHPExcel.php';
+      include_once $this->settings['common_lib_dir'].'PHPExcel/Classes/PHPExcel.php';
       
       $mainSheetKey = "main_sheet";
       
