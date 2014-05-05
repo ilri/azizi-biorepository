@@ -286,18 +286,14 @@ class UploadODK extends Repository{
       $timeLimit = "";
       if($_POST['upload_type'] === "testing") $timeLimit = " However you have ".  $this->maxTestingTime . " minutes to download it from ODK Collect after which it will be deleted automatically.";
 
-$message =<<< MESSAGE
-        Hi {$_SESSION['onames']},\n\n
-        A $formName (with an insance_id '$instanceID') has been successfully uploaded onto the Azizi ODK Server.
-
-        You can now download the form using ODK Collect on you mobile device. $timeLimit.
-        If you do not have ODK Collect download on your mobile device, download it from http://goo.gl/cGVSxc. Once installed, edit the following general settings from the ODK Collect:\n\n".
-             URL : http://azizi.ilri.cgiar.org/aggregate\n".
-             Username  : collector\n".
-             Password  : collector_2013\n\n".
-
-        Should you have any problems, please reply to this email and we shall get back to you as soon as possible.
-MESSAGE;
+$message = "Hi {$_SESSION['onames']},\n\n";
+$message .= "        A $formName (with an insance_id '$instanceID') has been successfully uploaded onto the Azizi ODK Server.\n\n";
+$message .= "        You can now download the form using ODK Collect on you mobile device. $timeLimit.";
+$message .= "        If you do not have ODK Collect download on your mobile device, download it from http://goo.gl/cGVSxc. Once installed, edit the following general settings from the ODK Collect:\n\n";
+$message .= "             URL : http://azizi.ilri.cgiar.org/aggregate\n";
+$message .= "             Username  : collector\n";
+$message .= "             Password  : collector_2013\n\n";
+$message .= "        Should you have any problems, please reply to this email and we shall get back to you as soon as possible.\n";
 
       //$headers = "From: noreply@cgiar.org";
       //mail($_POST['email'], $emailSubject, $message, $headers);
