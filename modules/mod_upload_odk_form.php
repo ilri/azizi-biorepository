@@ -293,7 +293,9 @@ $message .= "        If you do not have ODK Collect download on your mobile devi
 $message .= "             URL : http://azizi.ilri.cgiar.org/aggregate\n";
 $message .= "             Username  : collector\n";
 $message .= "             Password  : collector_2013\n\n";
-$message .= "        Should you have any problems, please reply to this email and we shall get back to you as soon as possible.\n";
+$message .= "        Should you have any problems, please reply to this email and we shall get back to you as soon as possible.\n\n";
+$message .= "With Regards\n";
+$message .= "The Biorepository team\n";
 
       //$headers = "From: noreply@cgiar.org";
       //mail($_POST['email'], $emailSubject, $message, $headers);
