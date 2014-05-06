@@ -269,7 +269,8 @@ class LimsUploader{
          if($sheet->isMain) $mainSheetIndex = $index;
          else $extraData[$sheet->sheet_name] = $sheet->getData();
       }
-      $curFile[$mainSheetIndex]->checkForeignConstraints($extraData);
+      //if we are processing elisa results, skip checking foreign constraints
+      if(!in_array($module, array('elisa'))) $curFile[$mainSheetIndex]->checkForeignConstraints($extraData);
 
 //      $curFile->DumpData();
 
@@ -358,12 +359,24 @@ $content .="
 //      die();
 
       //now we upload the data
-      $res = $curFile[$mainSheetIndex]->UploadData();
       rename($file, $curFile[$mainSheetIndex]->finalUploadedFile);
-      if($res === 0){
+      if($_GET['module'] == 'elisa'){
+         foreach($curFile as $index => $sheet){
+            $res = $sheet->UploadData();
+            if($res === 0){
+               $this->HomePage($res);
+               return;
+            }
+         }
          $this->HomePage("The data has been uploaded successfully.");
+         return;
       }
-      else $this->HomePage($res);
+      else{
+         $res = $curFile[$mainSheetIndex]->UploadData();
+         if($res === 0) $this->HomePage("The data has been uploaded successfully.");
+         else $this->HomePage($res);
+         return;
+      }
    }
 
    /**

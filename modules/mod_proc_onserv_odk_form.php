@@ -497,7 +497,7 @@ class ProcODKForm {
          foreach ($headings as $currHeading){
             $html = $html . "<th>" . $currHeading. "</th>";
          }
-         $html = $html . "</tr>";
+         //$html = $html . "</tr>";
          
          foreach($currTable as $currRow){
             $html = $html . "<tr>";
@@ -518,7 +518,7 @@ class ProcODKForm {
    }
    
    private function sendToODKParser(){
-      $postData = array("creator" => $this->creator, "email" => $this->email, "fileName" => $this->fileName, "csvString" => urldecode($this->csvString), "jsonString" => $this->json, "xmlString" => $this->xmlString, "parseType" => $this->parseType, "dwnldImages" => $this->dwnldImages);
+      $postData = array("creator" => $this->creator, "email" => $this->email, "fileName" => $this->fileName, "csvString" => urldecode($this->csvString), "jsonString" => $this->json, "xmlString" => $this->xmlString, "parseType" => $this->parseType, "dwnldImages" => $this->dwnldImages, "fromWithin" => "yes");
       $ch = curl_init($_SERVER['HTTP_ORIGIN']."/repository/modules/mod_parse_odk_backend.php");
       
       curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);

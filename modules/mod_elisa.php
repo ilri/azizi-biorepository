@@ -57,10 +57,14 @@ class Elisa extends SpreadSheet {
       )
    );
 
-   private $allTrays = array();
-   private $allSamples = array();
    private $extraCols = array();
    private $allProjects = array();
+
+   private $plateTechnician = 0;
+
+   private $plateProcess = 0;
+
+   private $allStatus = array();
 
    /**
     * The spreadsheet constructor
@@ -83,18 +87,20 @@ class Elisa extends SpreadSheet {
     public function NormalizeData($additions){
        global $Repository;
 
-       //get the plate project
-       $plateProject = 0;
+//       if($this->sheet_name == 'Plate 2') { $Repository->Dbase->CreateLogEntry(print_r($this, true), 'debug'); die(); }
        foreach($this->data as $key => $t){
+//       $Repository->Dbase->CreateLogEntry(print_r($t, true), 'debug'); die();
           //get each sample project and sample id
           $query = 'select a.count, a.Project, b.value from '. Config::$config['azizi_db'] .'.samples as a inner join '. Config::$config['azizi_db'] .'.modules_custom_values as b on a.Project=b.val_id where a.label = :label';
           $label = $t['sample'];
           $res = $Repository->Dbase->ExecuteQuery($query, array('label' => $label));
+//          if($label == '') $Repository->Dbase->CreateLogEntry("Plate: {$this->sheet_name} --> Key: $key --> Label: $label --> Query: $query", 'debug');
+//          if($label == '') { $Repository->Dbase->CreateLogEntry(print_r($t, true), 'debug'); die(); }
           if($res == 1){
              return $Repository->Dbase->lastError;
           }
-          elseif(count($res) == 0) $this->errors[] = "The sample '{$t['sample']}' has <b>No Record</b> in the database. Please contact the system administrator.";
-          elseif(count($res) != 1) $this->errors[] = "The sample '{$t['sample']}' has multiple records in the database. Please contact the system administrator.";
+          elseif(count($res) == 0) $this->errors[] = "The sample '$label' has <b>No Record</b> in the database. Please contact the system administrator.";
+          elseif(count($res) != 1) $this->errors[] = "The sample '$label' has <b>multiple records</b> in the database. Please contact the system administrator.";
           else{
              //we have the sample id and the project
              $this->data[$key]['projectName'] = $res[0]['value'];
@@ -155,6 +161,20 @@ class Elisa extends SpreadSheet {
     public function UploadData(){
        global $Repository;
 
+       //get the test type for the plate
+       $testType = $this->metadata['test_type']['data'];
+       $this->plateProcess = $this->isProcessSaved($testType);
+       if(!is_numeric($this->plateProcess)) $this->errors[] = $this->plateProcess;
+
+       //add the technician who ran the plate
+       $technician = $this->metadata['technician']['data'];
+       $this->plateTechnician = $this->isOwnerAdded($technician);
+       if(!is_numeric($this->plateTechnician)) $this->errors[] = $this->plateTechnician;
+
+       //get the positive and negative statuses definition
+       $this->allStatus = $this->sampleStatuses();
+       if(!is_numeric($this->allStatus)) $this->errors[] = $this->allStatus;
+
        //add the current plate setup
        //testID, testType, plateStatus, plateName, testDateTime, createBy, filter, technician, blankingValue, kitBatch, AcceptableODrange, PPthreshold, meanControlOD, project, filename
        $plateQuery = 'insert into '. Config::$config['azizi_db'] .'.elisaSetUp(testType, plateStatus, plateName, testDateTime, createBy, technician, kitBatch, meanControlOD, project, filename)'
@@ -164,29 +184,46 @@ class Elisa extends SpreadSheet {
        $elisaQuery = 'insert into '. Config::$config['azizi_db'] .'.elisaTest(sampleId, testID, DESCRIPTION, ID, STATUS, ODAv, PI, Project)'
          . 'values(:sampleId, :testID, :DESCRIPTION, :ID, :STATUS, :ODAv, :pi, :project)';
 
+       //add the results to the processes tab of the sample
+       $processQuery = 'insert into '. Config::$config['azizi_db'] .'.processes(sample_id, process_type, comments, date, operator, status)'
+         . 'values(:sampleId, :proc_type, :comments, :date, :operator, :status)';
+
        setlocale(LC_TIME, "en_GB");
        $Repository->Dbase->StartTrans();
        //lets add the plate
        $meta = $this->metadata;
+       $testDate = str_replace(array('/','-','_','.'), '-', $meta['test_date']['data']);
+       $plateDate = date_format(date_create_from_format('d-M-Y', $testDate), 'Y-m-d H:i:s');
        $platevals = array(
-           'testType' => $meta['test_type']['data'], 'plateStatus' => 'WITHIN_LIMITS', 'plateName' => $meta['plate_name']['data'], 'testDateTime' => date_format(date_create_from_format('d-M-Y', $meta['test_date']['data']), 'Y-m-d H:i:s'),
+           'testType' => $meta['test_type']['data'], 'plateStatus' => 'WITHIN_LIMITS', 'plateName' => $meta['plate_name']['data'], 'testDateTime' => $plateDate,
            'createBy' => $meta['technician']['data'], 'technician' => $meta['technician']['data'], 'kitBatch' => "{$meta['ref_no']['data']} - {$meta['lot_no']['data']}",
            'meanControlOD' => $meta['mean_od']['data'], 'project' => $this->data[0]['projectId'], 'filename' => "$this->finalUploadedFile:$this->sheet_index"
        );
-       $addedPlate = $Repository->Dbase->ExecuteQuery($plateQuery, $platevals);
-       if($addedPlate == 1){
-         $Repository->Dbase->RollBackTrans();
-         return $Repository->Dbase->lastError;
+       $plateId = $this->isPlateSaved($meta['plate_name']['data']);
+       if($plateId == NULL){
+            $addedPlate = $Repository->Dbase->ExecuteQuery($plateQuery, $platevals);
+            if($addedPlate == 1){
+              $Repository->Dbase->RollBackTrans();
+              return $Repository->Dbase->lastError;
+            }
+            else $plateId = $Repository->Dbase->dbcon->lastInsertId();
        }
-       else $plateId = $Repository->Dbase->dbcon->lastInsertId();
 
        foreach($this->data as $key => $t){
-          echo '<pre>'. print_r($t, true) .'</pre>';
-
           $colvals = array(
              'sampleId' => $t['sampleId'], 'testID' => $plateId, 'DESCRIPTION' => $t['sample'], 'ID' => $key, 'STATUS' => $t['status'], 'ODAv' => $t['sample_od'], 'pi' => $t['sample_pi'], 'project' => $t['projectName']
           );
           $addedResult = $Repository->Dbase->ExecuteQuery($elisaQuery, $colvals);
+          if($addedResult == 1){
+             $Repository->Dbase->RollBackTrans();
+             return $Repository->Dbase->lastError;
+          }
+
+          //add the process data in the process tab
+          $sourceFile = "Source File = <a target='_blank' href='http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file={$this->finalUploadedFileLink}&sheet={$this->sheet_index}&focused={$t['name']}#focused'>Source File.xls</a>";
+          $comments = "Sample OD = {$t['sample_od']}<br />Sample PI = {$t['sample_pi']}<br/ >$sourceFile";
+          $procVals = array('sampleId' => $t['sampleId'], 'proc_type' => $this->plateProcess, 'comments' => $comments, 'date' => $testDate, 'operator' => $this->plateTechnician, 'status' => $this->allStatus[strtolower($t['status'])]);
+          $addedResult = $Repository->Dbase->ExecuteQuery($processQuery, $procVals);
           if($addedResult == 1){
              $Repository->Dbase->RollBackTrans();
              return $Repository->Dbase->lastError;
@@ -284,20 +321,12 @@ class Elisa extends SpreadSheet {
      * @param  string   $box_name      The name of the box that we want to save
      * @return mixed    Returns the boxid of the box, whether saved or existing when all is ok, else it returns a string with the error message in case there was an error
      */
-    private function IsBoxSaved($box_name){
+    private function isPlateSaved($plate_name){
        global $Repository;
-       $boxId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.boxes_def', 'box_id', 'box_name', $box_name);
-       if($boxId == -2) return $Repository->Dbase->lastError;
-       elseif(is_null($boxId)){
-         //we assume all trays are 10x10
-         $boxId = $Repository->Dbase->AddNewTray(Config::$config['azizi_db'], $box_name, 'A:1.J:10', 'box', $_SESSION['contact_id']);
-         if(is_string($boxId)){
-            if($Repository->Dbase->dbcon->errno == 1062) return $boxId;    //complaining of a duplicate box....lets continue
-            else return $Repository->Dbase->lastError;   //we have an error while adding the tray, so we just return
-         }
-         else return $boxId;
-       }
-       else return $boxId;
+       $testId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.elisaSetUp', 'testID', 'plateName', $plate_name);
+       if($testId == -2) return $Repository->Dbase->lastError;
+       elseif(is_null($testId))return NULL;
+       else return $testId;
     }
 
     /**
@@ -307,7 +336,7 @@ class Elisa extends SpreadSheet {
      * @param  string   $owner       The name of the owner that we want to save
      * @return mixed    Returns the ownerId of the sample owner, whether saved or existing when all is ok, else it returns a string with the error message in case there was an error
      */
-    private function IsOwnerAdded($owner){
+    private function isOwnerAdded($owner){
        global $Repository;
        $ownerId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.contacts', 'count', 'name', $owner);
        if($ownerId == -2) return $Repository->Dbase->lastError;
@@ -342,6 +371,49 @@ class Elisa extends SpreadSheet {
          else return $organismId;
        }
        else return $organismId;
+    }
+
+    /**
+     * Checks whether a process has already been added to the database. If not, it adds the process and returns the new process id
+     *
+     * @global object   $Repository  The object with the main class of the Lims uploader
+     * @param  name     $process     The name of the process to add
+     * @return mixed    Returns the process id of the process, whether saved or existing when all is ok, else it returns a string with the error message in case there was an error
+     */
+    private function isProcessSaved($process){
+       global $Repository;
+       $processTypeId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.process_type_def', 'count', 'label', $process);
+       if($processTypeId == -2) return $Repository->Dbase->lastError;
+       elseif(is_null($processTypeId)){
+         $processTypeId = $Repository->Dbase->addProcessType(Config::$config['azizi_db'], $process);
+         if(!is_numeric($processTypeId)){
+            if($Repository->Dbase->dbcon->errno == 1062) return $processTypeId;    //complaining of a duplicate box....lets continue
+            else return $Repository->Dbase->lastError;   //we have an error while adding the tray, so we just return
+         }
+         else return $processTypeId;
+       }
+       else return $processTypeId;
+    }
+
+    /**
+     * Get all the statuses for the sample processes
+     *
+     * @global object   $Repository  The object with the main class of the Lims uploader
+     * @return mixed    Returns an array of the list of processes with their IDs when all is ok, else it returns an error message as a string in case of an error
+     */
+    private function sampleStatuses(){
+       global $Repository;
+       $statusesQuery = 'select option_id, option_name from '. Config::$config['azizi_db'] .'.modules_options where option_type = :neg or option_type = :pos';
+       $statusVals = array('neg' => 'Negative', 'pos' => 'Positive');
+       $statuses = $Repository->Dbase->ExecuteQuery($statusesQuery, $statusVals);
+       if($statuses == 1){
+          $Repository->Dbase->RollBackTrans();
+          return $Repository->Dbase->lastError;
+       }
+       $allStatuses = array();
+       foreach($statuses as $st) $allStatuses[strtolower($st['option_name'])] = $st['option_id'];
+
+       return $allStatuses;
     }
 }
 ?>
