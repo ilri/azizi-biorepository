@@ -721,10 +721,8 @@ class Parser {
         if (filter_var($cellString, FILTER_VALIDATE_URL) && $this->isImage($cellString) === FALSE) {//is non-image url
             $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $this->cells[0][$columnIndex] . " sheet");
             $this->parseHTMLTable($cellString, $this->cells[0][$columnIndex], $rowIndex);
-            $this->logHandler->log(3, $this->TAG, $cellString . "is non image url");
         }
         else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $this->isImage($cellString) ===TRUE && $this->dwnldImages === "yes"){ //is image
-           $this->logHandler->log(3, $this->TAG, $cellString . "is image url");
             $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
             $cellString = $this->gTasks->downloadImage($cellString, $this->imagesDir);
             $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
