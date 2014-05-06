@@ -25,8 +25,11 @@ class ProcODKForm {
    private $headingRows;
    private $repeatHeadings;
    private $tableDir;
+   private $tableURL;
    private $tableLinks;
    private $setLinks;
+   private $csvString;
+   private $geopointHeadings;
    
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
@@ -62,7 +65,11 @@ class ProcODKForm {
          mkdir($this->tmpDir,0777,true);
       }
       
+      $this->tableURL = $_SERVER['HTTP_ORIGIN']."/repository/tmp/".$this->sessionID . "/tables";
       $this->tableDir = $this->tmpDir . "/tables";
+      if(!file_exists($this->tableDir)){
+         mkdir($this->tableDir,0777,true);
+      }
       
       $this->authCookies = $this->tmpDir."/"."AUTH".mt_rand();
       $this->userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0";
@@ -90,6 +97,8 @@ class ProcODKForm {
          $this->setLinks = array();
          $this->processRows();
          $this->construcCSVFile();
+         $this->constructLinks();
+         $this->sendToODKParser();
          /*if(strlen($this->json) !== 0){
             $this->sendToODKParser();
          }*/
@@ -244,6 +253,7 @@ class ProcODKForm {
    
    private function processRows(){
       preg_match_all("/<repeat\s+nodeset\s*=\s*[\"'](.*)[\"']/", $this->xmlString, $repeats);
+      preg_match_all("/<bind\s+nodeset\s*=\s*[\"']([a-z0-9_\-\.\/]+)[\"'].*type\s*=\s*[\"']geopoint[\"']/i", $this->xmlString, $geopoints);
       if(isset($repeats[1]))
          $repeats = $repeats[1];
       else
@@ -254,6 +264,21 @@ class ProcODKForm {
          $repeats[$repeatIndex] = str_replace("/", ":", $repeats[$repeatIndex]);
       }
       
+      if(isset($geopoints[1])){
+         $geopoints = $geopoints[1];
+      }
+      else{
+         $geopoints = array();
+      }
+      
+      for($geoIndex = 0; $geoIndex<count($geopoints); $geoIndex++){
+         $geopoints[$geoIndex] = str_replace("/".$this->topElement."/", "", $geopoints[$geoIndex]);
+         $geopoints[$geoIndex] = str_replace("/", ":", $geopoints[$geoIndex]);
+      }
+      
+      $this->Dbase->CreateLogEntry("Geopoints are ".print_r($geopoints, true), "fatal");
+      
+      $this->geopointHeadings = $geopoints;
       $this->repeatHeadings = $repeats;
       
       for($rowIndex = 0; $rowIndex < count($this->submissionXObjects); $rowIndex++){
@@ -267,7 +292,7 @@ class ProcODKForm {
       
       //$this->Dbase->CreateLogEntry(print_r($this->csvRows, true), "fatal");
       //$this->Dbase->CreateLogEntry("csv files are ".print_r($this->headingRows, true), "fatal");
-      $this->Dbase->CreateLogEntry(print_r($this->tableLinks, true), "fatal");
+      $this->Dbase->CreateLogEntry(print_r($_SERVER, true), "fatal");
    }
    
    private function processRow($row, $parentSheet, $parents, $rowIndex = -1, $parentLink = -1, $parentIndex = -1){
@@ -302,7 +327,7 @@ class ProcODKForm {
             else
                $currHeading = $parent_heading . ":" . $rowKeys[$elementIndex];
             
-            $this->Dbase->CreateLogEntry($currHeading, "fatal");
+            //$this->Dbase->CreateLogEntry($currHeading, "fatal");
             
             if(!isset($this->headingRows[$parentSheet]))
                $this->headingRows[$parentSheet] = array();
@@ -334,14 +359,14 @@ class ProcODKForm {
                   $newParentSheet = join("_", $newParents);
                   
                   if(!isset($this->setLinks[$parentSheet][$newParentSheet][$rowIndex])){
-                     $link = $this->tableDir."/".$newParentSheet.mt_rand().".html";//a link should be unique for each repeat question answered
+                     $link = $newParentSheet.mt_rand().".html";//a link should be unique for each repeat question answered
                      $this->setLinks[$parentSheet][$newParentSheet][$rowIndex] = $link;
                   }
                   else{
                      $link = $this->setLinks[$parentSheet][$newParentSheet][$rowIndex];
                   }
                   
-                  $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $link;
+                  $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $this->tableURL . "/" .$link;
                   
                   $newParentIndex = $newRowIndex;
                   $newRowIndex = -1;
@@ -354,19 +379,55 @@ class ProcODKForm {
                //processRow($row, $parentSheet, $parents, $rowIndex = -1)
                $this->processRow((array) $rowValues[$elementIndex], $newParentSheet, $newParents, $newRowIndex, $link, $newParentIndex);
             }
-            else{
-               $csvElementIndex = array_search($currHeading, $this->headingRows[$parentSheet]);
-               if($csvElementIndex === false){//element heading does not exist in array
-                  $csvElementIndex = array_push($this->headingRows[$parentSheet], $currHeading) - 1;
-               }
+            else{//is a string
                
-               $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $rowValues[$elementIndex];
-               if($parentLink != -1){
-                  if(!isset($this->tableLinks[$parentLink])){
-                     $this->tableLinks[$parentLink] = array();
-                  }
+               if(array_search($currHeading, $this->geopointHeadings) !== false){//if is gps
+                  if(strlen($rowValues[$elementIndex]) > 0)
+                     $gpsParts = explode(" ", $rowValues[$elementIndex]);
+                  else
+                     $gpsParts = array("","","","");
                   
-                  $this->tableLinks[$parentLink][count($this->tableLinks[$parentLink])][$rowKeys[$elementIndex]] = $rowValues[$elementIndex];
+                  //gps is in 4 parts: latitude, longitude, altidute & accuracy in that order
+                  
+                  for($gpsPIndex = 0; $gpsPIndex < count($gpsParts); $gpsPIndex++){
+                     $gpsName = "";
+                     if($gpsPIndex == 0) $gpsName = ":Latitude";
+                     else if($gpsPIndex == 1) $gpsName = ":Longitude";
+                     else if($gpsPIndex == 2) $gpsName = ":Altitude";
+                     else if($gpsPIndex == 3) $gpsName = ":Accuracy";
+                     
+                     $newCurrHeading = $currHeading . $gpsName;
+                     $newCsvElementIndex = array_search($newCurrHeading, $this->headingRows[$parentSheet]);
+                     if($newCsvElementIndex === false){
+                        array_push($this->headingRows[$parentSheet], $newCurrHeading);
+                        $newCsvElementIndex = array_search($newCurrHeading, $this->headingRows[$parentSheet]);
+                     }
+                     
+                     $this->csvRows[$parentSheet][$rowIndex][$newCsvElementIndex] = $gpsParts[$gpsPIndex];
+                  }
+               }
+               else{
+                  $csvElementIndex = array_search($currHeading, $this->headingRows[$parentSheet]);
+                  if($csvElementIndex === false){//element heading does not exist in array
+                     $csvElementIndex = array_push($this->headingRows[$parentSheet], $currHeading) - 1;
+                  }
+
+                  $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $rowValues[$elementIndex];
+                  if($parentLink != -1){
+                     if(!isset($this->tableLinks[$parentLink])){
+                        $this->tableLinks[$parentLink] = array();
+                        $linkIndex = 0;
+                     }
+                     else{
+                        if($elementIndex == 0)
+                           $linkIndex = count($this->tableLinks[$parentLink]);
+                        else {
+                           $linkIndex = count($this->tableLinks[$parentLink]) - 1;
+                        }
+                     }
+
+                     $this->tableLinks[$parentLink][$linkIndex][$rowKeys[$elementIndex]] = $rowValues[$elementIndex];
+                  }
                }
             }
          }
@@ -380,6 +441,7 @@ class ProcODKForm {
       $csvString = "";
       $mainSheetNoColumns = count($this->headingRows["main_sheet"]);
       for($msIndex = 0; $msIndex < $mainSheetNoColumns; $msIndex++){
+         $this->headingRows["main_sheet"][$msIndex] = str_replace("@attributes", "meta", $this->headingRows["main_sheet"][$msIndex]);
          if(strlen($csvString) === 0)
             $csvString = '"'.$this->headingRows["main_sheet"][$msIndex].'"';
          else
@@ -410,13 +472,53 @@ class ProcODKForm {
          }
          $csvString = $csvString . "\n";
       }
-      
+      $this->csvString = $csvString;
       file_put_contents($this->tmpDir."/outputcsv.csv", $csvString);
       $this->Dbase->CreateLogEntry($this->tmpDir."/outputcsv.csv", "fatal");
    }
    
+   private function constructLinks(){
+      $links = array_keys($this->tableLinks);
+      $linkIndex = 0;
+      foreach($this->tableLinks as $currTable){
+         $html = "<html><head></head><body>";
+         //get all headings
+         $headings = array();
+         foreach ($currTable as $currRow){
+            $rowHeaders = array_keys($currRow);
+            foreach ($rowHeaders as $currRowHeader){
+               if(array_search($currRowHeader, $headings)=== false){//heading does not exist in main heading array
+                  array_push($headings, $currRowHeader);
+               }
+            }
+         }
+         
+         $html = $html . "<table><tr>";
+         foreach ($headings as $currHeading){
+            $html = $html . "<th>" . $currHeading. "</th>";
+         }
+         //$html = $html . "</tr>";
+         
+         foreach($currTable as $currRow){
+            $html = $html . "<tr>";
+            foreach ($headings as $currHeading){
+               if(isset($currRow[$currHeading])){
+                  $html = $html . "<td>" . $currRow[$currHeading] . "</td>";
+               }
+               else{
+                  $html = $html . "<td></td>";
+               }
+            }
+            $html = $html . "</tr>";
+         }
+         $html = $html . "</table></body></html>";
+         file_put_contents($this->tableDir . "/" . $links[$linkIndex], $html);
+         $linkIndex++;
+      }
+   }
+   
    private function sendToODKParser(){
-      $postData = array("creator" => $this->creator, "email" => $this->email, "fileName" => $this->fileName, "jsonString" => $this->json, "xmlString" => $this->xmlString, "parseType" => $this->parseType, "dwnldImages" => $this->dwnldImages);
+      $postData = array("creator" => $this->creator, "email" => $this->email, "fileName" => $this->fileName, "csvString" => urldecode($this->csvString), "jsonString" => $this->json, "xmlString" => $this->xmlString, "parseType" => $this->parseType, "dwnldImages" => $this->dwnldImages, "fromWithin" => "yes");
       $ch = curl_init($_SERVER['HTTP_ORIGIN']."/repository/modules/mod_parse_odk_backend.php");
       
       curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
