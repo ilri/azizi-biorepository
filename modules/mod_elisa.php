@@ -225,7 +225,10 @@ class Elisa extends SpreadSheet {
              $Repository->Dbase->RollBackTrans();
              return $Repository->Dbase->lastError;
           }
-          elseif(isset($ifColVals[0]['count'])) continue;   //we have this result already entered... so continue
+          elseif(isset($ifColVals[0]['count'])){
+             $Repository->Dbase->CreateLogEntry("The result for the sample '{$t['sample']}' has already been uploaded before. Skipping it...", 'debug');
+             continue;   //we have this result already entered... so continue
+          }
 
           $colvals = array(
              'sampleId' => $t['sampleId'], 'testID' => $plateId, 'DESCRIPTION' => $t['sample'], 'ID' => $key, 'STATUS' => $t['status'], 'ODAv' => $t['sample_od'], 'pi' => $t['sample_pi'], 'project' => $t['projectName']
