@@ -51,8 +51,8 @@ class Elisa extends SpreadSheet {
       ),
       'columns' => array(
          array('name' =>'sample', 'regex' => '/(tested\s+sample)/i', 'data_regex' => '/^(avaq[0-9]{5})$/i', 'required' => true, 'unique' => true),
-         array('name' =>'sample_od', 'regex' => '/(sample\s+od)/i', 'data_regex' => '/^[0-9]{1,2}\.[0-9]{2,6}$/i', 'required' => true),
-         array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^[0-9]{1,2}\.[0-9]+$/i', 'required' => true),
+         array('name' =>'sample_od', 'regex' => '/(sample\s+od)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => true),
+         array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => true),
          array('name' =>'status', 'regex' => '/(interpretation)/i', 'data_regex' => '/^positive|negative$/i', 'required' => true),
       )
    );
