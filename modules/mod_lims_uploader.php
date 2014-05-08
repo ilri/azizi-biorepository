@@ -363,7 +363,7 @@ $content .="
       if($_GET['module'] == 'elisa'){
          foreach($curFile as $index => $sheet){
             $res = $sheet->UploadData();
-            if($res === 0){
+            if($res !== 0){
                $this->HomePage($res);
                return;
             }

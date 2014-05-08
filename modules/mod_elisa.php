@@ -185,20 +185,28 @@ class Elisa extends SpreadSheet {
          . 'values(:sampleId, :testID, :DESCRIPTION, :ID, :STATUS, :ODAv, :pi, :project)';
 
        //add the results to the processes tab of the sample
-       $processQuery = 'insert into '. Config::$config['azizi_db'] .'.processes(sample_id, process_type, comments, date, operator, status)'
-         . 'values(:sampleId, :proc_type, :comments, :date, :operator, :status)';
+       $processQuery = 'insert into '. Config::$config['azizi_db'] .'.processes(sample_id, process_type, comments, date, date_changed, operator, status)'
+         . 'values(:sampleId, :proc_type, :comments, :date, :date_changed, :operator, :status)';
+
+       //check if the results are already uploaded
+       $ifUploadedQuery = 'select count from '. Config::$config['azizi_db'] .'.processes where sample_id = :sampleid and process_type = :proc_type and date = :date and status = :status';
 
        setlocale(LC_TIME, "en_GB");
        $Repository->Dbase->StartTrans();
        //lets add the plate
        $meta = $this->metadata;
        $testDate = str_replace(array('/','-','_','.'), '-', $meta['test_date']['data']);
-       $plateDate = date_format(date_create_from_format('d-M-Y', $testDate), 'Y-m-d H:i:s');
+       $plateDate = date_format(date_create_from_format('d-M-Y', $testDate), 'Y-m-d');
+       if($plateDate == '') $plateDate = date_format(date_create_from_format('d-m-Y', $testDate), 'Y-m-d') .' 00:00:00';
+       else $plateDate .= ' 00:00:00';
+       $todayDate = date('Y-m-d H:i:s');
+
        $platevals = array(
            'testType' => $meta['test_type']['data'], 'plateStatus' => 'WITHIN_LIMITS', 'plateName' => $meta['plate_name']['data'], 'testDateTime' => $plateDate,
            'createBy' => $meta['technician']['data'], 'technician' => $meta['technician']['data'], 'kitBatch' => "{$meta['ref_no']['data']} - {$meta['lot_no']['data']}",
            'meanControlOD' => $meta['mean_od']['data'], 'project' => $this->data[0]['projectId'], 'filename' => "$this->finalUploadedFile:$this->sheet_index"
        );
+
        $plateId = $this->isPlateSaved($meta['plate_name']['data']);
        if($plateId == NULL){
             $addedPlate = $Repository->Dbase->ExecuteQuery($plateQuery, $platevals);
@@ -210,6 +218,15 @@ class Elisa extends SpreadSheet {
        }
 
        foreach($this->data as $key => $t){
+          //check if the result is already added... if it is, skip it
+          $ifColVals = array('sampleid' => $t['sampleId'], 'proc_type' => $this->plateProcess, 'date' => $plateDate, 'status' => $this->allStatus[strtolower($t['status'])]);
+          $ifColVals = $Repository->Dbase->ExecuteQuery($ifUploadedQuery, $ifColVals);
+          if($ifColVals == 1){
+             $Repository->Dbase->RollBackTrans();
+             return $Repository->Dbase->lastError;
+          }
+          elseif(isset($ifColVals[0]['count'])) continue;   //we have this result already entered... so continue
+
           $colvals = array(
              'sampleId' => $t['sampleId'], 'testID' => $plateId, 'DESCRIPTION' => $t['sample'], 'ID' => $key, 'STATUS' => $t['status'], 'ODAv' => $t['sample_od'], 'pi' => $t['sample_pi'], 'project' => $t['projectName']
           );
@@ -222,7 +239,7 @@ class Elisa extends SpreadSheet {
           //add the process data in the process tab
           $sourceFile = "Source File = <a target='_blank' href='http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file={$this->finalUploadedFileLink}&sheet={$this->sheet_index}&focused={$t['name']}#focused'>Source File.xls</a>";
           $comments = "Sample OD = {$t['sample_od']}<br />Sample PI = {$t['sample_pi']}<br/ >$sourceFile";
-          $procVals = array('sampleId' => $t['sampleId'], 'proc_type' => $this->plateProcess, 'comments' => $comments, 'date' => $testDate, 'operator' => $this->plateTechnician, 'status' => $this->allStatus[strtolower($t['status'])]);
+          $procVals = array('sampleId' => $t['sampleId'], 'proc_type' => $this->plateProcess, 'comments' => $comments, 'date' => $plateDate, 'date_changed' => $todayDate, 'operator' => $this->plateTechnician, 'status' => $this->allStatus[strtolower($t['status'])]);
           $addedResult = $Repository->Dbase->ExecuteQuery($processQuery, $procVals);
           if($addedResult == 1){
              $Repository->Dbase->RollBackTrans();
@@ -403,8 +420,8 @@ class Elisa extends SpreadSheet {
      */
     private function sampleStatuses(){
        global $Repository;
-       $statusesQuery = 'select option_id, option_name from '. Config::$config['azizi_db'] .'.modules_options where option_type = :neg or option_type = :pos';
-       $statusVals = array('neg' => 'Negative', 'pos' => 'Positive');
+       $statusesQuery = 'select option_id, option_name from '. Config::$config['azizi_db'] .'.modules_options where (option_name = :neg or option_name = :pos) and option_type = :type';
+       $statusVals = array('neg' => 'Negative', 'pos' => 'Positive', 'type' => 'proc_status');
        $statuses = $Repository->Dbase->ExecuteQuery($statusesQuery, $statusVals);
        if($statuses == 1){
           $Repository->Dbase->RollBackTrans();
