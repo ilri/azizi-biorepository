@@ -39,6 +39,7 @@ class ParseODK extends Repository{
       
       $query = "SELECT * FROM odk_forms WHERE created_by = :user";
       $forms = $this->Dbase->ExecuteQuery($query, array("user" => $username));
+      if(array_search($_SESSION['username'], Config::$odkUsers) !== FALSE){
 ?>
 <h3 id="odk_heading">ODK Parser</h3>
 <form class="form-horizontal odk_parser">
@@ -117,7 +118,17 @@ class ParseODK extends Repository{
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
 </script>
-<?php
+   <?php
+      }
+      else{//user is not allowed to parse odk files
+         ?>
+<h3 id="odk_heading">ODK Parser</h3>
+<div>You are currently not allowed to Get data from the ODK Server managed by the Azizi Bio-repository team. Please contact the Bio-Repository Manager for more information on this.</div>
+<script>
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+</script>
+         <?php
+      }
    }
    
    private function procODKForm(){
