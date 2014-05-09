@@ -1272,11 +1272,11 @@ class Parser {
        $contentType = get_headers($url, 1);
        $contentType = $contentType["Content-Type"];
        //(!is_array($contentType) && strpos($contentType, 'image') !== NULL)
-       if (!is_array($contentType) && strpos($contentType, 'image') != FALSE) {
-           return TRUE;
+       if (is_array($contentType) || strpos($contentType, 'image') === FALSE) {
+           return FALSE;
        } 
        else {
-            return FALSE;
+            return TRUE;
        }
    }
 
