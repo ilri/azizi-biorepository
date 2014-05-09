@@ -905,10 +905,11 @@ class Parser {
     private function parseHTMLTable($url, $sheetName, $secondaryKey) {
         //"http://azizi.ilri.cgiar.org/ODKAggregate/local_login.html?redirect="
         //http://azizi.ilri.cgiar.org/ODKAggregate/view/formMultipleValue?formId=LamuChickens-v01%5B%40version%3Dnull+and+%40uiVersion%3Dnull%5D%2Fchicken%5B%40key%3Duuid%3Ae3983629-8faa-4531-b61a-34d756bbcbd9%5D%2Fsamples
-        $splitURL = preg_split("/\/view\//i", $url);
-        $authURI = $this->settings['auth_uri'];
+        //$splitURL = preg_split("/\/view\//i", $url);
+        $authURL = $this->settings['auth_url'];
         $encodedURL = urlencode($url);
-        $authURL = $splitURL[0].$authURI.$encodedURL;
+        //$authURL = $splitURL[0].$authURI.$encodedURL;
+        $authURL = $authURL.$encodedURL;
         $sheetNames = array_keys($this->nextRowName);
         if(!in_array($sheetName, $sheetNames)){
             $this->nextRowName[$sheetName] = 0;
