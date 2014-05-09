@@ -254,7 +254,6 @@ class Parser {
       
       }
       else if(isset($_POST['csvString']) && strlen($_POST['csvString']) > 0){
-         file_put_contents("output.csv", $_POST['csvString']);
           $this->logHandler->log(3, $this->TAG, 'Input is csv. Parsing it as such');
           
           $this->aUsername = $this->settings['aggregate_user'];
@@ -906,34 +905,30 @@ class Parser {
     private function parseHTMLTable($url, $sheetName, $secondaryKey) {
         //"http://azizi.ilri.cgiar.org/ODKAggregate/local_login.html?redirect="
         //http://azizi.ilri.cgiar.org/ODKAggregate/view/formMultipleValue?formId=LamuChickens-v01%5B%40version%3Dnull+and+%40uiVersion%3Dnull%5D%2Fchicken%5B%40key%3Duuid%3Ae3983629-8faa-4531-b61a-34d756bbcbd9%5D%2Fsamples
-         $splitURL = preg_split("/\/view\//i", $url);
-         if(!isset($_POST['fromWithin']) || $_POST_['fromWithin'] == "no"){
-             $authURI = $this->settings['auth_uri'];
-             $serverURL = $this->settings['odk_server'];
-             $encodedURL = urlencode($url);
-             $authURL = $serverURL.$authURI.$encodedURL;
-             $sheetNames = array_keys($this->nextRowName);
-             $this->nextRowName[$sheetName] = 0;
-
-             if(file_exists($this->authCookies) === FALSE){
-                 touch($this->authCookies);
-                 chmod($this->authCookies, 0777);
-                 $this->logHandler->log(3, $this->TAG, 'Authenticating '.$this->aUsername.' on the Aggregate server');
-                 $authCh = curl_init($authURL);
-                 curl_setopt($authCh, CURLOPT_USERAGENT, $this->userAgent);
-                 curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
-                 curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
-                 curl_setopt($authCh, CURLOPT_CONNECTTIMEOUT, TRUE);
-                 curl_setopt($authCh, CURLOPT_COOKIEJAR, $this->authCookies);
-                 curl_setopt($authCh, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
-                 curl_setopt($authCh, CURLOPT_USERPWD, $this->aUsername.":".$this->aPassword);
-
-                 curl_exec($authCh);
-                 curl_close($authCh);
-           }
+        $splitURL = preg_split("/\/view\//i", $url);
+        $authURI = $this->settings['auth_uri'];
+        $encodedURL = urlencode($url);
+        $authURL = $splitURL[0].$authURI.$encodedURL;
+        $sheetNames = array_keys($this->nextRowName);
+        if(!in_array($sheetName, $sheetNames)){
+            $this->nextRowName[$sheetName] = 0;
         }
-        else{
-           $this->logHandler->log(3, $this->TAG, "It appears like the url does not require authenticating ");
+
+        if(file_exists($this->authCookies) === FALSE){
+            touch($this->authCookies);
+            chmod($this->authCookies, 0777);
+            $this->logHandler->log(3, $this->TAG, 'Authenticating '.$this->aUsername.' on the Aggregate server');
+            $authCh = curl_init($authURL);
+            curl_setopt($authCh, CURLOPT_USERAGENT, $this->userAgent);
+            curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
+            curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
+            curl_setopt($authCh, CURLOPT_CONNECTTIMEOUT, TRUE);
+            curl_setopt($authCh, CURLOPT_COOKIEJAR, $this->authCookies);
+            curl_setopt($authCh, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+            curl_setopt($authCh, CURLOPT_USERPWD, $this->aUsername.":".$this->aPassword);
+
+            curl_exec($authCh);
+            curl_close($authCh);
         }
 
         $ch = curl_init($url);
@@ -941,8 +936,7 @@ class Parser {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE); 
-        if(!isset($_POST['fromWithin']) || $_POST_['fromWithin'] == "no")
-           curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
 
         $html = curl_exec($ch);
         curl_close($ch);
@@ -1276,7 +1270,8 @@ class Parser {
    private function isImage($url) {
        $contentType = get_headers($url, 1);
        $contentType = $contentType["Content-Type"];
-       if (!is_array($contentType) && strpos($contentType, 'image') !== false) {
+       //(!is_array($contentType) && strpos($contentType, 'image') !== NULL)
+       if (!is_array($contentType) && strpos($contentType, 'image') != FALSE) {
            return TRUE;
        } 
        else {

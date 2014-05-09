@@ -154,7 +154,7 @@ class UploadODK extends Repository{
                   if(isset($instanceIDs[1]) && count($instanceIDs[1]) === 1 && isset($instanceIDs[2]) && count($instanceIDs[2]) === 1){
                      $preID = $instanceIDs[1][0];
                      $instanceID = $instanceIDs[2][0];
-                     $newInstanceID = $instanceID . mt_rand();
+                     $newInstanceID = $instanceID . round(microtime(true) * 1000);
                      $xmlString = preg_replace("/<instance>[\s\n]*<".$preID."\s+id=[\"']".$instanceID."[\"']>/", "<instance>\n<".$preID." id=\"".$newInstanceID."\">", $xmlString);
                      file_put_contents($this->xmlFileLoc, $xmlString);
                   }
