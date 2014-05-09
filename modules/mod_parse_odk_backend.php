@@ -909,8 +909,9 @@ class Parser {
          $splitURL = preg_split("/\/view\//i", $url);
          if(!isset($_POST['fromWithin']) || $_POST_['fromWithin'] == "no"){
              $authURI = $this->settings['auth_uri'];
+             $serverURL = $this->settings['odk_server'];
              $encodedURL = urlencode($url);
-             $authURL = $splitURL[0].$authURI.$encodedURL;
+             $authURL = $serverURL.$authURI.$encodedURL;
              $sheetNames = array_keys($this->nextRowName);
              $this->nextRowName[$sheetName] = 0;
 
