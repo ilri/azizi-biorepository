@@ -245,7 +245,8 @@ class Repository extends DBase{
 <div class="user_options">
    <ul>
       <li><a href='?page=ln2_requests'>Request Liquid Nitrogen</a></li>
-      <!--li><a href='?page=inventory'>Inventory Management</a></li-->
+      <li><a href='?page=odk_uploader'>Upload An ODK Form</a></li>
+      <li><a href='?page=odk_parser'>Get ODK Form Data</a></li>
 <?php
       $this->HomeLinks($_SESSION['user_type']);
 ?>

@@ -73,6 +73,7 @@ class UploadODK extends Repository{
       }
       $emailAddress = $this->Dbase->getEmailAddress($_SESSION['username']);
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
+      if(array_search($_SESSION['username'], Config::$odkUsers) !== FALSE){
 ?>
 <h3 id="odk_heading">ODK Uploader</h3>
 <hr />
@@ -116,6 +117,16 @@ class UploadODK extends Repository{
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
 </script>
 <?php
+      }
+      else{//user not allowed to upload odk files on aggregate
+         ?>
+<h3 id="odk_heading">ODK Uploader</h3>
+<div>You are currently not allowed to upload data on the ODK Server managed by the Azizi Bio-repository team. Please contact the Bio-Repository Manager for more information on this.</div>
+<script>
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
+</script>
+         <?php
+      }
    }
 
    private function uploadEXCELFile(){
@@ -143,7 +154,7 @@ class UploadODK extends Repository{
                   if(isset($instanceIDs[1]) && count($instanceIDs[1]) === 1 && isset($instanceIDs[2]) && count($instanceIDs[2]) === 1){
                      $preID = $instanceIDs[1][0];
                      $instanceID = $instanceIDs[2][0];
-                     $newInstanceID = $instanceID . mt_rand();
+                     $newInstanceID = $instanceID . round(microtime(true) * 1000);
                      $xmlString = preg_replace("/<instance>[\s\n]*<".$preID."\s+id=[\"']".$instanceID."[\"']>/", "<instance>\n<".$preID." id=\"".$newInstanceID."\">", $xmlString);
                      file_put_contents($this->xmlFileLoc, $xmlString);
                   }
