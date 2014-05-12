@@ -30,6 +30,7 @@ class ProcODKForm {
    private $setLinks;
    private $csvString;
    private $geopointHeadings;
+   private $linkParentSheets;
    
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
@@ -95,6 +96,7 @@ class ProcODKForm {
          $this->csvRows = array();
          $this->tableLinks = array();
          $this->setLinks = array();
+         $this->linkParentSheets = array();
          $this->processRows();
          $this->construcCSVFile();
          $this->constructLinks();
@@ -361,6 +363,7 @@ class ProcODKForm {
                   if(!isset($this->setLinks[$parentSheet][$newParentSheet][$rowIndex])){
                      $link = $newParentSheet.mt_rand().".html";//a link should be unique for each repeat question answered
                      $this->setLinks[$parentSheet][$newParentSheet][$rowIndex] = $link;
+                     $this->linkParentSheets[$link] = $currHeading;
                   }
                   else{
                      $link = $this->setLinks[$parentSheet][$newParentSheet][$rowIndex];
@@ -481,6 +484,14 @@ class ProcODKForm {
       $links = array_keys($this->tableLinks);
       $linkIndex = 0;
       foreach($this->tableLinks as $currTable){
+         $linkParentSheet = $this->linkParentSheets[$links[$linkIndex]];
+         $unProcessedHeadings = $this->headingRows[$linkParentSheet];
+         for($uIndex = 0; $uIndex < count($unProcessedHeadings); $uIndex++){
+            preg_match("/.*:([a-z0-9_\-\.\/]+)/i", $unProcessedHeadings[$uIndex], $matches);
+            if(strlen($matches[1])>0)
+               $unProcessedHeadings[$uIndex] = $matches[1];
+         }
+         
          $html = "<html><head></head><body>";
          //get all headings
          $headings = array();
@@ -492,6 +503,9 @@ class ProcODKForm {
                }
             }
          }
+         
+         if(count($unProcessedHeadings) > count($headings))
+            $headings = $unProcessedHeadings;
          
          $html = $html . "<table><tr>";
          foreach ($headings as $currHeading){
