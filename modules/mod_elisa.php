@@ -408,7 +408,6 @@ class Elisa extends SpreadSheet {
        if($processTypeId == -2) return $Repository->Dbase->lastError;
        elseif(is_null($processTypeId)){
          $processTypeId = $Repository->Dbase->addProcessType(Config::$config['azizi_db'], $process);
-         var_dump($processTypeId);
          if(is_numeric($processTypeId) || $processTypeId == NULL){
             $processTypeId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.process_type_def', 'count', 'label', $process);
             if($processTypeId == -2) return $Repository->Dbase->lastError;
