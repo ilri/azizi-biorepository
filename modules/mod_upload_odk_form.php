@@ -154,14 +154,58 @@ class UploadODK extends Repository{
                   if(isset($instanceIDs[1]) && count($instanceIDs[1]) === 1 && isset($instanceIDs[2]) && count($instanceIDs[2]) === 1){
                      $preID = $instanceIDs[1][0];
                      $instanceID = $instanceIDs[2][0];
-                     $newInstanceID = $instanceID . round(microtime(true) * 1000);
+                     $random = round(microtime(true) * 1000);
+                     $newInstanceID = $instanceID . $random;
                      $xmlString = preg_replace("/<instance>[\s\n]*<".$preID."\s+id=[\"']".$instanceID."[\"']>/", "<instance>\n<".$preID." id=\"".$newInstanceID."\">", $xmlString);
+                     
+                     /*preg_match_all("/<h:title>(.*)<\/h:title>/i", $xmlString, $possibleTitle);
+                     
+                     if(isset($possibleTitle[1]) && count($possibleTitle[1]) == 1){
+                        $title = $possibleTitle[1][0];
+                        $newTitle = $title ." (". $random.")";
+                        $xmlString = preg_replace("/<h:title>".$title."<\/h:title>/", "<h:title>".$newTitle."<\/h:title>", $xmlString);
+                     }
+                     else{
+                        $this->Dbase->CreateLogEntry("The XML file returned multiple results for the title", "fatal");
+                        return "Something went wrong while trying to upload the form. This does not mean your form has a problem. Please contact the Systems Administrators";
+                     }*/
+                     
                      file_put_contents($this->xmlFileLoc, $xmlString);
                   }
                   else{
                      $this->Dbase->CreateLogEntry("The XML file returned multiple results for the instance id", "fatal");
                      return "Something went wrong while trying to upload the form. This does not mean your form has a problem. Please contact the Systems Administrators";
                   }
+               }
+               
+               preg_match_all("/<instance>[\s\n]*<(.+)\s+id=[\"'](.*)[\"']>/i", $xmlString, $possibleInstanceIDs);
+               if(isset($possibleInstanceIDs[1]) && count($possibleInstanceIDs[1]) == 1 && isset($possibleInstanceIDs[2]) && count($possibleInstanceIDs[2]) == 1){
+                     $topElement = $possibleInstanceIDs[1][0];
+                     $instanceID = $possibleInstanceIDs[2][0];
+               }
+               
+               preg_match_all("/<h:title>(.*)<\/h:title>/i", $xmlString, $possibleTitle);
+               $formTitle = "";
+               
+               if(isset($possibleTitle[1]) && count($possibleTitle[1]) == 1)
+                  $formTitle = $possibleTitle[1][0];
+               $error = "";
+               //check if form with same name in database with same title
+               $query = "SELECT id FROM odk_forms WHERE form_name = :new_name";
+               $result = $this->Dbase->ExecuteQuery($query, array("form_name" => $formTitle));
+
+               if(is_array($result) && count($result)>0){//do not upload
+                  $error .= "There already exists an ODK form with the same form_title. If this is the same form, consider incrementing it by a version<br />";
+               }
+               
+               $query = "SELECT id FROM odk_forms WHERE instance_id = :instance_id";
+               $result = $this->Dbase->ExecuteQuery($query, array("instance_id" => $instanceID));
+               if(is_array($result) && count($result)>0){//do not upload
+                  $error .= "There is another ODK form in the server with the same instance id. Please change ".$instanceID. " to something else<br />";
+               }
+               
+               if(strlen($error) > 0){
+                  return $error;
                }
 
                //authenticate user
