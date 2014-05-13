@@ -237,9 +237,6 @@ class UploadODK extends Repository{
                            $username = "unknown";
 
                         $result = $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "uploaded_by" => $username, "email" => $_POST['email'], "type" => $_POST['upload_type']));
-                        
-                        $query = "INSERT INTO odk_access(form_id, `user`) VALUES(:form_id, :user)";
-                        $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "user" => $username));
                      }
                      else{//this is probably the first time the form is being uploaded
                         $this->Dbase->CreateLogEntry("First time form with instance id = ".$instanceID." is being uploaded", "fatal");
@@ -262,6 +259,14 @@ class UploadODK extends Repository{
 
                            $result = $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "uploaded_by" => $username, "email" => $_POST['email'], "type" => $_POST['upload_type']));
                         }
+                     }
+                     
+                     //give user access to form
+                     $query = "SELECT id FROM odk_access WHERE user = :user AND form_id = :form_id";
+                     $result = $this->Dbase->ExecuteQuery($query, array("form_id"=> $formID, "user" => $username));
+                     if(is_array($result) && count($result) == 0){//user does not have access to form
+                        $query = "INSERT INTO odk_access(form_id, `user`) VALUES(:form_id, :user)";
+                        $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "user" => $username));
                      }
 
                      //email uploader
