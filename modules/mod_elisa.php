@@ -47,12 +47,12 @@ class Elisa extends SpreadSheet {
       ),
       'mean_od' => array(
          'regex' => '/(mean\s+od\s+value)(.+)/i',
-         'required' => true
+         'required' => false
       ),
       'columns' => array(
          array('name' =>'sample', 'regex' => '/(tested\s+sample)/i', 'data_regex' => '/^(avaq[0-9]{5})$/i', 'required' => true, 'unique' => true),
-         array('name' =>'sample_od', 'regex' => '/(sample\s+od)/i', 'data_regex' => '/^[0-9]{1,2}\.[0-9]{2,6}$/i', 'required' => true),
-         array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^[0-9]{1,2}\.[0-9]+$/i', 'required' => true),
+         array('name' =>'sample_od', 'regex' => '/(sample\s+od)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => true),
+         array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => true),
          array('name' =>'status', 'regex' => '/(interpretation)/i', 'data_regex' => '/^positive|negative$/i', 'required' => true),
       )
    );
@@ -165,11 +165,13 @@ class Elisa extends SpreadSheet {
        $testType = $this->metadata['test_type']['data'];
        $this->plateProcess = $this->isProcessSaved($testType);
        if(!is_numeric($this->plateProcess)) $this->errors[] = $this->plateProcess;
+       if(in_array($this->plateProcess, array('', null))) return "There was an error in getting the process id. Please contact the system administrator.";
 
        //add the technician who ran the plate
        $technician = $this->metadata['technician']['data'];
        $this->plateTechnician = $this->isOwnerAdded($technician);
        if(!is_numeric($this->plateTechnician)) $this->errors[] = $this->plateTechnician;
+       if(in_array($this->plateTechnician, array('', null))) return "There was an error in getting the technician id. Please contact the system administrator.";
 
        //get the positive and negative statuses definition
        $this->allStatus = $this->sampleStatuses();
@@ -225,7 +227,10 @@ class Elisa extends SpreadSheet {
              $Repository->Dbase->RollBackTrans();
              return $Repository->Dbase->lastError;
           }
-          elseif(isset($ifColVals[0]['count'])) continue;   //we have this result already entered... so continue
+          elseif(isset($ifColVals[0]['count'])){
+             $Repository->Dbase->CreateLogEntry("The result for the sample '{$t['sample']}' has already been uploaded before. Skipping it...", 'debug');
+             continue;   //we have this result already entered... so continue
+          }
 
           $colvals = array(
              'sampleId' => $t['sampleId'], 'testID' => $plateId, 'DESCRIPTION' => $t['sample'], 'ID' => $key, 'STATUS' => $t['status'], 'ODAv' => $t['sample_od'], 'pi' => $t['sample_pi'], 'project' => $t['projectName']
@@ -403,11 +408,15 @@ class Elisa extends SpreadSheet {
        if($processTypeId == -2) return $Repository->Dbase->lastError;
        elseif(is_null($processTypeId)){
          $processTypeId = $Repository->Dbase->addProcessType(Config::$config['azizi_db'], $process);
-         if(!is_numeric($processTypeId)){
-            if($Repository->Dbase->dbcon->errno == 1062) return $processTypeId;    //complaining of a duplicate box....lets continue
+         if(is_numeric($processTypeId) || $processTypeId == NULL){
+            $processTypeId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.process_type_def', 'count', 'label', $process);
+            if($processTypeId == -2) return $Repository->Dbase->lastError;
+            else return $processTypeId;
+         }
+         else{
+            if($Repository->Dbase->dbcon->errno == 1062) return $processTypeId;    //complaining of a duplicate process....lets continue
             else return $Repository->Dbase->lastError;   //we have an error while adding the tray, so we just return
          }
-         else return $processTypeId;
        }
        else return $processTypeId;
     }

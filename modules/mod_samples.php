@@ -211,21 +211,37 @@ class Samples extends SpreadSheet {
          . 'values(:label, :comments, :date_created, :date_updated, :sample_type, :origin, :org, :main_operator, :box_id, :box_details, :Project, :label, :origin, :date_created, :animal_id, :storage_box, :longitude, :latitude)';
        //for linked samples
        $relationQuery = 'insert into '. Config::$config['azizi_db'] .'.modules_relation(module_from, id_from, module_to, id_to) values(:module_from, :id_from, :module_to, :id_to)';
+       //check for already saved samples
+       $isUploadedQuery = "select count from ". Config::$config['azizi_db'] .".samples where label = :label and box_id = :box_id and box_details = :box_details";
+       //check 4 duplicates
+       $isDupQuery = "select count from ". Config::$config['azizi_db'] .".samples where label = :label and (box_id != :box_id or box_details != :box_details)";
 
        setlocale(LC_TIME, "en_GB");
        $Repository->Dbase->StartTrans();
        foreach($this->data as $t){
           //check whether this sample is already saved
-         $query = "select * from ". Config::$config['azizi_db'] .".samples where label = :label";
          $label = $t['name'];
-         $res = $Repository->Dbase->ExecuteQuery($query, array('label' => $label));
+         $isUploadedValues = array('label' => $label, 'box_id' => $this->allTrays[$t['storage_box']], 'box_details' => $t['box_details']);
+         $res = $Repository->Dbase->ExecuteQuery($isUploadedQuery, $isUploadedValues);
          if($res == 1){
             $Repository->Dbase->RollBackTrans();
             return $Repository->Dbase->lastError;
          }
          elseif(count($res) != 0){
+            $Repository->Dbase->CreateLogEntry("The sample '$label' has already been uploaded before. Skipping it...", 'debug');
+            continue;
+         }
+
+         //check for duplicates
+         $res = $Repository->Dbase->ExecuteQuery($isDupQuery, $isUploadedValues);
+         if($res == 1){
             $Repository->Dbase->RollBackTrans();
-            return "The sample '$label'is a duplicate and has already been uploaded before.";
+            return $Repository->Dbase->lastError;
+         }
+         elseif(count($res) != 0){
+            $Repository->Dbase->CreateLogEntry("The sample '$label' is a duplicate of a sample with id '{$res[0]['count']}'.", 'fatal');
+            $Repository->Dbase->RollBackTrans();
+            return "The sample '$label' is a duplicate of a sample with id '{$res[0]['count']}'.";
          }
 
          $colvals = array(
