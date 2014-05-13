@@ -237,6 +237,9 @@ class UploadODK extends Repository{
                            $username = "unknown";
 
                         $result = $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "uploaded_by" => $username, "email" => $_POST['email'], "type" => $_POST['upload_type']));
+                        
+                        $query = "INSERT INTO odk_access(form_id, `user`) VALUES(:form_id, :user)";
+                        $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "user" => $username));
                      }
                      else{//this is probably the first time the form is being uploaded
                         $this->Dbase->CreateLogEntry("First time form with instance id = ".$instanceID." is being uploaded", "fatal");
@@ -279,7 +282,7 @@ class UploadODK extends Repository{
                $this->Dbase->CreateLogEntry("exec error is ".print_r($execOutput, true), "fatal");
                $errorOutput = join("\n", $execOutput);
                preg_match_all("/errors\.PyXFormError:(.*)/", $errorOutput, $relevantErrorArray);
-               $errorMessg = "";
+               $errorMessg = $errorOutput;
                if(isset($relevantErrorArray[1])){
                   $errorMessg = join("\n", $relevantErrorArray[1]);
                }

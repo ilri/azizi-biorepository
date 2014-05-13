@@ -37,7 +37,7 @@ class ParseODK extends Repository{
       if(strlen($username) === 0)
          $username = $_SESSION['onames']." ". $_SESSION['sname'];
       
-      $query = "SELECT * FROM odk_forms WHERE created_by = :user";
+      $query = "SELECT a.* FROM odk_forms AS a INNER JOIN odk_access AS b ON a.id = b.form_id WHERE b.user = :user";
       $forms = $this->Dbase->ExecuteQuery($query, array("user" => $username));
       if(array_search($_SESSION['username'], Config::$odkUsers) !== FALSE){
 ?>
