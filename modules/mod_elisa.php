@@ -52,8 +52,11 @@ class Elisa extends SpreadSheet {
       'columns' => array(
          array('name' =>'sample', 'regex' => '/(tested\s+sample)/i', 'data_regex' => '/^(avaq[0-9]{5})$/i', 'required' => true, 'unique' => true),
          array('name' =>'sample_od', 'regex' => '/(sample\s+od)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => true),
-         array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => true),
-         array('name' =>'status', 'regex' => '/(interpretation)/i', 'data_regex' => '/^positive|negative$/i', 'required' => true),
+         array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => false),
+         array('name' =>'od1', 'regex' => '/(od1)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
+         array('name' =>'od2', 'regex' => '/(od2)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
+         array('name' =>'variation', 'regex' => '/(sample\s+variation)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
+         array('name' =>'status', 'regex' => '/(interpretation)/i', 'data_regex' => '/^positive|negative|borderline$/i', 'required' => true),
       )
    );
 
@@ -183,8 +186,8 @@ class Elisa extends SpreadSheet {
          . 'values(:testType, :plateStatus, :plateName, :testDateTime, :createBy, :technician, :kitBatch, :meanControlOD, :project, :filename)';
 
        //sampleId, testID, WELLS, DESCRIPTION, ID, STATUS, OD1, OD2, ODAv, PP1, PP2, Var, PPav, SSID, AnimalID, Project
-       $elisaQuery = 'insert into '. Config::$config['azizi_db'] .'.elisaTest(sampleId, testID, DESCRIPTION, ID, STATUS, ODAv, PI, Project)'
-         . 'values(:sampleId, :testID, :DESCRIPTION, :ID, :STATUS, :ODAv, :pi, :project)';
+       $elisaQuery = 'insert into '. Config::$config['azizi_db'] .'.elisaTest(sampleId, testID, DESCRIPTION, ID, STATUS, ODAv, PI, Project, OD1, OD2, Var)'
+         . 'values(:sampleId, :testID, :DESCRIPTION, :ID, :STATUS, :ODAv, :pi, :project, :od1, :od2, :var)';
 
        //add the results to the processes tab of the sample
        $processQuery = 'insert into '. Config::$config['azizi_db'] .'.processes(sample_id, process_type, comments, date, date_changed, operator, status)'
@@ -233,7 +236,8 @@ class Elisa extends SpreadSheet {
           }
 
           $colvals = array(
-             'sampleId' => $t['sampleId'], 'testID' => $plateId, 'DESCRIPTION' => $t['sample'], 'ID' => $key, 'STATUS' => $t['status'], 'ODAv' => $t['sample_od'], 'pi' => $t['sample_pi'], 'project' => $t['projectName']
+             'sampleId' => $t['sampleId'], 'testID' => $plateId, 'DESCRIPTION' => $t['sample'], 'ID' => $key, 'STATUS' => $t['status'], 'ODAv' => $t['sample_od'], 'pi' => $t['sample_pi'], 'project' => $t['projectName'],
+              'od1' => $t['od1'], 'od2' => $t['od2'], 'var' => $t['variation']
           );
           $addedResult = $Repository->Dbase->ExecuteQuery($elisaQuery, $colvals);
           if($addedResult == 1){

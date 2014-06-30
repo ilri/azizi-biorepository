@@ -8,6 +8,11 @@ class Samples extends SpreadSheet {
    protected $includeUndefinedColumns = true;
 
    /**
+    * @var  boolean     Whether to attempt to link sheets within the worksheet or not
+    */
+   protected $linkedSheets = true;
+
+   /**
     * @var   string   The column name in labcollector that has our refence value.
     */
    protected $lcReference = 'label';

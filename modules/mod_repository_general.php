@@ -263,7 +263,7 @@ class Repository extends DBase{
    private function HomeLinks($userType){
       //fetch all keys in $userPermissions
       $allModules = array_keys(Config::$userPermissions);
-      
+
       foreach ($allModules as $currentModuleName) {
          if($currentModuleName!=="ln2_transfers" && isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && (in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))){
             echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";

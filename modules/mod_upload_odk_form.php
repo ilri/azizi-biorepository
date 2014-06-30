@@ -142,8 +142,11 @@ class UploadODK extends Repository{
             $this->xmlFileLoc = $this->tmpDir."/".$realName[0].".xml";
             move_uploaded_file($_FILES['excel_file']['tmp_name'], $this->excelFileLoc);
             $this->Dbase->CreateLogEntry("moved file from client to ".$this->excelFileLoc, "debug");
+
             $result = exec("python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
-            if(file_exists($this->xmlFileLoc)){//no error
+            $errorOutput = join("\n", $execOutput);
+$this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
+            if(file_exists($this->xmlFileLoc) && strlen(file_get_contents($this->xmlFileLoc)) > 1){//no error
                $xmlString = file_get_contents($this->xmlFileLoc);
 
                if($_POST['upload_type'] === "testing"){
@@ -312,7 +315,13 @@ class UploadODK extends Repository{
                         $query = "INSERT INTO odk_access(form_id, `user`) VALUES(:form_id, :user)";
                         $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "user" => $username));
                      }
-
+                     
+                     //schedule testing form for a delete
+                     if($_POST['upload_type'] == 'testing'){
+                        $tenMinLater = date('Y-m-d H:i:s', time()+600);
+                        $query = "INSERT INTO odk_deleted_forms(form, status, time_to_delete) VALUES(:form_id, 'not_deleted', :ten_after)";
+                        $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "ten_after" => $tenMinLater));
+                     }
                      //email uploader
                      $this->sendInstructionEmail($formTitle,$instanceID, $_POST['email']);
                   }
@@ -329,7 +338,7 @@ class UploadODK extends Repository{
             }
             else{
                $this->Dbase->CreateLogEntry("exec error is ".print_r($execOutput, true), "fatal");
-               $errorOutput = join("\n", $execOutput);
+               //$errorOutput = join("\n", $execOutput);
                preg_match_all("/errors\.PyXFormError:(.*)/", $errorOutput, $relevantErrorArray);
                $errorMessg = $errorOutput;
                if(isset($relevantErrorArray[1])){
