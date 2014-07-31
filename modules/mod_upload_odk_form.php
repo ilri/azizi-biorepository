@@ -194,10 +194,10 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                   $formTitle = $possibleTitle[1][0];
                $error = "";
                //check if form with same name in database with same title
-               $query = "SELECT id FROM odk_forms WHERE form_name = :new_name";
+               $query = "SELECT id FROM odk_forms WHERE form_name = :form_name";
                $result = $this->Dbase->ExecuteQuery($query, array("form_name" => $formTitle));
 
-               if(is_array($result) && count($result)>0){//do not upload
+               if(is_array($result) && count($result)>0 && $_POST['upload_type'] != "testing"){//do not upload
                   $error .= "There already exists an ODK form with the same form_title. If this is the same form, consider incrementing it by a version<br />";
                }
                
