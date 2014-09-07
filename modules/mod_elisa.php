@@ -50,7 +50,7 @@ class Elisa extends SpreadSheet {
          'required' => false
       ),
       'columns' => array(
-         array('name' =>'sample', 'regex' => '/(tested\s+sample)/i', 'data_regex' => '/^(avaq[0-9]{5})$/i', 'required' => true, 'unique' => true),
+         array('name' =>'sample', 'regex' => '/(tested\s+sample)/i', 'data_regex' => '/^(avaq[0-9]{5})$/i', 'required' => true),
          array('name' =>'sample_od', 'regex' => '/(sample\s+od)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => true),
          array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => false),
          array('name' =>'od1', 'regex' => '/(od1)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
