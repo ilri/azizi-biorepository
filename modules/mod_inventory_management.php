@@ -170,47 +170,37 @@ class InventoryManager extends Repository{
     * This function writes borrow/asset issuance to the database
     */
    private function submitIssuance() {
-      if(strlen($_POST['item']) > 0){//test to see if user pressed reload
-         $message = "";
-         //$userID = $this->addUserIfNotExists($_POST['user']);
-         $date = date('Y-m-d', strtotime($_POST['date']));
-         $this->Dbase->CreateLogEntry("mod_inventory_management: date = ".$date, 'debug', true);
-         $projectID = $this->getProjectID($_POST['chargeCode']);
-         
-         $issuedBy = $_SESSION['username'];
-         if(strlen($issuedBy) == 0){
-            $issuedBy = $_SESSION['onames'] . ' ' . $_SESSION['surname'];
+      $message = "";
+      //$userID = $this->addUserIfNotExists($_POST['user']);
+      $date = date('Y-m-d', strtotime($_POST['date']));
+      $this->Dbase->CreateLogEntry("mod_inventory_management: date = ".$date, 'debug', true);
+      $projectID = $this->getProjectID($_POST['chargeCode']);
+      if($projectID !== 0 && $_POST['borrowed'] === "no"){//item not borrowed and chargecode in database
+         $cols = array("chargecode_id", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
+         $colVals = array($projectID, $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], FALSE, $_POST['quantity']);
+         $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
+         if($res === 0) {
+            $message = "Unable to add the last request. Try again later";
          }
-         if($projectID !== 0 && $_POST['borrowed'] === "no"){//item not borrowed and chargecode in database
-            $cols = array("chargecode_id", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
-            $colVals = array($projectID, $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$issuedBy,$_POST['comment'], FALSE, $_POST['quantity']);
-            $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
-            if($res === 0) {
-               $message = "Unable to add the last request. Try again later";
-            }
+      }
+      else if($projectID === 0 && $_POST['borrowed'] === "no") {//user entered a charge code not in the database
+         $cols = array("alt_ccode", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
+         $colVals = array($_POST['chargeCode'], $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], FALSE, $_POST['quantity']);
+         $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
+         if($res === 0) {
+            $message = "Unable to add the last request. Try again later";
          }
-         else if($projectID === 0 && $_POST['borrowed'] === "no") {//user entered a charge code not in the database
-            $cols = array("alt_ccode", "pp_unit","date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
-            $colVals = array($_POST['chargeCode'], $_POST['pp_unit'],$date,$_POST['item'],$_POST['issued_to'],$issuedBy,$_POST['comment'], FALSE, $_POST['quantity']);
-            $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
-            if($res === 0) {
-               $message = "Unable to add the last request. Try again later";
-            }
 
-         }
-         else {//the item has been borrowed
-            $cols = array("date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
-            $colVals = array($date,$_POST['item'],$_POST['issued_to'],$issuedBy,$_POST['comment'], TRUE, $_POST['quantity']);
-            $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
-            if($res === 0) {
-               $message = "Unable to add the last request. Try again later";
-            }
-         }
-         $this->HomePage($message);
       }
-      else{
-         $this->HomePage("");
+      else {//the item has been borrowed
+         $cols = array("date_issued","item","issued_to","issued_by","comment", "item_borrowed", "quantity");
+         $colVals = array($date,$_POST['item'],$_POST['issued_to'],$_SESSION['username'],$_POST['comment'], TRUE, $_POST['quantity']);
+         $res = $this->Dbase->InsertOnDuplicateUpdate("inventory",$cols,$colVals);
+         if($res === 0) {
+            $message = "Unable to add the last request. Try again later";
+         }
       }
+      $this->HomePage($message);
    }
 
    /**

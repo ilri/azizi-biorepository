@@ -351,15 +351,14 @@ $content .="
          else if($sheet->hasLinkedSheets()) $extraData[$sheet->sheet_name] = $sheet->getData();
          if($_GET['module'] == 'elisa') $sheet->NormalizeData(array());
       }
-      if($_GET['module'] != 'elisa') $curFile[$mainSheetIndex]->NormalizeData($extraData);
+
+      //lets rename the file to the
       $curFile[$mainSheetIndex]->finalUploadedFile = "$path/{$pi['basename']}";
       $curFile[$mainSheetIndex]->finalUploadedFileLink = "LimsUploader/{$pi['basename']}";
-
-//      $curFile[$mainSheetIndex]->DumpData();
-//      die();
+      rename($file, $curFile[$mainSheetIndex]->finalUploadedFile);
+      if($_GET['module'] != 'elisa') $curFile[$mainSheetIndex]->NormalizeData($extraData);
 
       //now we upload the data
-      rename($file, $curFile[$mainSheetIndex]->finalUploadedFile);
       if($_GET['module'] == 'elisa'){
          foreach($curFile as $index => $sheet){
             $res = $sheet->UploadData();

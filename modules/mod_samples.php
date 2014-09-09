@@ -155,7 +155,7 @@ class Samples extends SpreadSheet {
           }
 
           //"http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file=entomology_uploads/zip_upload_2012-02-22_101035/CBG/Wakabhare%20%20LT%20Msqt%20CBG%2027.10.09.xls&focused=CBG000109#focused"
-          $descr .= "<br /><br />Other Comments:<br />{$t['comments']}";
+          $descr .= "<br /><br /><b>Other Comments:</b>{$t['comments']}";
           //add a link to the original file we uploaded
           $zoom_factor = isset($t['Zoom Factor'])? $t['Zoom Factor'] : 9;
           $descr .= "<br />Field File = <a target='_blank' href='http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file={$this->finalUploadedFileLink}&sheet={$this->sheet_index}&focused={$t['name']}#focused'>Field Data.xls</a>";

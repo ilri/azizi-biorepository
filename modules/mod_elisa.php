@@ -39,24 +39,25 @@ class Elisa extends SpreadSheet {
       ),
       'ref_no' => array(
          'regex' => '/(ref\s+no)(.+)/i',
-         'required' => true
+         'required' => false
       ),
       'lot_no' => array(
          'regex' => '/(lot\s+no)(.+)/i',
-         'required' => true
+         'required' => false
       ),
       'mean_od' => array(
          'regex' => '/(mean\s+od\s+value)(.+)/i',
          'required' => false
       ),
       'columns' => array(
-         array('name' =>'sample', 'regex' => '/(tested\s+sample)/i', 'data_regex' => '/^(avaq[0-9]{5})$/i', 'required' => true, 'unique' => true),
+         array('name' =>'sample', 'regex' => '/(tested\s+sample)/i', 'data_regex' => '/^(avaq[0-9]{5})$/i', 'required' => true),
          array('name' =>'sample_od', 'regex' => '/(sample\s+od)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => true),
          array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => false),
          array('name' =>'od1', 'regex' => '/(od1)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
          array('name' =>'od2', 'regex' => '/(od2)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
          array('name' =>'variation', 'regex' => '/(sample\s+variation)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
-         array('name' =>'status', 'regex' => '/(interpretation)/i', 'data_regex' => '/^positive|negative|borderline$/i', 'required' => true),
+         array('name' =>'status', 'regex' => '/(interpretation)/i', 'data_regex' => '/^positive|negative|borderline|^strong\s+positive$/i', 'required' => true),
+         array('name' =>'test_comments', 'regex' => '/(test\s+comments)/i', 'required' => false)
       )
    );
 
@@ -247,7 +248,9 @@ class Elisa extends SpreadSheet {
 
           //add the process data in the process tab
           $sourceFile = "Source File = <a target='_blank' href='http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file={$this->finalUploadedFileLink}&sheet={$this->sheet_index}&focused={$t['name']}#focused'>Source File.xls</a>";
-          $comments = "Sample OD = {$t['sample_od']}<br />Sample PI = {$t['sample_pi']}<br/ >$sourceFile";
+          $comments = '';
+          if(isset($t['test_comments']) && $t['test_comments'] != '') $comments = "{$t['comments']}<br />";
+          $comments .= "Sample OD = {$t['sample_od']}<br />Sample PI = {$t['sample_pi']}<br/ >$sourceFile";
           $procVals = array('sampleId' => $t['sampleId'], 'proc_type' => $this->plateProcess, 'comments' => $comments, 'date' => $plateDate, 'date_changed' => $todayDate, 'operator' => $this->plateTechnician, 'status' => $this->allStatus[strtolower($t['status'])]);
           $addedResult = $Repository->Dbase->ExecuteQuery($processQuery, $procVals);
           if($addedResult == 1){
