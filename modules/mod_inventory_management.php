@@ -36,6 +36,7 @@ class InventoryManager extends Repository{
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
       if (OPTIONS_REQUESTED_SUB_MODULE == 'issue') $this->submitIssuance ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'fetch') $this->fetchInventoryHistory ();
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return') $this->returnItem();
    }
 
    /**
@@ -106,6 +107,11 @@ class InventoryManager extends Repository{
         </div>
    </form>
    <div id="issued_items">&nbsp;</div>
+   <div id="return_comment_div" style="display: none; position: absolute; width: auto; height: auto; background: white; box-shadow:0 1px 2px #aaa; padding: 1rem;">
+      Provide comments if any<br />
+      <textarea id="return_comment" style="width: 300px;"></textarea><br />
+      <input type="submit" value="Okay" id="return_comment_btn" style="float:right;" />
+   </div>
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
@@ -298,6 +304,24 @@ class InventoryManager extends Repository{
       }
       else {
          return 0;
+      }
+   }
+   
+   /**
+    * This function writes a return of a borrowed item to the database
+    */
+   private function returnItem(){
+      $itemID = $_POST['id'];
+      $comment = $_POST['comment'];
+      
+      $this->Dbase->CreateLogEntry($_POST['comment'], "fatal");
+      
+      $query = "SELECT item_borrowed FROM inventory WHERE id = ? AND item_borrowed = 1";//check if there is an item with the same 
+      $result = $this->Dbase->ExecuteQuery($query, array($itemID));
+      
+      if(is_array($result) && count($result) == 1){
+         $query = "UPDATE inventory SET item_returned = 1, ret_comment = :comment WHERE id = :id";
+         $this->Dbase->ExecuteQuery($query, array("id" => $itemID, "comment" => $comment));
       }
    }
 }

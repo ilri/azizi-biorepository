@@ -65,44 +65,7 @@ var InventoryManager = {
       }
       return true;
    },
-
-   changeAmountApproved: function(com, grid) {
-      if(com === 'Set Amount Approved'){
-         $(".trSelected", grid).each(function () {
-            var id = $(this).attr('id');
-            id = id.substring(id.lastIndexOf('row')+3);
-            $("#dialog-modal").dialog({
-               modal: true,
-               draggable: true,
-               resizable: false,
-               position: ['center','center'],
-               show: 'blind',
-               hide: 'blind',
-               width: 500,
-               dialogClass: 'ui-dialog-osx',
-               buttons: {
-                  "Set": function() {
-                     if($("#newAmountApproved").val()!==""){
-                        //TODO: add logic for changing column value from server
-                        $.post("index.php?page=ln2_requests&do=setAmountApproved", {
-                           rowID:id,
-                           amountApproved:$("#newAmountApproved").val(),
-                           apprv_comment:$("#apprv_comment").val()
-                        }, function(){
-                           console.log("response recieved, email should have been sent");
-                           $("#past_requests").flexReload();
-                           $("#newAmountApproved").val("");
-                           $("#apprv_comment").val("");
-                        });
-                        $(this).dialog("close");
-                     }
-                  }
-               }
-            });
-         });
-      }
-   },
-
+   
    fetchProjects: function() {
       var json;
       $.ajax({
@@ -126,7 +89,31 @@ var InventoryManager = {
        }
    },
    
-   setReturned: function() {
-       
+   setReturned: function(com, grid) {
+      if($(".trSelected", grid).length > 0){
+         var left = window.innerWidth/2 - $("#return_comment_div").width()/2;
+         var top = window.innerHeight/2 - $("#return_comment_div").height()/2;
+
+         $("#return_comment_div").css("left", left);
+         $("#return_comment_div").css("top", top);
+
+         $("#return_comment_div").show();
+
+         $("#return_comment_btn").click(function(){
+            $(".trSelected", grid).each(function(){
+               var id = $(this).attr("id");
+               id = id.replace("row", "");
+               var comment = $("#return_comment").val();
+               $.post("index.php?page=inventory&do=return", {
+                  id:id,
+                  comment:comment
+               }, function(){
+                  $("#issued_items").flexReload();
+                  $("#return_comment").val("");
+                  $("#return_comment_div").hide();
+               });
+            });
+         });
+      }
    }
 };
