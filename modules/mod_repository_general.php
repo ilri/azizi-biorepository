@@ -13,6 +13,11 @@ class Repository extends DBase{
     * @var Object An object with the database functions and properties. Implemented here to avoid having a million & 1 database connections
     */
    public $Dbase;
+   
+   /**
+    * @var Object An object that is responsible for all security functions eg (authing user, getting modules user has access to) 
+    */
+   private $security;
 
    public $addinfo;
 
@@ -50,21 +55,22 @@ class Repository extends DBase{
          $res = $this->Dbase->ConfirmUser($_GET['u'], $_GET['t']);
          if($res != 0) die('Permission Denied. You do not have permission to access this module');
       }
+      
+      $this->security = new Security($this->Dbase);
    }
 
    /**
     * Controls the program execution
     */
    public function TrafficController(){
+      
+      
       if(OPTIONS_REQUESTED_MODULE != 'login' && !Config::$downloadFile){  //when we are normally browsing, check that we have the right credentials
          //we hope that we have still have the right credentials
          $this->Dbase->ManageSession();
          $this->whoisme = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_level']}";
       }
-      if(OPTIONS_REQUESTED_MODULE == 'logout'){
-         $this->Dbase->LogOut();
-         $this->Dbase->session['restart'] = true;
-      }
+      
       if(!Config::$downloadFile && ($this->Dbase->session['error'] || $this->Dbase->session['timeout'])){
          if(OPTIONS_REQUEST_TYPE == 'normal'){
             $this->LoginPage($this->Dbase->session['message'], $_SESSION['username']);
@@ -72,64 +78,37 @@ class Repository extends DBase{
          }
          elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . $this->Dbase->session['message']);
       }
-
-      if(!isset($_SESSION['user_id']) && !isset($_SESSION['username']) && !in_array(OPTIONS_REQUESTED_MODULE, array('login', 'logout', ''))){
+      
+      //allow access to open access module
+      $openAccess = $this->security->isModuleOpenAccess(OPTIONS_REQUESTED_MODULE);
+      
+      $this->Dbase->CreateLogEntry("Open access = ".$openAccess, "info");
+      
+      if($openAccess == 0){//the requested module is under open access
+         if(OPTIONS_REQUESTED_MODULE == 'samples_vis'){
+            require_once 'mod_visualize_samples.php';
+            $visSamples = new VisualizeSamples($this->Dbase); 
+            $visSamples->trafficController();
+         }
+         else if(OPTIONS_REQUESTED_MODULE == 'repository_3d'){
+            require_once 'mod_repository_3d.php';
+            $repository3D = new Repository3D($this->Dbase);
+            $repository3D->TrafficController();
+         }
+         return;//do not show the user any more links
+      }
+      else if($openAccess == 1){//an error occurred
+         $this->RepositoryHomePage(OPTIONS_MSSG_FETCH_ERROR);
+      }
+      else if(!isset($_SESSION['user_id']) && !isset($_SESSION['username']) && !in_array(OPTIONS_REQUESTED_MODULE, array('login', 'logout', ''))){//if not open access, make sure the session variable is fine
          if(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' .OPTIONS_MSSG_INVALID_SESSION);
          else{
             $this->LoginPage(OPTIONS_MSSG_INVALID_SESSION);
             return;
          }
       }
-      $aka_module = Config::$modules[OPTIONS_REQUESTED_MODULE];
-      //check if the user has permissions to access the module he is asking for
-      if(!in_array(OPTIONS_REQUESTED_MODULE, Config::$freeAreas)) {
-         //we are asking for a module which is not open to all
-         if(!in_array($_SESSION['user_type'], Config::$userPermissions[OPTIONS_REQUESTED_MODULE]['allowed_groups']) ){
-            $this->Dbase->CreateLogEntry("Denied Access: The user '{$_SESSION['username']}'({$_SESSION['user_type']}) was denied access to ". OPTIONS_REQUESTED_MODULE .' module.', 'debug');
-            $this->Dbase->CreateLogEntry('Access Denied: The user '. Config::$curUser .' was denied access to '. OPTIONS_REQUESTED_MODULE .' module.', 'audit');
-            if(!in_array(OPTIONS_REQUESTED_MODULE, array_keys(Config::$userPermissions))){
-               if(OPTIONS_REQUEST_TYPE == 'ajax') die('-1'. OPTIONS_MSSG_UNKNOWN_MODULE);
-               else $this->RepositoryHomePage(OPTIONS_MSSG_UNKNOWN_MODULE);
-               return;
-            }
-            if(OPTIONS_REQUEST_TYPE == 'normal'){
-               $this->RepositoryHomePage(sprintf(OPTIONS_MSSG_RESTRICTED_MODULE_ACCESS, $aka_module[OPTIONS_REQUESTED_MODULE]));
-               return;
-            }
-            elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . sprintf(OPTIONS_MSSG_RESTRICTED_MODULE_ACCESS, $aka_module));
-         }
-      }
-
-      //checkif the user has permissions to access the requested sub module and action
-      if(OPTIONS_REQUESTED_SUB_MODULE != '' && !in_array(OPTIONS_REQUESTED_MODULE, Config::$freeAreas)){
-         if(!key_exists($_SESSION['user_type'], Config::$userPermissions[OPTIONS_REQUESTED_MODULE][OPTIONS_REQUESTED_SUB_MODULE])) {
-            $this->Dbase->CreateLogEntry("Denied Access: The user '{$_SESSION['username']}'({$_SESSION['user_type']}) was denied access to ". OPTIONS_REQUESTED_MODULE .' module,'. OPTIONS_REQUESTED_SUB_MODULE .' sub module.', 'debug');
-            $this->Dbase->CreateLogEntry('Access Denied: The user '. Config::$curUser .' was denied access to '. OPTIONS_REQUESTED_MODULE .' module,'. OPTIONS_REQUESTED_SUB_MODULE .' sub module.', 'audit');
-            if(!in_array(OPTIONS_REQUESTED_SUB_MODULE, array_keys(Config::$userPermissions[OPTIONS_REQUESTED_MODULE]))){
-               if(OPTIONS_REQUEST_TYPE == 'ajax') die('-1'. OPTIONS_MSSG_UNKNOWN_SUB_MOUDLE);
-               else $this->RepositoryHomePage(OPTIONS_MSSG_UNKNOWN_SUB_MODULE);
-               return;
-            }
-            if(OPTIONS_REQUEST_TYPE == 'normal') {
-               $this->RepositoryHomePage(sprintf(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS, $aka_module[OPTIONS_REQUESTED_SUB_MODULE], OPTIONS_REQUESTED_MODULE));
-               return;
-            }
-            elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . sprintf(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS, $aka_module[OPTIONS_REQUESTED_SUB_MODULE]));
-         }
-         if(OPTIONS_REQUESTED_ACTION != ''){
-//            print_r($aka_module);
-            if(!in_array(OPTIONS_REQUESTED_ACTION, Config::$userPermissions[OPTIONS_REQUESTED_MODULE][OPTIONS_REQUESTED_SUB_MODULE][$_SESSION['user_type']]) &&
-               !in_array(OPTIONS_REQUESTED_ACTION, Config::$userPermissions[OPTIONS_REQUESTED_MODULE][OPTIONS_REQUESTED_SUB_MODULE][$_SESSION['delegated_role']]) ){
-               //check whether the user has access to the action that he/she wants to do
-               $this->Dbase->CreateLogEntry('Access Denied: The user '. Config::$curUser .' was denied access to '. OPTIONS_REQUESTED_MODULE .' module,'. OPTIONS_REQUESTED_SUB_MODULE .' sub module.', 'audit');
-               if(OPTIONS_REQUEST_TYPE == 'normal') {
-                  $this->RepositoryHomePage(sprintf(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS, OPTIONS_REQUESTED_ACTION, $aka_module[OPTIONS_REQUESTED_SUB_MODULE]));
-                  return;
-               }
-               elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . sprintf(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS, Config::$actions_aka[OPTIONS_REQUESTED_ACTION], $aka_module[OPTIONS_REQUESTED_SUB_MODULE]));
-            }
-         }
-      }
+      
+      //Check if user has access to the requested module
 
       if(OPTIONS_REQUEST_TYPE == 'normal' && !in_array(OPTIONS_REQUESTED_MODULE, array('logout', 'login')) ) $this->WhoIsMe();
       //Set the default footer links
@@ -138,50 +117,68 @@ class Repository extends DBase{
       elseif(OPTIONS_REQUESTED_MODULE == 'logout') $this->LogOutCurrentUser();
       elseif(OPTIONS_REQUESTED_MODULE == 'login') $this->ValidateUser();
       elseif(OPTIONS_REQUESTED_MODULE == 'home') $this->RepositoryHomePage();
-      elseif(OPTIONS_REQUESTED_MODULE == 'ln2_requests'){
-         require_once 'mod_ln2_requests.php';
-         $Ln2 = new Ln2Requests($this->Dbase);
-         $Ln2->TrafficController();
-      }
-      elseif(OPTIONS_REQUESTED_MODULE == 'odk_parser'){
-         require_once 'mod_parse_odk.php';
-         $ParseODK = new ParseODK($this->Dbase);
-         $ParseODK->TrafficController();
-      }
-      elseif(OPTIONS_REQUESTED_MODULE == 'odk_uploader'){
-         require_once 'mod_upload_odk_form.php';
-         $UploadODK = new UploadODK($this->Dbase);
-         $UploadODK->TrafficController();
-      }
-      elseif(OPTIONS_REQUESTED_MODULE == 'labels'){
-         require_once 'mod_label_printing.php';
-         $LabelsPrinter = new LabelPrinter($this->Dbase);
-         $LabelsPrinter->TrafficController();
-      }
-      elseif(OPTIONS_REQUESTED_MODULE == 'ln2_transfers'){
-         require_once 'mod_ln2_transfers.php';
-         $Ln2Transfers = new LN2Transferer($this->Dbase);
-         $Ln2Transfers->TrafficController();
-      }
-      elseif(OPTIONS_REQUESTED_MODULE == 'lims_uploader'){
-         require_once 'mod_lims_uploader.php';
-         $LimsUploader = new LimsUploader($this->Dbase);
-         $LimsUploader->TrafficController();
-      }
-      else if(OPTIONS_REQUESTED_MODULE == 'inventory'){
-          require_once 'mod_inventory_management.php';
-          $InventoryManager = new InventoryManager($this->Dbase);
-          $InventoryManager->TrafficController();
-      }
-      else if(OPTIONS_REQUESTED_MODULE == 'box_storage'){
-         require_once 'mod_box_storage.php';
-         $boxStorage = new BoxStorage($this->Dbase);
-         $boxStorage->TrafficController();
-      }
-      else{
-         $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
-         $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
-         $this->RepositoryHomePage(OPTIONS_MSSG_MODULE_UNKNOWN);
+      else{//other modules require permission
+         //check if user has access to the context
+         $access = $this->security->isUserAllowed(OPTIONS_REQUESTED_MODULE, OPTIONS_REQUESTED_SUB_MODULE, OPTIONS_REQUESTED_ACTION);
+         
+         if($access == 0){//user has access
+            if(OPTIONS_REQUESTED_MODULE == 'ln2_requests'){
+               require_once 'mod_ln2_requests.php';
+               $Ln2 = new Ln2Requests($this->Dbase);
+               $Ln2->TrafficController();
+            }
+            elseif(OPTIONS_REQUESTED_MODULE == 'odk_parser'){
+               require_once 'mod_parse_odk.php';
+               $ParseODK = new ParseODK($this->Dbase);
+               $ParseODK->TrafficController();
+            }
+            elseif(OPTIONS_REQUESTED_MODULE == 'odk_uploader'){
+               require_once 'mod_upload_odk_form.php';
+               $UploadODK = new UploadODK($this->Dbase);
+               $UploadODK->TrafficController();
+            }
+            elseif(OPTIONS_REQUESTED_MODULE == 'labels'){
+               require_once 'mod_label_printing.php';
+               $LabelsPrinter = new LabelPrinter($this->Dbase);
+               $LabelsPrinter->TrafficController();
+            }
+            elseif(OPTIONS_REQUESTED_MODULE == 'ln2_transfers'){
+               require_once 'mod_ln2_transfers.php';
+               $Ln2Transfers = new LN2Transferer($this->Dbase);
+               $Ln2Transfers->TrafficController();
+            }
+            elseif(OPTIONS_REQUESTED_MODULE == 'lims_uploader'){
+               require_once 'mod_lims_uploader.php';
+               $LimsUploader = new LimsUploader($this->Dbase);
+               $LimsUploader->TrafficController();
+            }
+            else if(OPTIONS_REQUESTED_MODULE == 'inventory'){
+                require_once 'mod_inventory_management.php';
+                $InventoryManager = new InventoryManager($this->Dbase);
+                $InventoryManager->TrafficController();
+            }
+            else if(OPTIONS_REQUESTED_MODULE == 'box_storage'){
+               require_once 'mod_box_storage.php';
+               $boxStorage = new BoxStorage($this->Dbase);
+               $boxStorage->TrafficController();
+            }
+            else if(OPTIONS_REQUESTED_MODULE == 'users'){
+               require_once 'mod_users.php';
+               $users = new Users($this->Dbase);
+               $users->trafficController();
+            }
+            else{
+               $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
+               $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
+               $this->RepositoryHomePage(OPTIONS_MSSG_MODULE_UNKNOWN);
+            }
+         }
+         else if($access == 1){//an error occurred
+            $this->RepositoryHomePage(OPTIONS_MSSG_FETCH_ERROR);
+         }
+         else if($access == 2){//user does not have access
+            $this->RepositoryHomePage(OPTIONS_MSSG_RESTRICTED_FUNCTION_ACCESS);//TODO: get the name of the module
+         }
       }
    }
 
@@ -239,39 +236,30 @@ class Repository extends DBase{
     * Creates the home page for the users after they login
     */
    public function RepositoryHomePage($addinfo = ''){
+      
+      //get modules that user's groups have access to
+      $modules = $this->security->getClosedAccessModules();
+      if($modules == null){
+         $addinfo .= " Unable to get the subsystems you have access to";
+      }
+      
       $addinfo = ($addinfo == '') ? '' : "<div id='addinfo'>$addinfo</div>" ;
       echo $addinfo;
+      
+      if($modules != null){
 ?>
 <div class="user_options">
    <ul>
-      <li><a href='?page=ln2_requests'>Request Liquid Nitrogen</a></li>
-      <li><a href='?page=odk_uploader'>Upload An ODK Form</a></li>
-      <li><a href='?page=odk_parser'>Get ODK Form Data</a></li>
 <?php
-      $this->HomeLinks($_SESSION['user_type']);
+         $moduleURIs = array_keys($modules);
+         
+         foreach($moduleURIs as $currURI){
+            echo "<li><a href='?page=".$currURI."'>".$modules[$currURI]."</a></li>";
+         }
 ?>
-   </ul>
+      </ul>
 </div>
 <?php
-   }
-
-   /**
-    * Create additional links according to the passed user type
-    *
-    * @param   string   $userType   The user type we want to create links for
-    */
-   private function HomeLinks($userType){
-      //fetch all keys in $userPermissions
-      $allModules = array_keys(Config::$userPermissions);
-      
-      foreach ($allModules as $currentModuleName) {
-         if($currentModuleName!=="ln2_transfers" && isset(Config::$actions_aka[$currentModuleName]) && isset(Config::$userPermissions[$currentModuleName]['allowed_groups']) && (in_array($userType, Config::$userPermissions[$currentModuleName]['allowed_groups']))){
-            echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
-         }
-         else if($currentModuleName === "ln2_transfers" && in_array($_SESSION['username'], Config::$ln2_transfer_engineers)){
-             $_SESSION['user_type'] = "LN2 Engineers";
-             echo "<li><a href='?page=".$currentModuleName."'>".Config::$actions_aka[$currentModuleName]."</a></li>";
-         }
       }
    }
 
@@ -279,30 +267,48 @@ class Repository extends DBase{
     * Validates the user credentials as received from the client
     */
    private function ValidateUser(){
+      $this->Dbase->CreateLogEntry("About to auth user", "debug");
+      
       $username = $_POST['username'];
-      $password = $_POST['md5_pass'];
-      $unHashedPW = $_POST['password'];
-         $adAuth = $this->Dbase->ConfirmUser($username, $unHashedPW);
-         if ($adAuth === 0) {
-            $this->WhoIsMe();
-            $this->RepositoryHomePage();
-            return;
-         }
-         else if($adAuth === 1) {
-            $this->Dbase->CreateLogEntry("There was an error while authenticating the user: '$username'.", 'info');
-            $this->LoginPage('There was an error while logging in. Please try again or contact the system administrator');
-            return;
-         }
-         else if($adAuth === 4){
-            $this->Dbase->CreateLogEntry("'$username' tried to log in while the account was still disabled", 'info');
-            $this->LoginPage('Your account has beed disabled. Please contact the system administrator');
-            return;
-         }
-         else if(is_string($adAuth)){
-
-         }
-
-      echo "wtf -- {$adAuth}";
+      $encryptedPW = $_POST['password'];
+      
+      $authRes = $this->security->authUser($username, $encryptedPW);
+      /*
+       * authRes can be:
+       *    0 - user successfully authenticated
+       *    1 - error occured when trying to auth user
+       *    2 - wrong password provided
+       *    3 - user does not exist
+       *    4 - accout disabled
+       */
+      
+      $this->Dbase->CreateLogEntry("Auth results = ".$authRes, "info");
+      if($authRes == 0){
+         $this->WhoIsMe();
+         $this->RepositoryHomePage();
+         return;
+      }
+      else if($authRes == 1){
+         $this->LoginPage('An error occurred while trying to log you in. Please try again or contact the system administrator');
+         return;
+      }
+      else if($authRes == 2){
+         $this->LoginPage('The username or password you provided is incorrect');
+         return;
+      }
+      else if($authRes == 3){
+         $this->LoginPage('The username you provided is unknown');
+         return;
+      }
+      else if($authRes == 4){
+         $this->LoginPage('Your username is currently deactivated. Please contact the system administrator if you need it reactivated');
+         return;
+      }
+      else {
+         $this->LoginPage('Please try logging in again');
+         $this->Dbase->CreateLogEntry("Authentication object returned an unknown response(" . $authRes . ") while trying to auth ".$username, "fatal");
+         return;
+      }
    }
 
    /**
@@ -313,7 +319,13 @@ class Repository extends DBase{
    public function WhoIsMe(){
       if (OPTIONS_REQUEST_TYPE == 'ajax') return;
       //display the credentials of the person who is logged in
-      Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_type']}";
+      $mainUserGroup = "Unspecified Group";
+      
+      if(is_array($_SESSION['user_type']) && count($_SESSION['user_type']) > 0){
+         $mainUserGroup = $_SESSION['user_type'][0];
+      }
+      
+      Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$mainUserGroup}";
       echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a>";
 
       //show the howto link for LN2 engineers
@@ -329,7 +341,9 @@ class Repository extends DBase{
     * Logs out the current user
     */
    private function LogOutCurrentUser(){
-      $this->LogOut();
+      $this->Dbase->LogOut();
+      $this->Dbase->session['restart'] = true;
+      //$this->LogOut();
       $this->LoginPage();
    }
 
