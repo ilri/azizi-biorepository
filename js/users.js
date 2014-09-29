@@ -22,6 +22,14 @@ function Users(context, pwSettingsS, publicKey){
       window.users.addGroup();
    });
    
+   window.users.pass1 = jQuery("#pass_1");
+   window.users.pass2 = jQuery("#pass_2");
+   window.users.ldap = jQuery("#ldap");
+   window.users.ldap.change(function(){
+      console.log("value of ldap = "+window.users.ldap.val());
+      window.users.togglePasswords();
+   });
+   
    window.users.userData = null;
    
    window.users.eUsers = new Array();//array of existing users
@@ -41,6 +49,9 @@ function Users(context, pwSettingsS, publicKey){
          }
       });
    }
+   
+   //check if user using ldap or not and disable password fields accordingly
+   window.users.togglePasswords();
 }
 
 /**
@@ -94,49 +105,54 @@ Users.prototype.validateInput = function() {
          }
       }
    }
-   
-   if(window.users.userData == null || (window.users.userData != null && $("#pass_1").val().length > 0)){//if creating a new user or modifying password for an existing user
-      if($("#pass_1").val().length === 0){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please enter a password', error:true});
-         $("#pass_1").focus();
-         return false;
-      }
-      else if($("#pass_1").val() !== $("#pass_2").val()){
-         Notification.show({create:true, hide:true, updateText:false, text:'Passwords do not match', error:true});
-         $("#pass_1").focus();
-         return false;
-      }
-      else{//check the strength of the password
-         if($("#pass_1").val().length < window.users.pwSettings.minLength){
-            Notification.show({create:true, hide:true, updateText:false, text:'The password you entered is too short', error:true});
+   if($("#ldap").val() == 0){//only check the correctness of the passowrd if user not going to use ldap auth
+      if(window.users.userData == null || (window.users.userData != null && $("#pass_1").val().length > 0)){//if creating a new user or modifying password for an existing user
+         if($("#pass_1").val().length === 0){
+            Notification.show({create:true, hide:true, updateText:false, text:'Please enter a password', error:true});
             $("#pass_1").focus();
             return false;
          }
-
-         if(window.users.pwSettings.alphaChars == true){
-            if($("#pass_1").val().match(/[a-zA-Z]/g) == null){
-               Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
+         else if($("#pass_1").val() !== $("#pass_2").val()){
+            Notification.show({create:true, hide:true, updateText:false, text:'Passwords do not match', error:true});
+            $("#pass_1").focus();
+            return false;
+         }
+         else{//check the strength of the password
+            if($("#pass_1").val().length < window.users.pwSettings.minLength){
+               Notification.show({create:true, hide:true, updateText:false, text:'The password you entered is too short', error:true});
                $("#pass_1").focus();
                return false;
             }
-         }
 
-         if(window.users.pwSettings.numericChars == true){
-            if($("#pass_1").val().match(/[0-9]/g) == null){
-               Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
-               $("#pass_1").focus();
-               return false;
+            if(window.users.pwSettings.alphaChars == true){
+               if($("#pass_1").val().match(/[a-zA-Z]/g) == null){
+                  Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
+                  $("#pass_1").focus();
+                  return false;
+               }
             }
-         }
 
-         if(window.users.pwSettings.specialChars == true){
-            if($("#pass_1").val().match(/[^a-z0-9]/ig) == null){//regex for non alphanumeric characters
-               Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
-               $("#pass_1").focus();
-               return false;
+            if(window.users.pwSettings.numericChars == true){
+               if($("#pass_1").val().match(/[0-9]/g) == null){
+                  Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
+                  $("#pass_1").focus();
+                  return false;
+               }
+            }
+
+            if(window.users.pwSettings.specialChars == true){
+               if($("#pass_1").val().match(/[^a-z0-9]/ig) == null){//regex for non alphanumeric characters
+                  Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
+                  $("#pass_1").focus();
+                  return false;
+               }
             }
          }
       }
+   }
+   else {//user going to use ldap auth, reset passwords to blank
+      $("#pass_1").val("");
+      $("#pass_2").val("");
    }
    
    //if you have reached here, then everything is fine
@@ -199,6 +215,10 @@ Users.prototype.getUserData = function(id){
             $("#onames").val(userData[0].onames);
             $("#username").val(userData[0].login);
             $("#project option[value="+userData[0].project+"]").attr('selected', 'selected');
+            $("#ldap").val(userData[0].ldap);
+            $("#allowed").val(userData[0].allowed);
+            
+            window.users.togglePasswords();
             
             //clear out group list
             window.users.groupList.empty();
@@ -232,5 +252,21 @@ Users.prototype.addGroup = function(data) {
             window.users.groupIDs.splice(jQuery.inArray(groupID, window.users.groupIDs), 1);
          });
       }
+   }
+};
+
+/**
+ * This function disables/enables the password fields based on ldap auth
+ * 
+ * @returns {undefined}
+ */
+Users.prototype.togglePasswords = function(){
+   if($("#ldap").val() == 0){//user using local auth
+      $("#pass_1").prop("disabled", false);
+      $("#pass_2").prop("disabled", false);
+   }
+   else {
+      $("#pass_1").prop("disabled", true);
+      $("#pass_2").prop("disabled", true);
    }
 };

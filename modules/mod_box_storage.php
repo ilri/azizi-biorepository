@@ -40,12 +40,13 @@ class BoxStorage extends Repository{
        *       - submit_delete_request
        *       - fetch_deleted_boxes
        *       - fetch_sample_types
+       *       - print_added_boxes
        *
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/box_storage.js'></script>";
       }
-
+      
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->homePage();
 
       if (OPTIONS_REQUESTED_SUB_MODULE == 'add_box') $this->addBox ();
@@ -59,6 +60,7 @@ class BoxStorage extends Repository{
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_removed_boxes") $this->fetchRemovedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_deleted_boxes") $this->fetchDeletedBoxes ();
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_return_request") die($this->submitReturnRequest(TRUE));
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "print_added_boxes") die($this->printAddedBoxes());
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_update_request"){
          //lets re-open the db connection with the right credentials
          Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
@@ -156,12 +158,13 @@ class BoxStorage extends Repository{
    <form enctype="multipart/form-data" name="upload" role='form' class="form-horizontal odk_parser" method="POST" action="index.php?page=box_storage&do=add_box&action=insert_box" onsubmit="return BoxStorage.submitInsertRequest();" >
       <div id="box_details">
          <div class="form-group left-align"><label for="box_label">Box Label</label><input class='input-medium' type="text" name="box_label" id="box_label" /></div>
-         <div class="form-group left-align" style="width: 220px;"><label for="features">Features</label><input type="text" name="features" id="features" /></div>
+         <div class="form-group left-align" style="width: 220px;"><label for="features">Description (contents)</label><input type="text" name="features" id="features" /></div>
          <div class='left-align' style="width: 120px;">
             <label>Box Size</label>
             <div class="radio-inline"><label><input type="radio" name="box_size" id="size_81" value="81">9x9</label></div>
             <div class="radio-inline"><label><input type="radio" name="box_size" id="size_100" value="100">10x10</label></div>
          </div>
+         <div class='form-group left-align' style="width: 100px;"><label for="no_samples">No. Samples</label><input type="number" name="no_samples" id="no_samples" style="width: 80px; height: 25px;"/></div>
          <div class='left-align' style="width: 180px;">
             <label for="owner">Sample Keeper</label>
             <select name="owner" id="owner" class='form-control'>
@@ -219,8 +222,15 @@ class BoxStorage extends Repository{
             </select>
          </div>
        </div>
-      <div class="center" id="submit_button_div"><button type="submit" class="btn btn-success" style="margin-top: 20px;">Save</button></div>
+      <div class="center" id="submit_button_div">
+         <button type="submit" class="btn btn-success" style="margin-top: 20px;">Add Box</button>
+         <button id="print_btn" type="button" class="btn btn-primary" style="margin-top: 20px;">Print Added Boxes</button>
+      </div>
    </form>
+</div>
+<div id="project_print" style="position: absolute; display: none; background: white; z-index: 3; width: 20%; left: 40%; top: 40%; padding: 10px; border:0; border-radius:1px; box-shadow:0 1px 2px #aaa;">
+   <label for="project_print_list">Select a Project: </label><select id="project_print_list"></select>
+   <button id="print_btn_2" type="button" class="btn btn-primary" style="margin-top: 20px; float: right;">Print</button>
 </div>
 <div id="tank_boxes"></div>
 
@@ -233,16 +243,48 @@ class BoxStorage extends Repository{
          if($('#status').val() === "temporary"){
             //if user sets position to temporary set owner to biorepository manager
             $("#owner").prop('disabled', 'disabled');
-            $("#project").prop('disabled', false);
+            //$("#project").prop('disabled', false);
          }
          else{
             $("#owner").prop('disabled', false);
-            $("#project").prop('disabled', 'disabled');
+            //$("#project").prop('disabled', 'disabled');
          }
       });
       $("#cancelAnchor").click(function (){
          $("#rack_spec_div").hide();
          $("#rack_div").show();
+      });
+      $("#print_btn").click(function(){
+         //go though all the print boxes and select the unique projects
+         
+         var selectHTML = "";
+         var projectIDs = new Array();
+         for(var bIndex = 0; bIndex < Main.printBoxes.data.length; bIndex++){
+            if(jQuery.inArray(Main.printBoxes.data[bIndex].project_id, projectIDs) == -1){//not in array
+               projectIDs.push(Main.printBoxes.data[bIndex].project_id);
+               selectHTML = selectHTML + "<option value='"+Main.printBoxes.data[bIndex].project_id+"'>"+Main.printBoxes.data[bIndex].project+"</option>";
+            }
+         }
+         
+         $("#project_print_list").empty();
+         $("#project_print_list").html(selectHTML);
+         
+         $("#project_print").show();
+         //BoxStorage.printBoxesBtnClicked();
+      });
+      $("#print_btn_2").click(function(){
+         //get the selected project
+         projectID = $("#project_print_list").val();
+         var boxIDs = new Array();
+         
+         for(var bIndex = 0; bIndex < Main.printBoxes.data.length; bIndex++){
+            if(Main.printBoxes.data[bIndex].project_id == projectID){
+               boxIDs.push(Main.printBoxes.data[bIndex].box_id);
+            }
+         }
+         
+         BoxStorage.printBoxesBtnClicked(boxIDs);
+         $("#project_print").hide();
       });
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
@@ -256,6 +298,8 @@ class BoxStorage extends Repository{
     * @param type $addInfo    Any notification information you want displayed to the user when page loads
     */
    private function retrieveBox($addInfo = ''){
+      //check if box already preset
+      
       //Repository::jqGridFiles();//load requisite jqGrid javascript files
 ?>
 <!--script type="text/javascript" src="<?php //echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
@@ -266,6 +310,13 @@ class BoxStorage extends Repository{
 <?php
       if(OPTIONS_REQUESTED_ACTION === "submit_request"){
          $addInfo = $addInfo.$this->submitRemoveRequest();
+      }
+      
+      if(isset($_GET['id']) && strlen($_GET['id']) > 0){
+         $tmpBoxDetails = $this->getBoxDetails($_GET['id']);
+         if(count($tmpBoxDetails) == 1){
+            $boxDetails = $tmpBoxDetails[0];
+         }
       }
 
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
@@ -329,7 +380,25 @@ class BoxStorage extends Repository{
    </form>
    <!--div id="retrieved_boxes"></div-->
 </div>
-
+<?php
+      if(isset($boxDetails)){
+?>
+<script type="text/javascript">
+   var positionData = jQuery.parseJSON('<?php echo json_encode($boxDetails);?>');
+   $("#box_label").val(positionData.box_name);
+   $("#box_id").val(positionData.box_id);
+   BoxStorage.loadTankData(false, 1, positionData);
+</script>
+<?php
+      }
+      else{
+?>
+<script type="text/javascript">
+   BoxStorage.loadTankData(false, 1);
+</script>
+<?php
+      }
+?>
 <script type="text/javascript">
    $(document).ready( function() {
       BoxStorage.loadTankData(false, 1);//show boxes that are still in the tanks (and not borrowed/removed)
@@ -347,7 +416,7 @@ class BoxStorage extends Repository{
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
-      <?php
+<?php
    }
 
    /**
@@ -559,7 +628,12 @@ class BoxStorage extends Repository{
             </select>
          </div>
        </div>
-      <div class="center" id="submit_button_div"><button type="button" class="btn btn-danger" id="cancel_button" style="margin-right: 10px;">Cancel</button><button type="button" class="btn btn-success" id="edit_button" style="margin-left: 10px;">Update</button></div>
+      <div class="center" id="submit_button_div">
+         <button type="button" class="btn btn-danger" id="cancel_button" style="margin-right: 20px;">Cancel</button>
+         <button type="button" class="btn btn-success" id="edit_button" style="margin-right: 20px;">Update</button>
+         <button type="button" class="btn btn-primary" id="retrieve_button" style="margin-right: 20px;">Retrieve Box</button>
+         <button type="button" class="btn btn-primary" id="delete_button" style="">Delete Box</button>
+      </div>
    </div>
 </div>
 <script type="text/javascript">
@@ -616,6 +690,12 @@ class BoxStorage extends Repository{
       $('#edit_button').click(function (){
          BoxStorage.submitBoxUpdate();
       });
+      $('#retrieve_button').click(function(){
+         BoxStorage.routeToRetrievePage();
+      });
+      $('#delete_button').click(function(){
+         BoxStorage.routeToDeletePage();
+      });
       $("#cancelAnchor").click(function (){
          $("#rack_spec_div").hide();
          $("#rack_div").show();
@@ -645,6 +725,15 @@ class BoxStorage extends Repository{
     */
    private function deleteBox($addInfo = ''){
       Repository::jqGridFiles();//load requisite jqGrid javascript files
+      
+      if(isset($_GET['id'])){
+         $tmpBoxData = $this->getBoxDetails($_GET['id']);
+         
+         if(count($tmpBoxData) == 1){
+            $boxData = $tmpBoxData[0];
+         }
+      }
+      
       ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
@@ -687,7 +776,7 @@ class BoxStorage extends Repository{
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
-      BoxStorage.setDeleteBoxSuggestions();
+      BoxStorage.setDeleteBoxSuggestions(false);
 
       $('#submitButton').click(function(){
          BoxStorage.submitDeleteRequest();
@@ -702,6 +791,20 @@ class BoxStorage extends Repository{
       BoxStorage.initiateDeletedBoxesGrid();
    });
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
+<?php
+   if(isset($boxData)){
+?>
+      var boxData = jQuery.parseJSON('<?php echo json_encode($boxData);?>');
+      console.log(boxData);
+      $("#box_label").val(boxData.box_name);
+      $("#box_id").val(boxData.box_id);
+      $("#tank").val(boxData.tank_name);
+      $("#sector").val(boxData.sector_name);
+      $("#rack").val(boxData.rack);
+      $("#position").val(boxData.position);
+<?php
+   }
+?>   
 </script>
       <?php
    }
@@ -762,11 +865,11 @@ class BoxStorage extends Repository{
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $project = NULL;
-         if($_POST['status'] === 'temporary')
+         /*$project = NULL;
+         if($_POST['status'] === 'temporary')*/
             $project = $_POST['project'];
-         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project) values(:box_id, :status, :date_added, :added_by, :project)';
-         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project);
+         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) values(:box_id, :status, :date_added, :added_by, :project, :no_samples)';
+         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'no_samples' => $_POST['no_samples']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
@@ -847,14 +950,14 @@ class BoxStorage extends Repository{
          //insert extra information in dbase database
          $now = date('Y-m-d H:i:s');
 
-         $project = NULL;
-         if($_POST['status'] === "temporary")
+         /*$project = NULL;
+         if($_POST['status'] === "temporary")*/
             $project = $_POST['project'];
 
-         $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project) '.
-                 'values(:box_id, :status, :date_added, :added_by, :project) '.
-                 'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project)';
-         $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id']);
+         $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) '.
+                 'values(:box_id, :status, :date_added, :added_by, :project, :no_samples) '.
+                 'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project), no_samples=values(no_samples)';
+         $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']);
          //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
          $this->Dbase->CreateLogEntry('Update query = '.$updateQuery, 'debug');
 
@@ -1147,11 +1250,12 @@ class BoxStorage extends Repository{
          $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
          $pageSize = $_POST['pagesize'];
          $this->Dbase->CreateLogEntry('mod_box_storage: start time = '.$startTime, 'debug');
-         $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by '.
+         $query = 'select SQL_CALC_FOUND_ROWS a.box_id, a.status, date(a.date_added) as date_added, b.box_name, concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position, login as added_by, e.value as project, e.val_id as project_id '.
                  'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
                  'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
                  'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
                  'inner join '. Config::$config['dbase'] .'.users as d on a.added_by = d.id '.
+                 'left join '. Config::$config['dbase'] .'.modules_custom_values as e on a.project=e.val_id '.
                  'where a.date_added >= "' . date( 'Y-m-d', $_SERVER['REQUEST_TIME']) . '" './/fetch boxes inserted today
                  'limit '.$fromRow.','.$pageSize;
 
@@ -1181,193 +1285,125 @@ class BoxStorage extends Repository{
     * This function searches for boxes using certain criteria
     */
    private function searchBoxes() {
+      
       $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
       $pageSize = $_POST['pagesize'];
-      $query = 'select SQL_CALC_FOUND_ROWS b.box_id, a.status, date(a.date_added) as date_added, a.status, a.project, b.box_features, b.box_name, b.keeper, b.size, b.rack, b.rack_position, c.id as sector_id, c.facility_id as tank_id , concat(c.facility, " >> ", b.rack, " >> ", b.rack_position) as position '.
-              'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
-              'right join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
-              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id './/fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
-              'left join '. Config::$config['dbase'] .'.lcmod_storage_facilities as d on c.facility_id = d.id '.
-              'where (c.id is null or d.is_tank = 1)';//select boxes which are not associated to any sector and those in LN2 tanks
-
-      /*
-       * Optimization:
-       *  - no need to fetch data on the actual tank (storage_facility). That can be obtained from the cached tank info on the client side
-       *  - fetching samples from the database in a join is a NO-NO. There are about 200000 samples in the db and growing
-       *    Fetch the sample data in a another query and append no_samples there
-       */
-
-
-      if($_POST['boxes_wo_names'] === "true"){
-         $query = $query . " AND (b.box_name IS NULL OR b.box_name = '') AND b.box_features LIKE '%".$_POST['search']."%'";
+      
+      $sortColumn = $_POST['sort_column'];
+      if($sortColumn == "status"){
+         $sortColumn = "box_status";
+      }
+      
+      $sort = $sortColumn." ".$_POST['sort_direction'];
+      if($sort == " "){//user did not define any sort column
+         $sort = "";
+      }
+      
+      $qURL = Config::$config['solr_box']."/select?wt=json&start=".$fromRow."&count=".$pageSize."&sort=".$sort."&q=";
+      //begin building solr query string
+      
+      $sQuery = "";
+      
+      // 1. box name
+      $concat = "";
+      if(strlen($sQuery) > 0) $concat = " AND";
+      if($_POST['boxes_wo_names'] == "true"){   
+         $sQuery .= $concat."box_name:''";
       }
       else if($_POST['boxes_wo_names'] === "false"){
-         $query = $query . " AND (b.box_name LIKE '%".$_POST['search']."%' OR b.box_features LIKE '%".$_POST['search']."%')";
+         //remove whitespaces from search
+         $search = $_POST['search'];
+         
+         $search = preg_replace("/\s+/", "", $search);
+         
+         if(strlen($search) > 0){
+            $sQuery .= $concat."(box_name:*".$search."*";//the stars are wildcards
+            $sQuery .= " OR box_name:".$search."~1)";//performs fuzzy search with, the number after the tilde is the similarity with 1 being most similar and 0 not similar
+         }
       }
 
+      
+
+      // 2. box status
+      $concat = "";
+      if(strlen($sQuery) > 0) $concat = " AND";
       if(strlen($_POST['status']) > 0){
-         $query = $query . " AND a.status = '".$_POST['status']."'";
+         $sQuery .= $concat."box_status:".$_POST['status'];
       }
-
-      /*
-       * <option value="wo_location">With location not specified</option>
-       * <option value="wo_rack">With rack not specified</option>
-       * <option value="wo_rack_pos">With rack position not specified</option>
-       */
+      
+      // 3. location
+      $concat = "";
+      if(strlen($sQuery) > 0) $concat = " AND";
       if($_POST['location'] == "wo_location"){
-         $query = $query . " AND b.location IS NULL";
+         $sQuery .= $concat."sector_name:''";
       }
       else if($_POST['location'] == "wo_rack"){
-         $query = $query . " AND b.rack IS NULL";
+         $sQuery .= $concat."rack:''";
       }
       else if($_POST['location'] == "wo_rack_pos"){
-         $query = $query . " AND b.rack_position IS NULL";
+         $sQuery .= $concat."rack_position:''";
       }
+      
+      // 4. owner
+      $concat = "";
+      if(strlen($sQuery) > 0) $concat = " AND";
       if(strlen($_POST['keeper'])>0){
-         $query = $query . " AND b.keeper = ".$_POST['keeper'];
+         $sQuery .= $concat."owner_id:".$_POST['keeper'];
       }
-
-      //$query = $query . ' limit '.$fromRow.','.$pageSize;
-      if(isset($_POST['sort_column']) && strlen($_POST['sort_column']) > 0){
-         $query = $query . " order by ".$_POST['sort_column']." ".$_POST['sort_direction'];
-      }
-      $this->Dbase->CreateLogEntry('mod_box_storage: Search query = '.$query, 'debug');
-
-      $result = $this->Dbase->ExecuteQuery($query);
       
-      $query = "SELECT FOUND_ROWS() AS found_rows";
-      $foundRows = $this->Dbase->ExecuteQuery($query);
-      $totalRowCount = $foundRows[0]['found_rows'];
-
-      $query = "select a.box_id, a.size, b.project as project_id, count(distinct(b.project)) as no_projects, count(b.box_id) as no_samples".
-              " from ".Config::$config['azizi_db'].".boxes_def as a inner join ".Config::$config['azizi_db'].".samples as b on a.box_id = b.box_id group by a.box_id";
-      $allBoxes = $this->Dbase->ExecuteQuery($query);
       
-      $this->Dbase->CreateLogEntry("box_storage: all boxes = ".count($allBoxes), "debug");
+      // 5. project (get that from the solr samples core)
+      // 6. no samples (get that from the solr samples core)
       
-      for($resultIndex = 0; $resultIndex < count($result); $resultIndex++){
-         $indexInAB = -1;
-
-         //search for the box in all the boxes
-         for($boxIndex = 0; $boxIndex < count($allBoxes); $boxIndex++){
-            if($allBoxes[$boxIndex]['box_id'] === $result[$resultIndex]['box_id']){
-               $indexInAB = $boxIndex;
-            }
-         }
-
-         if($indexInAB !== -1){
-            //$this->Dbase->CreateLogEntry("mod_box_storage: current box ".  print_r($result[$resultIndex], true) ,"debug");
-            //$this->Dbase->CreateLogEntry("mod_box_storage: box found in boxes with samples array ".  print_r($allBoxes[$indexInAB], true) ,"debug");
-            //$this->Dbase->CreateLogEntry('mod_box_storage: Box has samples '.$resultIndex.' box count = '.count($result), 'debug');
-            if($_POST['project'] === "-1"){//user wants boxes associated with multiple projects
-               if($allBoxes[$indexInAB]['no_projects']<=1 || $result[$resultIndex]['status'] === 'temporary'){
-                  //remove this box, we only need boxes associated with multiple projects. There is no way a temporary box can be associated with multiple projects
-                  array_splice($result, $resultIndex, 1);
-                  array_splice($allBoxes, $indexInAB, 1);
-                  $resultIndex--;
-                  $totalRowCount--;
-                  continue;
+      //if query still not set, get all boxes
+      if(strlen($sQuery) == 0) $sQuery = "*:*";
+      
+      //get the tings from the solr
+      $ch = curl_init();
+      
+      $fullQURL = str_replace(" ", "+", urldecode($qURL.$sQuery));
+      curl_setopt($ch, CURLOPT_URL, $fullQURL);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_USERAGENT, "Codular Sample cURL Request");
+      
+      $curlResult = curl_exec($ch);
+      
+      $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+      
+      $data = array();
+      $data['data'] = array();
+      
+      if($http_status == 200){
+         $solrResponse = json_decode($curlResult, true);
+         
+         $this->Dbase->CreateLogEntry(print_r($solrResponse['response'], true), "fatal");
+         $totalResults = $solrResponse["response"]['numFound'];
+         
+         for($index = 0; $index < count($solrResponse["response"]["docs"]); $index++){
+            $data['data'][$index] = $solrResponse["response"]["docs"][$index];
+            $data['data'][$index]['keeper'] = $solrResponse["response"]["docs"][$index]['owner_id'];
+            if(strlen($solrResponse["response"]["docs"][$index]['rack']) > 0){
+               $data['data'][$index]['position'] = $solrResponse["response"]["docs"][$index]['sector_name']." >> ".$solrResponse["response"]["docs"][$index]['rack'];
+               if(strlen($solrResponse["response"]["docs"][$index]['rack_position']) > 0){
+                  $data['data'][$index]['position'] .= " >> ".$solrResponse["response"]["docs"][$index]['rack_position'];
                }
             }
-            else if($_POST['project'] === "-2"){//user wants boxes not associated with any projects
-               if(($result[$resultIndex]['status'] === 'temporary' && $result[$resultIndex]['project'] !== NULL) || $allBoxes[$indexInAB]['no_projects']>0){
-                  //remove this box, we only need boxes not associated with projects
-                  array_splice($result, $resultIndex, 1);
-                  array_splice($allBoxes, $indexInAB, 1);
-                  $resultIndex--;
-                  $totalRowCount--;
-                  continue;
-               }
-            }
-            else if(strlen($_POST['project']) > 0){//user wants boxes associated with a particular box. If we have reached this point, the box is associated to only one project
-               if(($result[$resultIndex]['status'] === 'temporary' && $result[$resultIndex]['project'] !== $_POST['project']) || $allBoxes[$indexInAB]['project_id'] !== $_POST['project']){//box not from the user specified project
-                  //box is either (in a teporary location not associated with the specified project) or none of its samples associated with the specified project
-                  array_splice($result, $resultIndex, 1);
-                  array_splice($allBoxes, $indexInAB, 1);
-                  $resultIndex--;
-                  $totalRowCount--;
-                  continue;
-               }
-            }
-
-            if($_POST['samples'] === "ex_samples"){
-               $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
-               if($boxSize === 0 || $boxSize > $allBoxes[$indexInAB]['no_samples']){//box does not have excess samples
-                  array_splice($result, $resultIndex, 1);
-                  array_splice($allBoxes, $indexInAB, 1);
-                  $resultIndex--;
-                  $totalRowCount--;
-                  continue;
-               }
-            }
-            else if($_POST['samples'] === "wo_samples"){
-               if($allBoxes[$indexInAB]['no_samples'] > 0){//box has samples in it
-                  array_splice($result, $resultIndex, 1);
-                  array_splice($allBoxes, $indexInAB, 1);
-                  $resultIndex--;
-                  $totalRowCount--;
-                  continue;
-               }
-            }
-         }
-         else{//box does not have samples
-            //$this->Dbase->CreateLogEntry('mod_box_storage: Box does not have samples '.$resultIndex.' box count = '.count($result), 'debug');
-            if($result[$resultIndex]['status'] === 'temporary'){
-               if($_POST['project'] === "-2"){//user wants boxes not associated with any projects
-                  if($result[$resultIndex]['project'] !== NULL){//box associated with a project
-                     array_splice($result, $resultIndex, 1);
-                     $resultIndex--;
-                     $totalRowCount--;
-                     continue;
-                  }
-               }
-               else if($_POST['project'] === "-1"){//user wants boxes associated with more than one project
-                  //this is not possible if box in temporary position
-                  array_splice($result, $resultIndex, 1);
-                  $resultIndex--;
-                  $totalRowCount--;
-                  continue;
-               }
-               else if(strlen($_POST['project'])>0){//user has specified the id of the project he/she wants boxes associated to
-                  if($result[$resultIndex]['project'] !== $_POST['project']){//box not associated to the project
-                     array_splice($result, $resultIndex, 1);
-                     $resultIndex--;
-                     $totalRowCount--;
-                     continue;
-                  }
-               }
-            }
-            else if(strlen($_POST['project']) > 0 && $_POST['project'] !== "-2"){//box in permanent position
-               //user wants box related to at least one project. This box (in a permanent location) is not associated to any samples and therefore no project
-               $this->Dbase->CreateLogEntry('mod_box_storage: POST"project" = '.$_POST['project'], 'debug');
-                array_splice($result, $resultIndex, 1);
-                $resultIndex--;
-                $totalRowCount--;
-                continue;
-            }
-            if(strlen($_POST['samples']) > 0 && $_POST['samples'] === "ex_samples"){
-               $boxSize = GeneralTasks::LCSize2NumericSize($allBoxes[$indexInAB]['size']);
-               array_splice($result, $resultIndex, 1);
-                $resultIndex--;
-                $totalRowCount--;
-                continue;
-            }
+            //$data['data'][$index]['position'] = $solrResponse["response"]["docs"][$index]['sector_name']." >> ".$solrResponse["response"]["docs"][$index]['rack']." >> ".$solrResponse["response"]["docs"][$index]['rack_position'];
+            $data['data'][$index]['size'] = $solrResponse["response"]["docs"][$index]['box_size'];
+            $data['data'][$index]['status'] = $solrResponse["response"]["docs"][$index]['box_status'];
+            $data['data'][$index]['total_row_count'] = $totalResults;
+            $data['data'][$index]['date_added'] = str_replace("Z", "", str_replace("T", " ", $solrResponse["response"]["docs"][$index]['date_added']));
          }
       }
-
+      else {
+         $this->Dbase->CreateLogEntry("Something went wrong when trying to access the solr server", "fatal");
+         $this->Dbase->CreateLogEntry("URL = ".$fullQURL, "fatal");
+         $this->Dbase->CreateLogEntry("result = ".$curlResult, "fatal");
+         $this->Dbase->CreateLogEntry("http status = ".$http_status, "fatal");
+      }
       header("Content-type: application/json");
-      if(count($result)> 0){
-         //$result[0]['total_row_count'] = $totalRowCount;
-         $totalRowCount = count($result);
-         $finalResult = array_slice($result, $fromRow, $pageSize);
-         if(count($finalResult) > 0) $finalResult[0]['total_row_count'] = $totalRowCount;
-         $this->Dbase->CreateLogEntry("final result = ".print_r($finalResult, true), "debug");
-         //die('{"data":'. json_encode($result) .'}');
-         die('{"data":'. json_encode($finalResult) .'}');
-      }
-      else if($result == 1)  die(json_decode(array('data' => $this->Dbase->lastError)));
-      
-      die('{"data":'. json_encode(array()) .'}');
+      die(json_encode($data));
    }
 
    /**
@@ -1450,6 +1486,143 @@ class BoxStorage extends Repository{
          $jsonArray['data'] = array();
          $jsonArray['error_message'] = "Unable to get available sample types. Please contact the system developers";
       }
+   }
+   
+   private function printAddedBoxes(){
+      $boxIDs = explode(",", $_GET['boxIDs']);
+      
+      $this->Dbase->CreateLogEntry(print_r($boxIDs, true), "fatal");
+      
+      $boxData = array();
+      
+      foreach ($boxIDs as $currBox){
+          $query = 'select a.box_id, b.box_name, a.no_samples, c.facility, concat(b.rack, " >> ", b.rack_position) as position, b.box_features '.
+                 'from '. Config::$config['dbase'] .'.lcmod_boxes_def as a '.
+                 'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
+                 'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
+                 'where a.box_id = :id';
+          $result = $this->Dbase->ExecuteQuery($query, array("id" => $currBox));
+          
+          if(is_array($result)){
+             preg_match("/.*Tank([0-9]+).+/i", $result[0]['facility'], $tank);
+             if(is_array($tank) && isset($tank[1])){
+                $result[0]['position'] = "T" . $tank[1] . " >> " . $result[0]['position'];
+             }
+             else {
+                $this->Dbase->CreateLogEntry("An error occurred while trying to get the tank name".preg_last_error(), "fatal");
+             }
+             
+             array_push($boxData, $result[0]);
+          }
+          else {
+             $this->Dbase->CreateLogEntry("Problem occurred while trying to get box data for printing", "fatal");
+          }
+      }
+      
+      $today = date('d M Y');
+      $time = date('h:i A');
+      $fullName = $_SESSION['onames'] . " " . $_SESSION['surname'];
+      $hash = md5($today.$time.$_SESSION['username']);
+      $pageName = $hash.".php";
+      
+      $boxHTML = "";
+      foreach($boxData as $currBox){
+         $boxHTML .= "<tr style='background-color: #e0e1ec;'>";
+         $boxHTML .= "<td style='padding-left: 35px;' height='30'>".$currBox['box_name']."</td><td style='text-align: center;'>".$currBox['no_samples']."</td><td style='text-align: center;'>".$currBox['position']."</td><td style='text-align: center;'>".$currBox['box_features']."</td>";
+         $boxHTML .= "</tr>";
+      }
+      $this->Dbase->CreateLogEntry($boxHTML, "fatal");
+      
+      $template = "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'>
+<html style='color: #333333;'>
+   <head>
+      <title>Added Boxes</title>
+      <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+      <style type='text/css'>
+         .invoiceTable td, .invoiceTable th {
+            border: 1px solid #333333;
+         }
+      </style>
+   </head>
+   <body style='font-family:Open Sans,sans-serif'>
+      <div style='position: absolute; top: 10px; left: 20px; width: 50px'>
+         <img src='../images/WTPlogo.jpg' style='width: 100px; height: 100px;'/>
+      </div>
+      <div style='position: absolute; top: 10px; left: 220px; width: 480px'>
+         <h1 style='position: absolute; top: 20px; left: 120px;'>Azizi Biorepository</h1>
+      </div>
+      <div style='position: absolute; top: 95px; left: 340px; width 600px;'>
+         <p style='font-size: 11px; font-style: italic;'>Ensuring proper sample storage with high quality metadata</p>
+      </div>
+      <div style='position: absolute; top: 40px; left: 700px; text-align: right; width: 300px;'>
+         <p style='font-size: 16px;'>Boxes Received<br/>
+         ".$today.", ".$time."</p>
+      </div>
+
+      <div style='position: absolute; top: 180px; left: 100px; width: 800px;'>
+         <table cellpadding='1' style='border: 1px solid #333333; border-collapse: collapse;' class='invoiceTable'>
+            <tr style='background-color: #b0b6f1;'>
+               <th width='180' height='40' style='text-align: left; padding-left: 20px;'>Box name</th><th width='180'>No. Samples</th><th width='300'>Storage Position</th><th width='550'>Description</th>
+            </tr>". 
+            $boxHTML."</table>
+         <div style='margin-top:20px; left: 340px; margin-left:40px;'>
+            <div style='height: 15px; width: auto; line-height: 15px; margin-top: 20px; margin-right: 10px;'>Received By: ".$fullName."</div>
+            <div style='height: 15px; width: auto; line-height: 15px; margin-top: 20px; margin-right: 10px;'>Received Date: ".$today.", ".$time."</div>
+            <div style='height: 15px; width: auto; line-height: 15px; margin-top: 20px; margin-right: 10px;'>Delivered By (Name): </div>
+            <div style='height: 15px; width: auto; line-height: 15px; margin-top: 20px; margin-right: 10px;'>Delivered By (Signature): </div>
+            <div style='height: 15px; width: auto; line-height: 15px; margin-top: 20px; margin-right: 10px;'>Remarks: </div>
+         <div>
+      </div>
+   </body>
+</html>";
+      
+      if(!file_exists('./generated_pages')){
+         mkdir('./generated_pages', 0777, true);
+      }
+      file_put_contents("./generated_pages/" . $pageName, $template);
+      $pdfName = "Received Samples ".$today." - ".$time;
+      
+      shell_exec(Config::$xvfb ." ". Config::$wkhtmltopdf . " http://" . $_SERVER['HTTP_HOST'] . Config::$baseURI . "generated_pages/" . $pageName . " '/tmp/" . $pdfName . ".pdf'");
+      //unlink("./generated_pages/" . $pageName);
+      $this->Dbase->CreateLogEntry("./generated_pages/" . $pageName, "fatal");
+      
+      /*header('Content-type: application/pdf');
+      header('Content-Disposition: attachment; filename="' . basename(" '/tmp/" . $pdfName . ".pdf'") . '"');
+      header('Content-Transfer-Encoding: binary');
+      readfile(" '/tmp/" . $pdfName . ".pdf'");*/
+      
+      $this->Dbase->CreateLogEntry("pdf size : ".filesize("/tmp/" . $pdfName . ".pdf"), "fatal");
+      
+      header('Content-type: application/pdf');
+      header('Content-Disposition: attachment; filename='. $pdfName . ".pdf");
+      header("Expires: 0"); 
+      header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+      header("Content-length: " . filesize("/tmp/" . $pdfName . ".pdf"));
+      header('Content-Transfer-Encoding: binary');
+      readfile("/tmp/" . $pdfName . ".pdf");
+   }
+   
+   /**
+    * This function gets details for a box using it's id
+    */
+   private function getBoxDetails($boxID){
+      /*
+       * Select rack position, sector and tank id
+       */
+      
+      $query = 'select b.box_id, b.box_name, b.rack, b.rack_position as position, c.id as sector, c.facility as sector_name, c.facility_id as tank, d.name as tank_name '.
+              'from '. Config::$config['azizi_db'] .'.boxes_def as b './/optimization: use inner join to fetch only boxes in LN2 tanks and not the freezers etc
+              'left join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id './/fetch all boxes regardless of wether sector (boxes_local_def) is defined or not
+              'left join '. Config::$config['azizi_db'] .'.storage_facilities as d on c.facility_id = d.id '.
+              'where b.box_id = :boxID';//select boxes which are not associated to any sector and those in LN2 tanks
+      $result = $this->Dbase->ExecuteQuery($query, array("boxID" => $boxID));
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("Error occurred while trying to get box details", "fatal");
+         $result = array();
+      }
+      
+      return $result;
    }
 }
 ?>

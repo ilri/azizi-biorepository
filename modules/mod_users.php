@@ -106,6 +106,13 @@ class Users {
 ?>
    </select></div>
    <div class="form-group"><label for="username" class="control-label">Username: </label><input id="username" name="username" type="text" class="form-control" /></div>
+   <div class="form-group">
+      <label for="ldap" class="control-label">Use LDAP Authentication: </label>
+      <select id="ldap" name="ldap" class="form-control">
+         <option value="0">No</option>
+         <option value="1">Yes</option>
+      </select>
+   </div>
    <div class="form-group"><label for="pass_1" class="control-label">Password: </label><input id="pass_1" name="pass_1" type="password" class="form-control" /></div>
    <div class="form-group"><label for="pass_2" class="control-label">Confirm Password: </label><input id="pass_2" name="pass_2" type="password" class="form-control" /></div>
    <h4 style="margin-left: 10%;">Groups</h4>
@@ -184,6 +191,13 @@ class Users {
 ?>
       </select>
    </div>
+   <div class="form-group">
+      <label for="allowed" class="control-label">User allowed: </label>
+      <select id="allowed" name="allowed" class="form-control">
+         <option value="1">Yes</option>
+         <option value="0">No</option>
+      </select>
+   </div>
    <div class="form-group"><label for="sname" class="control-label">Surname: </label><input id="sname" name="sname" type="text" class="form-control" /></div>
    <div class="form-group"><label for="onames" class="control-label">Other Names: </label><input id="onames" name="onames" type="text" class="form-control" /></div>
    <div class="form-group"><label for="project" class="control-label">Project: </label><select id="project" name="project" class="form-control">
@@ -195,6 +209,13 @@ class Users {
 ?>
    </select></div>
    <div class="form-group"><label for="username" class="control-label">Username: </label><input id="username" name="username" type="text" class="form-control" /></div>
+   <div class="form-group">
+      <label for="ldap" class="control-label">Use LDAP Authentication: </label>
+      <select id="ldap" name="ldap" class="form-control">
+         <option value="0">No</option>
+         <option value="1">Yes</option>
+      </select>
+   </div>
    <div class="form-group"><label for="pass_1" class="control-label">Password: </label><input id="pass_1" name="pass_1" type="password" class="form-control" placeholder="Leave blank if not updating" /></div>
    <div class="form-group"><label for="pass_2" class="control-label">Confirm Password: </label><input id="pass_2" name="pass_2" type="password" class="form-control" placeholder="Leave blank if not updating" /></div>
    <h4 style="margin-left: 10%;">Groups</h4>
@@ -377,7 +398,7 @@ class Users {
       
       $groupIDs = explode(",",$_POST['user_groups']);
       
-      $result = $this->security->createUser($_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs);
+      $result = $this->security->createUser($_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap']);
       
       if($result == 0){//user successfully added
          return "User successfully added";
@@ -390,7 +411,7 @@ class Users {
    private function editUser(){
       $groupIDs = explode(",",$_POST['user_groups']);
       
-      return $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs);
+      return $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap'], $_POST['allowed']);
    }
    
    private function getExistingUsers($encode = true){
@@ -433,7 +454,7 @@ class Users {
     */
    private function getUserData(){
       $this->Dbase->CreateLogEntry("user id = ".$_GET['id'], "fatal");
-      $query = "SELECT id, login, sname, onames, project, allowed, ldap_authentication"
+      $query = "SELECT id, login, sname, onames, project, allowed, ldap_authentication as ldap"
               . " FROM users"
               . " WHERE id = :id";
       

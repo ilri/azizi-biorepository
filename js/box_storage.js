@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var Main = {tanks: undefined};
+var Main = {tanks: undefined, printBoxes: undefined, isSearching: false};
 
 var BoxStorage = {
 
@@ -46,6 +46,8 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'fetch_boxes'},
          beforeprocessing: function(data){
+            console.log(data);
+            Main.printBoxes = data;
             if(data.data.length > 0)
                source.totalrecords = data.data[0].total_row_count;
             else
@@ -221,6 +223,7 @@ var BoxStorage = {
          type: 'POST',
          data: {action: 'search_boxes'},
          beforeprocessing: function (data){
+            console.log(data);
             if(data.data.length > 0)
                source.totalrecords = data.data[0].total_row_count;
             else
@@ -245,11 +248,11 @@ var BoxStorage = {
                return boxesAdapter.records;
             },
             columns: [
-               {text: 'Box Label', datafield: 'box_name', width: 245},
+               {text: 'Box Label', datafield: 'box_name', width: 245, sortable: true},
                {text: 'Tank Position', datafield: 'position', width: 320, sortable: false},
-               {text: 'Status', datafield: 'status', width: 90, sortable: false},
+               {text: 'Status', datafield: 'status', width: 90, sortable: true},
                {text: 'Number of samples', datafield: 'no_samples', width: 50, sortable: false},
-               {text: 'Date Added', datafield: 'date_added', width: 200, sortable: false}
+               {text: 'Date Added', datafield: 'date_added', width: 200, sortable: true}
             ]
          });
       }
@@ -313,8 +316,11 @@ var BoxStorage = {
          type: 'POST',
          data: data,
          beforeprocessing: function (data){
-            if(data.data.length > 0)
+            if(data.data.length > 0){
                source.totalrecords = data.data[0].total_row_count;
+               console.log(source.totalrecords);
+            }
+               
             else
                source.totalrecords = 0;
          }
@@ -453,7 +459,7 @@ var BoxStorage = {
             Notification.show({create:true, hide:true, updateText:false, text: "Box successfully deleted", error:false});
          }
 
-         BoxStorage.setDeleteBoxSuggestions();
+         BoxStorage.setDeleteBoxSuggestions(true);
       }
    },
 
@@ -515,6 +521,26 @@ var BoxStorage = {
          $("#box_size").focus();
          return false;
       }
+      if($("#no_samples").val() === ""){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please enter the number of samples', error:true});
+         $("#no_samples").focus();
+         return false;
+      }
+      else if(isNaN($("#no_samples").val())){
+         Notification.show({create:true, hide:true, updateText:false, text:'Number of samples must be a number', error:true});
+         $("#no_samples").focus();
+         return false;
+      }
+      else if($("#no_samples").val() == 0){
+         Notification.show({create:true, hide:true, updateText:false, text:'Number of samples must be greater than 0', error:true});
+         $("#no_samples").focus();
+         return false;
+      }
+      else if(parseInt($("#no_samples").val()) > parseInt($("input[name='box_size']:checked").val())){
+         Notification.show({create:true, hide:true, updateText:false, text:'Number of samples greater than the size of the box', error:true});
+         $("#no_samples").focus();
+         return false;
+      }
       if($('#owner').is(':disabled')=== false && $("#owner").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please specify the owner of the box', error:true});
          $("#owner").focus();
@@ -525,7 +551,7 @@ var BoxStorage = {
          $("#status").focus();
          return false;
       }
-      if($("#status").val() === "temporary" && $("#project").val() === ""){
+      if($("#project").val() === ""){
          Notification.show({create:true, hide:true, updateText:false, text:'Please enter the project', error:true});
          $("#project").focus();
          return false;
@@ -655,10 +681,11 @@ var BoxStorage = {
     *
     * @param   {Boolean}   forInsertion Set to true if you want to display available box positions
     * @param   {Int}       boxesToShow Defaults to 0. Set to 0 if you want to show all boxes, 1 to show boxes still in the tanks and 2 for boxes that have been removed
+    * @param   {Object}    An object containing the location of a box {tank:"",sector:"",rack:"",position:""}
     *
     * @returns {undefined}
     */
-   loadTankData: function(forInsertion, boxesToShow){
+   loadTankData: function(forInsertion, boxesToShow, prePosition){
       $("#tank").prop("disabled", "disabled");
       
       if(typeof(boxesToShow)==='undefined') boxesToShow = 0;//default boxesToShow to 0 (all boxes)
@@ -683,6 +710,16 @@ var BoxStorage = {
       $("#rack").change(BoxStorage.populateSelectedPosition);
       
       $("#tank").prop("disabled", false);
+      
+      if(typeof prePosition != 'undefined'){
+         $("#tank").val(prePosition.tank);
+         BoxStorage.populateTankSectors();
+         $("#sector").val(prePosition.sector);
+         BoxStorage.populateSectorRacks();
+         $("#rack").val(prePosition.rack);
+         BoxStorage.populateSelectedPosition();
+         $("#position").val(prePosition.position);
+      }
    },
 
    /**
@@ -1154,8 +1191,11 @@ var BoxStorage = {
    * 
    * @returns {undefined}
    */
-   setDeleteBoxSuggestions : function(){
-      BoxStorage.resetDeleteInput(true);
+   setDeleteBoxSuggestions : function(clearInput){
+      console.log("set delete box suggestions called");
+      
+      if(clearInput) BoxStorage.resetDeleteInput(true);
+      
       var tankData = BoxStorage.getTankData(false);//cache fetched tank data into document.tankData so that you wont need to fetch it again
 
       //get all boxes that have been removed
@@ -1257,24 +1297,28 @@ var BoxStorage = {
     * @returns {undefined}
     */
    searchForBox: function (sortColumn, sortDirection){
-      if(typeof sortColumn === 'undefined'){
-         sortColumn = "";
-         sortDirection = "";
+      if(Main.isSearching == false){//check if we are being blocked by another search
+         Main.isSearching = true;//block. make sure no other search happens until this is done
+         if(typeof sortColumn === 'undefined'){
+            sortColumn = "";
+            sortDirection = "";
+         }
+         //first check if request has already gone to server and has not been responded to
+         $("#searched_boxes").jqxGrid('gotopage', 0);
+         var data = {
+            search: $("#search").val(),
+            project: $("#search_project").val(),
+            status: $("#search_status").val(),
+            location: $("#search_location").val(),
+            keeper: $("#search_keeper").val(),
+            boxes_wo_names: $("#boxes_wo_names").is(":checked"),
+            samples: $("#samples").val(),
+            sort_column: sortColumn,
+            sort_direction: sortDirection
+         };
+         BoxStorage.updateSearchBoxesGrid(data);
+         Main.isSearching = false;//unblock search
       }
-      //first check if request has already gone to server and has not been responded to
-      $("#searched_boxes").jqxGrid('gotopage', 0);
-      var data = {
-         search: $("#search").val(),
-         project: $("#search_project").val(),
-         status: $("#search_status").val(),
-         location: $("#search_location").val(),
-         keeper: $("#search_keeper").val(),
-         boxes_wo_names: $("#boxes_wo_names").is(":checked"),
-         samples: $("#samples").val(),
-         sort_column: sortColumn,
-         sort_direction: sortDirection
-      };
-      BoxStorage.updateSearchBoxesGrid(data);
    },
    
    /**
@@ -1326,14 +1370,14 @@ var BoxStorage = {
             
             $("#status").val(rowData.status);
             if(rowData.status === "temporary"){
-               $("#project").prop("disabled", false);
+               //$("#project").prop("disabled", false);
                $("#owner").prop("disabled", true);
                if(isNaN(rowData.project) === false){//project set
                   $("#project").val(rowData.project);
                }
             }
             else{
-               $("#project").prop("disabled", true);
+               //$("#project").prop("disabled", true);
                $("#owner").prop("disabled", false);
             }
          }
@@ -1391,6 +1435,7 @@ var BoxStorage = {
          var formData = {
             box_label: $("#box_label").val(),
             box_size: $("input[name='box_size']:checked").val(),
+            no_samples: $("#no_samples").val(),
             owner: $("#owner").val(),
             status: $("#status").val(),
             features: $("#features").val(),
@@ -1479,5 +1524,93 @@ var BoxStorage = {
       $("#advanced_search_div").hide(500);
       
       BoxStorage.searchForBox();
+   },
+   
+   /**
+    * This function handles logic for when the print button in the add box page
+    * is clicked
+    * @returns {undefined}
+    */
+   printBoxesBtnClicked: function(idArray){
+      console.log("starting");
+      
+      var boxIDs = idArray.join(",");
+      
+      /*jQuery.ajax({
+         url:"mod_ajax.php?page=box_storage&do=ajax&action=print_added_boxes",
+         async: false,
+         data: {boxIDs:boxIDs},
+         done:function(data){
+            console.log(data);
+         }
+      });*/
+      
+      /*jQuery.ajax({
+         url: "mod_ajax.php?page=box_storage&do=ajax&action=print_added_boxes",
+         type: "POST",
+         data: {boxIDs:boxIDs},
+         async: false
+      });*/
+      
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=print_added_boxes&boxIDs="+encodeURIComponent(boxIDs);
+      
+      console.log(url);
+      
+      $("#hiddenDownloader").remove();
+      
+      $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
+      
+      $("#hiddenDownloader").attr("src", url);
+   },
+   
+   /**
+    * This function routes user to the retrieve box page having preset
+    * the details for the box
+    * @returns {undefined}
+    */
+   routeToRetrievePage: function(){
+      var tankID = $("#tank").val();
+      var sectorID = $("#sector").val();
+      var rackNO = $("#rack").val();
+      var pos = $("#position").val();
+      var boxName = $("#box_label").val();
+      var boxID = $("#box_id").val();
+      
+      if(boxID.length > 0 &&
+              boxName.length > 0 &&
+              tankID.length > 0 &&
+              sectorID.length > 0 &&
+              rackNO.length > 0 &&
+              pos.length > 0) {//make sure that everything is set before redirecting user
+         
+         window.location.replace("index.php?page=box_storage&do=remove_box&id="+boxID);
+      }
+      
+   },
+   
+   routeToDeletePage: function(){
+      var boxID = $("#box_id").val();
+      if(boxID.length > 0){
+         window.location.replace("index.php?page=box_storage&do=delete_box&id="+boxID);
+      }
+   },
+   
+   /**
+    * This function presets details on a box in the retrieve box page
+    * @returns {undefined}
+    */
+   setRetrieveBoxDetails: function(jsonString){
+      console.log("presetting box data");
+      var boxData = jQuery.parseJSON(jsonString);
+      console.log(boxData);
+      $("#box_label").val(boxData.box_name);
+      $("#box_id").val(boxData.box_id);
+      
+      //not sure this will work
+      $("#tank").val(boxData.tank_id);
+      
+      $("#sector").val(boxData.sector_id);
+      $("#rack").val(boxData.rack);
+      $("#position").val(boxData.position);
    }
 };
