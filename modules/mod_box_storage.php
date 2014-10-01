@@ -1286,8 +1286,8 @@ class BoxStorage extends Repository{
     */
    private function searchBoxes() {
       
-      $fromRow = $_POST['pagenum'] * $_POST['pagesize'];
-      $pageSize = $_POST['pagesize'];
+      $fromRow = "&start=".$_POST['pagenum'] * $_POST['pagesize'];
+      $pageSize = "&count=".$_POST['pagesize'];
       
       $sortColumn = $_POST['sort_column'];
       if($sortColumn == "status"){
@@ -1298,8 +1298,11 @@ class BoxStorage extends Repository{
       if($sort == " "){//user did not define any sort column
          $sort = "";
       }
+      else {
+         $sort = "&sort=".$sort;
+      }
       
-      $qURL = Config::$config['solr_box']."/select?wt=json&start=".$fromRow."&count=".$pageSize."&sort=".$sort."&q=";
+      $qURL = Config::$config['solr_boxes']."/select?wt=json".$fromRow.$pageSize.$sort."&q=";
       //begin building solr query string
       
       $sQuery = "";
@@ -1308,13 +1311,13 @@ class BoxStorage extends Repository{
       $concat = "";
       if(strlen($sQuery) > 0) $concat = " AND";
       if($_POST['boxes_wo_names'] == "true"){   
-         $sQuery .= $concat."box_name:''";
+         $sQuery .= $concat."box_name:'NULL'";
       }
       else if($_POST['boxes_wo_names'] === "false"){
          //remove whitespaces from search
          $search = $_POST['search'];
          
-         $search = preg_replace("/\s+/", "", $search);
+         $search = preg_replace("/[^a-zA-Z0-9]/", "", $search);
          
          if(strlen($search) > 0){
             $sQuery .= $concat."(box_name:*".$search."*";//the stars are wildcards
@@ -1326,34 +1329,54 @@ class BoxStorage extends Repository{
 
       // 2. box status
       $concat = "";
-      if(strlen($sQuery) > 0) $concat = " AND";
+      if(strlen($sQuery) > 0) $concat = " AND ";
       if(strlen($_POST['status']) > 0){
          $sQuery .= $concat."box_status:".$_POST['status'];
       }
       
       // 3. location
       $concat = "";
-      if(strlen($sQuery) > 0) $concat = " AND";
+      if(strlen($sQuery) > 0) $concat = " AND ";
       if($_POST['location'] == "wo_location"){
-         $sQuery .= $concat."sector_name:''";
+         $sQuery .= $concat."sector_name:'NULL'";
       }
       else if($_POST['location'] == "wo_rack"){
-         $sQuery .= $concat."rack:''";
+         $sQuery .= $concat."rack:'NULL'";
       }
       else if($_POST['location'] == "wo_rack_pos"){
-         $sQuery .= $concat."rack_position:''";
+         $sQuery .= $concat."rack_position:'NULL'";
       }
       
       // 4. owner
       $concat = "";
-      if(strlen($sQuery) > 0) $concat = " AND";
+      if(strlen($sQuery) > 0) $concat = " AND ";
       if(strlen($_POST['keeper'])>0){
          $sQuery .= $concat."owner_id:".$_POST['keeper'];
       }
       
       
       // 5. project (get that from the solr samples core)
+      $concat = "";
+      if(strlen($sQuery) > 0) $concat = " AND ";
+      if($_POST['project'] == "-2"){//user wants boxes not associated with any project
+         $sQuery .= $concat."no_projects:0";
+      }
+      else if($_POST['project'] == "-1"){//user wants boxes associated with more than one project
+         $sQuery .= $concat."no_projects:[2 TO *]";
+      }
+      else if(strlen($_POST['project']) > 0){//user wants boxes associated to a particular project
+         $sQuery .= $concat."no_projects:1 AND project_id:".$_POST['project'];
+      }
+      
       // 6. no samples (get that from the solr samples core)
+      $concat = "";
+      if(strlen($sQuery) > 0) $concat = " AND ";
+      if($_POST['samples'] == "ex_samples"){//user wants boxes with excess samples
+         $sQuery .= $concat."((box_size:100 AND no_samples:[101 TO *]) OR (box_size:81 AND no_samples:[82 TO *]))";
+      }
+      else if($_POST['samples'] == "wo_samples"){
+         $sQuery .= $concat."no_samples:0";
+      }
       
       //if query still not set, get all boxes
       if(strlen($sQuery) == 0) $sQuery = "*:*";
@@ -1374,26 +1397,33 @@ class BoxStorage extends Repository{
       $data = array();
       $data['data'] = array();
       
+      $this->Dbase->CreateLogEntry("URL = ".$fullQURL, "fatal");
+      
       if($http_status == 200){
          $solrResponse = json_decode($curlResult, true);
          
-         $this->Dbase->CreateLogEntry(print_r($solrResponse['response'], true), "fatal");
+         //$this->Dbase->CreateLogEntry(print_r($solrResponse['response'], true), "fatal");
          $totalResults = $solrResponse["response"]['numFound'];
          
+         $resIndex = 0;
          for($index = 0; $index < count($solrResponse["response"]["docs"]); $index++){
-            $data['data'][$index] = $solrResponse["response"]["docs"][$index];
-            $data['data'][$index]['keeper'] = $solrResponse["response"]["docs"][$index]['owner_id'];
+            $data['data'][$resIndex] = $solrResponse["response"]["docs"][$index];
+            $data['data'][$resIndex]['keeper'] = $solrResponse["response"]["docs"][$index]['owner_id'];
             if(strlen($solrResponse["response"]["docs"][$index]['rack']) > 0){
-               $data['data'][$index]['position'] = $solrResponse["response"]["docs"][$index]['sector_name']." >> ".$solrResponse["response"]["docs"][$index]['rack'];
+               $data['data'][$resIndex]['position'] = $solrResponse["response"]["docs"][$index]['sector_name']." >> ".$solrResponse["response"]["docs"][$index]['rack'];
                if(strlen($solrResponse["response"]["docs"][$index]['rack_position']) > 0){
-                  $data['data'][$index]['position'] .= " >> ".$solrResponse["response"]["docs"][$index]['rack_position'];
+                  $data['data'][$resIndex]['position'] .= " >> ".$solrResponse["response"]["docs"][$index]['rack_position'];
                }
             }
             //$data['data'][$index]['position'] = $solrResponse["response"]["docs"][$index]['sector_name']." >> ".$solrResponse["response"]["docs"][$index]['rack']." >> ".$solrResponse["response"]["docs"][$index]['rack_position'];
-            $data['data'][$index]['size'] = $solrResponse["response"]["docs"][$index]['box_size'];
-            $data['data'][$index]['status'] = $solrResponse["response"]["docs"][$index]['box_status'];
-            $data['data'][$index]['total_row_count'] = $totalResults;
-            $data['data'][$index]['date_added'] = str_replace("Z", "", str_replace("T", " ", $solrResponse["response"]["docs"][$index]['date_added']));
+            $data['data'][$resIndex]['size'] = $solrResponse["response"]["docs"][$index]['box_size'];
+            $data['data'][$resIndex]['status'] = $solrResponse["response"]["docs"][$index]['box_status'];
+            
+            $data['data'][$resIndex]['date_added'] = str_replace("Z", "", str_replace("T", " ", $solrResponse["response"]["docs"][$index]['date_added']));
+          
+            $data['data'][$resIndex]['total_row_count'] = $totalResults;
+            
+            $resIndex++;
          }
       }
       else {
@@ -1405,6 +1435,104 @@ class BoxStorage extends Repository{
       header("Content-type: application/json");
       die(json_encode($data));
    }
+   
+   /*private function processBoxSamples($boxID, $boxSize, $action){
+      $sURL = Config::$config['solr_samples']."/select?wt=json&q=box_id:".$boxID;
+      $ch = curl_init();
+      
+      $fullQURL = str_replace(" ", "+", urldecode($sURL));
+      curl_setopt($ch, CURLOPT_URL, $fullQURL);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_USERAGENT, "Codular Sample cURL Request");
+      
+      $curlResult = curl_exec($ch);
+      
+      $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+      
+      if($http_status == 200){
+         $boxSamples = json_decode($curlResult, true);
+         $noSamples = $boxSamples["response"]['numFound'];
+         
+         
+         //$this->Dbase->CreateLogEntry("no found = ".$noSamples, "fatal");
+         //$this->Dbase->CreateLogEntry(print_r($boxSamples, true), "fatal");
+//         /$this->Dbase->CreateLogEntry($fullQURL, "fatal");
+         
+         if($action == "ex_samples"){//user wants to know if box has excess samples
+            if($noSamples > $boxSize){
+               $this->Dbase->CreateLogEntry("box size = ".$boxSize, "fatal");
+               $this->Dbase->CreateLogEntry("no samples = ".$noSamples, "fatal");
+               return true;
+            }
+            else {
+               $this->Dbase->CreateLogEntry("box has a good number of samples", "fatal");
+               $this->Dbase->CreateLogEntry("box size = ".$boxSize, "fatal");
+               $this->Dbase->CreateLogEntry("no samples = ".$noSamples, "fatal");
+            }
+         }
+         
+         if($action == "wo_samples"){//user wants to know if box has no samples
+            if($noSamples == 0){
+               return true;
+            }
+         }
+      }
+      else{
+         $this->Dbase->CreateLogEntry("Something went wrong when trying to access the solr server", "fatal");
+         $this->Dbase->CreateLogEntry("URL = ".$fullQURL, "fatal");
+         $this->Dbase->CreateLogEntry("result = ".$curlResult, "fatal");
+         $this->Dbase->CreateLogEntry("http status = ".$http_status, "fatal");
+      }
+      
+      return false;
+   }
+   
+   private function processBoxProjects($boxID, $action){
+      $sURL = Config::$config['solr_samples']."/select?wt=json&q=box_id:".$boxID;
+      $ch = curl_init();
+      
+      $fullQURL = str_replace(" ", "+", urldecode($sURL));
+      curl_setopt($ch, CURLOPT_URL, $fullQURL);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_USERAGENT, "Codular Sample cURL Request");
+      
+      $curlResult = curl_exec($ch);
+      
+      $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+      
+      if($http_status == 200){
+         $boxSamples = json_decode($curlResult, true);
+         $samples = $boxSamples["response"]['docs'];
+         $noSamples = $boxSamples["response"]['numFound'];
+         if($action == "-2"){//user wants boxes not associated with any project
+            if($noSamples == 0){
+               return true;
+            }
+         }
+         else if($action == "-1"){//user wants boxes associated with more than one project
+            $projects = array();
+            
+            for($sIndex = 0; $sIndex < count($samples); $sIndex++){
+               if(array_search($samples[$sIndex]['project_id']) === false){//sample's project not in array
+                  array_push($projects, $samples[$sIndex]['project_id']);
+                  if(count($projects) > 1){//box already associated with more than one project
+                     return true;
+                  }
+               }
+            }
+         }
+      }
+      else{
+         $this->Dbase->CreateLogEntry("Something went wrong when trying to access the solr server", "fatal");
+         $this->Dbase->CreateLogEntry("URL = ".$fullQURL, "fatal");
+         $this->Dbase->CreateLogEntry("result = ".$curlResult, "fatal");
+         $this->Dbase->CreateLogEntry("http status = ".$http_status, "fatal");
+      }
+      
+      return false;
+   }*/
 
    /**
     * This function gets data for boxes retireved from the system using the Retrieve a Box page and constructs a json object with this data

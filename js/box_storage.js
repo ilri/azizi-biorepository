@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var Main = {tanks: undefined, printBoxes: undefined, isSearching: false};
+var Main = {tanks: undefined, printBoxes: undefined, isSearching: false, searchedBoxesAdapter: undefined};
 
 var BoxStorage = {
 
@@ -231,27 +231,28 @@ var BoxStorage = {
          }
       };
 
-      var boxesAdapter = new $.jqx.dataAdapter(source);
+      Main.searchedBoxesAdapter = new $.jqx.dataAdapter(source);
 
       // create jqxgrid
       if($('#searched_boxes :regex(class, jqx\-grid)').length === 0){
          $("#searched_boxes").jqxGrid({
             width: 905,
-            height: 400,
-            source: boxesAdapter,
+            autoheight: true,
+            source: Main.searchedBoxesAdapter,
             columnsresize: true,
             theme: theme,
             sortable: true,
             pageable: true,
             virtualmode: true,
             rendergridrows: function() {
-               return boxesAdapter.records;
+               console.log("boxes adapter",Main.searchedBoxesAdapter);
+               return Main.searchedBoxesAdapter.records;
             },
             columns: [
                {text: 'Box Label', datafield: 'box_name', width: 245, sortable: true},
-               {text: 'Tank Position', datafield: 'position', width: 320, sortable: false},
+               {text: 'Tank Position', datafield: 'position', width: 280, sortable: false},
                {text: 'Status', datafield: 'status', width: 90, sortable: true},
-               {text: 'Number of samples', datafield: 'no_samples', width: 50, sortable: false},
+               {text: 'No. samples', datafield: 'no_samples', width: 90, sortable: false},
                {text: 'Date Added', datafield: 'date_added', width: 200, sortable: true}
             ]
          });
@@ -318,21 +319,16 @@ var BoxStorage = {
          beforeprocessing: function (data){
             if(data.data.length > 0){
                source.totalrecords = data.data[0].total_row_count;
-               console.log(source.totalrecords);
+               //console.log(source.totalrecords);
             }
                
             else
                source.totalrecords = 0;
          }
       };
-      var boxesAdapter = new $.jqx.dataAdapter(source);
-      $("#searched_boxes").jqxGrid({
-         source: boxesAdapter,
-         rendergridrows: function() {
-            return boxesAdapter.records;
-         },
-         virtualmode: true
-      });
+      
+      Main.searchedBoxesAdapter= new $.jqx.dataAdapter(source);
+      $("#searched_boxes").jqxGrid({source: Main.searchedBoxesAdapter});
    },
    
    /**
