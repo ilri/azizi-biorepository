@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var Main = {tanks: undefined, printBoxes: undefined, isSearching: false, searchedBoxesAdapter: undefined};
+var Main = {tanks: undefined, printBoxes: undefined, isSearching: false, searchedBoxesAdapter: undefined, searchTimoutID:0};
 
 var BoxStorage = {
 

@@ -123,7 +123,7 @@ class Ln2Requests extends Repository{
       ],
       sortname : 'date',
       <?php
-         if(isset($_SESSION['username']) && in_array($_SESSION['username'],Config::$ln2_request_managers)) {
+         if(isset($_SESSION['user_type']) && in_array("Biorepository Team", $_SESSION['user_type'])) {
             echo "buttons : [{name: 'Set Amount Approved', bclass: 'edit', onpress : Ln2Requests.changeAmountApproved}],";
          }
       ?>

@@ -416,7 +416,8 @@ class Users {
    
    private function getExistingUsers($encode = true){
       $query = "SELECT id, login, sname, onames, project, allowed, ldap_authentication"
-              . " FROM users";
+              . " FROM users"
+              . " ORDER BY login";
       $result = $this->Dbase->ExecuteQuery($query);
       
       if($result == 1){

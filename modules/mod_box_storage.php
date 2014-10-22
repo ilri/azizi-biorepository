@@ -644,13 +644,19 @@ class BoxStorage extends Repository{
       $('#submitButton').click(function(){
          BoxStorage.searchForBox();
       });
+      
+      Main.searchTimoutID = 0;
       $("#search").keyup( function(event) {
-         if(event.which === 8 || event.which === 13){//backspace or enter pressed
+         window.clearTimeout(Main.searchTimoutID);
+         if(event.which === 13){//enter pressed, search immediately
             BoxStorage.searchForBox();
          }
-         else{
-            if($("#search").val().length > 2){
-               BoxStorage.searchForBox();
+         else if(event.which === 8){//backspace pressed, wait for 500 milliseconds then search
+            Main.searchTimoutID = window.setTimeout(BoxStorage.searchForBox, 500);
+         }
+         else{//any other key pressed
+            if($("#search").val().length > 2){//length of query is more than 2, wait for 500 milliseconds then search
+               Main.searchTimoutID = window.setTimeout(BoxStorage.searchForBox, 500);
             }
          }
       });
