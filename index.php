@@ -13,7 +13,7 @@
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>notification.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jsencrypt.min.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bootstrap/js/bootstrap.js' /></script>
-      <script type='text/javascript' src='js/azizi.js'></script>
+      <script type='text/javascript' src='js/repository.js'></script>
    </head>
    <body>
       <div id='repository'>
