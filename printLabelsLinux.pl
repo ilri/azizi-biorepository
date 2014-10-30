@@ -15,8 +15,8 @@ my $selectedLabelType;
 
 #check that we have the right number of params before we continue
 $paramsCount = @ARGV;
-if($paramsCount != 5 && $paramsCount != 7){
-	print "Insufficient parameters provided when printing the labels. Expecting 5 or 7 parameters depending on the type of labels being generated.\n";
+if($paramsCount != 5 && $paramsCount != 8){
+	print "Insufficient parameters provided when printing the labels. Expecting 5 or 8 parameters depending on the type of labels being generated.\n";
 	exit 1;
 }
 
@@ -25,6 +25,7 @@ $params{'sequence'} = $ARGV[0];
 $params{'purpose'} = $ARGV[1];
 $params{'type'} = $ARGV[2];
 $params{'outfile'} = $ARGV[3];
+$params{'length'} = $ARGV[7];
 
 #check if we have the correct data
 if($params{'sequence'} !~ /^sequential|random$/){
@@ -136,7 +137,7 @@ sub printSequentialLabels{
 	my $col = 0;
 	my $lastRow = 0;
 	my $curLabel = $params{'lastLabel'};
-	my $pad_len = 9 - length $params{'prefix'};
+	my $pad_len = $params{'length'} - length $params{'prefix'};
 	my @samples;
 	
 	for(my $i = 0; $i < $params{'count'}; $i++){
@@ -453,12 +454,16 @@ sub formatWorksheet{
 	
 	my $barCodeFormat = $barcodeParams->{'barcodeFormat'};
 	$barCodeFormat->set_font($barcodeParams->{'barcodeFont'});
+	if($params{'purpose'} eq 'testing' ) { $barCodeFormat->set_font_strikeout(1); }
 	$barCodeFormat->set_size($barcodeParams->{'barcodeFontSize'});
 	$barCodeFormat->set_align('top');
 	$barCodeFormat->set_align('center');
 	
 	my $normalFormat = $barcodeParams->{'normalFormat'};
 	$normalFormat->set_font($barcodeParams->{'normalFont'});
+	if($params{'purpose'} eq 'testing' ) { $normalFormat->set_font_strikeout(1); }
+	if($params{'purpose'} eq 'testing' ) { $normalFormat->set_italic(1); }
+	if($params{'purpose'} eq 'testing' ) { $normalFormat->set_underline(2); }
 	$normalFormat->set_size($barcodeParams->{'InformationFontSize'});
 	$normalFormat->set_align('top');
 	$normalFormat->set_align('center');

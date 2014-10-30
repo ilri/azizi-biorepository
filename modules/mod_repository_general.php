@@ -51,10 +51,10 @@ class Repository extends DBase{
       $this->Dbase->InitializeLogs();
 
       //if we are looking to download a file, log in first
-      if(Config::$downloadFile){
+      /*if(Config::$downloadFile){
          $res = $this->Dbase->ConfirmUser($_GET['u'], $_GET['t']);
          if($res != 0) die('Permission Denied. You do not have permission to access this module');
-      }
+      }*/
       
       $this->security = new Security($this->Dbase);
    }

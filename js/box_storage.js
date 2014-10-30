@@ -47,7 +47,7 @@ var BoxStorage = {
          data: {action: 'fetch_boxes'},
          beforeprocessing: function(data){
             console.log(data);
-            Main.printBoxes = data;
+            Main.printBoxes = data.projects;
             if(data.data.length > 0)
                source.totalrecords = data.data[0].total_row_count;
             else
@@ -1527,10 +1527,8 @@ var BoxStorage = {
     * is clicked
     * @returns {undefined}
     */
-   printBoxesBtnClicked: function(idArray){
+   printBoxesBtnClicked: function(projectID){
       console.log("starting");
-      
-      var boxIDs = idArray.join(",");
       
       /*jQuery.ajax({
          url:"mod_ajax.php?page=box_storage&do=ajax&action=print_added_boxes",
@@ -1548,7 +1546,7 @@ var BoxStorage = {
          async: false
       });*/
       
-      var url = "mod_ajax.php?page=box_storage&do=ajax&action=print_added_boxes&boxIDs="+encodeURIComponent(boxIDs);
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=print_added_boxes&projectID="+projectID;
       
       console.log(url);
       

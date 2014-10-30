@@ -410,6 +410,23 @@ class ProcODKForm {
                   }
                }
                else{
+                  //check if current cell is an image
+if(preg_match("/.+\.jpg/", $rowValues[$elementIndex]) === 1){
+ $this->Dbase->CreateLogEntry("** is image ".$rowValues[$elementIndex]." rowIndex = ".($rowIndex)." parentIndex = ".$parentIndex,"fatal");
+ $cId = $rowKeys[$elementIndex];
+ $ordinal = $rowIndex + 1;
+ if(strlen($parent_heading) == 0){//means we are in the main sheet
+   $submissionID = $this->submissionIDs[$rowIndex];//since the headings also had a rowIndex but submissionIDs started with first response
+   $blobKey = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]/".$cId;
+ }
+ else {
+   $submissionID = $this->submissionIDs[$parentIndex];
+   $blobKey = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]/".$parent_heading."[@ordinal=".$ordinal."]/".$cId;
+ }
+ $downloadURL = "http://azizi.ilri.cgiar.org/aggregate/view/binaryData?blobKey=".urlencode($blobKey);
+ $this->Dbase->CreateLogEntry("** is image url ".$downloadURL, "fatal");
+}
+                  
                   $csvElementIndex = array_search($currHeading, $this->headingRows[$parentSheet]);
                   if($csvElementIndex === false){//element heading does not exist in array
                      $csvElementIndex = array_push($this->headingRows[$parentSheet], $currHeading) - 1;

@@ -39,9 +39,10 @@ class LabelPrinter extends Repository{
          echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.flexigrid/css/flexigrid.pack.css' />";
       }
 
+      $this->Dbase->CreateLogEntry("Starting labels printing module ".OPTIONS_REQUESTED_SUB_MODULE, "info");
       if(OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
-      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'generate_labels') $this->GenerateLabels();
-      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'fetch_printed_labels') $this->FetchPrintedLabels();
+      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'generate') $this->GenerateLabels();
+      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'fetch') $this->FetchPrintedLabels();
    }
 
    /**
@@ -101,6 +102,7 @@ class LabelPrinter extends Repository{
 <div id='home'>
   <h2 class="center">Generate Labels</h2>
   <?php echo $addinfo; ?>
+  <form enctype="multipart/form-data" name="upload" action="index.php?page=labels&do=generate" method="POST" onSubmit="LabelPrinter.generateLabels()">
      <div id='generate'>
          <div id='general'>
             <legend>General</legend>
@@ -123,8 +125,9 @@ class LabelPrinter extends Repository{
          <div id='info'>
             <legend>Purpose of the labels</legend>
          </div>
-</div>
-  <div><a href='javascript:;' onClick='LabelPrinter.toggleMe("printed_labels");'>Printed Labels</a></div>
+     </div>
+  </form>
+  <!--div><a href='javascript:;' onClick='LabelPrinter.toggleMe("printed_labels");'>Printed Labels</a></div-->
   <div id='lower_panel' class='hidden'>
       <div id='printed_labels'>&nbsp;</div>
   </div>
@@ -143,14 +146,14 @@ class LabelPrinter extends Repository{
             })
          }
       });
-      $('[name=generate]').bind('click', LabelPrinter.generateLabels);
+      //$('[name=generate]').bind('click', LabelPrinter.generateLabels);
       Main.projects = <?php echo json_encode($projects); ?>;
       Main.users = <?php echo json_encode($users); ?>;
       Main.prefix = <?php echo json_encode($prefix); ?>;
       $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');
 
       $("#printed_labels").flexigrid({
-         url: 'mod_ajax.php?page=labels&do=fetch_printed_labels',
+         url: 'mod_ajax.php?page=labels&do=fetch',
          dataType: 'json',
          colModel : [
             {display: 'Date', name : 'date', width : 120, sortable : true, align: 'left'},
@@ -186,6 +189,7 @@ class LabelPrinter extends Repository{
     * @return type
     */
    private function GenerateLabels(){
+      $this->Dbase->CreateLogEntry("Generate Labels called", "info");
       if(isset($this->labelPrintingError)){
          $this->HomePage($this->labelPrintingError['message']);
          return;
@@ -289,7 +293,7 @@ class LabelPrinter extends Repository{
 
          if(preg_match('/^[1-9]([0-9])?$/i', $_POST['prefix'])){
             //get the last printed label, and send the data to the perl script to generate the labels
-            $labelSettings = $this->Dbase->GetColumnValues('labels_coding', array('last_count', 'prefix'), "where id = {$_POST['prefix']}");
+            $labelSettings = $this->Dbase->GetColumnValues('labels_coding', array('last_count', 'prefix', 'length'), "where id = {$_POST['prefix']}");
             if($labelSettings == 1){
                $this->labelPrintingError = array('error' => true, 'message' => $this->Dbase->lastError);
                return;
@@ -317,17 +321,16 @@ class LabelPrinter extends Repository{
          $data['last_count'] = $labelSettings['last_count'] + $data['count'];
          $padding = str_pad($data['last_count'], 9 - strlen($data['prefix']), '0', STR_PAD_LEFT);
          $data['last_label'] = $data['prefix'] . $padding;
-
-
+         
          //we cool now, just send the labels to the perl script to be generated
-         $command = "./printLabelsLinux.pl {$_POST['sequence']} {$_POST['purpose']} {$_POST['labelTypes']} $labelFile {$labelSettings['prefix']} {$labelSettings['last_count']} {$_POST['count']}";
+         $command = "./printLabelsLinux.pl {$_POST['sequence']} {$_POST['purpose']} {$_POST['labelTypes']} $labelFile {$labelSettings['prefix']} {$labelSettings['last_count']} {$_POST['count']} {$labelSettings['length']}";//TODO: change this
          $cool_filename = "{$data['first_label']}-{$data['last_label']}.xlsx";
       }
 
 
       exec($command, $output, $return_var);
-      $this->Dbase->CreateLogEntry('command:' . $command, 'debug');
-      $this->Dbase->CreateLogEntry(print_r($output, true), 'debug');
+      $this->Dbase->CreateLogEntry('command:' . $command, 'info');
+      $this->Dbase->CreateLogEntry(print_r($output, true), 'info');
       if(count($output) != 0) {
          $this->Dbase->CreateLogEntry("Print label error: Command: $command\n" . print_r($output, true), 'fatal');
          $this->labelPrintingError = array('error' => true, 'message' => "<span class='error'>" . $output[0] . '</span>');
@@ -355,6 +358,8 @@ class LabelPrinter extends Repository{
       header('Content-Transfer-Encoding: binary');
       header('Cache-Control: must-revalidate');
       header('Pragma: public');
+      ob_clean();
+      flush();
       readfile($labelFile);
       unlink($labelFile);
       die();
@@ -455,12 +460,16 @@ class LabelPrinter extends Repository{
     * Fetches the details of collection advices from the databases and creates a JSON object to be sent to the users
     */
    private function FetchPrintedLabels(){
+      $this->Dbase->CreateLogEntry(print_r($_POST, true), "fatal");
+      $this->Dbase->CreateLogEntry(print_r($_GET, true), "fatal");
       if($_POST['query'] != '') $criteria = "where {$_POST['qtype']} like '%{$_POST['query']}%'";
       else $criteria = '';
 
       //get the start and the number to selectc
       $start = ($_POST['page']-1)*$_POST['rp'];
-      $query = "select * from labels_printed as a inner join lcmod_projects as b on a.project = b.id $criteria order by {$_POST['sortname']} {$_POST['sortorder']}";
+      $sort = "";
+      if(strlen($_POST['sortname']) > 0) $sort = "order by {$_POST['sortname']} {$_POST['sortorder']}";
+      $query = "select * from labels_printed as a inner join lcmod_projects as b on a.project = b.id $criteria $sort";
       $query2 = "$query limit $start,{$_POST['rp']}";
       $data = $this->Dbase->ExecuteQuery($query2);
       if($data == 1) die(json_encode(array('error' => true)));

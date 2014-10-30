@@ -259,11 +259,12 @@ class BoxStorage extends Repository{
          
          var selectHTML = "";
          var projectIDs = new Array();
-         for(var bIndex = 0; bIndex < Main.printBoxes.data.length; bIndex++){
-            if(jQuery.inArray(Main.printBoxes.data[bIndex].project_id, projectIDs) == -1){//not in array
-               projectIDs.push(Main.printBoxes.data[bIndex].project_id);
-               selectHTML = selectHTML + "<option value='"+Main.printBoxes.data[bIndex].project_id+"'>"+Main.printBoxes.data[bIndex].project+"</option>";
-            }
+         for(var bIndex = 0; bIndex < Main.printBoxes.length; bIndex++){
+            console.log(Main.printBoxes[bIndex].id);
+            //if(jQuery.inArray(Main.printBoxes.data[bIndex].project_id, projectIDs) == -1){//not in array
+            //   projectIDs.push(Main.printBoxes.data[bIndex].project_id);
+            selectHTML = selectHTML + "<option value='"+Main.printBoxes[bIndex].id+"'>"+Main.printBoxes[bIndex].value+"</option>";
+            //}
          }
          
          $("#project_print_list").empty();
@@ -275,15 +276,8 @@ class BoxStorage extends Repository{
       $("#print_btn_2").click(function(){
          //get the selected project
          projectID = $("#project_print_list").val();
-         var boxIDs = new Array();
          
-         for(var bIndex = 0; bIndex < Main.printBoxes.data.length; bIndex++){
-            if(Main.printBoxes.data[bIndex].project_id == projectID){
-               boxIDs.push(Main.printBoxes.data[bIndex].box_id);
-            }
-         }
-         
-         BoxStorage.printBoxesBtnClicked(boxIDs);
+         BoxStorage.printBoxesBtnClicked(projectID);
          $("#project_print").hide();
       });
    });
@@ -1277,9 +1271,11 @@ class BoxStorage extends Repository{
          if(count($result) > 0){
             $result[0]['total_row_count'] = $totalRowCount;
          }
+         $query = "select a.project as id,b.value from ".Config::$config['dbase'].".lcmod_boxes_def as a inner join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id where date(date_added) = date(now()) group by project";
+         $projects = $this->Dbase->ExecuteQuery($query);
 
          header("Content-type: application/json");
-         die('{"data":'. json_encode($result) .'}');
+         die('{"data":'. json_encode($result).',"projects":'.json_encode($projects).'}');
       }
       else{
          die('{"data":'. json_encode(array()) .'}');
@@ -1623,7 +1619,9 @@ class BoxStorage extends Repository{
    }
    
    private function printAddedBoxes(){
-      $boxIDs = explode(",", $_GET['boxIDs']);
+      $projectID = $_GET['projectID'];
+      $query = "select box_id from ".Config::$config['dbase'].".lcmod_boxes_def where project = :project and date(date_added) = date(now())";//get all boxes added today for the selected project
+      $boxIDs = $this->Dbase->ExecuteQuery($query, array("project" => $projectID));
       
       $this->Dbase->CreateLogEntry(print_r($boxIDs, true), "fatal");
       
@@ -1635,7 +1633,7 @@ class BoxStorage extends Repository{
                  'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
                  'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
                  'where a.box_id = :id';
-          $result = $this->Dbase->ExecuteQuery($query, array("id" => $currBox));
+          $result = $this->Dbase->ExecuteQuery($query, array("id" => $currBox['box_id']));
           
           if(is_array($result)){
              preg_match("/.*Tank([0-9]+).+/i", $result[0]['facility'], $tank);
