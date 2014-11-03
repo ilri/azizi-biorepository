@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var Main = {tanks: undefined, printBoxes: undefined, isSearching: false, searchedBoxesAdapter: undefined, searchTimoutID:0};
+var Main = {tanks: undefined, printBoxes: undefined, isSearching: false, searchedBoxesAdapter: undefined, searchTimoutID:0, rechargeProjects: undefined, rechargingAdapter: undefined};
 
 var BoxStorage = {
 
@@ -257,7 +257,7 @@ var BoxStorage = {
             ]
          });
       }
-      else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }
+      else{ $("#searched_boxes").jqxGrid({source: boxesAdapter}); }//will probably never be called
       //$("#searched_boxes").jqxGrid('autoresizecolumns');
       
       $("#searched_boxes").bind("sort", function(event){
@@ -329,6 +329,137 @@ var BoxStorage = {
       
       Main.searchedBoxesAdapter= new $.jqx.dataAdapter(source);
       $("#searched_boxes").jqxGrid({source: Main.searchedBoxesAdapter});
+   },
+   
+   initiateRechargeGrid: function(){
+      //console.log("initiateSearchBoxGrid called");
+      var theme = '';
+      var source = {
+         datatype: 'json',
+         datafields: [
+            {name: 'project'},
+            {name: 'last_period'},
+            {name: 'duration'}, 
+            {name: 'no_boxes'}, 
+            {name: 'total_price'}
+         ],//make sure you update these fields when you update those of the update fetch
+         id: 'period_starting'
+      };
+
+      Main.rechargingAdapter = new $.jqx.dataAdapter(source);
+
+      // create jqxgrid
+      $("#recharge_details_div").jqxGrid({
+         width: 905,
+         autoheight: true,
+         source: Main.rechargingAdapter,
+         columnsresize: true,
+         theme: theme,
+         sortable: false,
+         pageable: false,
+         virtualmode: true,
+         rendergridrows: function() {
+            return Main.rechargingAdapter.records;
+         },
+         columns: [
+            {text: 'Project', datafield: 'project', width: 400, sortable: false},
+            {text: 'Last date charged', datafield: 'last_period', width: 190, sortable: false},
+            {text: 'Duration (days)', datafield: 'duration', width: 100, sortable: false},
+            {text: 'No. boxes', datafield: 'no_boxes', width: 100, sortable: false},
+            {text: 'Total Price (USD)', datafield: 'total_price', width: 115, sortable: false}
+         ]
+      });
+      $("#ui-datepicker-div").css("z-index", 499);//this is to prevent the headings for the jqxgrid from covering the date picker
+      /*$("#searched_boxes").bind("sort", function(event){
+         var sortinformation = event.args.sortinformation;
+         if(sortinformation.sortdirection.ascending === false && sortinformation.sortdirection.descending === false){
+            BoxStorage.searchForBox("","");
+         }
+         else{
+            var sortDirection = "asc";
+            if(sortinformation.sortdirection.ascending === false){
+               sortDirection = "desc";
+            }
+            BoxStorage.searchForBox(sortinformation.sortcolumn, sortDirection);
+         }
+      });*/
+      /*$("#searched_boxes").bind("pagesizechanged", function(event){
+         BoxStorage.searchForBox();
+      });*/
+      //BoxStorage.initSearchSelectedListener();
+   },
+   updateRechargeGrid: function(){
+      
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=recharge_details";
+      
+      var source = {
+         datatype: 'json',
+         datafields: [ 
+            {name: 'project'},
+            {name: 'last_period'},
+            {name: 'duration'}, 
+            {name: 'no_boxes'}, 
+            {name: 'total_price'}
+         ],//make sure you update these fields when you update those for the initial fetch
+         id: 'box_id',
+         root: 'data',
+         async: true,
+         url: url, 
+         type: 'POST',
+         data: {
+            project: $("#project").val(),
+            period_ending: $("#period_ending").val(),
+            price: $("#price").val()
+         },
+         beforeprocessing: function (data){
+            console.log("recharge details = ", data);
+            /*if(data.data.length > 0){
+               source.totalrecords = data.data[0].total_row_count;
+               //console.log(source.totalrecords);
+            }
+               
+            else
+               source.totalrecords = 0;*/
+         }
+      };
+      
+      if($("#project").val().length > 0 && $("#period_ending").val().length > 0 && $("#price").val().length > 0){
+         Main.rechargingAdapter = new $.jqx.dataAdapter(source);
+         $("#recharge_details_div").jqxGrid({source: Main.rechargingAdapter});
+      }
+   },
+   
+   downloadRechargingFile: function(){
+         
+      console.log("downloadRechargeFile called");
+      /*var data = {
+         "project": $("#project").val(),
+         "period_starting": $("#period_starting").val(),
+         "period_ending": $("#period_ending").val(),
+         "charge_code": $("#charge_code").val(),
+         "activity_code": $("#activity_code").val(),
+         "price": $("#price").val()
+      };
+      console.log(data);
+      jQuery.ajax({
+         "url":"mod_ajax.php?page=box_storage&do=ajax&action=download_recharge_file",
+         "async":true,
+         "type":"POST",
+         "data": data,
+         "success":function(data){
+            console.log(data);
+            var status = jQuery.parseJSON(data);
+            if(status.error == true){
+               Notification.show({create:true, hide:true, updateText:false, text: status.error_message, error:true});
+            }
+         }
+      });*/
+      
+      var url = "mod_ajax.php?page=box_storage&do=ajax&action=download_recharge_file&project="+$("#project").val()+"&period_ending="+$("#period_ending").val()+"&charge_code="+$("#charge_code").val()+"&activity_code="+$("#activity_code").val()+"&price="+$("#price").val();
+      console.log(url);
+      $("#hiddenDownloader").remove();
+      $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
+      $("#hiddenDownloader").attr("src", url);
    },
    
    /**
@@ -1547,8 +1678,6 @@ var BoxStorage = {
       });*/
       
       var url = "mod_ajax.php?page=box_storage&do=ajax&action=print_added_boxes&projectID="+projectID;
-      
-      console.log(url);
       
       $("#hiddenDownloader").remove();
       

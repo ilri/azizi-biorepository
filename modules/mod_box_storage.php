@@ -29,6 +29,7 @@ class BoxStorage extends Repository{
        *    - return_box
        *       - submit_return
        *    - search_box
+       *    - recharge_space
        *    - delete_box
        *    - ajax
        *       - get_tank_details
@@ -41,6 +42,8 @@ class BoxStorage extends Repository{
        *       - fetch_deleted_boxes
        *       - fetch_sample_types
        *       - print_added_boxes
+       *       - recharge_details
+       *       - download_recharge_file
        *
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
@@ -53,6 +56,7 @@ class BoxStorage extends Repository{
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_box') $this->retrieveBox (); // retrieve a box temporarily from the LN2 tanks
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return_box') $this->returnBox (); // return a box that had been removed/borrowed
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'search_box') $this->searchBox (); // search for a box in the system
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'recharge_space') $this->rechargeSpace(); //recharge storage space in the tanks
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_box') $this->deleteBox (); // delete box from database (with or without it's metadata)
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "get_tank_details") $this->getTankDetails ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "fetch_boxes") $this->fetchBoxes ();
@@ -76,6 +80,8 @@ class BoxStorage extends Repository{
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_delete_request") die($this->submitDeleteRequest(TRUE));
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_sample_types") $this->fetchSampleTypes ();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "recharge_details") $this->getRechargeDetails();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "download_recharge_file") $this->downloadRechargeFile();
       //TODO: check if you need another sub module for viewing boxes
    }
 
@@ -94,6 +100,7 @@ class BoxStorage extends Repository{
          <li><a href='?page=box_storage&do=remove_box'>Retrieve a box</a></li>
          <li><a href="?page=box_storage&do=return_box">Return a borrowed box</a></li>
          <li><a href="?page=box_storage&do=search_box">Search a box</a></li>
+         <li><a href="?page=box_storage&do=recharge_space">Recharge Storage Space</a></li>
          <li><a href='?page=box_storage&do=delete_box'>Delete a box</a></li>
       </ul>
    </div>
@@ -114,7 +121,7 @@ class BoxStorage extends Repository{
     * @return null   Return called to initialize the render
     */
    private function addBox($addInfo = ''){
-      Repository::jqGridFiles();
+      Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
@@ -716,6 +723,144 @@ class BoxStorage extends Repository{
    $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
 </script>
       <?php
+   }
+   
+   /**
+    * This function displays the recharge space page
+    */
+   private function rechargeSpace(){
+      Repository::jqGridFiles();//Really important if you want jqx to load
+      
+      $query = "select min(a.rc_period_ending) as min_period_ending, max(a.rc_period_ending) as max_period_ending, b.val_id, b.value, count(*) as box_number"
+              . " from ".Config::$config['azizi_db'].".boxes_def as c"
+              . " left join ".Config::$config['dbase'].".lcmod_boxes_def as a on c.box_id = a.box_id"//left joining with boxes in lims so that we can know boxes that dont have projects
+              . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
+              . " group by a.project";
+      $projects = $this->Dbase->ExecuteQuery($query);
+      
+      $numOrphans = 0;
+      for($i = 0; $i < count($projects); $i++){
+         if($projects[$i]['val_id'] == null){
+            $numOrphans = $numOrphans + $projects[$i]['box_number'];
+            array_splice($projects, $i, 1);
+         }
+      }
+      
+      $query = "SELECT * FROM ".Config::$config['dbase'].".ln2_chargecodes";
+      $dbCCodes = $this->Dbase->ExecuteQuery($query);
+      if($dbCCodes == 1){
+         $this->RepositoryHomePage("There was an error while fetching data from the database.");
+         return;
+      }
+      $activityCodes = array();
+      $chargeCodes = array();
+      foreach ($dbCCodes as $currentP) {
+         $activityCodes[] = $currentP['charge_code'];
+         $chargeCodes[$currentP['charge_code']] = $currentP['name'];
+      }
+      if($numOrphans > 0){
+         echo "<div class='center'>You have ".$numOrphans." boxes without projects</div>";
+      }
+?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<div id="box_storage">
+   <h3 class="center">Recharge Storage Space</h3>
+   <div id="recharge_div">
+      <!--legend>Box Information</legend-->
+      <div class="form-group left-align">
+         <label for="project">Project</label>
+         <select id="project" name="project" class="input-large">
+            <option value=""></option>
+            <?php
+               foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">' . $currProject['value'] . " project</option>\n";
+            ?>
+         </select>
+      </div>
+      <div class="form-group left-align">
+         <label for="period_starting">Period starting</label>
+         <input id="period_starting" name="period_starting" disabled="disabled" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="period_ending">Period ending</label>
+         <input id="period_ending" name="period_ending" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="price">Price per box per year</label>
+         <input id="price" name="price" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="charge_code">Charge code</label>
+         <input id="charge_code" name="charge_code" disabled="disabled" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="activity_code">Activity code</label>
+         <input id="activity_code" name="activity_code" class="input-large" />
+      </div>
+   </div>
+   <div class="center" id="submit_button_div">
+      <button type="button" class="btn btn-primary" id="download_btn">Download File</button>
+   </div>
+   <div id="recharge_details_div" style="margin-top: 20px;"></div>
+</div>
+<script type="text/javascript">
+   $(document).ready(function(){
+      $( "#period_ending" ).datepicker({dateFormat: 'yy-mm-dd'});
+
+      Main.rechargeProjects = <?php echo json_encode($projects); ?>;
+
+      var activityCodes = <?php echo json_encode($activityCodes); ?>;
+      var chargeCodes = <?php echo json_encode($chargeCodes); ?>;
+
+      for(var i = 0; i < activityCodes.length; i++) {
+         if(activityCodes[i] === null) {
+            activityCodes.splice(i, 1);
+            i--;
+         }
+      }
+
+      $("#project").change(function(){
+         //get the last period_ending and using as our period_starting
+         var projectID = $("#project").val();
+         for(var i = 0; i < Main.rechargeProjects.length; i++){
+            if(Main.rechargeProjects[i].val_id == projectID){
+               $("#period_starting").val(Main.rechargeProjects[i].min_period_ending);
+               $("#period_ending").val("");
+               $("#period_ending").datepicker('destroy');
+               $("#period_ending" ).datepicker({dateFormat: 'yy-mm-dd', minDate: new Date(Main.rechargeProjects[i].max_period_ending)});
+            }
+         }
+
+         BoxStorage.updateRechargeGrid();
+      });
+      $("#activity_code").autocomplete({
+         source: activityCodes,
+         minLength: 2,
+         select: function (event, ui) {
+            var value = ui.item.value;
+            $("#charge_code").val(chargeCodes[value]);
+         }
+      });
+      $("#period_ending").change(function(){
+         BoxStorage.updateRechargeGrid();
+      });
+      $("#price").change(function(){
+         BoxStorage.updateRechargeGrid();
+      });
+      
+      $("#download_btn").click(function(){
+         BoxStorage.downloadRechargingFile();
+      });
+
+      BoxStorage.initiateRechargeGrid();
+      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
+   });
+</script>
+<?php
    }
 
    /**
@@ -1732,6 +1877,7 @@ class BoxStorage extends Repository{
       header("Content-length: " . filesize("/tmp/" . $pdfName . ".pdf"));
       header('Content-Transfer-Encoding: binary');
       readfile("/tmp/" . $pdfName . ".pdf");
+      unlink("/tmp/" . $pdfName . ".pdf");
    }
    
    /**
@@ -1755,6 +1901,174 @@ class BoxStorage extends Repository{
       }
       
       return $result;
+   }
+   
+   /**
+    * This function gets recharging details for a particular project
+    */
+   private function getRechargeDetails(){
+      $projectID = $_POST['project'];
+      $priceBoxDay = $_POST['price']/365;//price per box per day
+      $periodEnding = $_POST['period_ending'];//date in format yyyy-mm-dd
+
+      $query = "select a.rc_period_ending as last_period, b.value as project, count(*) as no_boxes"
+              . " from ".Config::$config['dbase'].".lcmod_boxes_def as a"
+              . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
+              . " where a.project = :project"
+              . " group by a.rc_period_ending";
+      $result = $this->Dbase->ExecuteQuery($query, array("project" => $projectID));
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("An error occurred while trying to get recharge details from the database. Sending user nothing","fatal");
+         $result = array();
+      }
+      
+      for($i = 0; $i < count($result); $i++){
+         //calculate the number of days between last charged date and current recharge end date
+         //charge nothing if last charged date not set
+         $start = strtotime($result[$i]['last_period']);
+         $end = strtotime($periodEnding);
+         if($start != false && $end != false && $result[$i]['last_period'] != "0000-00-00"){
+            //get number of days
+            $duration = ($end - $start)/86400;
+            $result[$i]['duration'] = $duration;
+         }
+         else {
+            $result[$i]['duration'] = 0;
+         }
+         
+         //calculate the total recharge price
+         $result[$i]['total_price'] = round($result[$i]['duration'] * $priceBoxDay * $result[$i]['no_boxes'], 2);
+      }
+      
+      $json = array('data'=>$result);
+      die(json_encode($json));
+   }
+   
+   private function downloadRechargeFile(){
+      $projectID= $_REQUEST['project'];
+      $periodEnding = $_REQUEST['period_ending'];
+      $pricePerBoxPerDay = $_REQUEST['price']/365;
+      $chargeCode = $_REQUEST['charge_code'];
+      if(strlen($chargeCode) == 0){
+         $chargeCode = $_REQUEST['activity_code'];
+      }
+      
+      if(strlen($projectID) > 0 && strlen($periodEnding) > 0 && strlen($pricePerBoxPerDay) > 0 && strlen($chargeCode) > 0){
+//         $query = "select count(*) as no_boxes, c.value as project, d.facility as sector, a.rc_period_ending as start_date"
+//                 . " from ".Config::$config['dbase'].".lcmod_boxes_def as a"
+//                 . " inner join ".Config::$config['azizi_db'].".boxes_def as b on a.box_id=b.box_id"
+//                 . " inner join ".Config::$config['dbase'].".modules_custom_values as c on a.project=c.val_id"
+//                 . " inner join ".Config::$config['dbase'].".boxes_local_def as d on b.location=d.id"
+//                 . " where a.project = :project"
+//                 . " group by b.location, a.rc_period_ending";
+         $query = "select a.rc_period_ending as start_date, b.value as project, count(*) as no_boxes, d.facility as sector, group_concat(c.box_id) as box_ids"
+                 . " from ".Config::$config['azizi_db'].".boxes_def as c"
+                 . " left join ".Config::$config['dbase'].".lcmod_boxes_def as a on c.box_id = a.box_id"
+                 . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
+                 . " left join ".Config::$config['azizi_db'].".boxes_local_def as d on c.location = d.id"
+                 . " where a.project = :project and a.rc_period_ending != '0000-00-00'"
+                 . " group by a.rc_period_ending, d.id";
+         
+         $this->Dbase->CreateLogEntry($query, "info");
+         $result = $this->Dbase->ExecuteQuery($query, array("project" => $projectID));
+         
+         if($result == 1){
+            $this->Dbase->CreateLogEntry("Unable to get details of boxes for recharging from the database. Sending empty file", "fatal");
+            $result = array();
+         }
+         else {
+            $allBoxIDs = array();
+            for($i = 0; $i < count($result); $i++){
+               //calculate days between current period ending and last period ending
+               $from = strtotime($result[$i]['start_date']);
+               $to = strtotime($periodEnding);
+               $duration = 0;
+               if($to != false && $from != false && $result[$i]['start_date'] != "0000-00-00"){
+                  $duration = ($to - $from)/86400;
+               }
+               
+               $total = round($pricePerBoxPerDay * $duration, 2);
+               $result[$i]['duration'] = $duration;
+               $result[$i]['end_date'] = $_REQUEST['period_ending'];
+               $result[$i]['price_per_box'] = $_REQUEST['price'];
+               $result[$i]['total'] = $total;
+               $result[$i]['charge_code'] = $chargeCode;
+               
+               $allBoxIDs[] = $result[$i]['box_ids'];//list of box ids seperated using commas
+            }
+            
+            $this->Dbase->CreateLogEntry(print_r($result,true), "info");
+            
+            $csv = $this->generateCSV($result);
+            
+            if(count($result) > 0){
+               $fileName = "space_recharge_".$result[0]['project']."_".$result[0]['end_date'].".csv";
+            }
+            else {
+               $fileName = "no_data.csv";
+            }
+            
+            //update all the boxes 
+            for($i = 0; $i < count($allBoxIDs); $i++){
+               $query = "update ".Config::$config['dbase'].".lcmod_boxes_def"
+                       . " set rc_timestamp = now(), rc_period_starting = rc_period_ending, rc_period_ending = :ending, rc_price = :price, rc_charge_code = :charge_code"
+                       . " where box_id in(:box_ids)";
+               $this->Dbase->ExecuteQuery($query, array("ending" => $_REQUEST['period_ending'], "price" => $_REQUEST['price'], "charge_code" => $chargeCode, "box_ids" => $allBoxIDs[$i]));
+               $this->Dbase->CreateLogEntry("updated box ids = ".$allBoxIDs[$i], "info");
+            }
+            
+            file_put_contents("/tmp/".$fileName, $csv);
+            header('Content-type: document');
+            header('Content-Disposition: attachment; filename='. $fileName);
+            header("Expires: 0"); 
+            header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+            header("Content-length: " . filesize("/tmp/".$fileName));
+            header('Content-Transfer-Encoding: binary');
+            readfile("/tmp/" . $fileName);
+
+            $this->Dbase->CreateLogEntry("Recharging file at /tmp/".$fileName, "info");
+            unlink("/tmp/" . $fileName);
+            
+            //return json_encode(array("error" => false, "error_message" => ""));
+         }
+         //return json_encode(array("error" => true, "error_message" => "Problem getting data from the database"));
+      }
+      
+      $this->Dbase->CreateLogEntry("Problem with the data provided by user".print_r($_REQUEST, true), "fatal");
+      
+      //return json_encode(array("error" => true, "error_message" => "Problem with the data you provided"));
+   }
+   
+   /**
+    * This function generates a CSV string from a two dimensional array.
+    * Make sure each of the second level associative arrays the same size.
+    * The following array will not be parsed correctly:
+    *  [
+    *    [0,1,2]
+    *    [0,1]
+    *    [0,1,2]
+    *  ]
+    * 
+    * @param type $array
+    * @param type $headingsFromKeys
+    */
+   private function generateCSV($array, $headingsFromKeys = true){
+      $csv = "";
+      if(count($array) > 0){
+         $colNum = count($array[0]);
+         
+         if($headingsFromKeys === true){
+            $keys = array_keys($array[0]);
+            $csv .= "\"".implode("\",\"", $keys)."\"\n";
+         }
+         
+         foreach($array as $currRow){
+            $csv .= "\"".implode("\",\"", $currRow)."\"\n";
+         }
+      }
+      
+      return $csv;
    }
 }
 ?>
