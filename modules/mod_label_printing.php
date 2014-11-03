@@ -302,13 +302,13 @@ class LabelPrinter extends Repository{
          }
          else{
             //check if we already have labels with this prefix
-            $labelSettings = $this->Dbase->GetColumnValues('labels_coding', array('last_count', 'prefix'), "where lower(prefix)=lower('{$_POST['prefix']}')");
+            $labelSettings = $this->Dbase->GetColumnValues('labels_coding', array('last_count', 'prefix', 'length'), "where lower(prefix)=lower('{$_POST['prefix']}')");
             if($labelSettings == 1){
                $this->labelPrintingError = array('error' => true, 'message' => $this->Dbase->lastError);
                return;
             }
             elseif(count($labelSettings) != 0) $labelSettings = $labelSettings[0];
-            else $labelSettings = array('last_count' => 0, 'prefix' => strtoupper($_POST['prefix']));
+            else $labelSettings = array('last_count' => 0, 'prefix' => strtoupper($_POST['prefix']), 'length' => 9);//default length for barcodes is 9 characters
          }
          $data['prefix'] = $labelSettings['prefix'];
          $data['count'] = $_POST['count'];
