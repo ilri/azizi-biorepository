@@ -320,7 +320,7 @@ class Users {
          $result = $this->editGroup();
          
          if($result == 0){
-            $addinfo = "Successfully added group";
+            $addinfo = "Successfully updated group";
          }
          else {
             $addinfo = "An error occurred while trying to add group";
@@ -382,7 +382,7 @@ class Users {
       <input type="hidden" id="group_actions" name="group_actions" />
       <input type="hidden" name="action" id="action" />
       <input type="hidden" name="group_id" id="group_id" />
-   <div class="center"><button type="submit" id="create_group_btn" class="btn-primary">Add</button></div>
+   <div class="center"><button type="submit" id="create_group_btn" class="btn-primary">Update</button></div>
 </form>
 <script>
    $('#whoisme .back').html('<a href=\'?page=users\'>Back</a>');//back link
