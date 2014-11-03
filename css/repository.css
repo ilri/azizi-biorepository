@@ -321,15 +321,15 @@ body {
 #return_div select, #return_div input {width: 200px; margin: 5px 2px;}
 #return_div input, #search_div input, #edit_div input {height: 30px;}
 #search_div input {margin-top: 10px;}
-#search_div .search_criteria {display: inline-block;}
+#search_div .search_criteria, #recharge_div {display: inline-block;}
 #search_div .search_criteria select{width: 150px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
 #box_location .left-align{margin: 5px 2px;}
 #box_location .loc_divs{width: 250px;} 
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
-
-#tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes {margin: 5px;}
+.jqx-grid-column-header{z-index:0!important;}
+#tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes, #recharge_details_div {margin: 5px;}
 
 #inventory_form .left-align {width: 240px;}
 #inventory_form {margin: 20px;}
