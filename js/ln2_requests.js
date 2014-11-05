@@ -110,5 +110,13 @@ var Ln2Requests = {
          }
       });
       return json;
+   },
+   
+   downloadRechargeFile: function(){
+      var url = "mod_ajax.php?page=ln2_requests&do=ajax&action=download_recharge_file";
+      
+      $("#hiddenDownloader").remove();
+      $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
+      $("#hiddenDownloader").attr("src", url);
    }
 };
