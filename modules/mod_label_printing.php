@@ -600,6 +600,9 @@ class LabelPrinter extends Repository{
       die(json_encode($content));
    }
    
+   /**
+    * This function generates a csv file containing the recharges to a project
+    */
    private function downloadRechargeSheet(){
       
       //var url = "mod_ajax.php?page=labels&do=ajax&action=download_recharge_file&project="+projectID+"&type="+type+"&charge_code="+chargeCode+"&price="+price;
@@ -685,6 +688,13 @@ class LabelPrinter extends Repository{
       }
    }
    
+   /**
+    * This function generates a csv string from a two dimensional associative array
+    * 
+    * @param type $array            The two dimensional array to be used to generate the csv string
+    * @param type $headingsFromKeys Set to true if you want to get headings from the keys in the associative array
+    * @return string                Comma seperated string corresponding to the array. Will be empty if array is empty or something goes wrong
+    */
    private function generateCSV($array, $headingsFromKeys = true){
       $csv = "";
       if(count($array) > 0){
@@ -703,6 +713,14 @@ class LabelPrinter extends Repository{
       return $csv;
    }
    
+   /**
+    * This function sends emails using the biorepository's email address. Duh
+    * 
+    * @param type $address Email address of the recipient
+    * @param type $subject Email's subject
+    * @param type $message Email's body/message
+    * @param type $file    Attachements for the email. Set to null if none
+    */
    private function sendRechargeEmail($address, $subject, $message, $file = null){
       if($file != null){
          shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
