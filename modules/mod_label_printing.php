@@ -636,7 +636,17 @@ class LabelPrinter extends Repository{
                }
                
                if(count($result) > 0){
-                  $csv = $this->generateCSV($result);
+                  $headings = array(
+                      "printing_id" => "Printing ID",
+                      "project_name" => "Project",
+                      "label_type" => "Type of Label",
+                      "date_printed" => "Printing Date",
+                      "labels_printed" => "No. Labels Printed",
+                      "cost_per_label" => "Cost per Label",
+                      "total_price" => "Total Cost",
+                      "charge_code" => "Charge Code"
+                  );
+                  $csv = $this->generateCSV(array_merge(array($headings),$result), FALSE);
                }
                else {
                   $csv = "No labels for recharging found";
