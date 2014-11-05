@@ -1965,7 +1965,7 @@ class BoxStorage extends Repository{
 //                 . " inner join ".Config::$config['dbase'].".boxes_local_def as d on b.location=d.id"
 //                 . " where a.project = :project"
 //                 . " group by b.location, a.rc_period_ending";
-         $query = "select a.rc_period_ending as start_date, b.value as project, count(*) as no_boxes, d.facility as sector, group_concat(c.box_id) as box_ids"
+         $query = "select b.value as project, count(*) as no_boxes, d.facility as sector, group_concat(c.box_id) as box_ids, a.rc_period_ending as start_date"
                  . " from ".Config::$config['azizi_db'].".boxes_def as c"
                  . " left join ".Config::$config['dbase'].".lcmod_boxes_def as a on c.box_id = a.box_id"
                  . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
@@ -2003,7 +2003,19 @@ class BoxStorage extends Repository{
             
             $this->Dbase->CreateLogEntry(print_r($result,true), "info");
             
-            $csv = $this->generateCSV($result);
+            //headings should be in the order of respective items in associative array
+            $headings = array(
+                "project" => "Project",
+                "no_boxes" => "No. Boxes",
+                "sector" => "Sector",
+                "box_ids" => "Box IDs",
+                "start_date" => "Period Starting",
+                "duration" => "Duration (days)",
+                "end_date" => "Period Ending",
+                "price_per_box" => "Price per Box",
+                "total" => "Total Cost (USD)",
+                "charge_code" => "Charge Code");
+            $csv = $this->generateCSV(array_merge(array($headings), $result), false);
             
             if(count($result) > 0){
                $fileName = "space_recharge_".$result[0]['project']."_".$result[0]['end_date'].".csv";
