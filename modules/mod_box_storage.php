@@ -790,7 +790,7 @@ class BoxStorage extends Repository{
          <input id="period_ending" name="period_ending" class="input-large" />
       </div>
       <div class="form-group left-align">
-         <label for="price">Price per box per year</label>
+         <label for="price">Price per box per year (USD)</label>
          <input id="price" name="price" class="input-large" />
       </div>
       <div class="form-group left-align">
@@ -1945,6 +1945,9 @@ class BoxStorage extends Repository{
       die(json_encode($json));
    }
    
+   /**
+    * This function generates a csv file containing data for space recharges to the specified (in get request) project
+    */
    private function downloadRechargeFile(){
       $projectID= $_REQUEST['project'];
       $periodEnding = $_REQUEST['period_ending'];
@@ -2004,9 +2007,18 @@ class BoxStorage extends Repository{
             
             if(count($result) > 0){
                $fileName = "space_recharge_".$result[0]['project']."_".$result[0]['end_date'].".csv";
+               
+               $emailSubject = "Storage space recharge for ".$result[0]['project'];
+               $emailBody = "Find attached a csv file containing data for storage space recharge to ".$result[0]['project']." for the period ending ".$result[0]['end_date'].".";
             }
             else {
                $fileName = "no_data.csv";
+               
+               $query = "select value from ".Config::$config['azizi_db'].".modules_custom_values where val_id = :project_id";
+               $projectName = $this->Dbase->ExecuteQuery($query, array("project_id" => $projectID));
+               
+               $emailSubject = "Storage space recharge for ".$projectName[0]['value'];
+               $emailBody = "Could not file boxes owned by ".$projectName[0]['value']." for storage recharging for the period ending ".$periodEnding.". This might mean the column sc_period_ending for all the boxes associated to this project are null or set to '0000-00-00'. Make sure you record the last date of storage recharge for all the boxes, or you'll end up losing money ;) .";
             }
             
             //update all the boxes 
@@ -2026,7 +2038,9 @@ class BoxStorage extends Repository{
             header("Content-length: " . filesize("/tmp/".$fileName));
             header('Content-Transfer-Encoding: binary');
             readfile("/tmp/" . $fileName);
-
+            
+            $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+            
             $this->Dbase->CreateLogEntry("Recharging file at /tmp/".$fileName, "info");
             unlink("/tmp/" . $fileName);
             
@@ -2069,6 +2083,23 @@ class BoxStorage extends Repository{
       }
       
       return $csv;
+   }
+   
+   /**
+    * This function sends emails using the biorepository's email address. Duh
+    * 
+    * @param type $address Email address of the recipient
+    * @param type $subject Email's subject
+    * @param type $message Email's body/message
+    * @param type $file    Attachements for the email. Set to null if none
+    */
+   private function sendRechargeEmail($address, $subject, $message, $file = null){
+      if($file != null){
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
+      }
+      else {
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
+      }
    }
 }
 ?>
