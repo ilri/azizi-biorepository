@@ -1,5 +1,5 @@
 var Main = {
-   ajaxParams: {successMssg: undefined, div2Update: undefined}, successMssg: undefined, title: 'Label Printing'
+   ajaxParams: {successMssg: undefined, div2Update: undefined}, successMssg: undefined, title: 'Label Printing', projectLabels: undefined, chargeCodes: undefined
 };
 
 var LabelPrinter={
@@ -373,6 +373,34 @@ var LabelPrinter={
          }
 		}
       return true;
+   },
+   
+   showRechargeProjects: function(){
+      console.log("click");
+      var windowH = window.innerHeight;
+      var windowW = window.innerWidth;
+      
+      var x = (windowW/2) - ($("#recharge_projects").width()/2);
+      var y = (windowH/2) - ($("#recharge_projects").height()/2);
+      
+      $("#recharge_projects").css("left", x+"px");
+      $("#recharge_projects").css("top", 300+"px");
+      $("#recharge_projects").show();
+   },
+   
+   downloadRechargeSheet: function(){
+      var projectID = $("#selected_recharge_project").val();
+      var chargeCode = $("#charge_code").val();
+      var type = $("#label_type").val();
+      var price = $("#price").val();
+      
+      var url = "mod_ajax.php?page=labels&do=ajax&action=download_recharge_file&project="+projectID+"&type="+type+"&charge_code="+chargeCode+"&price="+price;
+      console.log(url);
+      $("#hiddenDownloader").remove();
+      $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
+      $("#hiddenDownloader").attr("src", url);
+      
+      $("#recharge_projects").hide();
    },
 
    deletePrintedLabels: function(){}

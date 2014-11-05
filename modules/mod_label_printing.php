@@ -43,12 +43,15 @@ class LabelPrinter extends Repository{
       if(OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'generate') $this->GenerateLabels();
       elseif(OPTIONS_REQUESTED_SUB_MODULE == 'fetch') $this->FetchPrintedLabels();
+      elseif(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == 'download_recharge_file')$this->downloadRechargeSheet();
    }
 
    /**
     * Create the home page for generating the labels
     */
    private function HomePage($addinfo = ''){
+      Repository::jqGridFiles();//Really important if you want jqx to load
+      
       $res = $this->Dbase->GetColumnValues('labels_settings', array('id', 'label_type'));
       if(is_array($res)){
          $ids=array(); $vals=array();
@@ -96,12 +99,26 @@ class LabelPrinter extends Repository{
       $prefixes = GeneralTasks::PopulateCombo($settings);
 
       $labelTypes = "$labelTypes <a href='javascript:;' onClick='LabelPrinter.labelSetup();'>Setup</a>";
+      
+      $query = "select project, sum(total) as total, type from labels_printed where rc_timestamp is null group by project, type";
+      $projectLabels = $this->Dbase->ExecuteQuery($query);
+      
+      $query = "select id, label_type from labels_settings";
+      $realLabelTypes = $this->Dbase->ExecuteQuery($query);
 
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id='home'>
   <h2 class="center">Generate Labels</h2>
-  <?php echo $addinfo; ?>
+  <?php
+  echo $addinfo;
+  ?>
   <form enctype="multipart/form-data" name="upload" action="index.php?page=labels&do=generate" method="POST" onSubmit="LabelPrinter.generateLabels()">
      <div id='generate'>
          <div id='general'>
@@ -127,14 +144,63 @@ class LabelPrinter extends Repository{
          </div>
      </div>
   </form>
+  <?php
+  if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+     echo "<div class='center' style='margin-top:10px;margin-left:700px;margin-bottom:10px;'><button id='recharge_btn' type='button' class='btn btn-primary'>Recharge Printed Labels</button></div>";
+  }
+  ?>
   <!--div><a href='javascript:;' onClick='LabelPrinter.toggleMe("printed_labels");'>Printed Labels</a></div-->
   <div id='lower_panel' class='hidden'>
       <div id='printed_labels'>&nbsp;</div>
   </div>
+  <div id="recharge_projects" style="display: none; position: absolute; z-index: 2000; width: 500px; height: auto; background: #ffffff; padding: 20px;">
+     <img id="recharge_cancel_btn" src="images/ic_action_cancel.png" style="position: relative; left: 480px; width: 15px; height: 15px; cursor: pointer;" />
+     <div class="form-group">
+        <label for="selected_recharge_project">Project</label>
+        <select id="selected_recharge_project" style="height: 30px;">
+           <option value="">Select a Project</option>
+            <?php
+            foreach($projects as $currProject){
+               if($currProject['id'] != 999) echo "<option href='#' value='".$currProject['id']."'>".$currProject['name']."</option>";
+            }
+            ?>
+         </select>
+     </div>
+     <div class="form-group">
+        <label for="label_type">Label type:</label>
+        <select id="label_type" style="height: 30px;">
+           <option value="">Select a Label Type</option>
+           <?php
+           foreach($realLabelTypes as $currLabel){
+              echo "<option value='".$currLabel['id']."'>".$currLabel['label_type']."</option>";
+           }
+           ?>
+        </select>
+     </div>
+     <div>
+        <label for="number_printed">Number printed:</label>
+        <input type="number" id="number_printed" disabled="disabled" class="input-medium" style="height: 30px;" />
+     </div>
+     <div class="form-group">
+        <label for="price">Price (USD)</label>
+        <input id="price" class="input-medium" type="number" style="height: 30px;" />
+     </div>
+     <div class="form-group">
+        <label for="charge_code">Charge code:</label>
+        <input id="charge_code" class="input-large" type="text" style="height: 30px;" />
+     </div>
+     <div class="center" style="margin-left: 300px; margin-top: 10px;">
+        <button type="button" id="download_recharge_btn" class='btn btn-primary'>Download Recharge Sheet</button>
+     </div>
+     
+  </div>
 
 <script type='text/javascript'>
       $('[name=purpose]').bind('click', LabelPrinter.labelsPurpose);
-
+      
+      Main.projectLabels = <?php echo json_encode($projectLabels);?>;
+      Main.chargeCodes = <?php echo json_encode($projects); ?>;
+      
       //changing the prefix
       $('#prefixId').live('change', function(){
          if($('#prefixId').val() == 999){
@@ -178,6 +244,49 @@ class LabelPrinter extends Repository{
          width: 900,
          height: 260,
          singleSelect: true
+      });
+      
+      $("#recharge_cancel_btn").click(function(){
+         $("#recharge_projects").hide();
+      });
+      $("#period_ending").datepicker({dateFormat: 'yy-mm-dd'});
+      $("#recharge_btn").click(function(){
+         LabelPrinter.showRechargeProjects();
+      });
+      $("#download_recharge_btn").click(function(){
+         LabelPrinter.downloadRechargeSheet();
+      });
+      $("#selected_recharge_project").change(function(){
+         console.log("changed");
+         var projectId = $("#selected_recharge_project").val();
+         console.log(projectId);
+         console.log(Main.lastRecharges);
+         
+         for(var i = 0; i < Main.chargeCodes.length; i++){
+            if(Main.chargeCodes[i].id = projectId){
+               $("#charge_code").val(Main.chargeCodes[i].charge_code);
+            }
+         }
+      });
+      $("#label_type").change(function(){
+         $("#number_printed").val("0");
+         if($("#selected_recharge_project").val().length > 0 && $("#label_type").val().length > 0){
+            for(var i = 0; i < Main.projectLabels.length; i++){
+               if(Main.projectLabels[i].project == $("#selected_recharge_project").val() && $("#label_type").val() == Main.projectLabels[i].type){
+                  $("#number_printed").val(Main.projectLabels[i].total);
+               }
+            }
+         }
+      });
+      $("#selected_recharge_project").change(function(){
+         $("#number_printed").val("0");
+         if($("#selected_recharge_project").val().length > 0 && $("#label_type").val().length > 0){
+            for(var i = 0; i < Main.projectLabels.length; i++){
+               if(Main.projectLabels[i].project == $("#selected_recharge_project").val() && $("#label_type").val() == Main.projectLabels[i].type){
+                  $("#number_printed").val(Main.projectLabels[i].total);
+               }
+            }
+         }
       });
    </script>
 <?php
@@ -489,6 +598,118 @@ class LabelPrinter extends Repository{
       );
 
       die(json_encode($content));
+   }
+   
+   private function downloadRechargeSheet(){
+      
+      //var url = "mod_ajax.php?page=labels&do=ajax&action=download_recharge_file&project="+projectID+"&type="+type+"&charge_code="+chargeCode+"&price="+price;
+      $project = $_REQUEST['project'];
+      $type = $_REQUEST['type'];
+      $chargeCode = $_REQUEST['charge_code'];
+      $price = $_REQUEST['price'];
+      
+      if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {//check if user is authed to charge barcodes
+         if(strlen($project) > 0 && strlen($type) > 0 && strlen($chargeCode) > 0 && strlen($price) > 0){
+            //get all barcodes
+            $query = "select a.id as printing_id, b.project_name, c.label_type, a.date as date_printed, a.total as labels_printed"
+                    . " from labels_printed as a"
+                    . " inner join lcmod_projects as b on a.project = b.id"
+                    . " inner join labels_settings as c on a.type = c.id"
+                    . " where a.project = :project and a.type = :type and rc_timestamp is null";
+            $result = $this->Dbase->ExecuteQuery($query, array("project" => $project, "type" => $type));
+            
+            if(is_array($result)){
+               for($i = 0; $i < count($result); $i++){
+                  $result[$i]['cost_per_label'] = $price;
+                  $result[$i]['total_price'] = $price * $result[$i]['labels_printed'];
+                  $result[$i]['charge_code'] = $chargeCode;
+                  
+                  //TODO: run query for updating recharging data
+                  $query = "update labels_printed"
+                          . " set rc_timestamp = now(), rc_price = :price, rc_charge_code = :charge_code"
+                          . " where id = :id";
+                  $this->Dbase->ExecuteQuery($query, array("price" => $price, "charge_code" => $chargeCode, "id" => $result[$i]['printing_id']));
+                  
+               }
+               
+               if(count($result) > 0){
+                  $csv = $this->generateCSV($result);
+               }
+               else {
+                  $csv = "No labels for recharging found";
+               }
+               
+               $fileName = "labels_recharge_".$project."_".$type.".csv";
+               $this->Dbase->CreateLogEntry("File name for labels recharging = ".$fileName, "info");
+               $this->Dbase->CreateLogEntry("Size of file = ".filesize("/tmp/".$fileName), "info");
+               
+               file_put_contents("/tmp/".$fileName, $csv);
+               header('Content-type: document');
+               header('Content-Disposition: attachment; filename='. $fileName);
+               header("Expires: 0"); 
+               header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+               header("Content-length: " . filesize("/tmp/".$fileName));
+               header('Content-Transfer-Encoding: binary');
+               header('Pragma: public');
+               //header('Content-Transfer-Encoding: binary');
+               ob_clean();
+               flush();
+               readfile("/tmp/" . $fileName);
+               
+               if(count($result) > 0){//if we actually have at least one item to recharge
+                  $emailSubject = "Recharging ".$result[0]['label_type']." Labels to ".$result[0]['project_name'];
+                  $emailMessage = "Find attached a spreadsheet containing recharges made to ".$result[0]['project_name']." on ".date("F jS, Y")." for ".$result[0]['label_type']." labels.";
+                  $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailMessage, "/tmp/".$fileName);
+               }
+               else{
+                  $lTypeName = $this->Dbase->ExecuteQuery("select label_type from labels_settings where id = :id", array("id" => $type));
+                  $projectName = $this->Dbase->ExecuteQuery("select project_name from lcmod_projects where id = :id", array("id" => $project));
+                  
+                  $emailSubject = "Recharging ".$lTypeName[0]['label_type']." Labels to ".$projectName[0]['project_name'];
+                  $emailMessage = "No ".$lTypeName[0]['label_type']." labels to be recharged to ".$projectName[0]['project_name']." found.";
+                  $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailMessage);
+               }
+               
+               unlink("/tmp/" . $fileName);
+            }
+            else {
+               $this->Dbase->CreateLogEntry("An error occured while trying to fetch labels for recharging","fatal");
+            }
+         }
+         else {
+            $this->Dbase->CreateLogEntry("One of the variables provided by the user is not correct ".print_r($_REQUEST,true),"fatal");
+         }
+      }
+      else {
+         $this->Dbase->CreateLogEntry("User is not permitted to recharge labels","fatal");
+      }
+   }
+   
+   private function generateCSV($array, $headingsFromKeys = true){
+      $csv = "";
+      if(count($array) > 0){
+         $colNum = count($array[0]);
+         
+         if($headingsFromKeys === true){
+            $keys = array_keys($array[0]);
+            $csv .= "\"".implode("\",\"", $keys)."\"\n";
+         }
+         
+         foreach($array as $currRow){
+            $csv .= "\"".implode("\",\"", $currRow)."\"\n";
+         }
+      }
+      
+      return $csv;
+   }
+   
+   private function sendRechargeEmail($address, $subject, $message, $file = null){
+      if($file != null){
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
+      }
+      else {
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
+      }
    }
 }
 ?>
