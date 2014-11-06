@@ -470,7 +470,7 @@ class Ln2Requests extends Repository{
    private function downloadRechargeFile(){
       //check if user is allowed to do recharges
       if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
-         $query = "select b.charge_code, a.alt_ccode, count(*) as number_requests, group_concat(a.id) as request_ids, group_concat(distinct a.added_by) as requesters, sum(a.amount_appr) as total_ln2_requested"
+         $query = "select b.name as charge_code, a.alt_ccode, count(*) as number_requests, group_concat(a.id) as request_ids, group_concat(distinct a.added_by) as requesters, sum(a.amount_appr) as total_ln2_requested"
                  . " from ln2_acquisitions as a"
                  . " left join ln2_chargecodes as b on a.project_id = b.id"
                  . " where a.amount_appr is not null and a.rc_timestamp is null"
