@@ -37,6 +37,7 @@ class InventoryManager extends Repository{
       if (OPTIONS_REQUESTED_SUB_MODULE == 'issue') $this->submitIssuance ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'fetch') $this->fetchInventoryHistory ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return') $this->returnItem();
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "download_recharge_file") $this->downloadRechargeFile();
    }
 
    /**
@@ -106,6 +107,11 @@ class InventoryManager extends Repository{
            <input type="submit" value="Submit" name="submitButton" id="submitButton"/>
         </div>
    </form>
+   <?php
+      if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+         echo "<div class='center' style='margin-top:10px;margin-left:700px;margin-bottom:10px;'><button id='recharge_btn' type='button' class='btn btn-primary'>Recharge Items</button></div>";
+      }
+   ?>
    <div id="issued_items">&nbsp;</div>
    <div id="return_comment_div" style="display: none; position: absolute; width: auto; height: auto; background: white; box-shadow:0 1px 2px #aaa; padding: 1rem;">
       Provide comments if any<br />
@@ -167,6 +173,9 @@ class InventoryManager extends Repository{
       width: 900,
       height: 260,
       singleSelect: true
+   });
+   $("#recharge_btn").click(function(){
+      InventoryManager.downloadRechargeFile();
    });
 </script>
       <?php
@@ -322,6 +331,118 @@ class InventoryManager extends Repository{
       if(is_array($result) && count($result) == 1){
          $query = "UPDATE inventory SET item_returned = 1, ret_comment = :comment WHERE id = :id";
          $this->Dbase->ExecuteQuery($query, array("id" => $itemID, "comment" => $comment));
+      }
+   }
+   
+   /**
+    * This function generates a csv file for recharging items acquired from the biorepository
+    */
+   private function downloadRechargeFile(){
+      if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+         $query = "select a.id, a.item, a.issued_by, a.issued_to, a.date_issued, b.name as charge_code, a.alt_ccode, a.pp_unit, a.quantity"
+                 . " from inventory as a"
+                 . " left join ln2_chargecodes as b on a.chargecode_id=b.id"
+                 . " where item_borrowed = 0 and rc_timestamp is null";
+         $result = $this->Dbase->ExecuteQuery($query);
+         
+         if(is_array($result)){
+            for($i = 0 ; $i < count($result); $i++){
+               if($result[$i]['charge_code'] == null){
+                  $result[$i]['charge_code'] = $result[$i]['alt_ccode'];
+               }
+               
+               $query = "update inventory"
+                       . " set rc_timestamp = now(), rc_charge_code = :charge_code"
+                       . " where id = :id";
+               $this->Dbase->ExecuteQuery($query, array("charge_code" => $result[$i]['charge_code'], "id" => $result[$i]['id']));
+               
+               unset($result[$i]['alt_ccode']);
+            }
+            $headings = array(
+                "id" => "Item ID",
+                "item" => "Item",
+                "issued_by" => "Issued By",
+                "issued_to" => "Issued To",
+                "date_issued" => "Date Issued",
+                "charge_code" => "Charge Code",
+                "pp_unit" => "Price per Unit",
+                "quantity" => "Quantity"
+            );
+            
+            $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
+            $fileName = "item_recharge_".date('Y_m_d').".csv";
+            
+            file_put_contents("/tmp/".$fileName, $csv);
+            header('Content-type: document');
+            header('Content-Disposition: attachment; filename='. $fileName);
+            header("Expires: 0"); 
+            header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+            header("Content-length: " . filesize("/tmp/".$fileName));
+            header('Content-Transfer-Encoding: binary');
+            readfile("/tmp/" . $fileName);
+            
+            if(count($result) > 0){   
+               $emailSubject = "Item Recharge";
+               $emailBody = "Find attached a csv file containing data for item recharges.";
+               $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+            }
+            else {
+               $emailSubject = "Item Recharge";
+               $emailBody = "No items found that can be recharged.";
+               $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
+            }
+            
+            $this->Dbase->CreateLogEntry("Recharging file at /tmp/".$fileName, "info");
+            unlink("/tmp/" . $fileName);
+         }
+      }
+   }
+   
+   /**
+    * This function generates a CSV string from a two dimensional array.
+    * Make sure each of the second level associative arrays the same size.
+    * The following array will not be parsed correctly:
+    *  [
+    *    [0,1,2]
+    *    [0,1]
+    *    [0,1,2]
+    *  ]
+    * 
+    * @param type $array
+    * @param type $headingsFromKeys
+    */
+   private function generateCSV($array, $headingsFromKeys = true){
+      $csv = "";
+      if(count($array) > 0){
+         $colNum = count($array[0]);
+         
+         if($headingsFromKeys === true){
+            $keys = array_keys($array[0]);
+            $csv .= "\"".implode("\",\"", $keys)."\"\n";
+         }
+         
+         foreach($array as $currRow){
+            $csv .= "\"".implode("\",\"", $currRow)."\"\n";
+         }
+      }
+      
+      return $csv;
+   }
+   
+   /**
+    * This function sends emails using the biorepository's email address. Duh
+    * 
+    * @param type $address Email address of the recipient
+    * @param type $subject Email's subject
+    * @param type $message Email's body/message
+    * @param type $file    Attachements for the email. Set to null if none
+    */
+   private function sendRechargeEmail($address, $subject, $message, $file = null){
+      if($file != null){
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
+      }
+      else {
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
       }
    }
 }

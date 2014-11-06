@@ -115,5 +115,13 @@ var InventoryManager = {
             });
          });
       }
+   },
+   
+   downloadRechargeFile: function() {
+      var url = "mod_ajax.php?page=inventory&do=ajax&action=download_recharge_file";
+      
+      $("#hiddenDownloader").remove();
+      $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
+      $("#hiddenDownloader").attr("src", url);
    }
 };
