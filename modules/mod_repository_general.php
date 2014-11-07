@@ -64,7 +64,6 @@ class Repository extends DBase{
     */
    public function TrafficController(){
       
-      
       if(OPTIONS_REQUESTED_MODULE != 'login' && !Config::$downloadFile){  //when we are normally browsing, check that we have the right credentials
          //we hope that we have still have the right credentials
          $this->Dbase->ManageSession();
@@ -94,6 +93,11 @@ class Repository extends DBase{
             require_once 'mod_repository_3d.php';
             $repository3D = new Repository3D($this->Dbase);
             $repository3D->TrafficController();
+         }
+         else if(OPTIONS_REQUESTED_MODULE == "mta"){
+            require_once 'mod_mta.php';
+            $mta = new MTA($this->Dbase);
+            $mta->trafficController();
          }
          return;//do not show the user any more links
       }
