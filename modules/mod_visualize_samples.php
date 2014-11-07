@@ -69,6 +69,28 @@ class VisualizeSamples {
    }
    
    private function getAllSamples(){
+      $cacheFile = "/tmp/sample_data.json";
+      
+      if(file_exists($cacheFile)){//check if file exists
+         $this->Dbase->CreateLogEntry("Samples cache file exists","info");
+         //check when the file was last modified
+         if(filemtime($cacheFile) !== false && (time() - filemtime($cacheFile)) < 3600){//file created less than 1 hour ago
+            $this->Dbase->CreateLogEntry("Cache file is ".(time() - filemtime($cacheFile))." seconds old. Using it","info");
+            $json = file_get_contents($cacheFile);
+            echo $json;
+            return;
+         }
+         else {//make sure file is deleted
+            $this->Dbase->CreateLogEntry("Cache file is too old ".(time() - filemtime($cacheFile))." seconds. Rolling back to using MySQL","info");
+            unlink($cacheFile);
+         }
+      }
+      else {
+         $this->Dbase->CreateLogEntry("Cache file for sample data does not exist. Fetching data from MySQL","info");
+      }
+      
+      //if we've come this far, we have to get the data from MySQl
+      
       $query = "SELECT count, label, date_created, sample_type, origin, org, box_id, VisitDate, Longitude, Latitude, Elisa_Results, Project"
                . " FROM ".Config::$config['azizi_db'].".samples"
                . " WHERE Longitude IS NOT null AND Longitude != '' AND Latitude IS NOT null AND Latitude != ''";
@@ -166,8 +188,11 @@ class VisualizeSamples {
        }
        
        $data['tests'] = array('types' => $testTypes, 'results' => $resultTypes);
+       $cacheJson = json_encode($data);
        
-       echo json_encode($data);
+       file_put_contents($cacheFile, $cacheJson);
+       
+       echo $cacheJson;
    }
    
    private function getAllProjects() {
