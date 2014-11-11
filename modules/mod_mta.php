@@ -28,19 +28,29 @@ class MTA{
    
    private function processMTA(){
       $return = array("error_message" => "");
+      //check if user provided sample ids or filters
+      $sampleIDs = array();
+      
+      if(isset($_REQUEST['sample_ids'])){
+         $sampleIDs = explode(",", $_REQUEST['sample_ids']);
+      }
+      else if(isset($_REQUEST['filters'])){
+         $sampleIDs = $this->getSampleIDs();
+      }
+      
       //check validity of the data
-      $result = $this->validateMTAData();
+      $result = $this->validateMTAData($sampleIDs);
       
       if($result == true){
          //add mta to database
-         $mtaID = $this->addMTAToDb();
+         $mtaID = $this->addMTAToDb($sampleIDs);
 
          if($mtaID  !== 0){
             //generate sample spreadsheet
-            $samplesDocument = $this->generateSamplesSpreadsheet();
+            $samplesDocument = $this->generateSamplesSpreadsheet($sampleIDs);
             
             //generate mta document. Do this last
-            $mtaDocument = $this->generateMTADocument();
+            $mtaDocument = $this->generateMTADocument($sampleIDs);
 
             //send documents to parties
             if($samplesDocument != null && $mtaDocument != null){
@@ -78,7 +88,61 @@ class MTA{
       return json_encode($return);
    }
    
-   private function validateMTAData(){
+   private function getSampleIDs(){
+      if(isset($_REQUEST['filters'])){
+         $filters = json_decode($_REQUEST['filters'], true);
+         
+         $projectIDs = implode(",", $filters['projects']);
+         $organismIDs = implode(",", $filters['organisms']);
+         $sampleTypes = implode(",", $filters['sampleTypes']);
+         $tests = implode(",", $filters['tests']);
+         $results = implode(",", $filters['results']);
+         
+         $queryFilter = "";
+         if(strlen($projectIDs) > 0){
+            if(strlen($queryFilter) == 0){
+               $queryFilter .= " a.Project in(".$projectIDs.")";
+            }
+            else {
+               $queryFilter .= " and a.Project in(".$projectIDs.")";
+            }
+         }
+         if(strlen($organismIDs) > 0){
+            if(strlen($queryFilter) == 0){
+               $queryFilter .= " a.org in(".$organismIDs.")";
+            }
+            else {
+               $queryFilter .= " and a.org in(".$organismIDs.")";
+            }
+         }
+         if(strlen($sampleTypes) > 0){
+            if(strlen($queryFilter) == 0){
+               $queryFilter .= " a.sample_type in(".$sampleTypes.")";
+            }
+            else {
+               $queryFilter .= " and a.sample_type in(".$sampleTypes.")";
+            }
+         }
+         
+         $query = "select a.count"
+                 . " from ".Config::$config['azizi_db'].".samples as a";
+         if(strlen($queryFilter) > 0){
+            $query .= " where ".$queryFilter;
+         }
+         
+         $result = $this->Dbase->ExecuteQuery($query);
+         
+         $sampleIDs = array();
+         foreach ($result as $currResult){
+            $sampleIDs[] = $currResult['count'];
+         }
+         $this->Dbase->CreateLogEntry("Found ".count($sampleIDs)." samples", "info");
+         return $sampleIDs;
+      }
+      return array();
+   }
+   
+   private function validateMTAData($sampleIDs){
       $this->Dbase->CreateLogEntry("About to validate ".print_r($_REQUEST, true), "info");
       
       $piName = $_REQUEST['pi_name'];
@@ -87,48 +151,69 @@ class MTA{
       $org = $_REQUEST['org'];
       
       $materialRequired = $_REQUEST['material'];
-      $quantity = count(explode(",", $_REQUEST['sample_ids']));
       $format = $_REQUEST['format'];
       $storageSafety = $_REQUEST['storage_safety'];
       $assocData = $_REQUEST['assoc_data'];
       
-      $sampleIDs = $_REQUEST['sample_ids'];
+      //$sampleIDs = $_REQUEST['sample_ids'];
       
       //$this->Dbase->CreateLogEntry("pi_name = ".$piName, "info");
-      if(strlen($piName) == 0) return false;
+      if(strlen($piName) == 0){
+         $this->Dbase->CreateLogEntry("PI Name wrong ".$piName,"fatal");
+         return false;
+      }
       //$this->Dbase->CreateLogEntry("pi_email = ".$piEmail, "info");
-      if(strlen($piEmail) == 0) return false;
+      if(strlen($piEmail) == 0) {
+         $this->Dbase->CreateLogEntry("PI Email wrong ".$piEmail,"fatal");
+         return false;
+      }
       //$this->Dbase->CreateLogEntry("research_title = ".$researchTitle, "info");
-      if(strlen($researchTitle) == 0) return false;
+      if(strlen($researchTitle) == 0) {
+         $this->Dbase->CreateLogEntry("Research Title wrong ".$researchTitle,"fatal");
+         return false;
+      }
       //$this->Dbase->CreateLogEntry("org = ".$org, "info");
-      if(strlen($org) == 0 ) return false;
+      if(strlen($org) == 0 ) {
+         $this->Dbase->CreateLogEntry("Org ".$org,"fatal");
+         return false;
+      }
       //$this->Dbase->CreateLogEntry("material = ".$materialRequired, "info");
-      if(strlen($materialRequired) == 0) return FALSE;
-      //$this->Dbase->CreateLogEntry("quantity = ".$quantity, "info");
-      if($quantity == 0) return false;
+      if(strlen($materialRequired) == 0) {
+         $this->Dbase->CreateLogEntry("PI Name wrong ".$materialRequired,"fatal");
+         return FALSE;
+      }
       //$this->Dbase->CreateLogEntry("format = ".$format, "info");
-      if(strlen($format) == 0) return false;
+      if(strlen($format) == 0) {
+         $this->Dbase->CreateLogEntry("Format wrong ".$format,"fatal");
+         return false;
+      }
       //$this->Dbase->CreateLogEntry("assoc_data = ".$assocData, "info");
-      if(strlen($assocData) == 0) return false;
+      if(strlen($assocData) == 0) {
+         $this->Dbase->CreateLogEntry("Associated data wrong ".$piName,"fatal");
+         return false;
+      }
       //$this->Dbase->CreateLogEntry("sample_ids = ".$sampleIDs, "info");
-      if(strlen($sampleIDs) == 0) return false;
+      if(count($sampleIDs) == 0) {
+         $this->Dbase->CreateLogEntry("No samples ","fatal");
+         return false;
+      }
       
       return true;
    }
    
-   private function addMTAToDb(){
+   private function addMTAToDb($sampleIDs){
       $piName = $_REQUEST['pi_name'];
       $piEmail = $_REQUEST['pi_email'];
       $researchTitle = $_REQUEST['research_title'];//title of the research being conducted
       $org = $_REQUEST['org'];
       
       $materialRequired = $_REQUEST['material'];
-      $quantity = count(explode(",", $_REQUEST['sample_ids']));
+      $quantity = count($sampleIDs);
       $format = $_REQUEST['format'];
       $storageSafety = $_REQUEST['storage_safety'];
       $assocData = $_REQUEST['assoc_data'];
       
-      $sampleIDs = $_REQUEST['sample_ids'];
+      //$sampleIDs = $_REQUEST['sample_ids'];
       
       //get last inserted mta
       $query = "select id"
@@ -196,8 +281,8 @@ class MTA{
       $this->Dbase->ExecuteQuery($query, array("mtaID" => $mtaID));
    }
    
-   private function generateSamplesSpreadsheet(){
-      $sampleIDs = explode(",", $_REQUEST['sample_ids']);
+   private function generateSamplesSpreadsheet($sampleIDs){
+      //$sampleIDs = explode(",", $_REQUEST['sample_ids']);
       
       if(count($sampleIDs) < 50000){//do not allow downloading of data greater than 50000 samples
          $implodedSIDs = implode(",", $sampleIDs);
@@ -476,7 +561,7 @@ class MTA{
       return null;
    }
    
-   private function generateMTADocument(){
+   private function generateMTADocument($sampleIDs){
       //TODO: change $_REQUEST to $_POST
       
       $piName = $_REQUEST['pi_name'];
@@ -485,7 +570,7 @@ class MTA{
       $org = $_REQUEST['org'];
       
       $materialRequired = $_REQUEST['material'];
-      $quantity = count(explode(",", $_REQUEST['sample_ids']));
+      $quantity = count($sampleIDs);
       $format = $_REQUEST['format'];
       $storageSafety = $_REQUEST['storage_safety'];
       $assocData = $_REQUEST['assoc_data'];
