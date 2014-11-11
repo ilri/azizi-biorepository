@@ -856,7 +856,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
    box-shadow:0 1px 2px #aaa;
 }
 
-#email_dialog {
+#email_dialog, #mta_dialog {
    display: none;
    z-index: 3;
    width: 30rem;
@@ -866,14 +866,15 @@ ul.ui-autocomplete {z-index: 1000!important; }
    padding: 1rem;
    border-radius:2px;
    box-shadow:0 1px 2px #aaa;
+   font-size: 15px;
 }
 
-#email_dialog.a:link {
+#email_dialog.a:link, #mta_dialog.a:link {
    color: #5677fc;
    text-decoration: none;
 }
 
-#email_dialog_toggle {
+#email_dialog_toggle, #mta_dialog_toggle {
    cursor: pointer;
    width: 1.2rem;
    height: 1.2rem;

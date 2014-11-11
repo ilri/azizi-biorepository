@@ -74,7 +74,7 @@ class VisualizeSamples {
       if(file_exists($cacheFile)){//check if file exists
          $this->Dbase->CreateLogEntry("Samples cache file exists","info");
          //check when the file was last modified
-         if(filemtime($cacheFile) !== false && (time() - filemtime($cacheFile)) < 3600){//file created less than 1 hour ago
+         if(filemtime($cacheFile) !== false && (time() - filemtime($cacheFile)) < 7200){//file created less than 1 hour ago
             $this->Dbase->CreateLogEntry("Cache file is ".(time() - filemtime($cacheFile))." seconds old. Using it","info");
             $json = file_get_contents($cacheFile);
             echo $json;
@@ -618,6 +618,8 @@ class VisualizeSamples {
 <script src="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>dygraphs-1.0.1/dygraph-combined.js"></script>
 <link href="css/repository.css" rel="stylesheet" type="text/css" />
 <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css' />
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/leaflet-heat.js'></script>
 
 <div id="map"></div>
@@ -659,8 +661,47 @@ class VisualizeSamples {
 </div>
 <div id="email_dialog">
    <div id="email_dialog_toggle"></div>
-   <p style="margin-top: 1rem;">The data about to be sent to you is protected by the <a href="http://www.cgiar.org/resources/open/" target="_blank">CGIAR's Open Access Policy</a>. You ought to have read this policy before clicking 'Send'.</p>
+   <p style="margin-top: 1rem;">The data about to be sent to you is protected by the <a href="http://www.cgiar.org/resources/open/" target="_blank">CGIAR's Open Access Policy</a>. You ought to have read this policy before clicking 'Send'. If you want the samples moved to your Organisation, fill a <a href="#" id="mta_link">Material Transfer Agreement</a> instead.</p>
    <input type="email" id="user_email" placeholder="Enter your email address" /> <button id="send_button">Send</button>
+</div>
+<div id="mta_dialog">
+   <div id="mta_dialog_toggle"></div>
+   <div style="margin-bottom: 15px; font-size: 20px;">Material Transfer Agreement</div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_pi_name">Principal Investigator</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_pi_name" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_pi_email">PI's Email Address</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_pi_email" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_research_title">Research Title</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_research_title" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_org">Organisation</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_org" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_material">Sample Material</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_material" type="text" placeholder="e.g serum" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_format">Format</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_format" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_storage_safety">Handling, Storage & Safety</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_storage_safety" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_assoc_data">Accompanying data</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_assoc_data" type="text" value="associated metadata" /></div>
+   </div>
+   <div class="center">
+      <button id="mta_submit_btn">Send Request</button>
+   </div>
 </div>
 <script>
    var visSamples = new VisualizeSamples();

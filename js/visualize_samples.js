@@ -27,6 +27,10 @@ function VisualizeSamples() {
    window.vs.emailDialog = jQuery("#email_dialog");
    window.vs.sendButton = jQuery("#send_button");
    window.vs.emailDialogToggle = jQuery("#email_dialog_toggle");
+   window.vs.mtaLink = jQuery("#mta_link");
+   window.vs.mtaDialog = jQuery("#mta_dialog");
+   window.vs.mtaDialogToggle = jQuery("#mta_dialog_toggle");
+   window.vs.mtaSubmiteButton = jQuery("#mta_submit_btn");
    
    window.vs.loadingDialog = jQuery("#loading_box");
    window.vs.loadingDialog.show();
@@ -260,6 +264,20 @@ function VisualizeSamples() {
    window.vs.emailDialogToggle.click(function() {
       window.vs.emailDialog.hide();
    });
+   
+   window.vs.mtaLink.click(function(){
+      window.vs.emailDialog.hide();
+      window.vs.mtaDialog.show();
+   });
+   
+   window.vs.mtaDialogToggle.click(function(){
+      window.vs.mtaDialog.hide();
+   });
+   
+   window.vs.mtaSubmiteButton.click(function(){
+      console.log("click");
+      window.vs.submitMTARequest();
+   });
 };
 
 /**
@@ -303,6 +321,9 @@ VisualizeSamples.prototype.windowResized = function(){
    
    window.vs.emailDialog.css("left", (window.innerWidth/2 - window.vs.emailDialog.width()/2) + "px");
    window.vs.emailDialog.css("top", (window.innerHeight/2 - window.vs.emailDialog.height()/2) + "px");
+   
+   window.vs.mtaDialog.css("left", (window.innerWidth/2 - window.vs.mtaDialog.width()/2) + "px");
+   window.vs.mtaDialog.css("top", (window.innerHeight/2 - window.vs.mtaDialog.height()/2) + "px");
    
    /*var height = window.innerHeight;
    console.log("  window height = ", height);
@@ -1057,9 +1078,11 @@ VisualizeSamples.prototype.refreshHeatmap = function(data, playingTimeline){
    
    if(window.vs.data.downloadData.length > 50000 || window.vs.data.downloadData.length == 0){
       window.vs.downloadStatus.hide();
+      window.vs.headsUp.attr("title", "You can only download data for up to 50,000 samples");
    }
    else {
       window.vs.downloadStatus.show();
+      window.vs.headsUp.attr("title", "Download the data");
    }
    window.vs.headsUp.css("left", (window.innerWidth - window.vs.headsUp.width() - 100) + "px");
    
@@ -1205,6 +1228,85 @@ VisualizeSamples.prototype.toggleResults = function(){
          window.vs.hideTestList();
       }
    }
+};
+
+VisualizeSamples.prototype.submitMTARequest = function(){
+   var emailRegex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+   
+  if($("#mta_pi_name").val().length == 0){
+     window.alert("Please enter the Principal Investigator's name");
+     $("#mta_pi_name").focus();
+     return false;
+  }
+  else if($("#mta_pi_name").val().split(/\s+/).length < 2){
+     window.alert("Please provide the Principal Investigator's two names");
+     $("#mta_pi_name").focus();
+     return false;
+  }
+  if($("#mta_pi_email").val().length == 0){
+     window.alert("Please enter the Principal Investigator's email address");
+     $("#mta_pi_email").focus();
+     return false;
+  }
+  else if(emailRegex.test($("#mta_pi_email").val()) != true){
+     window.alert("Email address provided is wrong");
+     $("#mta_pi_email").focus();
+     return false;
+  }
+  if($("#mta_research_title").val().length == 0){
+     window.alert("Please provide the research title");
+     $("#mta_research_title").focus();
+     return false;
+  }
+  if($("#mta_org").val().length == 0){
+     window.alert("Please provide your Organisation's name");
+     $("#mta_org").focus();
+     return false;
+  }
+  if($("#mta_material").val().length == 0){
+     window.alert("Please enter the type of sample material");
+     $("#mta_material").focus();
+     return false;
+  }
+  if($("#mta_format").val().length == 0){
+     window.alert("Please provide a format");
+     $("#mta_format").focus();
+     return false;
+  }
+  if($("#mta_assoc_data").val().length == 0){
+     window.alert("What associated data do you need?");
+     $("#mta_assoc_data").focus();
+     return false;
+  }
+  
+  //check if any samples selected
+  if(window.vs.data.filterIn.length == 0){
+     window.alert("No samples selected");
+     return false;
+  }
+  
+  //if we've come this far, data's validated and fine
+  jQuery.ajax({
+     url:'mod_ajax.php?page=mta&do=process_mta',
+     method:'POST',
+     async:true,
+     data:{
+        pi_name:$("#mta_pi_name").val(),
+        pi_email:$("#mta_pi_email").val(),
+        research_title:$("#mta_research_title").val(),
+        org:$("#mta_org").val(),
+        material:$("#mta_material").val(),
+        format:$("#mta_format").val(),
+        storage_safety:$("#mta_storage_safety").val(),
+        assoc_data:$("#mta_assoc_data").val(),
+        filters:window.JSON.stringify(window.vs.filters)
+     },
+     success:function(){
+        window.vs.mtaDialog.hide();
+        window.alert("Your request has been successfully submitted");
+     }
+  });
+  return true;
 };
 
 VisualizeSamples.prototype.initTimeline = function(histogram){
