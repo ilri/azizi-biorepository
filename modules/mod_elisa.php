@@ -55,6 +55,7 @@ class Elisa extends SpreadSheet {
          array('name' =>'sample_pi', 'regex' => '/(sample\s+pi)/i', 'data_regex' => '/^\-?[0-9]{1,3}\.[0-9]+$/i', 'required' => false),
          array('name' =>'od1', 'regex' => '/(od1)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
          array('name' =>'od2', 'regex' => '/(od2)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
+         array('name' =>'isr', 'regex' => '/(isr)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
          array('name' =>'variation', 'regex' => '/(sample\s+variation)/i', 'data_regex' => '/^\-?[0-9]{1,3}(\.[0-9]+)?$/i', 'required' => false),
          array('name' =>'status', 'regex' => '/(interpretation)/i', 'data_regex' => '/^positive|negative|borderline|^strong\s+positive$/i', 'required' => true),
          array('name' =>'test_comments', 'regex' => '/(test\s+comments)/i', 'required' => false)
