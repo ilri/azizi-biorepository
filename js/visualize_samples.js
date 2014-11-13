@@ -31,6 +31,9 @@ function VisualizeSamples() {
    window.vs.mtaDialog = jQuery("#mta_dialog");
    window.vs.mtaDialogToggle = jQuery("#mta_dialog_toggle");
    window.vs.mtaSubmiteButton = jQuery("#mta_submit_btn");
+   window.vs.cloak = jQuery("#cloak");
+   window.vs.instructionsDialog = jQuery("#instructions_dialog");
+   window.vs.instructionsDialogToggle = jQuery("#instructions_dialog_toggle");
    
    window.vs.loadingDialog = jQuery("#loading_box");
    window.vs.loadingDialog.show();
@@ -275,9 +278,16 @@ function VisualizeSamples() {
    });
    
    window.vs.mtaSubmiteButton.click(function(){
-      console.log("click");
       window.vs.submitMTARequest();
    });
+   
+   window.vs.instructionsDialogToggle.click(function(){
+      window.vs.cloak.hide();
+      window.vs.instructionsDialog.hide();
+   });
+   
+   window.vs.cloak.show();
+   window.vs.instructionsDialog.show();
 };
 
 /**
@@ -324,6 +334,14 @@ VisualizeSamples.prototype.windowResized = function(){
    
    window.vs.mtaDialog.css("left", (window.innerWidth/2 - window.vs.mtaDialog.width()/2) + "px");
    window.vs.mtaDialog.css("top", (window.innerHeight/2 - window.vs.mtaDialog.height()/2) + "px");
+   
+   window.vs.instructionsDialog.css("left", (window.innerWidth/2 - window.vs.instructionsDialog.width()/2) + "px");
+   window.vs.instructionsDialog.css("top", (window.innerHeight/2 - window.vs.instructionsDialog.height()/2) + "px");
+   
+   window.vs.cloak.css("left", 0);
+   window.vs.cloak.css("top", 0);
+   window.vs.cloak.css("width", window.innerWidth+"px");
+   window.vs.cloak.css("height", window.innerHeight+"px");
    
    /*var height = window.innerHeight;
    console.log("  window height = ", height);

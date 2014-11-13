@@ -621,7 +621,6 @@ class VisualizeSamples {
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/leaflet-heat.js'></script>
-
 <div id="map"></div>
 <div id="samples_timeline"></div>
 <div id="loading_box">Loading</div>
@@ -702,6 +701,14 @@ class VisualizeSamples {
    <div class="center">
       <button id="mta_submit_btn">Send Request</button>
    </div>
+</div>
+<div id="instructions_dialog" style="z-index: 4;">
+   <div id="instructions_dialog_toggle"></div>
+   <div>
+      You can download data for up to 50,000 samples. Filter down the number of samples you want 50,000 or less then click the download button on the top right corner. You can also fill in a Material Transfer Agreement if you want the samples transfered to your organisation.
+   </div>
+</div>
+<div id="cloak" style="display: none; position: absolute; background: #3d3d3d; opacity: 0.5; z-index: 3; width: 100%; height: 100%;">
 </div>
 <script>
    var visSamples = new VisualizeSamples();
