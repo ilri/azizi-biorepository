@@ -27,8 +27,8 @@ class Samples extends SpreadSheet {
          array('name' =>'organism', 'regex' => '/^organism$/i', 'data_regex' => '/^[a-z\s]+$/i', 'required' => true, 'lc_ref' => 'org'),
          array('name' =>'origin', 'regex' => '/^sample\s+origin/i', 'data_regex' => '/^[a-z\s]+$/i', 'required' => true, 'lc_ref' => 'origin'),
          array('name' =>'collection_date', 'regex' => '/^date\s+collected$/i', 'data_regex' => '/^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]20\d{2}$/', 'required' => true),
-         array('name' =>'latitude', 'regex' => '/^latitude$/i', 'data_regex' => '/^-?[0-9]{1,2}\.[0-9]+$/i', 'required' => true, 'lc_ref' => 'Longitude'),
-         array('name' =>'longitude', 'regex' => '/^longitude$/i', 'data_regex' => '/^-?[0-9]{2,3}\.[0-9]+$/i', 'required' => true, 'lc_ref' => 'Latitude'),
+         array('name' =>'latitude', 'regex' => '/^latitude$/i', 'data_regex' => '/^-?[0-9]{1,2}\.[0-9]+$/i', 'required' => true),
+         array('name' =>'longitude', 'regex' => '/^longitude$/i', 'data_regex' => '/^-?[0-9]{2,3}\.[0-9]+$/i', 'required' => true),
          array('name' =>'project', 'regex' => '/^project$/i', 'required' => true, 'lc_ref' => 'Project'),
          array('name' =>'animal_id', 'regex' => '/^animal\s+id$/i', 'required' => false, 'lc_ref' => 'AnimalID'),
          array('name' =>'storage_box', 'regex' => '/^storage\s+box$/i', 'data_regex' => '/^[a-z]{4,5}[0-9]{2,5}$/i', 'required' => true),
@@ -38,7 +38,9 @@ class Samples extends SpreadSheet {
          array('name' =>'owner', 'regex' => '/^owner$/i', 'data_regex' => '/^[a-z\s\']+$/i', 'required' => true),
          array('name' =>'lc_ref', 'regex' => '/^labcollector\s+reference$/i', 'required' => false),
          array('name' =>'pri_key', 'regex' => '/^([a-z\s]+)(\(main\s+key\))$/i', 'required' => false, 'unique' => true),
-         array('name' =>'foreign_key', 'regex' => '/^([a-z\s]+)(\(secondary\s+key\))$/i', 'required' => false)
+         array('name' =>'foreign_key', 'regex' => '/^([a-z\s]+)(\(secondary\s+key\))$/i', 'required' => false),
+         array('name' =>'assay', 'regex' => '/^assay$/i', 'required' => false),
+         array('name' =>'experiment', 'regex' => '/^experiment$/i', 'required' => false)
       )
    );
 
@@ -154,6 +156,10 @@ class Samples extends SpreadSheet {
             $descr .= $sdata_desc;
           }
 
+          // check if we have the experiment and assay values set, if not, we equate them to null
+          if(!isset($t['experiment'])) $this->data[$key]['experiment'] = NULL;
+          if(!isset($t['assay'])) $this->data[$key]['assay'] = NULL;
+
           //"http://azizi.ilri.cgiar.org/viewSpreadSheet.php?file=entomology_uploads/zip_upload_2012-02-22_101035/CBG/Wakabhare%20%20LT%20Msqt%20CBG%2027.10.09.xls&focused=CBG000109#focused"
           $descr .= "<br /><br /><b>Other Comments:</b>{$t['comments']}";
           //add a link to the original file we uploaded
@@ -212,8 +218,8 @@ class Samples extends SpreadSheet {
        global $Repository;
        //'label, comments, date_created, date_updated, sample_type, origin, org, main_operator, box_id, box_details, Project,
        //SampleID, VisitID, VisitDate, AnimalID, TrayID,  Longitude, Latitude'
-       $samplesQuery = 'insert into '. Config::$config['azizi_db'] .'.samples(label, comments, date_created, date_updated, sample_type, origin, org, main_operator, box_id, box_details, Project, SampleID, VisitID, VisitDate, AnimalID, TrayID, Longitude, Latitude)'
-         . 'values(:label, :comments, :date_created, :date_updated, :sample_type, :origin, :org, :main_operator, :box_id, :box_details, :Project, :label, :origin, :date_created, :animal_id, :storage_box, :longitude, :latitude)';
+       $samplesQuery = 'insert into '. Config::$config['azizi_db'] .'.samples(label, comments, date_created, date_updated, sample_type, origin, org, main_operator, box_id, box_details, Project, SampleID, VisitID, VisitDate, AnimalID, TrayID, Longitude, Latitude, Experiment, Assay)'
+         . 'values(:label, :comments, :date_created, :date_updated, :sample_type, :origin, :org, :main_operator, :box_id, :box_details, :Project, :label, :origin, :date_created, :animal_id, :storage_box, :longitude, :latitude, :experiment, :assay)';
        //for linked samples
        $relationQuery = 'insert into '. Config::$config['azizi_db'] .'.modules_relation(module_from, id_from, module_to, id_to) values(:module_from, :id_from, :module_to, :id_to)';
        //check for already saved samples
@@ -251,7 +257,7 @@ class Samples extends SpreadSheet {
 
          $colvals = array(
             'label' => $label, 'comments' => $t['descr'], 'date_created' => strftime('%Y-%m-%d %H:%M:%S', strtotime($t['collection_date'])), 'date_updated' => date('Y-m-d H:i:s'),
-            'sample_type' => $t['type'], 'origin' => $t['origin'], 'org' => $t['organism'],
+            'sample_type' => $t['type'], 'origin' => $t['origin'], 'org' => $t['organism'], 'assay' => $t['assay'], 'experiment' => $t['experiment'],
             'main_operator' => $t['owner'], 'box_id' => $this->allTrays[$t['storage_box']], 'box_details' => $t['box_details'],
             'Project' => $t['project'], 'animal_id' => $t['animal_id'], 'storage_box' => $t['storage_box'], 'longitude' => $t['longitude'], 'latitude' => $t['latitude']
          );
