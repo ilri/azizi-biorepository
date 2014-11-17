@@ -31,7 +31,7 @@ class Samples extends SpreadSheet {
          array('name' =>'longitude', 'regex' => '/^longitude$/i', 'data_regex' => '/^-?[0-9]{2,3}\.[0-9]+$/i', 'required' => true),
          array('name' =>'project', 'regex' => '/^project$/i', 'required' => true, 'lc_ref' => 'Project'),
          array('name' =>'animal_id', 'regex' => '/^animal\s+id$/i', 'required' => false, 'lc_ref' => 'AnimalID'),
-         array('name' =>'storage_box', 'regex' => '/^storage\s+box$/i', 'data_regex' => '/^[a-z]{4,5}[0-9]{2,5}$/i', 'required' => true),
+         array('name' =>'storage_box', 'regex' => '/^storage\s+box$/i', 'data_regex' => '/^p69[a-c][0-9]{3}|[a-z]{4,5}[0-9]{2,5}$/i', 'required' => true),
          array('name' =>'sample_pos', 'regex' => '/^position\s+in\s+box$/i', 'data_regex' => '/^[1-9]?[0-9]|100|[a-z][0-9]0?$/i', 'required' => true),
          array('name' =>'parent', 'regex' => '/^parent\s+sample$/i', 'required' => false),
          array('name' =>'comments', 'regex' => '/^comments$/i', 'required' => false),
