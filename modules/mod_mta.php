@@ -12,22 +12,24 @@
 class MTA{
    
    private $Dbase;
+   private $return;
    
    /**
     * The class's constructor
     */
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
+      $this->return = array("error_message" => "");
    }
    
    public function trafficController(){
       if(OPTIONS_REQUESTED_SUB_MODULE == "process_mta"){
-         $this->processMTA();
+         $returnJson = $this->processMTA();
+         echo $returnJson;
       }   
    }
    
    private function processMTA(){
-      $return = array("error_message" => "");
       //check if user provided sample ids or filters
       $sampleIDs = array();
       
@@ -35,6 +37,9 @@ class MTA{
          $sampleIDs = explode(",", $_REQUEST['sample_ids']);
       }
       else if(isset($_REQUEST['filters'])){
+         $sampleIDs = $this->getSampleIDs();
+      }
+      else if(isset($_REQUEST['box_ids'])){
          $sampleIDs = $this->getSampleIDs();
       }
       
@@ -61,31 +66,31 @@ class MTA{
                
                if($samplesDocument == null){
                   $this->Dbase->CreateLogEntry("Unable to generate the samples document. Removing the MTA from the database", "fatal");
-                  $return['error'] = true;
-                  $return['error_message'] .= "Unable to generate the samples document.";
+                  $this->return['error'] = true;
+                  $this->return['error_message'] .= "Unable to generate the samples document.";
                }
                if($mtaDocument == null){
                   $this->Dbase->CreateLogEntry("Unable to generate the MTA document. Removing the MTA from the database", "fatal");
-                  $return['error'] = true;
-                  $return['error_message'] .= "Unable to generate the MTA document.";
+                  $this->return['error'] = true;
+                  $this->return['error_message'] .= "Unable to generate the MTA document.";
                }
             }
             
          }
          else {
             $this->Dbase->CreateLogEntry("Unable to obtain MTA number probably because SQL error occurred while trying to add MTA to database", "fatal");
-            $return['error'] = true;
-            $return['error_message'] .= "Unable to obtain MTA number probably because SQL error occurred while trying to add MTA to database";
+            $this->return['error'] = true;
+            $this->return['error_message'] .= "Unable to obtain MTA number probably because SQL error occurred while trying to add MTA to database";
          }
          
       }
       else {
          $this->Dbase->CreateLogEntry("Data validation for MTA failed. Doing nothing", "fatal");
-         $return['error'] = true;
-         $return['error_message'] .= "Data validation for MTA failed. Doing nothing";
+         /*$this->return['error'] = true;
+         $this->return['error_message'] .= "Data validation for MTA failed. Doing nothing";*/
       }
       
-      return json_encode($return);
+      return json_encode($this->return);
    }
    
    private function getSampleIDs(){
@@ -139,6 +144,20 @@ class MTA{
          $this->Dbase->CreateLogEntry("Found ".count($sampleIDs)." samples", "info");
          return $sampleIDs;
       }
+      elseif(isset ($_REQUEST['box_ids'])) {
+         $boxIDs = $_REQUEST['box_ids'];
+         $query = "select count"
+                 . " from ".Config::$config['azizi_db'].".samples"
+                 . " where box_id in (:boxIDs)";
+         $result = $this->Dbase->ExecuteQuery($query, array("boxIDs" => $boxIDs));
+         
+         $sampleIDs = array();
+         foreach ($result as $currResult){
+            $sampleIDs[] = $currResult['count'];
+         }
+         $this->Dbase->CreateLogEntry("Found ".count($sampleIDs)." samples", "info");
+         return $sampleIDs;
+      }
       return array();
    }
    
@@ -160,41 +179,58 @@ class MTA{
       //$this->Dbase->CreateLogEntry("pi_name = ".$piName, "info");
       if(strlen($piName) == 0){
          $this->Dbase->CreateLogEntry("PI Name wrong ".$piName,"fatal");
+         $this->return['error'] = true;
+         $this->return['error_message'] = "Principal Investigator's name not provided";
          return false;
       }
       //$this->Dbase->CreateLogEntry("pi_email = ".$piEmail, "info");
       if(strlen($piEmail) == 0) {
          $this->Dbase->CreateLogEntry("PI Email wrong ".$piEmail,"fatal");
+         $this->return['error'] = true;
+         $this->return['error_message'] = "Principal Investigator's email address not provided";
          return false;
       }
       //$this->Dbase->CreateLogEntry("research_title = ".$researchTitle, "info");
       if(strlen($researchTitle) == 0) {
          $this->Dbase->CreateLogEntry("Research Title wrong ".$researchTitle,"fatal");
+         $this->return['error'] = true;
+         $this->return['error_message'] = "Research title not indicated";
          return false;
       }
       //$this->Dbase->CreateLogEntry("org = ".$org, "info");
       if(strlen($org) == 0 ) {
          $this->Dbase->CreateLogEntry("Org ".$org,"fatal");
+         $this->return['error'] = true;
+         $this->return['error_message'] = "Organizastion not indicated";
          return false;
       }
       //$this->Dbase->CreateLogEntry("material = ".$materialRequired, "info");
       if(strlen($materialRequired) == 0) {
          $this->Dbase->CreateLogEntry("PI Name wrong ".$materialRequired,"fatal");
+         $this->return['error'] = true;
+         $this->return['error_message'] = "Material required not specified";
          return FALSE;
       }
       //$this->Dbase->CreateLogEntry("format = ".$format, "info");
       if(strlen($format) == 0) {
          $this->Dbase->CreateLogEntry("Format wrong ".$format,"fatal");
+         $this->return['error'] = true;
+         $this->return['error_message'] = "Format not specified";
          return false;
       }
       //$this->Dbase->CreateLogEntry("assoc_data = ".$assocData, "info");
       if(strlen($assocData) == 0) {
          $this->Dbase->CreateLogEntry("Associated data wrong ".$piName,"fatal");
+         $this->return['error'] = true;
+         $this->return['error_message'] = "Associated meta-data not specified";
          return false;
       }
       //$this->Dbase->CreateLogEntry("sample_ids = ".$sampleIDs, "info");
       if(count($sampleIDs) == 0) {
          $this->Dbase->CreateLogEntry("No samples ","fatal");
+         $this->return['error'] = true;
+         if(isset($_REQUEST['box_ids'])) $this->return['error_message'] = "Could not find samples in the specified boxes";         
+         else if(isset($_REQUEST['filters'])) $this->return['error_message'] = "Could not find samples using the specified filters";
          return false;
       }
       
@@ -604,7 +640,7 @@ class MTA{
       $mtaTemplate->setValue("RESEARCH_TITLE", $researchTitle);
       $mtaTemplate->setValue("REQUESTING_ORG", $org);
       $mtaTemplate->setValue("MATERIAL_REQUIRED", $materialRequired);
-      $mtaTemplate->setValue("MATERIAL_QUANTITY", $quantity);
+      $mtaTemplate->setValue("MATERIAL_QUANTITY", $quantity." samples");
       $mtaTemplate->setValue("MATERIAL_FORMAT", $format);
       $mtaTemplate->setValue("STORAGE_SAFETY", $storageSafety);
       $mtaTemplate->setValue("ASSOCIATED_DATA", $assocData);
@@ -659,6 +695,8 @@ class MTA{
       $cc= array($repositoryManagerEmail, $scientistEmail, $_REQUEST['pi_email']);
       
       shell_exec('echo "'.$emailBody.'"|'.Config::$config['mutt_bin'].' -a '.$mtaDocument.' -c '.implode(",", $cc).' -F '.Config::$config['mutt_config'].' -s "'.$emailSubject.'" -- '.$legalEmail);
+      
+      $this->return['error'] = false;
    }
 }
 ?>

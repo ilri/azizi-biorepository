@@ -37,6 +37,7 @@ function VisualizeSamples() {
    
    window.vs.loadingDialog = jQuery("#loading_box");
    window.vs.loadingDialog.show();
+   window.vs.loadingDialog.css('z-index', 6);
    
    window.vs.assets = {
       toggleOff: "url(images/ic_action_cancel.png)",
@@ -1304,6 +1305,8 @@ VisualizeSamples.prototype.submitMTARequest = function(){
   }
   
   //if we've come this far, data's validated and fine
+  $("#mta_submit_btn").attr("disabled", true);
+  window.vs.loadingDialog.show();
   jQuery.ajax({
      url:'mod_ajax.php?page=mta&do=process_mta',
      method:'POST',
@@ -1319,9 +1322,23 @@ VisualizeSamples.prototype.submitMTARequest = function(){
         assoc_data:$("#mta_assoc_data").val(),
         filters:window.JSON.stringify(window.vs.filters)
      },
-     success:function(){
-        window.vs.mtaDialog.hide();
-        window.alert("Your request has been successfully submitted");
+     success:function(data){
+        console.log(data);
+        var json = jQuery.parsJSON(data);
+        if(json.error == false){
+           window.vs.mtaDialog.hide();
+           window.alert("Your request has been successfully submitted");
+        }
+        else {
+           window.alert(json.error_message);
+        }
+     },
+     error:function(){
+        window.alert("An error occurred while proccessing your request");
+     },
+     complete: function(){
+        window.vs.loadingDialog.hide();
+        $("#mta_submit_btn").removeAttr("disabled");
      }
   });
   return true;
