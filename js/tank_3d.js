@@ -27,7 +27,7 @@ function Tank3D(sector) {
    }
    
    jQuery(window.r3d.mtaBoxListDiv).hide();
-   window.r3d.tmp.mta_box = undefined;
+   //window.r3d.tmp.mta_box = undefined;//TODO:might not work
    
    //create global variables
    
@@ -158,7 +158,7 @@ Tank3D.prototype.initScene = function(){
  * @returns {undefined}
  */
 Tank3D.prototype.clear = function(){
-   window.r3d.tmp.mta_box = undefined;
+   //window.r3d.tmp.mta_box = undefined;
    jQuery(window.r3d.mtaBoxListDiv).hide();
    
    jQuery(window.r3d.statsBox).hide();
@@ -447,7 +447,9 @@ Tank3D.prototype.onRackClicked = function(raycaster){
             }
          }
       }
-      window.r3d.tmp.mta_box = {id: window.r3d.t3d.meshes[clickedBoxes[0]].data.box_id, name: window.r3d.t3d.meshes[clickedBoxes[0]].data.box_name};
+      
+      if(typeof window.r3d.tmp.mta_box == 'undefined') window.r3d.tmp.mta_box = new Array();
+      window.r3d.tmp.mta_box.push({id: window.r3d.t3d.meshes[clickedBoxes[0]].data.box_id, name: window.r3d.t3d.meshes[clickedBoxes[0]].data.box_name});
       
       window.r3d.moveCameraToObject(window.r3d.t3d.meshes[clickedBoxes[0]].mesh, false, null, 3.2);
       window.r3d.t3d.showBoxStatistics(window.r3d.t3d.meshes[clickedBoxes[0]].data);

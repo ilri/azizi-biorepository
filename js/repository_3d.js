@@ -177,8 +177,10 @@ function Repository3D(inTemplate) {
                window.r3d.mtaFinalList.push({id:window.r3d.tmp.mta_boxes[i].id, name:window.r3d.tmp.mta_boxes[i].name});
             }
          }
-         else {
-            window.r3d.mtaFinalList.push({id:window.r3d.tmp.mta_box.id, name:window.r3d.tmp.mta_box.name});
+         else {//use boxes that where individually picked out and added to the MTA list
+            for(var i = 0; i < window.r3d.tmp.mta_box.length; i++){
+               window.r3d.mtaFinalList.push({id:window.r3d.tmp.mta_box[i].id, name:window.r3d.tmp.mta_box[i].name});
+            }
          }
       });
       
@@ -1870,7 +1872,8 @@ Repository3D.prototype.resetMTABoxes = function() {
    
    window.r3d.tmp['mta_boxes'] = new Array();
    
-   jQuery(window.r3d.mtaButton).hide();
+   if(typeof window.r3d.tmp.mta_box == "undefined") jQuery(window.r3d.mtaButton).hide();//only hide the MTA button if user has not already started adding individual boxes to the MTA
+   
    jQuery(window.r3d.addBoxMTAButton).hide();
    
 };
