@@ -26,22 +26,35 @@ class MTA{
       if(OPTIONS_REQUESTED_SUB_MODULE == "process_mta"){
          $returnJson = $this->processMTA();
          echo $returnJson;
-      }   
+      }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'send_data'){
+         $returnJson = $this->sendSampleData();
+         echo $returnJson;
+      }
    }
    
    private function processMTA(){
       //check if user provided sample ids or filters
       $sampleIDs = array();
       
-      if(isset($_REQUEST['sample_ids'])){
-         $sampleIDs = explode(",", $_REQUEST['sample_ids']);
+      if(isset($_REQUEST['sample_ids']) && strlen($_REQUEST['sample_ids']) > 0){
+         $sampleIDs = array_merge($sampleIDs, explode(",", $_REQUEST['sample_ids']));
+         $this->Dbase->CreateLogEntry("Number of samples now stands at = ".count($sampleIDs), "debug");
       }
-      else if(isset($_REQUEST['filters'])){
-         $sampleIDs = $this->getSampleIDs();
+      
+      if(isset($_REQUEST['filters']) && strlen($_REQUEST['filters']) > 0){
+         $sampleIDs = array_merge($sampleIDs, $this->getSampleIDs());
+         $this->Dbase->CreateLogEntry("Number of samples now stands at = ".count($sampleIDs), "debug");
       }
-      else if(isset($_REQUEST['box_ids'])){
-         $sampleIDs = $this->getSampleIDs();
+      else if(isset($_REQUEST['box_ids']) && strlen($_REQUEST['box_ids']) > 0){
+         $sampleIDs = array_merge($sampleIDs, $this->getSampleIDs());
+         $this->Dbase->CreateLogEntry("Number of samples now stands at = ".count($sampleIDs), "debug");
       }
+      else if(isset($_REQUEST['solr_query']) && strlen($_REQUEST['solr_query']) > 0){
+         $sampleIDs = array_merge($sampleIDs, $this->getSampleIDs());
+         $this->Dbase->CreateLogEntry("Number of samples now stands at = ".count($sampleIDs), "debug");
+      }
+      $this->Dbase->CreateLogEntry("Sample ids = ".print_r($sampleIDs, true), "debug");
       
       //check validity of the data
       $result = $this->validateMTAData($sampleIDs);
@@ -52,7 +65,7 @@ class MTA{
 
          if($mtaID  !== 0){
             //generate sample spreadsheet
-            $samplesDocument = $this->generateSamplesSpreadsheet($sampleIDs);
+            $samplesDocument = $this->generateSamplesSpreadsheet($sampleIDs, "MTA_ILRI_". str_replace(" ", "_", $_REQUEST['org']) . "_samples.xlsx");
             
             //generate mta document. Do this last
             $mtaDocument = $this->generateMTADocument($sampleIDs);
@@ -91,6 +104,65 @@ class MTA{
       }
       
       return json_encode($this->return);
+   }
+   
+   private function sendSampleData(){
+      $sampleIDs = $this->getSampleIDs();
+      $stabilateIDs = $this->getStabilateIDs();
+      
+      $samplesDocument = $this->generateSamplesSpreadsheet($sampleIDs, "ILRI_samples_".date('Y-m-d_H-i-s').".xlsx");
+      $stabilatesDocument = $this->generateStabilatesSpreadsheet($stabilateIDs, "ILRI_stabilates_".date('Y-m-d_H-i-s').".xlsx");
+      
+      if(isset($_REQUEST['user_email']) && strlen($_REQUEST['user_email']) > 0){
+         $this->sendDataEmail($_REQUEST['user_email'], $samplesDocument, $stabilatesDocument, $_REQUEST['solr_query']);
+      }
+      else {
+         $this->return['error'] = true;
+         $this->return['error_message'] = 'Email address not provided';
+      }
+      return json_encode($this->return);
+   }
+   
+   private function getStabilateIDs(){
+      if(isset($_REQUEST['solr_query'])){
+         /* curl to the azizi project (has a module for searching the solr server.
+          * You really don't want to replicate that code or you might run the 
+          * risk of not getting the same results as the user)
+          */
+         $stabilateIDs = array();
+         $queries = explode("#@$!", $_REQUEST['solr_query']);
+         foreach ($queries as $currQuery){
+            $this->Dbase->CreateLogEntry("Getting stabilate IDs from the solr server","debug");
+            $url = 'http://'.$_SERVER['SERVER_ADDR'].'/azizi/mod_ajax.php?page=search&q='.urlencode($_REQUEST['solr_query']).'&start=0&size=50000&light=1';
+            $this->Dbase->CreateLogEntry("Solr search URL = ".$url,"debug");
+            $ch = curl_init($url);
+
+            curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+
+            $result = curl_exec($ch);
+            $this->Dbase->CreateLogEntry("Result = ".$result,"debug");
+            $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $rawData = json_decode($result, true);
+            $data = $rawData['data'];
+            for($index = 0; $index < count($data); $index++){
+               if($data[$index]['collection'] == 'stabilates'){
+                  $stabilateIDs[] = $data[$index]['stab_id'];
+               }
+            }
+
+            if(count($sampleIDs) == 0){
+               $this->return['error'] = false;
+               $this->return['error_message'] = "No stabilates found";
+            }
+         }
+         $this->Dbase->CreateLogEntry("Stabilate ids = ".print_r($stabilateIDs, true),"debug");
+         return $stabilateIDs;
+      }
+      return array();
    }
    
    private function getSampleIDs(){
@@ -156,6 +228,44 @@ class MTA{
             $sampleIDs[] = $currResult['count'];
          }
          $this->Dbase->CreateLogEntry("Found ".count($sampleIDs)." samples", "info");
+         return $sampleIDs;
+      }
+      else if(isset($_REQUEST['solr_query'])){
+         /* curl to the azizi project (has a module for searching the solr server.
+          * You really don't want to replicate that code or you might run the 
+          * risk of not getting the same results as the user)
+          */
+         $sampleIDs = array();
+         $queries = explode("#@$!", $_REQUEST['solr_query']);
+         foreach ($queries as $currQuery){
+            $this->Dbase->CreateLogEntry("Getting sample IDs from the solr server","debug");
+            $url = 'http://'.$_SERVER['SERVER_ADDR'].'/azizi/mod_ajax.php?page=search&q='.urlencode($_REQUEST['solr_query']).'&start=0&size=50000&light=1';
+            $this->Dbase->CreateLogEntry("Solr search URL = ".$url,"debug");
+            $ch = curl_init($url);
+
+            curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+
+            $result = curl_exec($ch);
+            $this->Dbase->CreateLogEntry("Result = ".$result,"debug");
+            $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $rawData = json_decode($result, true);
+            $data = $rawData['data'];
+            for($index = 0; $index < count($data); $index++){
+               if($data[$index]['collection'] == 'samples'){
+                  $sampleIDs[] = $data[$index]['sample_id'];
+               }
+            }
+
+            if(count($sampleIDs) == 0){
+               $this->return['error'] = false;
+               $this->return['error_message'] = "No samples found";
+            }
+         }
+         
          return $sampleIDs;
       }
       return array();
@@ -277,7 +387,7 @@ class MTA{
               "storageSafety" => $storageSafety,
               "assocData" => $assocData,
               "ilriScientistName" => "Steve Kemp",
-              "ilriScientistTitle" => "Deputy Director General",
+              "ilriScientistTitle" => "Animal Biosciences Program Leader",
               "ilriScientistEmail" => "s.kemp@cgiar.org"
           );
           $result = $this->Dbase->ExecuteQuery($query, $values);
@@ -317,10 +427,159 @@ class MTA{
       $this->Dbase->ExecuteQuery($query, array("mtaID" => $mtaID));
    }
    
-   private function generateSamplesSpreadsheet($sampleIDs){
+   private function generateStabilatesSpreadsheet($stabilateIDs, $filename){
+      $email = $_REQUEST['user_email'];
+      
+      if(count($stabilateIDs) > 0){
+         //build query to fetch stabilate data
+         $database = Config::$config['stabilate_db'];
+         $query = "SELECT a.`stab_no`, a.`locality`, a.`number_frozen`, a.`strain_count`,".
+           " a.`strain_morphology`, a.`strain_infectivity`, a.`strain_pathogenicity`, b.`host_name`,".
+           " c.`parasite_name`, a.`isolation_date`, d.`method_name` AS  `isolation_method`,".
+           " a.`preserved_type`, a.`preservation_date`, e.`method_name` AS  `preservation_method`, f.`host_name` AS `infection_host`,".
+           " g.`user_names`, h.`country_name`, a.`stabilate_comments`".
+           " FROM $database.`stabilates` AS a".
+             " LEFT JOIN $database.`hosts` AS b ON a.host = b.id".
+             " LEFT JOIN $database.`parasites` AS c ON a.`parasite_id` = c.id".
+             " LEFT JOIN $database.`isolation_methods` AS d ON a.`isolation_method` = d.id".
+             " LEFT JOIN $database.`preservation_methods` AS e ON a.`freezing_method` = e.id".
+             " LEFT JOIN $database.`infection_host` AS f ON a.`infection_host` = f.id".
+             " LEFT JOIN $database.`users` AS g ON a.`frozen_by` = g.id".
+             " LEFT JOIN $database.`origin_countries` AS h ON a.country = h.id".
+           " WHERE a.id in(".implode(",", $stabilateIDs).")";
+
+         //fetch result from query just created
+         $fetchedRows = $this->Dbase->ExecuteQuery($query);
+         $this->Dbase->CreateLogEntry("num fetched rows = ".  count($fetchedRows), "debug");
+         $stabilates = array();
+         if($fetchedRows == 1){
+            $this->return['error'] = true;
+            $this->return['error_message'] = "An error occurred while getting stabilates from the database";
+         }
+         else {
+            $stabilates = $fetchedRows;
+         }
+         
+         /*$this->Dbase->CreateLogEntry("ids = ".  implode(",", $stabilateIDs), "debug");
+         $this->Dbase->CreateLogEntry("query = ".$query, "debug");*/
+
+         require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+         $phpExcel = new PHPExcel();
+         $phpExcel->getProperties()->setCreator($email);
+         $phpExcel->getProperties()->setLastModifiedBy($email);
+         $phpExcel->getProperties()->setTitle("ILRI Biorepository Stabilates");
+         $phpExcel->getProperties()->setSubject("Created using Azizi Biorepository's Software Systems");
+         $phpExcel->getProperties()->setDescription("This Excel file has been generated using Azizi Biorepository's Software Systems that utilize the PHPExcel library on PHP. These Software Systems were created by Jason Rogena (j.rogena@cgiar.org)");
+
+         //headings in the order you want them to appear on the excel sheet
+         $headings = array(
+             "stab_no" => "Stabilate Number",
+             "locality" => "Locality",
+             "country_name" => "Country",
+             "number_frozen" => "Number Frozen",
+             "strain_count" => "Strain Count",
+             "strain_morphology" => "Strain Morphology",
+             "strain_infectivity" => "Strain Infectivity",
+             "strain_pathogenicity" => "Strain Pathogenicity",
+             "preservation_method" => "Preservation Method",
+             "preservation_date" => "Preservation Date",
+             "preserved_type" => "Type Preserved",
+             "host_name" => "Name of Host",
+             "parasite_name" => "Name of Parasite",
+             "isolation_date" => "Isolation Date",
+             "isolation_method" => "Isolation Method",
+             "infection_host" => "Infection Host",
+             "user_names" => "Preserved By",
+             "stabilate_comments" => "Comments"
+         );
+
+         for($index = 0; $index < count($headings); $index++){
+            $headingKeys = array_keys($headings);
+
+            $cIndex = PHPExcel_Cell::stringFromColumnIndex($index);
+            $phpExcel->getActiveSheet()->setTitle("Stabilates");
+            $columnName = $headings[$headingKeys[$index]];
+            $phpExcel->getActiveSheet()->setCellValue($cIndex."1", $columnName);
+
+            $phpExcel->getActiveSheet()->getStyle($cIndex."1")->getFont()->setBold(TRUE);
+            $phpExcel->getActiveSheet()->getColumnDimension($cIndex)->setAutoSize(true);
+            for($sIndex = 0; $sIndex < count($stabilates); $sIndex++){
+               $rIndex = $sIndex + 2;
+               $phpExcel->getActiveSheet()->setCellValue($cIndex.$rIndex, $stabilates[$sIndex][$headingKeys[$index]]);
+            }
+         }
+
+         //build query to fetch passages data
+         $query = "SELECT d.`stab_no`, a.`passage_no`, a.`inoculum_ref`, a.`infection_duration`, a.`number_of_species`, a.`radiation_freq`, a.`radiation_date`,".
+           " b.`inoculum_name`, c.`species_name`".
+         " FROM $database.`passages` AS a".
+           " INNER JOIN $database.`inoculum` AS b ON a.`inoculum_type` = b.`id`".
+           " INNER JOIN $database.`infected_species` AS c ON a.`infected_species` = c.`id`".
+           " INNER JOIN $database.`stabilates` AS d ON a.stabilate_ref = d.id".
+         " WHERE a.`stabilate_ref` in (".implode(",", $stabilateIDs).")";
+
+         //fetch result from the query
+         $fetchedRows = $this->Dbase->ExecuteQuery($query);
+         $passages = array();
+         if($fetchedRows == 1) {
+            $this->return['error'] = true;
+            $this->return['error_message'] = "An error occurred while trying to get stabilate passages from the database";
+         }
+         else {
+            $passages = $fetchedRows;
+         }
+
+         $headings = array(
+             "stab_no" => "Stabilate Number",
+             "passage_no" => "Passage Number",
+             "inoculum_ref" => "Inoculum Reference",
+             "infection_duration" => "Infection Duration",
+             "number_of_species" => "Number of Species",
+             "radiation_freq" => "Radiation Frequency",
+             "radiation_date" => "Radiation Date",
+             "inoculum_name" => "Inoculum Name",
+             "species_name" => "Infected Species"
+         );
+
+         //TODO: add the passages the the spreadsheet
+         if(count($passages) > 0){
+            $phpExcel->createSheet(1);
+            $phpExcel->setActiveSheetIndex(1);
+            $phpExcel->getActiveSheet()->setTitle("Passages");
+            for($index = 0; $index < count($headings); $index++){
+               $headingKeys = array_keys($headings);
+
+               $cIndex = PHPExcel_Cell::stringFromColumnIndex($index);
+               $columnName = $headings[$headingKeys[$index]];
+               $phpExcel->getActiveSheet()->setCellValue($cIndex."1", $columnName);
+               $phpExcel->setActiveSheetIndex(1);
+               $phpExcel->getActiveSheet()->getStyle($cIndex."1")->getFont()->setBold(TRUE);
+               $phpExcel->getActiveSheet()->getColumnDimension($cIndex)->setAutoSize(true);
+               for($sIndex = 0; $sIndex < count($passages); $sIndex++){
+                  $rIndex = $sIndex + 2;
+                  $phpExcel->getActiveSheet()->setCellValue($cIndex.$rIndex, $passages[$sIndex][$headingKeys[$index]]);
+               }
+            }
+            $phpExcel->setActiveSheetIndex(0);
+         }
+
+         $tmpDir = "tmp";
+         if(!file_exists($tmpDir)){
+            mkdir($tmpDir, 0755);//everything for owner, read & exec for everybody else
+         }
+         $filename = $tmpDir."/".$filename;
+         $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
+         $objWriter->save($filename);
+
+         return $filename;
+      }
+      return null;
+   }
+   
+   private function generateSamplesSpreadsheet($sampleIDs, $filename){
       //$sampleIDs = explode(",", $_REQUEST['sample_ids']);
       
-      if(count($sampleIDs) < 50000){//do not allow downloading of data greater than 50000 samples
+      if(count($sampleIDs) < 50000 && count($sampleIDs) > 0){//do not allow downloading of data greater than 50000 samples
          $implodedSIDs = implode(",", $sampleIDs);
          //get box owners
          
@@ -418,12 +677,13 @@ class MTA{
 
          require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
 
+         $email = $_REQUEST['user_email'];
          $phpExcel = new PHPExcel();
          $phpExcel->getProperties()->setCreator($email);
          $phpExcel->getProperties()->setLastModifiedBy($email);
          $phpExcel->getProperties()->setTitle("ILRI Biorepository Samples");
-         $phpExcel->getProperties()->setSubject("Created using Azizi Samples Visualizer");
-         $phpExcel->getProperties()->setDescription("This Excel file has been generated using Azizi Samples Visualizer that utilizes the PHPExcel library on PHP. Azizi Samples Visualizer was created by Jason Rogena (j.rogena@cgiar.org)");
+         $phpExcel->getProperties()->setSubject("Created using Azizi Biorepository's Software Systems");
+         $phpExcel->getProperties()->setDescription("This Excel file has been generated using Azizi Biorepository's Software Systems that utilizes the PHPExcel library on PHP. These Software Systems were created by Jason Rogena (j.rogena@cgiar.org)");
 
          //merge the open access and closed access data sets
          $samples = array();
@@ -498,7 +758,7 @@ class MTA{
              "origin" => "Origin",
              "open_access" => "Open Access",
              "keeper" => "Contact Person",
-             "keeper_email" => "C.P Email"
+             "keeper_email" => "Contact Person's Email"
          );
 
          for($index = 0; $index < count($columnHeadings); $index++){
@@ -584,7 +844,7 @@ class MTA{
             mkdir($tmpDir, 0755);//everything for owner, read & exec for everybody else
          }
 
-         $filename = $tmpDir ."/MTA_ILRI_". str_replace(" ", "_", $_REQUEST['org']) . "_samples.xlsx";
+         $filename = $tmpDir."/".$filename;
 
          $this->Dbase->CreateLogEntry("Saving xls file", "fatal");
          $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
@@ -697,6 +957,18 @@ class MTA{
       shell_exec('echo "'.$emailBody.'"|'.Config::$config['mutt_bin'].' -a '.$mtaDocument.' -c '.implode(",", $cc).' -F '.Config::$config['mutt_config'].' -s "'.$emailSubject.'" -- '.$legalEmail);
       
       $this->return['error'] = false;
+   }
+   
+   private function sendDataEmail($address, $samplesDocument, $stabilatesDocument, $query){
+      $emailSubject = "ILRI Samples Searched on ".date('d-m-Y H:i:s');
+      $emailBody = "Find attached data on samples you search for on Azizi (ILRI's Biorepository site) using the following query: \n"
+              ."    '".$query."'\n\n"
+              ."Regards, \n"
+              . "Azizi Biorepository";
+      if($samplesDocument == null) $samplesDocument = "";
+      if($stabilatesDocument == null) $stabilatesDocument = "";
+      
+      shell_exec('echo "'.$emailBody.'"|'.Config::$config['mutt_bin'].' -a '.$samplesDocument.' '.$stabilatesDocument.' -F '.Config::$config['mutt_config'].' -s "'.$emailSubject.'" -- '.$address);
    }
 }
 ?>
