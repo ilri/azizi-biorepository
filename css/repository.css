@@ -345,7 +345,7 @@ body {
 .center{ text-align: center; clear: both;}
 .odk_parser div, .user_form div{ margin: 8px 0px; }
 .odk_parser label, .user_form label{ width: 350px !important; }
-.odk_parser input[type="text"], .odk_parser select, .odk_parser input[type="file"], .user_form input[type="text"], .user_form select, .user_form input[type="password"]{ height: 25px !important; margin-left: 7px !important; }
+.odk_parser input[type="text"], .odk_parser select, .odk_parser input[type="file"], .user_form input[type="text"], .user_form select, .user_form input[type="password"], .user_form input[type="email"]{ height: 25px !important; margin-left: 7px !important; }
 #parseType, #dwnldImages{width: 170px; height: 28px !important; }
 .issue_inv div{ margin: 8px 0px; }
 .issue_inv label{ width: 350px !important; }
