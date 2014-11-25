@@ -411,21 +411,36 @@ class ProcODKForm {
                }
                else{
                   //check if current cell is an image
-if(preg_match("/.+\.jpg/", $rowValues[$elementIndex]) === 1){
- $this->Dbase->CreateLogEntry("** is image ".$rowValues[$elementIndex]." rowIndex = ".($rowIndex)." parentIndex = ".$parentIndex,"fatal");
- $cId = $rowKeys[$elementIndex];
- $ordinal = $rowIndex + 1;
- if(strlen($parent_heading) == 0){//means we are in the main sheet
-   $submissionID = $this->submissionIDs[$rowIndex];//since the headings also had a rowIndex but submissionIDs started with first response
-   $blobKey = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]/".$cId;
- }
- else {
-   $submissionID = $this->submissionIDs[$parentIndex];
-   $blobKey = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]/".$parent_heading."[@ordinal=".$ordinal."]/".$cId;
- }
- $downloadURL = "http://azizi.ilri.cgiar.org/aggregate/view/binaryData?blobKey=".urlencode($blobKey);
- $this->Dbase->CreateLogEntry("** is image url ".$downloadURL, "fatal");
-}
+                  if(preg_match("/.+\.jpg/", $rowValues[$elementIndex]) === 1){
+                   /*cell is an image, we need to disregard whatever is in the cell and construct a url
+                    * Refer to https://groups.google.com/forum/#!topic/opendatakit/uzMy9az9eGE
+                   */
+                   $this->Dbase->CreateLogEntry("** is image ".$rowValues[$elementIndex]." rowIndex = ".($rowIndex)." parentIndex = ".$parentIndex,"fatal");
+                   $cId = $rowKeys[$elementIndex];
+                   //if(strlen($parent_heading) == 0){//means we are in the main sheet
+                   if($parentLink == -1){
+                     $submissionID = $this->submissionIDs[$rowIndex];//since the headings also had a rowIndex but submissionIDs started with first response
+                     $blobKey = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]/".$cId;
+                     $downloadURL = "http://azizi.ilri.cgiar.org/aggregate/view/binaryData?blobKey=".urlencode($blobKey);
+                   }
+                   else {
+                      //get 1 based index of row in current table and use that as ordinal. Each questionnaire response usually has one table
+                      if(!isset($this->tableLinks[$parentLink])){//weird because heading should have already been set
+                         $ordinal = 0;
+                         $this->Dbase->CreateLogEntry("An error occurred while trying to calculate the ordinal using the row index of row with image in html table. Setting ordinal to 0", "fatal");
+                      }
+                      else {
+                         $ordinal = count($this->tableLinks[$parentLink]);//assuming that the first row contains the heading
+                      }
+
+                     $submissionID = $this->submissionIDs[$parentIndex];
+                     $blobKey = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]/".$parent_heading."[@ordinal=".$ordinal."]/".$cId;
+                     $downloadURL = '<a href="'."http://azizi.ilri.cgiar.org/aggregate/view/binaryData?blobKey=".urlencode($blobKey).'" target="_blank">View</a>';
+                   }
+
+                   $this->Dbase->CreateLogEntry("** is image url ".$downloadURL, "fatal");
+                   $rowValues[$elementIndex] = $downloadURL;
+                  }
                   
                   $csvElementIndex = array_search($currHeading, $this->headingRows[$parentSheet]);
                   if($csvElementIndex === false){//element heading does not exist in array
