@@ -137,7 +137,7 @@ class MTA{
             $this->Dbase->CreateLogEntry("Solr search URL = ".$url,"debug");
             $ch = curl_init($url);
 
-            curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+            //curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
 
