@@ -19,6 +19,7 @@ function VisualizeSamples() {
    window.vs.testContainer = jQuery("#test_container");
    window.vs.testList = jQuery("#test_list");
    window.vs.resultContainer = jQuery("#result_container");
+   window.vs.resultContainer.hide();//remove this to enable test results
    window.vs.resultList = jQuery("#result_list");
    window.vs.playButton = jQuery("#play_button");
    window.vs.stopButton = jQuery("#stop_button");
@@ -113,10 +114,10 @@ function VisualizeSamples() {
       console.log("test clicked");
       window.vs.toggleTests();
    });
-   jQuery("#result_label").click(function (){
+   /*jQuery("#result_label").click(function (){
       console.log("results clicked");
       window.vs.toggleResults();
-   });
+   });*/
    
    //initialize the toggle handlers
    window.vs.projectToggle.click(function(){
@@ -223,9 +224,9 @@ function VisualizeSamples() {
       window.vs.filter();
    });
    
-   window.vs.resultToggle.click(function(){
+   /*window.vs.resultToggle.click(function(){
       window.vs.toggleResults();
-   });
+   });*/
    
    window.vs.resultSelectAll.change(function(){
       window.vs.resultToggle.css("background-image", window.vs.assets.loading);
