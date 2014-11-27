@@ -333,7 +333,8 @@ body {
 #box_location .loc_divs{width: 250px;} 
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
-.jqx-grid-column-header{z-index:0!important;}
+.jqx-grid-column-header, #statusbarspace_recharge_table{z-index:0!important;}
+
 #tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes, #recharge_details_div {margin: 5px;}
 
 #inventory_form .left-align {width: 240px;}
@@ -878,7 +879,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
    box-shadow:0 1px 2px #aaa;
 }
 
-#email_dialog, #mta_dialog, #instructions_dialog {
+#email_dialog, #mta_dialog, #instructions_dialog, .repo_dialog {
    display: none;
    z-index: 3;
    width: 30rem;
@@ -891,12 +892,12 @@ ul.ui-autocomplete {z-index: 1000!important; }
    font-size: 15px;
 }
 
-#email_dialog.a:link, #mta_dialog.a:link {
+#email_dialog.a:link, #mta_dialog.a:link, .repo_dialog.a:link {
    color: #5677fc;
    text-decoration: none;
 }
 
-#email_dialog_toggle, #mta_dialog_toggle, #instructions_dialog_toggle, #mta_box_list_toggle {
+#email_dialog_toggle, #mta_dialog_toggle, #instructions_dialog_toggle, #mta_box_list_toggle, .repo_dialog_close {
    cursor: pointer;
    width: 1.2rem;
    height: 1.2rem;
