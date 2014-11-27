@@ -129,7 +129,7 @@ class Recharges{
       var recharges = new Recharges();
       recharges.setStorageRechargePeriods(<?php echo $psTimestamp; ?>);
       
-      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
+      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
    });
 </script>
       <?php
@@ -277,8 +277,8 @@ class Recharges{
          if(count($result) > 0){
             $fileName = "space_recharge_".$result[0]['end_date'].".csv";
 
-            $emailSubject = "Storage space recharge for ".$result[0]['project'];
-            $emailBody = "Find attached a csv file containing data for storage space recharge to ".$result[0]['project']." for the period ending ".$result[0]['end_date'].".";
+            $emailSubject = "Storage space recharges";
+            $emailBody = "Find attached a csv file containing data for storage space recharged for the period ending ".$result[0]['end_date'].".";
          }
          else {
             $fileName = "no_data.csv";
@@ -286,8 +286,8 @@ class Recharges{
             $query = "select value from ".Config::$config['azizi_db'].".modules_custom_values where val_id = :project_id";
             $projectName = $this->Dbase->ExecuteQuery($query, array("project_id" => $projectID));
 
-            $emailSubject = "Storage space recharge for ".$projectName[0]['value'];
-            $emailBody = "Could not file boxes owned by ".$projectName[0]['value']." for storage recharging for the period ending ".$periodEnding.". This might mean the column sc_period_ending for all the boxes associated to this project are null or set to '0000-00-00'. Make sure you record the last date of storage recharge for all the boxes, or you'll end up losing money ;) .";
+            $emailSubject = "Storage space recharges";
+            $emailBody = "Could not file boxes for storage recharging for the period ending ".$periodEnding.". This might mean the column sc_period_ending for all the boxes associated to this project are null or set to '0000-00-00'. Make sure you record the last date of storage recharge for all the boxes, or you'll end up losing money ;) .";
          }
 
          //send the file back to the client
