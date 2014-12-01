@@ -34,10 +34,18 @@ class Recharges{
             $this->submitSpaceRecharge();
          }
       }
-      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ln2'){
-         
-      }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'inventory'){
+         if(OPTIONS_REQUESTED_ACTION == ''){
+            $this->showInventoryPage();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'get_recharges') {
+            $this->getPendingInventoryRecharges();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'submit_recharge'){
+            $this->submitInventoryRecharge();
+         }
+      }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ln2'){
          
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'labels'){
@@ -117,16 +125,16 @@ class Recharges{
       </div>
    </div>
    <div id="space_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
-   <div class="center"><button type="button" class="btn btn-primary" id="recharge_storage_btn">Recharge</button></div>
+   <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
 </div>
-<div id="recharge_storage_dialog" class="repo_dialog">
-   <div id="recharge_storage_dialog_close" class="repo_dialog_close"></div>
+<div id="recharge_dialog" class="repo_dialog">
+   <div id="recharge_dialog_close" class="repo_dialog_close"></div>
    <div>Are you sure you want to complete the recharge? Once done, your changes will be hard to undo.</div>
-   <div class="center"><button type="button" class="btn btn-danger" id="confirm_recharge_storage_btn">Recharge</button></div>
+   <div class="center"><button type="button" class="btn btn-danger" id="confirm_recharge_btn">Recharge</button></div>
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
-      var recharges = new Recharges();
+      var recharges = new Recharges(MODE_STORAGE);
       recharges.setStorageRechargePeriods(<?php echo $psTimestamp; ?>);
       
       $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
@@ -137,6 +145,35 @@ class Recharges{
    
    public function showInventoryPage($addInfo = ''){
       
+      Repository::jqGridFiles();//Really important if you want jqx to load
+?>
+<script type="text/javascript" src="js/recharges.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<div id="inventory">
+   <div id="inventory_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
+   <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
+</div>
+<div id="recharge_dialog" class="repo_dialog">
+   <div id="recharge_dialog_close" class="repo_dialog_close"></div>
+   <div>Are you sure you want to complete the recharge? Once done, your changes will be hard to undo.</div>
+   <div class="center"><button type="button" class="btn btn-danger" id="confirm_recharge_btn">Recharge</button></div>
+</div>
+<script type="text/javascript">
+   $(document).ready(function(){
+      var recharges = new Recharges(MODE_INVENTORY);
+      
+      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
+   });
+</script>
+      <?php
    }
    
    public function showLN2page($addInfo = ''){
@@ -230,9 +267,39 @@ class Recharges{
       die(json_encode($json));
    }
    
+   /**
+    * This function returns pending inventory recharges
+    */
+   private function getPendingInventoryRecharges(){
+      $query = "select 1 as recharge, a.id, a.item, a.issued_by, a.issued_to, a.date_issued, b.name as charge_code, a.alt_ccode, a.pp_unit, a.quantity"
+               . " from inventory as a"
+               . " left join ln2_chargecodes as b on a.chargecode_id=b.id"
+               . " where item_borrowed = 0 and rc_timestamp is null";
+      $result = $this->Dbase->ExecuteQuery($query);
+      if(is_array($result)){
+         for($i = 0 ; $i < count($result); $i++){
+            if($result[$i]['charge_code'] == null){
+               $result[$i]['charge_code'] = $result[$i]['alt_ccode'];
+            }
+            unset($result[$i]['alt_ccode']);
+            
+            $result[$i]['total'] = 0;
+            if(is_numeric($result[$i]['pp_unit']) && is_numeric($result[$i]['quantity'])){
+               $result[$i]['total'] = $result[$i]['pp_unit'] * $result[$i]['quantity'];
+            }
+         }
+      }
+      else {
+         $result = array();
+      }
+      
+      $json = array('data'=>$result);
+      die(json_encode($json));
+   }
+   
    private function submitSpaceRecharge(){
       //get all project ids
-      $projectIDs = explode(",", $_GET['project_ids']);
+      $projectIDs = explode(",", $_REQUEST['project_ids']);
       
       if(count($projectIDs) > 0){
          //get all boxes for the projects
@@ -253,7 +320,7 @@ class Recharges{
                   $chargeCode = $chargeCodes[0]['name'];
                }
 
-               $result = array_merge($result, $this->getSpaceBoxes($currProjectID, $_GET['period_ending'], $_GET['price'], $chargeCode));
+               $result = array_merge($result, $this->getSpaceBoxes($currProjectID, $_REQUEST['period_ending'], $_REQUEST['price'], $chargeCode));
             }
             else {
                $this->Dbase->CreateLogEntry("Current project from web client doesnt have a numeric id ($currProjectID)","fatal");
@@ -290,24 +357,101 @@ class Recharges{
             $emailBody = "Could not file boxes for storage recharging for the period ending ".$periodEnding.". This might mean the column sc_period_ending for all the boxes associated to this project are null or set to '0000-00-00'. Make sure you record the last date of storage recharge for all the boxes, or you'll end up losing money ;) .";
          }
 
-         //send the file back to the client
+         //send the file back
          file_put_contents("/tmp/".$fileName, $csv);
-         header('Content-type: document');
+         /*header('Content-type: document');
          header('Content-Disposition: attachment; filename='. $fileName);
          header("Expires: 0"); 
          header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
          header("Content-length: " . filesize("/tmp/".$fileName));
          header('Content-Transfer-Encoding: binary');
-         readfile("/tmp/" . $fileName);
+         readfile("/tmp/" . $fileName);*/
 
          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
 
          $this->Dbase->CreateLogEntry("Recharging file at /tmp/".$fileName, "info");
          unlink("/tmp/" . $fileName);
+         die(json_encode(array("error" => false, "error_message" => "")));
       }
       else {
          $this->Dbase->CreateLogEntry("No project ids provided for storage space recharge", "fatal");
       }
+      
+      die(json_encode(array("error" => true, "error_message" => "Something unexpected happened while trying to recharge storage space")));
+   }
+   
+   private function submitInventoryRecharge(){
+      $return = array("error" => false, "error_message" => "");
+      $this->Dbase->CreateLogEntry(print_r($_REQUEST, true), "fatal");
+      $items = $_REQUEST['items'];
+      
+      $this->Dbase->CreateLogEntry(print_r($items, true), "fatal");
+      
+      /*
+       * What can be updated in an item:
+       *  - pp_unit (and hence total price)
+       *  - charge_code
+       *  - quantity
+       *  - item
+       */
+      $ids = array();
+      foreach($items as $currItem){
+         $query = "update inventory"
+                 . " set pp_unit = :pp_unit, rc_charge_code = :charge_code, quantity = :quantity, rc_timestamp = now(), item = :item"
+                 . " where id = :id";
+         $this->Dbase->ExecuteQuery($query, array("pp_unit" => $currItem['pp_unit'], "charge_code" => $currItem['charge_code'], "quantity" => $currItem['quantity'], "item" => $currItem['item'], "id"=> $currItem['id']));
+         $ids[] = $currItem['id'];
+      }
+      
+      $query = "select a.id, a.item, a.issued_by, a.issued_to, a.date_issued, a.rc_charge_code as charge_code, a.pp_unit, a.quantity"
+                 . " from inventory as a"
+                 . " where a.id in (".  implode(",", $ids).")";
+       
+       $this->Dbase->CreateLogEntry($query, "fatal");
+       $result = $this->Dbase->ExecuteQuery($query);
+       if($result == 1){
+          $this->Dbase->CreateLogEntry("An error occurred while trying to get recharged items from the database", "fatal");
+          $return = array("error" => true, "error_message" => "An error occurred while running one of the queries in the database");
+          $result = array();
+       }
+       
+       $headings = array(
+           "id" => "Item ID",
+           "item" => "Item",
+           "issued_by" => "Issued By",
+           "issued_to" => "Issued To",
+           "date_issued" => "Date Issued",
+           "charge_code" => "Charge Code",
+           "pp_unit" => "Price per Unit (USD)",
+           "quantity" => "Quantity",
+           "total" => "Total Price (USD)"
+       );
+       
+       for($index = 0; $index < count($result); $index++){
+          $result[$index]['total'] = $result[$index]['quantity'] * $result[$index]['pp_unit'];
+       }
+       
+       $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
+       
+       $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
+       $this->Dbase->CreateLogEntry($csv, "fatal");
+       
+       $fileName = "item_recharge_".date('Y_m_d').".csv";
+       file_put_contents("/tmp/".$fileName, $csv);
+       
+       if(count($result) > 0){    
+          $emailSubject = "Item Recharge";
+          $emailBody = "Find attached a csv file containing data for item recharges.";
+          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+       } 
+       else {
+          $emailSubject = "Item Recharge";
+          $emailBody = "No items found that can be recharged.";
+          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
+       }
+       
+       unlink("/tmp/" . $fileName);
+       die(json_encode($return));
    }
    
    /**
