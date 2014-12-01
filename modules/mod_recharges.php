@@ -46,7 +46,15 @@ class Recharges{
          }
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ln2'){
-         
+         if(OPTIONS_REQUESTED_ACTION == ''){
+            $this->showLN2Page();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'get_recharges'){
+            $this->getPendingLN2Recharges();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'submit_recharge'){
+            $this->submitLN2Recharge();
+         }
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'labels'){
          
@@ -177,7 +185,35 @@ class Recharges{
    }
    
    public function showLN2page($addInfo = ''){
+      Repository::jqGridFiles();//Really important if you want jqx to load
+?>
+<script type="text/javascript" src="js/recharges.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<div id="ln2">
+   <div id="ln2_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
+   <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
+</div>
+<div id="recharge_dialog" class="repo_dialog">
+   <div id="recharge_dialog_close" class="repo_dialog_close"></div>
+   <div>Are you sure you want to complete the recharge? Once done, your changes will be hard to undo.</div>
+   <div class="center"><button type="button" class="btn btn-danger" id="confirm_recharge_btn">Recharge</button></div>
+</div>
+<script type="text/javascript">
+   $(document).ready(function(){
+      var recharges = new Recharges(MODE_LN2);
       
+      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
+   });
+</script>
+      <?php
    }
    
    /**
@@ -295,6 +331,51 @@ class Recharges{
       
       $json = array('data'=>$result);
       die(json_encode($json));
+   }
+   
+   private function getPendingLN2Recharges(){
+       $query = "select '1' as recharge, a.id, b.name as charge_code, a.alt_ccode, a.added_by, a.apprvd_by, a.amount_appr"
+              . " from ln2_acquisitions as a"
+              . " left join ln2_chargecodes as b on a.project_id = b.id"
+              . " where a.amount_appr is not null and a.rc_timestamp is null";
+
+       $result = $this->Dbase->ExecuteQuery($query);
+       $price = $this->getNitrogenPrice();
+       if(is_array($result)){
+         for($i = 0; $i < count($result); $i++){
+            $result[$i]['price'] = $price;
+            $result[$i]['cost'] = $price * $result[$i]['amount_appr'];
+
+            if($result[$i]['charge_code'] == null){
+               $result[$i]['charge_code'] = $result[$i]['alt_ccode'];
+            }
+            unset($result[$i]['alt_ccode']);
+         }
+      }
+      
+      $json = array('data' => $result);
+      die(json_encode($json));
+   }
+   
+   /**
+    * Gets the price of nitrogen from the database that is valid for today
+    *
+    * @return  float    Returns -1 if an error occures or the price of nitrogen
+    */
+   private function getNitrogenPrice() {
+      $query = "SELECT price FROM `ln2_prices` WHERE `start_date` <= CURDATE()";
+      $result = $this->Dbase->ExecuteQuery($query);
+      if($result!==1) {
+         if(sizeof($result)===1){
+            return $result[0]['price'];
+         }
+         else {
+            return -1;
+         }
+      }
+      else {
+         return -1;
+      }
    }
    
    private function submitSpaceRecharge(){
@@ -452,6 +533,68 @@ class Recharges{
        
        unlink("/tmp/" . $fileName);
        die(json_encode($return));
+   }
+   
+   private function submitLN2Recharge(){
+      $return = array("error" => false, "error_message" => "");
+      
+      $items = $_REQUEST['items'];
+      
+      $ids = array();
+      foreach($items as $currItem){
+         //id: rowData.id, amount_appr: rowData.amount_appr, charge_code: rowData.charge_code, price: rowData.price
+         $query = "update ln2_acquisitions"
+                 . " set amount_appr = :amount_appr, rc_timestamp = now(), rc_charge_code = :charge_code, rc_price = :price"
+                 . " where id = :id";
+         $this->Dbase->ExecuteQuery($query, array("amount_appr" => $currItem['amount_appr'], "charge_code" => $currItem['charge_code'], "price" => $currItem['price'], "id" => $currItem['id']));
+         
+         $ids[] = $currItem['id'];
+      }
+      
+      /*$query = "select b.name as charge_code, a.alt_ccode, count(*) as number_requests, group_concat(a.id) as request_ids, group_concat(distinct a.added_by) as requesters, sum(a.amount_appr) as total_ln2_requested"
+            . " from ln2_acquisitions as a"
+            . " left join ln2_chargecodes as b on a.project_id = b.id"
+            . " where a.amount_appr is not null and a.rc_timestamp is null"
+            . " group by a.project_id, a.alt_ccode";*/
+      $query = "select a.id, a.rc_charge_code as charge_code, a.added_by, a.apprvd_by, a.amount_appr, a.rc_price as price"
+              . " from ln2_acquisitions as a"
+              . " where a.id in (".  implode(",", $ids).")";
+      
+      $headings = array(
+          "id" => "Request ID", 
+          "charge_code" => "Charge Code",
+          "added_by" => "Requested By",
+          "apprvd_by" => "Approved By",
+          "amount_appr" => "Amount Approved (Litres)",
+          "price" => "Price Per Litre (USD)",
+          "total" => "Total Cost (USD)"
+      );
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      for($index = 0; $index < count($result); $index++){
+         $result[$index]['total'] = $result[$index]['price'] * $result[$index]['amount_appr'];
+      }
+      
+      $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
+      
+      $fileName = "ln2_recharge_".date('Y_m_d').".csv";
+      file_put_contents("/tmp/".$fileName, $csv);
+      
+      if(count($result) > 0){    
+         $emailSubject = "Liquid Nitrogen Recharge";
+         $emailBody = "Find attached a csv file containing data for liquid nitrogen recharges.";
+         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+      } 
+      else {
+         $emailSubject = "Liquid Nitrogen Recharge";
+         $emailBody = "No items found that can be recharged.";
+         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
+      }
+       
+      unlink("/tmp/" . $fileName);
+      
+      die(json_encode($return));
    }
    
    /**
