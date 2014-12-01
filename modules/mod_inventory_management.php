@@ -95,7 +95,7 @@ class InventoryManager extends Repository{
            <div class=""><input type="checkbox" class="form-control" name="item_returned" id="item_returned" style="width: 20px; height: 20px; margin-left: 5px;" /></div>-->
        </div>
        <div id="not_borrowed_sec" style="display: none;">
-          <div class="form-group left-align"><label for="pp_unit">Price per unit</label><input type="text" name="pp_unit" id="pp_unit" value="KES" class="input-medium" /></div>
+          <div class="form-group left-align"><label for="pp_unit">Price per unit (USD)</label><input type="text" name="pp_unit" id="pp_unit" class="input-medium" /></div>
            <div class="form-group left-align"><label for="project">Full Charge Code</label><input type="text" name="project" id="project" value="" disabled="true" size="50" class="form-control" class="input-medium" /></div>
            <div class="form-group left-align"><label for="chargeCode">Activity Code</label><input type="text" name="chargeCode" id="chargeCode" value="" class="form-control" class="input-medium" /></div>
         </div>
