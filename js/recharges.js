@@ -190,6 +190,7 @@ Recharges.prototype.initStorageSpaceTable = function(){
             {name: 'last_period'}, 
             {name: 'duration'},
             {name: 'no_boxes'},
+            {name: 'box_price'},
             {name: 'total_price'},
             {name: 'project_id'}
          ],//make sure you update these fields when you update those of the update fetch
@@ -230,11 +231,12 @@ Recharges.prototype.initStorageSpaceTable = function(){
             },
             columns: [
                {text: 'Recharge', datafield: 'recharge', columntype: 'checkbox', width: 100, sortable: false, editable: true},
-               {text: 'Project', datafield: 'project', width: 250, sortable: false, editable: true},
+               {text: 'Project', datafield: 'project', width: 200, sortable: false, editable: true},
                {text: 'Last Recharge', datafield: 'last_period', width: 150, sortable: false, editable: true},
                {text: 'Duration (days)', datafield: 'duration', width: 100, sortable: false, editable: true},
+               {text: 'Cost Per Year (USD)', datafield: 'box_price', width: 100, sortable: false, editable: true},
                {
-                  text: 'No. Boxes', datafield: 'no_boxes', width: 150, sortable: false, editable: true,
+                  text: 'No. Boxes', datafield: 'no_boxes', width: 75, sortable: false, editable: true,
                   aggregates:[{
                      'Number':function(aggregatedValue, currentValue){
                         var dataInfo = $("#space_recharge_table").jqxGrid('getdatainformation');
@@ -255,7 +257,7 @@ Recharges.prototype.initStorageSpaceTable = function(){
                   }]
                },
                {
-                  text: 'Total Cost (USD)', datafield: 'total_price', width: 150, sortable: false, editable: true,
+                  text: 'Total Cost (USD)', datafield: 'total_price', width: 175, sortable: false, editable: true,
                   aggregates:[{
                      'Total':function(aggregatedValue, currentValue){
                         var dataInfo = $("#space_recharge_table").jqxGrid('getdatainformation');
@@ -280,7 +282,18 @@ Recharges.prototype.initStorageSpaceTable = function(){
          
          
          $("#space_recharge_table").on('cellendedit', function (event) {
-            window.rc.updateSpaceRechargeProjects();
+            // column data field.
+            var dataField = event.args.datafield;
+            // row's bound index.
+            var rowBoundIndex = event.args.rowindex;
+            // cell value
+            var value = event.args.value;
+            
+            if(dataField != 'recharge' && dataField != 'box_price'){
+               Notification.show({create:true, hide:true, updateText:false, text: "Change will not be reflected in the database", error:true});
+            }
+            
+            window.rc.updateSpaceRechargeProjects(rowBoundIndex, dataField, value);
             $("#space_recharge_table").jqxGrid('refresh');
          });
          
@@ -289,14 +302,23 @@ Recharges.prototype.initStorageSpaceTable = function(){
    
 };
 
-Recharges.prototype.updateSpaceRechargeProjects = function (){
+Recharges.prototype.updateSpaceRechargeProjects = function (rowBoundIndex, dataField, value){
    var dataInfo = $("#space_recharge_table").jqxGrid('getdatainformation');
             
    window.rc.space.projects = new Array();
    for(var rowIndex = 0; rowIndex < dataInfo.rowscount; rowIndex++){
       var rowData = $("#space_recharge_table").jqxGrid('getrowdata', rowIndex);
+      if(typeof rowBoundIndex != 'undefined' && rowBoundIndex == rowIndex){
+         if(dataField == 'box_price'){
+            //$result[$i]['duration'] * $priceBoxDay * $result[$i]['no_boxes']
+            var pricePerDay = value/365;
+            rowData.total_price = Math.round(rowData.duration * pricePerDay * rowData.no_boxes * 100)/100;
+         }
+      }
+      
+      $("#space_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
       if(rowData.recharge == 1){
-         window.rc.space.projects.push(rowData.project_id);
+         window.rc.space.projects.push({project_id:rowData.project_id, box_price:rowData.box_price});
       }
    }
 };
@@ -389,6 +411,7 @@ Recharges.prototype.updateStorageSpaceTable = function(){
             {name: 'last_period'}, 
             {name: 'duration'},
             {name: 'no_boxes'},
+            {name: 'box_price'},
             {name: 'total_price'},
             {name: 'project_id'}
          ],//make sure you update these fields when you update those for the initial fetch
@@ -470,41 +493,55 @@ Recharges.prototype.submitSpaceRecharge = function(){
    if(window.rc.space.projects.length > 0){
       
       if(window.rc.space.projects.length > 0 && $("#period_ending").val().length > 0 && $("#price").val().length > 0){
-         /*var url = "mod_ajax.php?page=recharges&do=space&action=submit_recharge";
-         url += "&project_ids="+window.rc.space.projects.join(",");
-         url += "&period_ending="+$("#period_ending").val();
-         url += "&price="+$("#price").val();*/
          
-         $("#confirm_recharge_btn").attr('disabled', 'disabled');
-         //window.rc.startDownload(url);
-         
-         var data = {
-            "action":"submit_recharge",
-            "project_ids":window.rc.space.projects.join(","),
-            "period_ending":$("#period_ending").val(),
-            "price":$("#price").val()
-         };
-         
-         jQuery.ajax({
-            url:"mod_ajax.php?page=recharges&do=space",
-            data:data,
-            type:"POST",
-            async:true,
-            success:function(data){
-               console.log(data);
-               var json = jQuery.parseJSON(data);
-               if(json.error == true){
-                  Notification.show({create:true, hide:true, updateText:false, text: json.error_message, error:true});
-               }
-               else {
-                  Notification.show({create:true, hide:true, updateText:false, text: "An email has been sent to the Biorepository manager with details on the recharge", error:false});
-               }
-            },
-            error:function(){
-               console.log("an error occurred");
-               Notification.show({create:true, hide:true, updateText:false, text: "An error occurred while trying to connect to the server. Please try again", error:true});
+         var fine = true;
+         for(var index = 0; index < window.rc.space.projects.length; index++){
+            if(window.rc.space.projects[index].box_price.length == 0){
+               fine = false;
             }
-         });
+         }
+         
+         if(fine == false){
+            $("#recharge_dialog").hide();
+            Notification.show({create:true, hide:true, updateText:false, text: "Please make sure all the information in the table is filled out", error:true});
+         }
+         else {
+            /*var url = "mod_ajax.php?page=recharges&do=space&action=submit_recharge";
+            url += "&project_ids="+window.rc.space.projects.join(",");
+            url += "&period_ending="+$("#period_ending").val();
+            url += "&price="+$("#price").val();*/
+
+            $("#confirm_recharge_btn").attr('disabled', 'disabled');
+            //window.rc.startDownload(url);
+
+            var data = {
+               "action":"submit_recharge",
+               "projects":window.rc.space.projects,
+               "period_ending":$("#period_ending").val(),
+               "price":$("#price").val()
+            };
+
+            jQuery.ajax({
+               url:"mod_ajax.php?page=recharges&do=space",
+               data:data,
+               type:"POST",
+               async:true,
+               success:function(data){
+                  console.log(data);
+                  var json = jQuery.parseJSON(data);
+                  if(json.error == true){
+                     Notification.show({create:true, hide:true, updateText:false, text: json.error_message, error:true});
+                  }
+                  else {
+                     Notification.show({create:true, hide:true, updateText:false, text: "An email has been sent to the Biorepository manager with details on the recharge", error:false});
+                  }
+               },
+               error:function(){
+                  console.log("an error occurred");
+                  Notification.show({create:true, hide:true, updateText:false, text: "An error occurred while trying to connect to the server. Please try again", error:true});
+               }
+            });
+         }
       }
    }
 };

@@ -334,6 +334,7 @@ class Recharges{
          }
          
          //calculate the total recharge price
+         $result[$i]['box_price'] = $_POST['price'];
          $result[$i]['total_price'] = round($result[$i]['duration'] * $priceBoxDay * $result[$i]['no_boxes'], 2);
          
          $total = $total + $result[$i]['total_price'];
@@ -470,20 +471,20 @@ class Recharges{
    
    private function submitSpaceRecharge(){
       //get all project ids
-      $projectIDs = explode(",", $_REQUEST['project_ids']);
+      $projects = $_REQUEST['projects'];
       
-      if(count($projectIDs) > 0){
+      if(count($projects) > 0){
          //get all boxes for the projects
          //$projectID, $periodEnding, $pricePerBoxPerDay, $chargeCode
          $result = array();
-         foreach($projectIDs as $currProjectID){
-            if(is_numeric($currProjectID)){
+         foreach($projects as $currProject){
+            if(is_numeric($currProject['project_id']) && is_numeric($currProject['box_price'])){
                //get chargecode for project
                $query = "select b.name"
                        . " from ".Config::$config['dbase'].".lcmod_modules_custom_values as a"
                        . " inner join ".Config::$config['dbase'].".ln2_chargecodes as b on a.chargecode_id = b.id"
                        . " where val_id = :projectID";
-               $chargeCodes = $this->Dbase->ExecuteQuery($query, array("projectID" => $currProjectID));
+               $chargeCodes = $this->Dbase->ExecuteQuery($query, array("projectID" => $currProject['project_id']));
 
                $chargeCode = "NOT SET";
 
@@ -491,10 +492,10 @@ class Recharges{
                   $chargeCode = $chargeCodes[0]['name'];
                }
 
-               $result = array_merge($result, $this->getSpaceBoxes($currProjectID, $_REQUEST['period_ending'], $_REQUEST['price'], $chargeCode));
+               $result = array_merge($result, $this->getSpaceBoxes($currProject['project_id'], $_REQUEST['period_ending'], $currProject['box_price'], $chargeCode));
             }
             else {
-               $this->Dbase->CreateLogEntry("Current project from web client doesnt have a numeric id ($currProjectID)","fatal");
+               $this->Dbase->CreateLogEntry("Current project from web client doesnt have a numeric id ({$currProject['project_id']})","fatal");
             }
          }
          
