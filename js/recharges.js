@@ -27,9 +27,14 @@ function Recharges(mode){
       items: new Array()//stores [{id, amount_appr}] for liquid nitrogen requests
    };
    
+   window.rc.labels = {
+      items: new Array()
+   };
+   
    window.rc.spaceRechargeTAdapter = undefined;
    window.rc.inventoryRechargeTAdapter = undefined;
    window.rc.ln2RechargeTAdapter = undefined;
+   window.rc.labelsRechargeTAdapter = undefined;
    
    //initialize the event handlers
    window.rc.windowResized();//call it the first time
@@ -56,6 +61,12 @@ function Recharges(mode){
             $("#recharge_dialog").show();
          }
       }
+      else if(window.rc.mode == MODE_LABELS){
+         window.rc.updateLabelsItems();
+         if(window.rc.labels.items.length > 0){
+            $("#recharge_dialog").show();
+         }
+      }
    });
    
    $("#recharge_dialog_close").click(function(){
@@ -67,6 +78,9 @@ function Recharges(mode){
       }
       else if(window.rc.mode == MODE_LN2){
          $("#ln2_recharge_table").jqxGrid('updatebounddata');
+      }
+      else if(window.rc.mode == MODE_LABELS){
+         $("#labels_recharge_table").jqxGrid('updatebounddata');
       }
       
       $("#recharge_dialog").hide();
@@ -83,6 +97,9 @@ function Recharges(mode){
       else if(window.rc.mode == MODE_LN2){
          window.rc.submitLN2Recharge();
       }
+      else if(window.rc.mode == MODE_LABELS){
+         window.rc.submitLabelsRecharge();
+      }
    });
    
    
@@ -95,6 +112,9 @@ function Recharges(mode){
    }
    else if(window.rc.mode == MODE_LN2){
       window.rc.initLN2SpecificValues();
+   }
+   else if(window.rc.mode == MODE_LABELS){
+      window.rc.initLabelsSpecificValues();
    }
 }
 
@@ -120,6 +140,10 @@ Recharges.prototype.initInventorySpecificValues = function(){
 
 Recharges.prototype.initLN2SpecificValues = function(){
    window.rc.initLN2Table();
+};
+
+Recharges.prototype.initLabelsSpecificValues = function(){
+   window.rc.initLabelsTable();
 };
 
 Recharges.prototype.loadStorageSpaceTable = function(){
@@ -220,7 +244,7 @@ Recharges.prototype.initStorageSpaceTable = function(){
                         }
                         
                         var rowData = $("#space_recharge_table").jqxGrid('getrowdata', noBoxesIndex);
-                        
+                        //TODO: calculate current value based on price per box per year and duration
                         if(typeof rowData != 'undefined' && rowData.recharge != 0){
                            aggregatedValue += currentValue;
                         }
@@ -256,9 +280,8 @@ Recharges.prototype.initStorageSpaceTable = function(){
          
          
          $("#space_recharge_table").on('cellendedit', function (event) {
-            $("#space_recharge_table").jqxGrid('refresh');
-            
             window.rc.updateSpaceRechargeProjects();
+            $("#space_recharge_table").jqxGrid('refresh');
          });
          
       }
@@ -278,26 +301,68 @@ Recharges.prototype.updateSpaceRechargeProjects = function (){
    }
 };
 
-Recharges.prototype.updateInventoryItems = function(){
+Recharges.prototype.updateInventoryItems = function(rowBoundIndex, dataField, value){
    var dataInfo = $("#inventory_recharge_table").jqxGrid('getdatainformation');
    
    window.rc.inventory.items = new Array();
    for(var rowIndex = 0; rowIndex < dataInfo.rowscount; rowIndex++){
       var rowData = $("#inventory_recharge_table").jqxGrid('getrowdata', rowIndex);
+      if(typeof rowBoundIndex != 'undefined' && rowBoundIndex == rowIndex){
+         if(dataField == 'quantity'){
+            rowData.total = value * rowData.pp_unit;
+         }
+         else if(dataField == 'pp_unit'){
+            rowData.total = rowData.quantity * value;
+         }
+      }
+      
+      $("#inventory_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
       if(rowData.recharge == 1){
          window.rc.inventory.items.push(rowData);
       }
    }
 };
 
-Recharges.prototype.updateLN2Items = function(){
+Recharges.prototype.updateLN2Items = function(rowBoundIndex, dataField, value){
    var dataInfo = $("#ln2_recharge_table").jqxGrid('getdatainformation');
    
    window.rc.ln2.items = new Array();
    for(var rowIndex = 0; rowIndex < dataInfo.rowscount; rowIndex++){
       var rowData = $("#ln2_recharge_table").jqxGrid('getrowdata', rowIndex);
+      if(typeof rowBoundIndex != 'undefined' && rowBoundIndex == rowIndex){
+         if(dataField == 'price'){
+            rowData.cost = value * rowData.amount_appr;
+         }
+         else if(dataField == 'amount_appr'){
+            rowData.cost = rowData.price * value;
+         }
+      }
+      
+      $("#ln2_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
       if(rowData.recharge == 1){
          window.rc.ln2.items.push({id: rowData.id, amount_appr: rowData.amount_appr, charge_code: rowData.charge_code, price: rowData.price});
+      }
+   }
+};
+
+Recharges.prototype.updateLabelsItems = function(rowBoundIndex, dataField, value){
+   var dataInfo = $("#labels_recharge_table").jqxGrid('getdatainformation');
+   
+   window.rc.labels.items = new Array();
+   for(var rowIndex = 0; rowIndex < dataInfo.rowscount; rowIndex++){
+      var rowData = $("#labels_recharge_table").jqxGrid('getrowdata', rowIndex);
+      if(typeof rowBoundIndex != 'undefined' && rowBoundIndex == rowIndex){
+         if(dataField == 'price'){
+            rowData.total = value * rowData.labels_printed;
+         }
+         else if(dataField == 'labels_printed'){
+            //rowData.total = rowData.price * value;
+         }
+      }
+      
+      $("#labels_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
+      if(rowData.recharge == 1){
+         window.rc.labels.items.push({id: rowData.id, charge_code: rowData.charge_code, price: rowData.price});
       }
    }
 };
@@ -554,6 +619,60 @@ Recharges.prototype.submitLN2Recharge = function(){
    
 };
 
+Recharges.prototype.submitLabelsRecharge = function(){
+   //TODO: implement
+   //id: rowData.id, charge_code: rowData.charge_code, price: rowData.price
+   var good = true;
+   for(var index = 0; index < window.rc.labels.items.length; index++){
+      var currItem = window.rc.labels.items[index];
+      //id: rowData.id, amount_appr: rowData.amount_appr, charge_code: rowData.charge_code, price: rowData.price
+      if(currItem.id.length == 0 
+              || currItem.charge_code.length == 0
+              || currItem.price.length == 0){
+         good = false;
+      }
+   }
+   
+   if(good == false){
+      $("#recharge_dialog").hide();
+      Notification.show({create:true, hide:true, updateText:false, text: "Please make sure all the information in the table is filled out", error:true});
+   }
+   else {
+      $("#confirm_recharge_btn").attr('disabled', 'disabled');
+      //window.rc.startDownload(url);
+      
+      var data = {
+         "action":"submit_recharge",
+         "items":window.rc.labels.items
+      };
+
+      jQuery.ajax({
+         url:"mod_ajax.php?page=recharges&do=labels",
+         data:data,
+         type:"POST",
+         async:true,
+         success:function(data){
+            if(data.length > 0){
+               var json = jQuery.parseJSON(data);
+               if(json.error == true){
+                  Notification.show({create:true, hide:true, updateText:false, text: json.error_message, error:true});
+               }
+               else {
+                  Notification.show({create:true, hide:true, updateText:false, text: "An email has been sent to the Biorepository manager with details on the recharge", error:false});
+               }
+            }
+            else {
+               Notification.show({create:true, hide:true, updateText:false, text: "No data received from the server", error:true});
+            }
+         },
+         error:function(){
+            console.log("an error occurred");
+            Notification.show({create:true, hide:true, updateText:false, text: "An error occurred while trying to connect to the server. Please try again", error:true});
+         }
+      });
+   }
+};
+
 /**
  * This function populates the jq table for inventory
  * 
@@ -635,11 +754,14 @@ Recharges.prototype.initInventoryTable = function(){
                      }
 
                      var rowData = $("#inventory_recharge_table").jqxGrid('getrowdata', totalPriceIndex);
-
+                     
+                     //currentValue = rowData.pp_unit * rowData.quantity;
+                     //rowData.total = currentValue;
                      if(rowData.recharge != 0){
                         aggregatedValue += currentValue;
                      }
-
+                     
+                     //$("#inventory_recharge_table").jqxGrid('updaterow', totalPriceIndex, rowData);
                      totalPriceIndex++;
                      return Math.round(aggregatedValue * 100)/100;
                   }
@@ -650,8 +772,21 @@ Recharges.prototype.initInventoryTable = function(){
 
 
       $("#inventory_recharge_table").on('cellendedit', function (event) {
+         // column data field.
+         var dataField = event.args.datafield;
+         // row's bound index.
+         var rowBoundIndex = event.args.rowindex;
+         // cell value
+         var value = event.args.value;
+         if(dataField != 'recharge' 
+                 && dataField != 'pp_unit' 
+                 && dataField != 'quantity'
+                 && dataField != 'item'
+                 && dataField != 'charge_code'){
+            Notification.show({create:true, hide:true, updateText:false, text: "Change will not be reflected in the database", error:true});
+         }
+         window.rc.updateInventoryItems(rowBoundIndex, dataField, value);
          $("#inventory_recharge_table").jqxGrid('refresh');
-         window.rc.updateInventoryItems();
       });
 
    }
@@ -736,10 +871,12 @@ Recharges.prototype.initLN2Table = function(){
 
                      var rowData = $("#ln2_recharge_table").jqxGrid('getrowdata', totalCostIndex);
 
+                     //currentValue = rowData.price * rowData.amount_appr;
+                     //rowData.cost = currentValue;
                      if(rowData.recharge != 0){
                         aggregatedValue += currentValue;
                      }
-
+                     //$("#ln2_recharge_table").jqxGrid('updaterow', totalCostIndex, rowData);
                      totalCostIndex++;
                      return Math.round(aggregatedValue * 100)/100;//round off to two decimal places
                   }
@@ -750,12 +887,134 @@ Recharges.prototype.initLN2Table = function(){
 
 
       $("#ln2_recharge_table").on('cellendedit', function (event) {
+         // column data field.
+         var dataField = event.args.datafield;
+         // row's bound index.
+         var rowBoundIndex = event.args.rowindex;
+         // cell value
+         var value = event.args.value;
+         if(dataField != 'recharge' 
+                 && dataField != 'charge_code'
+                 && dataField != 'amount_appr'
+                 && dataField != 'price'){
+            Notification.show({create:true, hide:true, updateText:false, text: "Change will not be reflected in the database", error:true});
+         }
+         window.rc.updateLN2Items(rowBoundIndex, dataField, value);
          $("#ln2_recharge_table").jqxGrid('refresh');
-         window.rc.updateLN2Items();
       });
 
    }
    
+};
+
+Recharges.prototype.initLabelsTable = function(){
+   
+   var theme = '';
+   var url = "mod_ajax.php?page=recharges&do=labels";
+   
+   var data = {
+      action: 'get_recharges'
+   };
+
+   //a.id, a.requester, b.project_name, b.charge_code, a.type, c.label_type, a.date as date_printed, a.total as labels_printed, a.copies, price, total
+
+   var source = {
+      datatype: 'json',
+      datafields: [ 
+         {name: 'recharge', type: 'bool'},
+         {name: 'id'}, 
+         {name: 'project_name'}, 
+         {name: 'charge_code'},
+         {name: 'date_printed'},
+         {name: 'label_type'},
+         {name: 'labels_printed'},
+         {name: 'price'},
+         {name: 'total'}
+      ],//make sure you update these fields when you update those of the update fetch
+      id: 'id',
+      root: 'data',
+      async: true,
+      url: url, 
+      type: 'POST',
+      data: data
+   };
+
+   window.rc.labelsRechargeTAdapter = new $.jqx.dataAdapter(source);
+
+   var totalCostIndex = 0;
+   // create jqxgrid
+   if($('#labels_recharge_table :regex(class, jqx\-grid)').length === 0){
+      $("#labels_recharge_table").jqxGrid({
+         width: 900,
+         autoheight: true,
+         source: window.rc.labelsRechargeTAdapter,
+         columnsresize: true,
+         theme: theme,
+         showaggregates: true,
+         showstatusbar: true,
+         statusbarheight: 35,
+         sortable: false,
+         pageable: false,
+         ready: function(){
+            window.rc.updateLabelsItems();
+         },
+         virtualmode: true,
+         editable: true,
+         rendergridrows: function() {
+            return window.rc.labelsRechargeTAdapter.records;
+         },
+         columns: [
+            {text: 'Recharge', datafield: 'recharge', columntype: 'checkbox', width: 70, sortable: false, editable: true},
+            {text: 'Date Printed', datafield: 'date_printed', width: 150, sortable: false, editable: true},
+            {text: 'Project', datafield: 'project_name', width: 150, sortable: false, editable: true},
+            {text: 'Charge Code', datafield: 'charge_code', width: 200, sortable: false, editable: true},
+            {text: 'Type', datafield: 'label_type', width: 100, sortable: false, editable: true},
+            {text: 'Number', datafield: 'labels_printed', width: 60, sortable: false, editable: true},
+            {text: 'Price Per Label (USD)', datafield: 'price', width: 60, sortable: false, editable: true},
+            {
+               text: 'Total Cost (USD)', datafield: 'total', width: 110, sortable: false, editable: true,
+               aggregates:[{
+                  'Total':function(aggregatedValue, currentValue){
+                     var dataInfo = $("#labels_recharge_table").jqxGrid('getdatainformation');
+
+                     if(totalCostIndex >= dataInfo.rowscount){
+                        totalCostIndex= 0;
+                     }
+
+                     var rowData = $("#labels_recharge_table").jqxGrid('getrowdata', totalCostIndex);
+
+                     //currentValue = rowData.labels_printed * price;
+                     //rowData.total = currentValue;
+                     if(rowData.recharge != 0){
+                        aggregatedValue += currentValue;
+                     }
+                     //$("#labels_recharge_table").jqxGrid('updaterow', totalCostIndex, rowData);
+                     totalCostIndex++;
+                     return Math.round(aggregatedValue * 100)/100;//round off to two decimal places
+                  }
+               }]
+            }
+         ]
+      });
+
+
+      $("#labels_recharge_table").on('cellendedit', function (event) {
+         // column data field.
+         var dataField = event.args.datafield;
+         // row's bound index.
+         var rowBoundIndex = event.args.rowindex;
+         // cell value
+         var value = event.args.value;
+         if(dataField != 'recharge' 
+                 && dataField != 'price'
+                 && dataField != 'charge_code'){
+            Notification.show({create:true, hide:true, updateText:false, text: "Change will not be reflected in the database", error:true});
+         }
+         window.rc.updateLabelsItems(rowBoundIndex, dataField, value);
+         $("#labels_recharge_table").jqxGrid('refresh');
+      });
+
+   }
 };
 
 /**

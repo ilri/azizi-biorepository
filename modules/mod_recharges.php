@@ -57,7 +57,15 @@ class Recharges{
          }
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'labels'){
-         
+         if(OPTIONS_REQUESTED_ACTION == ''){
+            $this->showLabelsPage();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'get_recharges'){
+            $this->getPendingLabelsRecharges();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'submit_recharge'){
+            $this->submitLabelsRecharge();
+         }
       }
    }
    
@@ -216,6 +224,38 @@ class Recharges{
       <?php
    }
    
+   private function showLabelsPage($addInfo = ''){
+      Repository::jqGridFiles();//Really important if you want jqx to load
+?>
+<script type="text/javascript" src="js/recharges.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<div id="labels">
+   <div id="labels_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
+   <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
+</div>
+<div id="recharge_dialog" class="repo_dialog">
+   <div id="recharge_dialog_close" class="repo_dialog_close"></div>
+   <div>Are you sure you want to complete the recharge? Once done, your changes will be hard to undo.</div>
+   <div class="center"><button type="button" class="btn btn-danger" id="confirm_recharge_btn">Recharge</button></div>
+</div>
+<script type="text/javascript">
+   $(document).ready(function(){
+      var recharges = new Recharges(MODE_LABELS);
+      
+      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
+   });
+</script>
+      <?php
+   }
+   
    /**
     * This function returns the date to be used as the next period starting
     */
@@ -310,7 +350,8 @@ class Recharges{
       $query = "select 1 as recharge, a.id, a.item, a.issued_by, a.issued_to, a.date_issued, b.name as charge_code, a.alt_ccode, a.pp_unit, a.quantity"
                . " from inventory as a"
                . " left join ln2_chargecodes as b on a.chargecode_id=b.id"
-               . " where item_borrowed = 0 and rc_timestamp is null";
+               . " where item_borrowed = 0 and rc_timestamp is null"
+              .  " order by a.id desc limit 50";
       $result = $this->Dbase->ExecuteQuery($query);
       if(is_array($result)){
          for($i = 0 ; $i < count($result); $i++){
@@ -337,7 +378,8 @@ class Recharges{
        $query = "select '1' as recharge, a.id, b.name as charge_code, a.alt_ccode, a.added_by, a.apprvd_by, a.amount_appr"
               . " from ln2_acquisitions as a"
               . " left join ln2_chargecodes as b on a.project_id = b.id"
-              . " where a.amount_appr is not null and a.rc_timestamp is null";
+              . " where a.amount_appr is not null and a.rc_timestamp is null"
+              . " order by a.id desc limit 50";
 
        $result = $this->Dbase->ExecuteQuery($query);
        $price = $this->getNitrogenPrice();
@@ -355,6 +397,54 @@ class Recharges{
       
       $json = array('data' => $result);
       die(json_encode($json));
+   }
+   
+   private function getPendingLabelsRecharges(){
+      $query = "select '1' as recharge, a.id, a.requester, b.project_name, b.charge_code, a.type, c.label_type, a.date as date_printed, a.total as labels_printed, a.copies"
+              . " from labels_printed as a"
+              . " inner join lcmod_projects as b on a.project = b.id"
+              . " inner join labels_settings as c on a.type = c.id"
+              . " where rc_timestamp is null"
+              . " order by a.id desc limit 50";
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("An error occurred while trying to get labels for recharging", "fatal");
+         $result = array();
+      }
+      
+      for($index = 0; $index < count($result); $index++){
+         $price = $this->getLabelsPrice($result[$index]['type']);
+         $result[$index]['price'] = $price;
+         $result[$index]['labels_printed'] = $result[$index]['labels_printed'] * $result[$index]['copies'];
+         $result[$index]['total'] = $result[$index]['labels_printed'] * $price;
+      }
+      $this->Dbase->CreateLogEntry("number of printing entries to be recharged = ".count($result), "fatal");
+      $json = array('data' => $result);
+      die(json_encode($json));
+   }
+   
+   private function getLabelsPrice($type){
+      $query = "select price "
+              . "from labels_prices "
+              . "where label_type = :type and `start_date` <= curdate()";
+      $result = $this->Dbase->ExecuteQuery($query, array("type" => $type));
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("An error occurred while trying to fetch the labels prices", "fatal");   
+         return 0;
+      }
+      else if(count($result) == 1){
+         return $result[0]['price'];
+      }
+      else if(count($result) > 1){
+         $this->Dbase->CreateLogEntry("More than one price gotten for label type with id = $type. Returning 0 as label price", "fatal");   
+         return 0;
+      }
+      else{
+         $this->Dbase->CreateLogEntry("No price gotten for label type with id = $type. Returning 0 as label price", "warnings");   
+         return 0;
+      }
    }
    
    /**
@@ -517,7 +607,7 @@ class Recharges{
        $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
        $this->Dbase->CreateLogEntry($csv, "fatal");
        
-       $fileName = "item_recharge_".date('Y_m_d').".csv";
+       $fileName = "item_recharge_".date('Y_m_d')."-".time().".csv";
        file_put_contents("/tmp/".$fileName, $csv);
        
        if(count($result) > 0){    
@@ -578,7 +668,7 @@ class Recharges{
       
       $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
       
-      $fileName = "ln2_recharge_".date('Y_m_d').".csv";
+      $fileName = "ln2_recharge_".date('Y_m_d')."-".time().".csv";
       file_put_contents("/tmp/".$fileName, $csv);
       
       if(count($result) > 0){    
@@ -588,6 +678,66 @@ class Recharges{
       } 
       else {
          $emailSubject = "Liquid Nitrogen Recharge";
+         $emailBody = "No items found that can be recharged.";
+         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
+      }
+       
+      unlink("/tmp/" . $fileName);
+      
+      die(json_encode($return));
+   }
+   
+   private function submitLabelsRecharge(){
+      //id: rowData.id, charge_code: rowData.charge_code, price: rowData.price
+      $return = array("error" => false, "error_message" => "");
+      
+      $items = $_REQUEST['items'];
+      $ids = array();
+      foreach($items as $currItem){
+         $query = "update labels_printed"
+                 . " set rc_charge_code = :charge_code, rc_price = :price, rc_timestamp = now()"
+                 . " where id = :id";
+         $this->Dbase->ExecuteQuery($query, array("charge_code" => $currItem['charge_code'], "price" => $currItem['price'], "id" => $currItem['id']));
+         
+         $ids[] = $currItem['id'];
+      }
+      
+      $query = "select a.id, a.requester, b.project_name, a.rc_charge_code, c.label_type, a.date as date_printed, a.total as labels_printed, a.copies, a.rc_price"
+              . " from labels_printed as a"
+              . " inner join lcmod_projects as b on a.project = b.id"
+              . " inner join labels_settings as c on a.type = c.id"
+              . " where a.id in (".  implode(",", $ids).")";
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      for($index = 0; $index < count($result); $index++){
+         $result[$index]['total'] = $result[$index]['labels_printed'] * $result[$index]['copies'] * $result[$index]['rc_price'];
+      }
+      
+      $headings = array(
+          "id" => "Printing ID", 
+          "requester" => "Requester",
+          "project_name" => "Project",
+          "charge_code" => "Charge Code",
+          "label_type" => "Label Type",
+          "date_printed" => "Date of Printing",
+          "labels_printed" => "Number of Labels Printed",
+          "copies" => "Number of Copies",
+          "rc_price" => "Price per Label (USD)",
+          "total" => "Total Price (USD)"
+      );
+      
+      $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
+      
+      $fileName = "labels_recharge_".date('Y_m_d')."-".time().".csv";
+      file_put_contents("/tmp/".$fileName, $csv);
+      
+      if(count($result) > 0){    
+         $emailSubject = "Barcode Labels Recharge";
+         $emailBody = "Find attached a csv file containing data for barcode label recharges.";
+         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+      } 
+      else {
+         $emailSubject = "Barcode Labels Recharge";
          $emailBody = "No items found that can be recharged.";
          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
       }
