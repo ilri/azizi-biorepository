@@ -71,16 +71,16 @@ function Recharges(mode){
    
    $("#recharge_dialog_close").click(function(){
       if(window.rc.mode == MODE_STORAGE){
-         $("#space_recharge_table").jqxGrid('updatebounddata');
+         window.rc.updateStorageSpaceTable();
       }
       else if(window.rc.mode == MODE_INVENTORY){
-         $("#inventory_recharge_table").jqxGrid('updatebounddata');
+         window.rc.updateInventoryTable();
       }
       else if(window.rc.mode == MODE_LN2){
-         $("#ln2_recharge_table").jqxGrid('updatebounddata');
+         window.rc.updateLN2Table();
       }
       else if(window.rc.mode == MODE_LABELS){
-         $("#labels_recharge_table").jqxGrid('updatebounddata');
+         window.rc.updateLabelsTable();
       }
       
       $("#recharge_dialog").hide();
@@ -460,6 +460,115 @@ Recharges.prototype.updateStorageSpaceTable = function(){
 };
 
 /**
+ * This function updates the already initiated labels recharging table
+ * 
+ * @returns {undefined}
+ */
+Recharges.prototype.updateLabelsTable = function(){
+   var data = {
+      action: 'get_recharges'
+   };
+
+   var url = "mod_ajax.php?page=recharges&do=labels";
+   var source = {
+      datatype: 'json',
+      datafields: [ 
+         {name: 'recharge', type: 'bool'},
+         {name: 'id'}, 
+         {name: 'project_name'}, 
+         {name: 'charge_code'},
+         {name: 'date_printed'},
+         {name: 'label_type'},
+         {name: 'labels_printed'},
+         {name: 'price'},
+         {name: 'total'}
+      ],//make sure you update these fields when you update those for the initial fetch
+      id: 'id',
+      root: 'data',
+      async: true,
+      url: url, 
+      type: 'POST',
+      data: data
+   };
+
+   window.rc.labelsRechargeTAdapter = new $.jqx.dataAdapter(source);
+   $("#labels_recharge_table").jqxGrid({source: window.rc.labelsRechargeTAdapter});
+};
+
+/**
+ * This function updates the already initiated labels recharging table
+ * 
+ * @returns {undefined}
+ */
+Recharges.prototype.updateInventoryTable = function(){
+   var data = {
+      action: 'get_recharges'
+   };
+
+   var url = "mod_ajax.php?page=recharges&do=inventory";
+   var source = {
+      datatype: 'json',
+      datafields: [ 
+         {name: 'recharge', type: 'bool'}, 
+         {name: 'id'}, 
+         {name: 'item'}, 
+         {name: 'issued_by'},
+         {name: 'issued_to'},
+         {name: 'date_issued'},
+         {name: 'charge_code'},
+         {name: 'pp_unit'},
+         {name: 'quantity'},
+         {name: 'total'}
+      ],//make sure you update these fields when you update those for the initial fetch
+      id: 'id',
+      root: 'data',
+      async: true,
+      url: url, 
+      type: 'POST',
+      data: data
+   };
+
+   window.rc.inventoryRechargeTAdapter = new $.jqx.dataAdapter(source);
+   $("#inventory_recharge_table").jqxGrid({source: window.rc.inventoryRechargeTAdapter});
+};
+
+/**
+ * This function updates the already initiated labels recharging table
+ * 
+ * @returns {undefined}
+ */
+Recharges.prototype.updateLN2Table = function(){
+   var data = {
+      action: 'get_recharges'
+   };
+
+   var url = "mod_ajax.php?page=recharges&do=ln2";
+   var source = {
+      datatype: 'json',
+      datafields: [ 
+         {name: 'recharge', type: 'bool'},
+         {name: 'id'}, 
+         {name: 'charge_code'}, 
+         {name: 'added_by'},
+         {name: 'apprvd_by'},
+         {name: 'amount_appr'},
+         {name: 'price'},
+         {name: 'cost'},
+         {name: 'date_requested'}
+      ],//make sure you update these fields when you update those for the initial fetch
+      id: 'id',
+      root: 'data',
+      async: true,
+      url: url, 
+      type: 'POST',
+      data: data
+   };
+
+   window.rc.ln2RechargeTAdapter = new $.jqx.dataAdapter(source);
+   $("#ln2_recharge_table").jqxGrid({source: window.rc.ln2RechargeTAdapter});
+};
+
+/**
  * This function inits UI elements that use the period starting and period ending values in 
  * storage space recharge page
  * 
@@ -558,7 +667,11 @@ Recharges.prototype.submitSpaceRecharge = function(){
                type:"POST",
                async:true,
                success:function(data){
-                  console.log(data);
+                  //$("#space_recharge_table").jqxGrid('updatebounddata');
+                  window.rc.updateStorageSpaceTable();
+                  $("#recharge_dialog").hide();
+                  $("#confirm_recharge_btn").removeAttr('disabled');
+                  
                   var json = jQuery.parseJSON(data);
                   if(json.error == true){
                      Notification.show({create:true, hide:true, updateText:false, text: json.error_message, error:true});
@@ -568,7 +681,8 @@ Recharges.prototype.submitSpaceRecharge = function(){
                   }
                },
                error:function(){
-                  console.log("an error occurred");
+                  window.rc.updateStorageSpaceTable();
+                  $("#confirm_recharge_btn").removeAttr('disabled');
                   Notification.show({create:true, hide:true, updateText:false, text: "An error occurred while trying to connect to the server. Please try again", error:true});
                }
             });
@@ -612,6 +726,9 @@ Recharges.prototype.submitInventoryRecharge = function(){
          type:"POST",
          async:true,
          success:function(data){
+            window.rc.updateInventoryTable();
+            $("#recharge_dialog").hide();
+            $("#confirm_recharge_btn").removeAttr('disabled');
             if(data.length > 0){
                var json = jQuery.parseJSON(data);
                if(json.error == true){
@@ -626,7 +743,8 @@ Recharges.prototype.submitInventoryRecharge = function(){
             }
          },
          error:function(){
-            console.log("an error occurred");
+            window.rc.updateInventoryTable();
+            $("#confirm_recharge_btn").removeAttr('disabled');
             Notification.show({create:true, hide:true, updateText:false, text: "An error occurred while trying to connect to the server. Please try again", error:true});
          }
       });
@@ -665,6 +783,9 @@ Recharges.prototype.submitLN2Recharge = function(){
          type:"POST",
          async:true,
          success:function(data){
+            window.rc.updateLN2Table();
+            $("#recharge_dialog").hide();
+            $("#confirm_recharge_btn").removeAttr('disabled');
             if(data.length > 0){
                var json = jQuery.parseJSON(data);
                if(json.error == true){
@@ -679,7 +800,8 @@ Recharges.prototype.submitLN2Recharge = function(){
             }
          },
          error:function(){
-            console.log("an error occurred");
+            window.rc.updateLN2Table();
+            $("#confirm_recharge_btn").removeAttr('disabled');
             Notification.show({create:true, hide:true, updateText:false, text: "An error occurred while trying to connect to the server. Please try again", error:true});
          }
       });
@@ -720,6 +842,9 @@ Recharges.prototype.submitLabelsRecharge = function(){
          type:"POST",
          async:true,
          success:function(data){
+            window.rc.updateLabelsTable();
+            $("#recharge_dialog").hide();
+            $("#confirm_recharge_btn").removeAttr('disabled');
             if(data.length > 0){
                var json = jQuery.parseJSON(data);
                if(json.error == true){
@@ -734,7 +859,8 @@ Recharges.prototype.submitLabelsRecharge = function(){
             }
          },
          error:function(){
-            console.log("an error occurred");
+            window.rc.updateLabelsTable();
+            $("#confirm_recharge_btn").removeAttr('disabled');
             Notification.show({create:true, hide:true, updateText:false, text: "An error occurred while trying to connect to the server. Please try again", error:true});
          }
       });
