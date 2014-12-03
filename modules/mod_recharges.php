@@ -514,7 +514,7 @@ class Recharges{
          $csv = $this->generateCSV(array_merge(array($headings), $result), false);
 
          if(count($result) > 0){
-            $fileName = "space_recharge_".$result[0]['end_date'].".csv";
+            $fileName = "space_recharge_".$result[0]['end_date']."-".time().".csv";
 
             $emailSubject = "Storage space recharges";
             $emailBody = "Find attached a csv file containing data for storage space recharged for the period ending ".$result[0]['end_date'].".";
@@ -788,7 +788,7 @@ class Recharges{
                $total = round($pricePerBoxPerDay * $duration, 2);
                $result[$i]['duration'] = $duration;
                $result[$i]['end_date'] = $_REQUEST['period_ending'];
-               $result[$i]['price_per_box'] = $_REQUEST['price'];
+               $result[$i]['price_per_box'] = $pricePerBox;
                $result[$i]['total'] = $total;
                $result[$i]['charge_code'] = $chargeCode;
                

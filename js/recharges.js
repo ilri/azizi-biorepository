@@ -313,6 +313,7 @@ Recharges.prototype.updateSpaceRechargeProjects = function (rowBoundIndex, dataF
             //$result[$i]['duration'] * $priceBoxDay * $result[$i]['no_boxes']
             var pricePerDay = value/365;
             rowData.total_price = Math.round(rowData.duration * pricePerDay * rowData.no_boxes * 100)/100;
+            rowData.box_price = value;
          }
       }
       
