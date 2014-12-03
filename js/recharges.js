@@ -314,10 +314,12 @@ Recharges.prototype.updateSpaceRechargeProjects = function (rowBoundIndex, dataF
             var pricePerDay = value/365;
             rowData.total_price = Math.round(rowData.duration * pricePerDay * rowData.no_boxes * 100)/100;
             rowData.box_price = value;
+            $("#space_recharge_table").jqxGrid('setcellvalue', rowIndex, "total_price", rowData.total_price);
+            $("#space_recharge_table").jqxGrid('setcellvalue', rowIndex, "box_price", rowData.box_price);
          }
       }
       
-      $("#space_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
+      //$("#space_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
       if(rowData.recharge == 1){
          window.rc.space.projects.push({project_id:rowData.project_id, box_price:rowData.box_price});
       }
@@ -333,15 +335,30 @@ Recharges.prototype.updateInventoryItems = function(rowBoundIndex, dataField, va
       if(typeof rowBoundIndex != 'undefined' && rowBoundIndex == rowIndex){
          if(dataField == 'quantity'){
             rowData.total = value * rowData.pp_unit;
+            $("#inventory_recharge_table").jqxGrid('setcellvalue', rowIndex, "total", rowData.total);
          }
          else if(dataField == 'pp_unit'){
             rowData.total = rowData.quantity * value;
+            $("#inventory_recharge_table").jqxGrid('setcellvalue', rowIndex, "total", rowData.total);
          }
       }
       
-      $("#inventory_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
+      //$("#inventory_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
       if(rowData.recharge == 1){
-         window.rc.inventory.items.push(rowData);
+         //window.rc.inventory.items.push(rowData);
+         window.rc.inventory.items.push({
+            charge_code: rowData.charge_code,
+            date_issued: rowData.date_issued,
+            id: rowData.id,
+            issued_by: rowData.issued_by,
+            issued_to: rowData.issued_to,
+            item: rowData.item,
+            pp_unit: rowData.pp_unit,
+            quantity: rowData.quantity,
+            recharge: rowData.recharge,
+            total: rowData.total,
+            uid: rowData.uid
+         });
       }
    }
 };
@@ -355,13 +372,15 @@ Recharges.prototype.updateLN2Items = function(rowBoundIndex, dataField, value){
       if(typeof rowBoundIndex != 'undefined' && rowBoundIndex == rowIndex){
          if(dataField == 'price'){
             rowData.cost = value * rowData.amount_appr;
+            $("#ln2_recharge_table").jqxGrid('setcellvalue', rowIndex, "cost", rowData.cost);
          }
          else if(dataField == 'amount_appr'){
             rowData.cost = rowData.price * value;
+            $("#ln2_recharge_table").jqxGrid('setcellvalue', rowIndex, "cost", rowData.cost);
          }
       }
       
-      $("#ln2_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
+      //$("#ln2_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
       if(rowData.recharge == 1){
          window.rc.ln2.items.push({id: rowData.id, amount_appr: rowData.amount_appr, charge_code: rowData.charge_code, price: rowData.price});
       }
@@ -377,13 +396,24 @@ Recharges.prototype.updateLabelsItems = function(rowBoundIndex, dataField, value
       if(typeof rowBoundIndex != 'undefined' && rowBoundIndex == rowIndex){
          if(dataField == 'price'){
             rowData.total = value * rowData.labels_printed;
+            $("#labels_recharge_table").jqxGrid('setcellvalue', rowIndex, "total", value * rowData.total);
          }
          else if(dataField == 'labels_printed'){
             //rowData.total = rowData.price * value;
          }
       }
       
-      $("#labels_recharge_table").jqxGrid('updaterow', rowIndex, rowData);
+      /*$("#labels_recharge_table").jqxGrid('updaterow', rowIndex, {
+         'recharge': rowData.recharge,
+         'id': rowData.id, 
+         'project_name': rowData.project_name, 
+         'charge_code': rowData.charge_code,
+         'date_printed': rowData.date_printed,
+         'label_type': rowData.label_type,
+         'labels_printed': rowData.labels_printed,
+         'price': rowData.price,
+         'total': rowData.total
+      });*/
       if(rowData.recharge == 1){
          window.rc.labels.items.push({id: rowData.id, charge_code: rowData.charge_code, price: rowData.price});
       }
@@ -856,7 +886,8 @@ Recharges.prototype.initLN2Table = function(){
          {name: 'apprvd_by'},
          {name: 'amount_appr'},
          {name: 'price'},
-         {name: 'cost'}
+         {name: 'cost'},
+         {name: 'date_requested'}
       ],//make sure you update these fields when you update those of the update fetch
       id: 'id',
       root: 'data',
@@ -893,10 +924,11 @@ Recharges.prototype.initLN2Table = function(){
          columns: [
             {text: 'Recharge', datafield: 'recharge', columntype: 'checkbox', width: 70, sortable: false, editable: true},
             {text: 'Requested By', datafield: 'added_by', width: 150, sortable: false, editable: true},
-            {text: 'Approved By', datafield: 'apprvd_by', width: 150, sortable: false, editable: true},
+            {text: 'Request Date', datafield: 'date_requested', width: 100, sortable: false, editable: true},
+            {text: 'Approved By', datafield: 'apprvd_by', width: 100, sortable: false, editable: true},
             {text: 'Charge Code', datafield: 'charge_code', width: 200, sortable: false, editable: true},
-            {text: 'Amount Approved (Litres)', datafield: 'amount_appr', width: 100, sortable: false, editable: true},
-            {text: 'Price Per Litre (USD)', datafield: 'price', width: 100, sortable: false, editable: true},
+            {text: 'Amount Approved (Litres)', datafield: 'amount_appr', width: 75, sortable: false, editable: true},
+            {text: 'Price Per Litre (USD)', datafield: 'price', width: 75, sortable: false, editable: true},
             {
                text: 'Total Cost (USD)', datafield: 'cost', width: 130, sortable: false, editable: true,
                aggregates:[{

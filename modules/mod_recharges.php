@@ -352,7 +352,7 @@ class Recharges{
                . " from inventory as a"
                . " left join ln2_chargecodes as b on a.chargecode_id=b.id"
                . " where item_borrowed = 0 and rc_timestamp is null"
-              .  " order by a.id desc limit 50";
+              .  " order by a.id desc";
       $result = $this->Dbase->ExecuteQuery($query);
       if(is_array($result)){
          for($i = 0 ; $i < count($result); $i++){
@@ -376,11 +376,11 @@ class Recharges{
    }
    
    private function getPendingLN2Recharges(){
-       $query = "select '1' as recharge, a.id, b.name as charge_code, a.alt_ccode, a.added_by, a.apprvd_by, a.amount_appr"
+       $query = "select '1' as recharge, a.id, b.name as charge_code, a.alt_ccode, a.added_by, a.apprvd_by, a.amount_appr, a.date as date_requested"
               . " from ln2_acquisitions as a"
               . " left join ln2_chargecodes as b on a.project_id = b.id"
               . " where a.amount_appr is not null and a.rc_timestamp is null"
-              . " order by a.id desc limit 50";
+              . " order by a.id desc";
 
        $result = $this->Dbase->ExecuteQuery($query);
        $price = $this->getNitrogenPrice();
@@ -406,7 +406,7 @@ class Recharges{
               . " inner join lcmod_projects as b on a.project = b.id"
               . " inner join labels_settings as c on a.type = c.id"
               . " where rc_timestamp is null"
-              . " order by a.id desc limit 50";
+              . " order by a.id desc";
       $result = $this->Dbase->ExecuteQuery($query);
       
       if($result == 1){
@@ -647,7 +647,7 @@ class Recharges{
             . " left join ln2_chargecodes as b on a.project_id = b.id"
             . " where a.amount_appr is not null and a.rc_timestamp is null"
             . " group by a.project_id, a.alt_ccode";*/
-      $query = "select a.id, a.rc_charge_code as charge_code, a.added_by, a.apprvd_by, a.amount_appr, a.rc_price as price"
+      $query = "select a.id, a.rc_charge_code as charge_code, a.added_by, a.date as request_date, a.apprvd_by, a.amount_appr, a.rc_price as price"
               . " from ln2_acquisitions as a"
               . " where a.id in (".  implode(",", $ids).")";
       
@@ -655,6 +655,7 @@ class Recharges{
           "id" => "Request ID", 
           "charge_code" => "Charge Code",
           "added_by" => "Requested By",
+          "request_date" => "Request Date",
           "apprvd_by" => "Approved By",
           "amount_appr" => "Amount Approved (Litres)",
           "price" => "Price Per Litre (USD)",
