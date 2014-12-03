@@ -333,7 +333,7 @@ body {
 #box_location .loc_divs{width: 250px;} 
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
-.jqx-grid-column-header, #statusbarspace_recharge_table{z-index:0!important;}
+.jqx-grid-column-header, #statusbarspace_recharge_table, #statusbarln2_recharge_table, #statusbarlabels_recharge_table, #statusbarinventory_recharge_table{z-index:0!important;}
 
 #tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes, #recharge_details_div {margin: 5px;}
 
@@ -880,6 +880,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
 }
 
 #email_dialog, #mta_dialog, #instructions_dialog, .repo_dialog {
+   position: fixed !important;
    display: none;
    z-index: 3;
    width: 30rem;
