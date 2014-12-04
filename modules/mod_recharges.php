@@ -477,6 +477,7 @@ class Recharges{
          //get all boxes for the projects
          //$projectID, $periodEnding, $pricePerBoxPerDay, $chargeCode
          $result = array();
+         $summary = array();
          foreach($projects as $currProject){
             if(is_numeric($currProject['project_id']) && is_numeric($currProject['box_price'])){
                //get chargecode for project
@@ -491,8 +492,9 @@ class Recharges{
                if(is_array($chargeCodes) && count($chargeCodes) == 1){
                   $chargeCode = $chargeCodes[0]['name'];
                }
-
-               $result = array_merge($result, $this->getSpaceBoxes($currProject['project_id'], $_REQUEST['period_ending'], $currProject['box_price'], $chargeCode));
+               $currResult = $this->getSpaceBoxes($currProject['project_id'], $_REQUEST['period_ending'], $currProject['box_price'], $chargeCode);
+               $result = array_merge($result, $currResult['breakdown']);
+               $summary = array_merge($summary, array($currResult['summary']));
             }
             else {
                $this->Dbase->CreateLogEntry("Current project from web client doesnt have a numeric id ({$currProject['project_id']})","fatal");
@@ -502,25 +504,41 @@ class Recharges{
          //headings should be in the order of respective items in associative array
          $headings = array(
              "project" => "Project",
-             "no_boxes" => "No. Boxes",
+             "charge_code" => "Charge Code",
              "sector" => "Sector",
+             "no_boxes" => "No. Boxes",
              "box_ids" => "Box IDs",
              "start_date" => "Period Starting",
              "duration" => "Duration (Days)",
              "end_date" => "Period Ending",
              "price_per_box" => "Price per Box (USD)",
-             "total" => "Total Cost (USD)",
-             "charge_code" => "Charge Code");
-         $csv = $this->generateCSV(array_merge(array($headings), $result), false);
-
+             "total" => "Total Cost (USD)"
+         );
+         
+         $summaryHeadings = array(
+             'project' => 'Project',
+             'charge_code' => 'Charge Code',
+             'end_date' => 'Period Ending',
+             'no_boxes' => 'Number of Boxes',
+             'price_per_box' => "Price per Box (USD)",
+             'total' => 'Total Cost for Period (USD)',
+         );
+         
+         $fileName = null;
+         
          if(count($result) > 0){
-            $fileName = "space_recharge_".$result[0]['end_date']."-".time().".csv";
+            $phpExcel = $this->initExcelSheet("Storage Space Recharge");
+            $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
+            $phpExcel = $this->addSheetToExcel($phpExcel, 1, "Breakdown", $headings, $result);
+
+            $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
+            $fileName = "/tmp/space_recharge_".$result[0]['end_date']."-".time().".xlsx";
+            $objWriter->save($fileName);
 
             $emailSubject = "Storage space recharges";
             $emailBody = "Find attached a csv file containing data for storage space recharged for the period ending ".$result[0]['end_date'].".";
          }
          else {
-            $fileName = "no_data.csv";
 
             $query = "select value from ".Config::$config['azizi_db'].".modules_custom_values where val_id = :project_id";
             $projectName = $this->Dbase->ExecuteQuery($query, array("project_id" => $projectID));
@@ -530,7 +548,6 @@ class Recharges{
          }
 
          //send the file back
-         file_put_contents("/tmp/".$fileName, $csv);
          /*header('Content-type: document');
          header('Content-Disposition: attachment; filename='. $fileName);
          header("Expires: 0"); 
@@ -539,10 +556,12 @@ class Recharges{
          header('Content-Transfer-Encoding: binary');
          readfile("/tmp/" . $fileName);*/
 
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
 
-         $this->Dbase->CreateLogEntry("Recharging file at /tmp/".$fileName, "info");
-         unlink("/tmp/" . $fileName);
+         $this->Dbase->CreateLogEntry("Recharging file at ".$fileName, "info");
+         if($fileName != null){
+            unlink($fileName);
+         }
          die(json_encode(array("error" => false, "error_message" => "")));
       }
       else {
@@ -587,6 +606,12 @@ class Recharges{
           $result = array();
        }
        
+       $query = "select a.item, a.rc_charge_code as charge_code, sum(a.quantity) as quantity, sum(a.pp_unit * a.quantity) as total"
+               . " from inventory as a"
+               . " where a.id in (".  implode(",", $ids).")"
+               . " group by a.rc_charge_code, a.item";
+       $summary = $this->Dbase->ExecuteQuery($query);
+       
        $headings = array(
            "id" => "Item ID",
            "item" => "Item",
@@ -599,22 +624,32 @@ class Recharges{
            "total" => "Total Price (USD)"
        );
        
+       $summaryHeadings = array(
+           "charge_code" => "Charge Code",
+           "item" => "Item",
+           "quantity" => "Quantity",
+           "total" => "Total Cost (USD)"
+       );
+       
        for($index = 0; $index < count($result); $index++){
           $result[$index]['total'] = $result[$index]['quantity'] * $result[$index]['pp_unit'];
        }
        
-       $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
+       $fileName = null;
        
-       $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
-       $this->Dbase->CreateLogEntry($csv, "fatal");
-       
-       $fileName = "item_recharge_".date('Y_m_d')."-".time().".csv";
-       file_put_contents("/tmp/".$fileName, $csv);
-       
-       if(count($result) > 0){    
+       if(count($result) > 0){
+          $phpExcel = $this->initExcelSheet("Item Recharge");
+          $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
+          $phpExcel = $this->addSheetToExcel($phpExcel, 1, "Breakdown", $headings, $result);
+          
+          $fileName = "/tmp/item_recharge_".date('Y_m_d')."-".time().".xlsx";
           $emailSubject = "Item Recharge";
-          $emailBody = "Find attached a csv file containing data for item recharges.";
-          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+          $emailBody = "Find attached an Excel spreadsheet containing data for item recharges.";
+          $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
+          $objWriter->save($fileName);
+          
+          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
+          unlink($fileName);
        } 
        else {
           $emailSubject = "Item Recharge";
@@ -622,7 +657,6 @@ class Recharges{
           $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
        }
        
-       unlink("/tmp/" . $fileName);
        die(json_encode($return));
    }
    
@@ -664,27 +698,45 @@ class Recharges{
       
       $result = $this->Dbase->ExecuteQuery($query);
       
+      $query = "select a.rc_charge_code as charge_code, sum(a.amount_appr) quantity, sum(a.rc_price * a.amount_appr) as total"
+              . " from ln2_acquisitions as a"
+              . " where a.id in (".  implode(",", $ids).")"
+              . " group by a.rc_charge_code";
+      
+      $summary = $this->Dbase->ExecuteQuery($query);
+      
+      $summaryHeadings = array(
+          "charge_code" => "Charge Code",
+          "quantity" => "Quantity of Liquid Nitrogen (Litres)",
+          "total" => "Total Cost (USD)"
+      );
+      
       for($index = 0; $index < count($result); $index++){
          $result[$index]['total'] = $result[$index]['price'] * $result[$index]['amount_appr'];
       }
       
-      $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
+      $fileName = null;
       
-      $fileName = "ln2_recharge_".date('Y_m_d')."-".time().".csv";
-      file_put_contents("/tmp/".$fileName, $csv);
-      
-      if(count($result) > 0){    
+      if(count($result) > 0){
+         $fileName = "/tmp/ln2_recharge_".date('Y_m_d')."-".time().".xlsx";
+         
          $emailSubject = "Liquid Nitrogen Recharge";
-         $emailBody = "Find attached a csv file containing data for liquid nitrogen recharges.";
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+         $emailBody = "Find attached an Excel spreadsheet containing data for liquid nitrogen recharges.";
+         
+         $phpExcel = $this->initExcelSheet("Liquid Nitrogen Recharge");
+         $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
+         $phpExcel = $this->addSheetToExcel($phpExcel, 1, "Breakdown", $headings, $result);
+         $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
+         $objWriter->save($fileName);
+         
+         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
+         unlink($fileName);
       } 
       else {
          $emailSubject = "Liquid Nitrogen Recharge";
          $emailBody = "No items found that can be recharged.";
          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
       }
-       
-      unlink("/tmp/" . $fileName);
       
       die(json_encode($return));
    }
@@ -711,6 +763,14 @@ class Recharges{
               . " where a.id in (".  implode(",", $ids).")";
       $result = $this->Dbase->ExecuteQuery($query);
       
+      $query = "select a.rc_charge_code, c.label_type, sum(a.total + a.copies) as labels_printed, sum(a.rc_price * (a.total + a.copies)) as total"
+              . " from labels_printed as a"
+              . " inner join lcmod_projects as b on a.project = b.id"
+              . " inner join labels_settings as c on a.type = c.id"
+              . " where a.id in (".  implode(",", $ids).")"
+              . " group by a.rc_charge_code, a.type";
+      $summary = $this->Dbase->ExecuteQuery($query);
+      
       for($index = 0; $index < count($result); $index++){
          $result[$index]['total'] = $result[$index]['labels_printed'] * $result[$index]['copies'] * $result[$index]['rc_price'];
       }
@@ -719,7 +779,7 @@ class Recharges{
           "id" => "Printing ID", 
           "requester" => "Requester",
           "project_name" => "Project",
-          "charge_code" => "Charge Code",
+          "rc_charge_code" => "Charge Code",
           "label_type" => "Label Type",
           "date_printed" => "Date of Printing",
           "labels_printed" => "Number of Labels Printed",
@@ -727,24 +787,34 @@ class Recharges{
           "rc_price" => "Price per Label (USD)",
           "total" => "Total Price (USD)"
       );
+      $summaryHeadings = array(
+          "rc_charge_code" => "Charge Code",
+          "label_type" => "Label Type",
+          "labels_printed" => "Number of Labels Printed",
+          "total" => "Total Cost (USD)"
+      );
       
-      $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
-      
-      $fileName = "labels_recharge_".date('Y_m_d')."-".time().".csv";
-      file_put_contents("/tmp/".$fileName, $csv);
+      $fileName = null;
       
       if(count($result) > 0){    
+         $fileName = "/tmp/labels_recharge_".date('Y_m_d')."-".time().".csv";
+         
+         $phpExcel = $this->initExcelSheet("Barcode Labels Recharge");
+         $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
+         $phpExcel = $this->addSheetToExcel($phpExcel, 1, "Breakdown", $headings, $result);
+         $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
+         $objWriter->save($fileName);
+         
          $emailSubject = "Barcode Labels Recharge";
          $emailBody = "Find attached a csv file containing data for barcode label recharges.";
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
+         unlink($fileName);
       } 
       else {
          $emailSubject = "Barcode Labels Recharge";
          $emailBody = "No items found that can be recharged.";
          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
       }
-       
-      unlink("/tmp/" . $fileName);
       
       die(json_encode($return));
    }
@@ -777,6 +847,7 @@ class Recharges{
          }
          else {
             $allBoxIDs = array();
+            $summary = null;
             for($i = 0; $i < count($result); $i++){
                //calculate days between current period ending and last period ending
                $from = strtotime($result[$i]['start_date']);
@@ -788,10 +859,25 @@ class Recharges{
                
                $total = round($pricePerBoxPerDay * $duration, 2);
                $result[$i]['duration'] = $duration;
-               $result[$i]['end_date'] = $_REQUEST['period_ending'];
+               $result[$i]['end_date'] = $periodEnding;
                $result[$i]['price_per_box'] = $pricePerBox;
                $result[$i]['total'] = $total;
                $result[$i]['charge_code'] = $chargeCode;
+               $result[$i]['box_ids'] = " ".$result[$i]['box_ids'];//so that the excel sheet looks more presentable
+               
+               if($summary == null){
+                  $summary = array();
+                  $summary['charge_code'] = $chargeCode;
+                  $summary['project'] = $result[$i]['project'];
+                  $summary['no_boxes'] = $result[$i]['no_boxes'];
+                  $summary['price_per_box'] = $pricePerBox;
+                  $summary['end_date'] = $periodEnding;
+                  $summary['total'] = $total;
+               }
+               else {
+                  $summary['no_boxes'] = $summary['no_boxes'] + $result[$i]['no_boxes'];
+                  $summary['total'] = $summary['total'] + $total;
+               }
                
                $allBoxIDs[] = $result[$i]['box_ids'];//list of box ids seperated using commas
             }
@@ -808,13 +894,13 @@ class Recharges{
             
             $this->Dbase->CreateLogEntry("for project with id = $projectID boxes to be recharged ".print_r($result,true), "info");
             
-            return $result;
+            return array("summary" => $summary, "breakdown" => $result);
          }
       }
       
       $this->Dbase->CreateLogEntry("Problem with the data provided by user".print_r($_REQUEST, true), "fatal");
       
-      return array();
+      return array("summary" => array(), "breakdown" => array());
    }
    
    /**
@@ -864,6 +950,42 @@ class Recharges{
          shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
       }
    }
+   
+   private function addSheetToExcel($phpExcel, $sheetIndex, $sheetLabel, $headings, $rows){
+      if($sheetIndex != 0){
+         $phpExcel->createSheet($sheetIndex);
+      }
+      $phpExcel->setActiveSheetIndex($sheetIndex);
+      $phpExcel->getActiveSheet()->setTitle($sheetLabel);
+
+      $headingKeys = array_keys($headings);
+      for($index = 0; $index < count($headings); $index++){
+         $cIndex = PHPExcel_Cell::stringFromColumnIndex($index);
+         $columnName = $headings[$headingKeys[$index]];
+         $phpExcel->getActiveSheet()->setCellValue($cIndex."1", $columnName);
+
+         $phpExcel->getActiveSheet()->getStyle($cIndex."1")->getFont()->setBold(TRUE);
+         $phpExcel->getActiveSheet()->getColumnDimension($cIndex)->setAutoSize(true);
+         for($sIndex = 0; $sIndex < count($rows); $sIndex++){
+            $rIndex = $sIndex + 2;
+            $phpExcel->getActiveSheet()->setCellValue($cIndex.$rIndex, $rows[$sIndex][$headingKeys[$index]]);
+         }
+      }
+      $phpExcel->setActiveSheetIndex(0);
+      return $phpExcel;
+   }
+   
+   private function initExcelSheet($title){
+      require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+      $phpExcel = new PHPExcel();
+      $phpExcel->getProperties()->setCreator("Azizi Biorepository");
+      $phpExcel->getProperties()->setLastModifiedBy("Azizi Biorepository");
+      $phpExcel->getProperties()->setTitle($title);
+      $phpExcel->getProperties()->setSubject("Created using Azizi Biorepository's Software Systems");
+      $phpExcel->getProperties()->setDescription("This Excel file has been generated using Azizi Biorepository's Software Systems that utilize the PHPExcel library on PHP. These Software Systems were created by Absolomon Kihara (a.kihara@cgiar.org) and Jason Rogena (j.rogena@cgiar.org)");
+      return $phpExcel;
+   }
+   
    
 }
 ?>
