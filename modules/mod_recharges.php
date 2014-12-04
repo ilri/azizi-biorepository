@@ -174,6 +174,7 @@ class Recharges{
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="inventory">
+   <h3 class="center">Recharge Repository Resources</h3>
    <div id="inventory_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
    <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
 </div>
@@ -206,6 +207,7 @@ class Recharges{
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="ln2">
+   <h3 class="center">Recharge Liquid Nitrogen</h3>
    <div id="ln2_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
    <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
 </div>
@@ -238,6 +240,7 @@ class Recharges{
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="labels">
+   <h3 class="center">Recharge Barcode Labels</h3>
    <div id="labels_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
    <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
 </div>
@@ -556,7 +559,7 @@ class Recharges{
          header('Content-Transfer-Encoding: binary');
          readfile("/tmp/" . $fileName);*/
 
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
+         $this->sendRechargeEmail($emailSubject, $emailBody, $fileName);
 
          $this->Dbase->CreateLogEntry("Recharging file at ".$fileName, "info");
          if($fileName != null){
@@ -648,13 +651,13 @@ class Recharges{
           $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
           $objWriter->save($fileName);
           
-          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
+          $this->sendRechargeEmail($emailSubject, $emailBody, $fileName);
           unlink($fileName);
        } 
        else {
           $emailSubject = "Item Recharge";
           $emailBody = "No items found that can be recharged.";
-          $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
+          $this->sendRechargeEmail($emailSubject, $emailBody);
        }
        
        die(json_encode($return));
@@ -729,13 +732,13 @@ class Recharges{
          $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
          $objWriter->save($fileName);
          
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
+         $this->sendRechargeEmail($emailSubject, $emailBody, $fileName);
          unlink($fileName);
       } 
       else {
          $emailSubject = "Liquid Nitrogen Recharge";
          $emailBody = "No items found that can be recharged.";
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
+         $this->sendRechargeEmail($emailSubject, $emailBody);
       }
       
       die(json_encode($return));
@@ -797,7 +800,7 @@ class Recharges{
       $fileName = null;
       
       if(count($result) > 0){    
-         $fileName = "/tmp/labels_recharge_".date('Y_m_d')."-".time().".csv";
+         $fileName = "/tmp/labels_recharge_".date('Y_m_d')."-".time().".xlsx";
          
          $phpExcel = $this->initExcelSheet("Barcode Labels Recharge");
          $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
@@ -807,13 +810,13 @@ class Recharges{
          
          $emailSubject = "Barcode Labels Recharge";
          $emailBody = "Find attached a csv file containing data for barcode label recharges.";
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, $fileName);
+         $this->sendRechargeEmail($emailSubject, $emailBody, $fileName);
          unlink($fileName);
       } 
       else {
          $emailSubject = "Barcode Labels Recharge";
          $emailBody = "No items found that can be recharged.";
-         $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
+         $this->sendRechargeEmail($emailSubject, $emailBody);
       }
       
       die(json_encode($return));
@@ -942,12 +945,23 @@ class Recharges{
     * @param type $message Email's body/message
     * @param type $file    Attachements for the email. Set to null if none
     */
-   private function sendRechargeEmail($address, $subject, $message, $file = null){
+   private function sendRechargeEmail($subject, $message, $file = null){
+      $address = $this->Dbase->getEmailAddress($_SESSION['username']);
+      $cc = null;
+      if($address == 0){
+         $address = Config::$managerEmail;
+      }
+      else if(strtolower($address) !== strtolower(Config::$managerEmail)){
+         $cc = Config::$managerEmail;
+      }
+      
       if($file != null){
-         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
+         if($cc == null) shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
+         else shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" '.' -c '.$cc.' -a '.$file.' -- '.$address);
       }
       else {
-         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
+         if($cc == null) shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
+         else shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" '.' -c '.$cc.' -a '.$file.' -- '.$address);
       }
    }
    
