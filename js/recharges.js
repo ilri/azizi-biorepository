@@ -6,6 +6,7 @@ var MODE_STORAGE = "storage";
 var MODE_LN2 = "ln2";
 var MODE_LABELS = "labels";
 var MODE_INVENTORY = "inventory";
+var MODE_MANAGE_PRICES = "manage_prices";
 
 function Recharges(mode){
    console.log("called");
@@ -35,7 +36,11 @@ function Recharges(mode){
    window.rc.inventoryRechargeTAdapter = undefined;
    window.rc.ln2RechargeTAdapter = undefined;
    window.rc.labelsRechargeTAdapter = undefined;
-   
+   window.rc.priceTables = {
+      ln2: undefined,
+      storage: undefined,
+      labels: undefined
+   };
    //initialize the event handlers
    window.rc.windowResized();//call it the first time
    $(window).resize(function(){
@@ -116,7 +121,56 @@ function Recharges(mode){
    else if(window.rc.mode == MODE_LABELS){
       window.rc.initLabelsSpecificValues();
    }
+   else if(window.rc.mode == MODE_MANAGE_PRICES){
+      window.rc.initManagePriceSpecificValues();
+   }
 }
+
+Recharges.prototype.initManagePriceSpecificValues = function(){
+   
+   $("#ln2_period_starting").datepicker({dateFormat: 'yy-mm-dd'});
+   $("#ln2_period_starting").change(function(){
+      $("#ln2_period_ending").val('');
+      $("#ln2_period_ending").datepicker('destroy');
+      if($("#ln2_period_starting").val().length > 0){   
+         $("#ln2_period_ending").datepicker({dateFormat: 'yy-mm-dd', minDate: new Date($("#ln2_period_starting").val())});
+      }
+      else {
+         $("#ln2_period_ending").datepicker({dateFormat: 'yy-mm-dd'});
+      }
+   });
+   $("#ln2_period_ending").datepicker({dateFormat: 'yy-mm-dd'});
+   
+   $("#labels_period_starting").datepicker({dateFormat: 'yy-mm-dd'});
+   $("#labels_period_starting").change(function(){
+      $("#labels_period_ending").val('');
+      $("#labels_period_ending").datepicker('destroy');
+      if($("#labels_period_starting").val().length > 0){   
+         $("#labels_period_ending").datepicker({dateFormat: 'yy-mm-dd', minDate: new Date($("#labels_period_starting").val())});
+      }
+      else {
+         $("#labels_period_ending").datepicker({dateFormat: 'yy-mm-dd'});
+      }
+   });
+   $("#labels_period_ending").datepicker({dateFormat: 'yy-mm-dd'});
+   
+   $("#storage_period_starting").datepicker({dateFormat: 'yy-mm-dd'});
+   $("#storage_period_starting").change(function(){
+      $("#storage_period_ending").val('');
+      $("#storage_period_ending").datepicker('destroy');
+      if($("#storage_period_starting").val().length > 0){   
+         $("#storage_period_ending").datepicker({dateFormat: 'yy-mm-dd', minDate: new Date($("#storage_period_starting").val())});
+      }
+      else {
+         $("#storage_period_ending").datepicker({dateFormat: 'yy-mm-dd'});
+      }
+   });
+   $("#storage_period_ending").datepicker({dateFormat: 'yy-mm-dd'});
+   
+   window.rc.initLabelsPricesTable();
+   window.rc.initLN2PricesTable();
+   window.rc.initStoragePricesTable();
+};
 
 Recharges.prototype.initStorageSpecificValues = function(){
    $("#period_ending").change(function(){
@@ -162,8 +216,198 @@ Recharges.prototype.loadStorageSpaceTable = function(){
  * @returns {undefined}
  */
 Recharges.prototype.windowResized = function(){
-   $("#recharge_dialog").css('left', (window.innerWidth / 2) - ($("#recharge_dialog").width() / 2) + "px");
-   $("#recharge_dialog").css('top', (window.innerHeight / 2) - ($("#recharge_dialog").height() / 2) + "px");
+   if(window.rc.mode != MODE_MANAGE_PRICES){
+      $("#recharge_dialog").css('left', (window.innerWidth / 2) - ($("#recharge_dialog").width() / 2) + "px");
+      $("#recharge_dialog").css('top', (window.innerHeight / 2) - ($("#recharge_dialog").height() / 2) + "px");
+   }
+};
+
+Recharges.prototype.initLN2PricesTable = function(){
+   var theme = '';
+   var url = "mod_ajax.php?page=recharges&do=manage_prices";
+   
+   var data = {
+      action: 'get_ln2_prices'
+   };
+
+   var source = {
+      datatype: 'json',
+      datafields: [ 
+         {name: 'id'},
+         {name: 'start_date'},
+         {name: 'end_date'},
+         {name: 'price'}
+      ],//make sure you update these fields when you update those of the update fetch
+      id: 'id',
+      root: 'data',
+      async: true,
+      url: url, 
+      type: 'POST',
+      data: data
+   };
+
+   window.rc.priceTables.ln2 = new $.jqx.dataAdapter(source);
+
+   // create jqxgrid
+   if($('#ln2_prices_table :regex(class, jqx\-grid)').length === 0){
+      $("#ln2_prices_table").jqxGrid({
+         width: 400,
+         autoheight: true,
+         source: window.rc.priceTables.ln2,
+         columnsresize: true,
+         theme: theme,
+         sortable: false,
+         pageable: false,
+         virtualmode: true,
+         editable: true,
+         rendergridrows: function() {
+            return window.rc.priceTables.ln2.records;
+         },
+         columns: [
+            {text: 'Period Starting', datafield: 'start_date', width: 150, sortable: false, editable: true},
+            {text: 'Period Ending', datafield: 'end_date', width: 150, sortable: false, editable: true},
+            {text: 'Price (USD)', datafield: 'price', width: 100, sortable: false, editable: true}
+         ]
+      });
+
+
+      $("#ln2_prices_table").on('cellendedit', function (event) {
+         // column data field.
+         var dataField = event.args.datafield;
+         // row's bound index.
+         var rowBoundIndex = event.args.rowindex;
+         // cell value
+         var value = event.args.value;
+
+         //TODO: update database
+      });
+   }
+};
+
+Recharges.prototype.initStoragePricesTable = function(){
+   var theme = '';
+   var url = "mod_ajax.php?page=recharges&do=manage_prices";
+   
+   var data = {
+      action: 'get_storage_prices'
+   };
+
+   var source = {
+      datatype: 'json',
+      datafields: [ 
+         {name: 'id'},
+         {name: 'start_date'},
+         {name: 'end_date'},
+         {name: 'price'}
+      ],//make sure you update these fields when you update those of the update fetch
+      id: 'id',
+      root: 'data',
+      async: true,
+      url: url, 
+      type: 'POST',
+      data: data
+   };
+
+   window.rc.priceTables.storage = new $.jqx.dataAdapter(source);
+
+   // create jqxgrid
+   if($('#storage_prices_table :regex(class, jqx\-grid)').length === 0){
+      $("#storage_prices_table").jqxGrid({
+         width: 400,
+         autoheight: true,
+         source: window.rc.priceTables.storage,
+         columnsresize: true,
+         theme: theme,
+         sortable: false,
+         pageable: false,
+         virtualmode: true,
+         editable: true,
+         rendergridrows: function() {
+            return window.rc.priceTables.storage.records;
+         },
+         columns: [
+            {text: 'Period Starting', datafield: 'start_date', width: 150, sortable: false, editable: true},
+            {text: 'Period Ending', datafield: 'end_date', width: 150, sortable: false, editable: true},
+            {text: 'Price (USD)', datafield: 'price', width: 100, sortable: false, editable: true}
+         ]
+      });
+
+
+      $("#storage_prices_table").on('cellendedit', function (event) {
+         // column data field.
+         var dataField = event.args.datafield;
+         // row's bound index.
+         var rowBoundIndex = event.args.rowindex;
+         // cell value
+         var value = event.args.value;
+
+         //TODO: update database
+      });
+   }
+};
+
+Recharges.prototype.initLabelsPricesTable = function(){
+   var theme = '';
+   var url = "mod_ajax.php?page=recharges&do=manage_prices";
+   
+   var data = {
+      action: 'get_labels_prices'
+   };
+
+   var source = {
+      datatype: 'json',
+      datafields: [ 
+         {name: 'id'},
+         {name: 'label_type'},
+         {name: 'start_date'},
+         {name: 'end_date'},
+         {name: 'price'}
+      ],//make sure you update these fields when you update those of the update fetch
+      id: 'id',
+      root: 'data',
+      async: true,
+      url: url, 
+      type: 'POST',
+      data: data
+   };
+
+   window.rc.priceTables.labels = new $.jqx.dataAdapter(source);
+
+   // create jqxgrid
+   if($('#labels_prices_table :regex(class, jqx\-grid)').length === 0){
+      $("#labels_prices_table").jqxGrid({
+         width: 600,
+         autoheight: true,
+         source: window.rc.priceTables.labels,
+         columnsresize: true,
+         theme: theme,
+         sortable: false,
+         pageable: false,
+         virtualmode: true,
+         editable: true,
+         rendergridrows: function() {
+            return window.rc.priceTables.labels.records;
+         },
+         columns: [
+            {text: 'Label Type', datafield: 'label_type', width: 200, sortable: false, editable: true},
+            {text: 'Period Starting', datafield: 'start_date', width: 150, sortable: false, editable: true},
+            {text: 'Period Ending', datafield: 'end_date', width: 150, sortable: false, editable: true},
+            {text: 'Price (USD)', datafield: 'price', width: 100, sortable: false, editable: true}
+         ]
+      });
+
+
+      $("#labels_prices_table").on('cellendedit', function (event) {
+         // column data field.
+         var dataField = event.args.datafield;
+         // row's bound index.
+         var rowBoundIndex = event.args.rowindex;
+         // cell value
+         var value = event.args.value;
+
+         //TODO: update database
+      });
+   }
 };
 
 /**
@@ -267,7 +511,7 @@ Recharges.prototype.initStorageSpaceTable = function(){
                         }
                         
                         var rowData = $("#space_recharge_table").jqxGrid('getrowdata', totalPriceIndex);
-                        
+                        console.log(rowData);
                         if(rowData.recharge != 0){
                            aggregatedValue += currentValue;
                         }
@@ -1213,11 +1457,79 @@ Recharges.prototype.initLabelsTable = function(){
    }
 };
 
-/**
- * This function starts
- */
-Recharges.prototype.startDownload = function(url, onLoadFunction){
-   $("#hiddenDownloader").remove();
-   $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
-   $("#hiddenDownloader").attr("src", url);
+Recharges.prototype.validateLabelsPrices = function(){
+   if($("#labels_type").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the type of label", error:true});
+      $("#labels_type").focus();
+      return false;
+   }
+   if($("#labels_period_starting").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the period starting date", error:true});
+      $("#labels_period_starting").focus();
+      return false;
+   }
+   if($("#labels_period_ending").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the period ending date", error:true});
+      $("#labels_period_ending").focus();
+      return false;
+   }
+   if($("#labels_price").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the price", error:true});
+      $("#labels_price").focus();
+      return false;
+   }
+   else if(isNaN($("#labels_price").val())){
+      Notification.show({create:true, hide:true, updateText:false, text: "Enter valid price", error:true});
+      $("#labels_price").focus();
+      return false;
+   }
+   return true;
+};
+
+Recharges.prototype.validateStoragePrices = function(){
+   if($("#storage_period_starting").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the period starting date", error:true});
+      $("#storage_period_starting").focus();
+      return false;
+   }
+   if($("#storage_period_ending").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the period ending date", error:true});
+      $("#storage_period_ending").focus();
+      return false;
+   }
+   if($("#storage_price").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the price", error:true});
+      $("#storage_price").focus();
+      return false;
+   }
+   else if(isNaN($("#storage_price").val())){
+      Notification.show({create:true, hide:true, updateText:false, text: "Enter a valid price", error:true});
+      $("#storage_price").focus();
+      return false;
+   }
+   return true;
+};
+
+Recharges.prototype.validateLN2Prices = function(){
+   if($("#ln2_period_starting").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the period starting date", error:true});
+      $("#ln2_period_starting").focus();
+      return false;
+   }
+   if($("#ln2_period_ending").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the period ending date", error:true});
+      $("#ln2_period_ending").focus();
+      return false;
+   }
+   if($("#ln2_price").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text: "Set the price", error:true});
+      $("#ln2_price").focus();
+      return false;
+   }
+   else if(isNaN($("#ln2_price").val())){
+      Notification.show({create:true, hide:true, updateText:false, text: "Enter a valid price", error:true});
+      $("#ln2_price").focus();
+      return false;
+   }
+   return true;
 };

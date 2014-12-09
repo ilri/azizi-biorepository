@@ -67,6 +67,29 @@ class Recharges{
             $this->submitLabelsRecharge();
          }
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'manage_prices'){
+         if(OPTIONS_REQUESTED_ACTION == ''){
+            $this->showManagePricesPage();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'get_labels_prices'){
+            $this->getLabelsPrices();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'get_ln2_prices'){
+            $this->getLN2Prices();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'get_storage_prices'){
+            $this->getStoragePrices();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'submit_labels_price'){
+            $this->submitLabelsPrice();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'submit_ln2_price'){
+            $this->submitLN2Price();
+         }
+         else if(OPTIONS_REQUESTED_ACTION == 'submit_storage_price'){
+            $this->submitStoragePrice();
+         }
+      }
    }
    
    /**
@@ -82,10 +105,11 @@ class Recharges{
    <h3 class="center">Recharging</h3>
    <div class="user_options">
       <ul>
-         <li><a href="?page=recharges&do=inventory">Biorepository Resources</a></li>
-         <li><a href='?page=recharges&do=ln2'>Liquid Nitrogen</a></li>
-         <li><a href="?page=recharges&do=labels">Printed Labels</a></li>
-         <li><a href='?page=recharges&do=space'>Storage Space</a></li>
+         <li><a href="?page=recharges&do=inventory">Recharge Biorepository Resources</a></li>
+         <li><a href='?page=recharges&do=ln2'>Recharge Liquid Nitrogen</a></li>
+         <li><a href="?page=recharges&do=labels">Recharge Printed Barcode Labels</a></li>
+         <li><a href='?page=recharges&do=space'>Recharge Storage Space</a></li>
+         <li><a href="?page=recharges&do=manage_prices">Manage Prices</a></li>
       </ul>
    </div>
 </div>
@@ -96,6 +120,126 @@ class Recharges{
    });
 </script>
       <?php
+   }
+   
+   private function showManagePricesPage($addInfo = ''){
+      Repository::jqGridFiles();//Really important if you want jqx to load
+      
+      $query = "select id, label_type"
+              . " from labels_settings"
+              . " order by label_type";
+      $result = $this->Dbase->ExecuteQuery($query);
+      if($result == 1){
+         $result = array();
+         $this->Dbase->CreateLogEntry("An error occurred while trying to fetch label types", "fatal");
+      }
+      $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
+?>
+<script type="text/javascript" src="js/recharges.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<div id="manage_prices">
+   <?php echo $addInfo;?>
+   <h3 class="center">Manage Prices</h3>
+   <div id="labels_prices" style="margin: 15px; padding: 20px; border: 1px solid #d3d3d3;">
+      <h5>Barcode Labels</h5>
+      <div style="display: inline-block; width: 740px;">
+         <form enctype="multipart/form-data" name="labels_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateLabelsPrices();">
+            <input type="hidden" name="action" value="submit_labels_price" />
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="labels_type">Label Type</label>
+               <select id="labels_type" name="labels_type" class="input-large">
+                  <option value=""></option>
+                  <?php
+                  foreach($result as $currType){
+                     echo "<option value='{$currType['id']}'>{$currType['label_type']}</option>";
+                  }
+                  ?>
+               </select>
+            </div>
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="labels_period_starting">Period starting</label>
+               <input id="labels_period_starting" name="labels_period_starting" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="labels_period_ending">Period ending</label>
+               <input id="labels_period_ending" name="labels_period_ending" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="labels_price">Price (USD)</label>
+               <input id="labels_price" name="labels_price" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="right">
+               <input type="submit" class="btn btn-primary" value="Set Label Price" />
+            </div>
+         </form>
+      </div>
+      <div id="labels_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
+   </div>
+   <div id="storage_prices" style="margin: 15px; padding: 20px; border: 1px solid #d3d3d3;">
+      <h5>Storage Space</h5>
+      <div style="display: inline-block; width: 740px;">
+         <form enctype="multipart/form-data" name="storage_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateStoragePrices();">
+            <input type="hidden" name="action" value="submit_storage_price" />
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="storage_period_starting">Period starting</label>
+               <input id="storage_period_starting" name="storage_period_starting" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="storage_period_ending">Period ending</label>
+               <input id="storage_period_ending" name="storage_period_ending" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="storage_price">Price (USD)</label>
+               <input id="storage_price" name="storage_price" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="right">
+               <input type="submit" class="btn btn-primary" value="Set Storage Price" style="margin-top: 15px; margin-right: 230px;" />
+            </div>
+         </form>
+      </div>
+      <div id="storage_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
+   </div>
+   <div id="ln2_prices" style="margin: 15px; padding: 20px; border: 1px solid #d3d3d3;">
+      <h5>Liquid Nitrogen</h5>
+      <div style="display: inline-block; width: 740px;">
+         <form enctype="multipart/form-data" name="ln2_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateLN2Prices();">
+            <input type="hidden" name="action" value="submit_ln2_price" />
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="ln2_period_starting">Period starting</label>
+               <input id="ln2_period_starting" name="ln2_period_starting" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="ln2_period_ending">Period ending</label>
+               <input id="ln2_period_ending" name="ln2_period_ending" class="input-medium" type="text" style="height: 28px;" style="height: 28px;" />
+            </div>
+            <div class="form-group left-align" style="margin-left: 20px;">
+               <label for="ln2_price">Price (USD)</label>
+               <input id="ln2_price" name="ln2_price" class="input-medium" type="text" style="height: 28px;" />
+            </div>
+            <div class="right">
+               <input type="submit" class="btn btn-primary" value="Set LN2 Price" style="margin-top: 15px; margin-right: 230px;" />
+            </div>
+         </form>
+      </div>
+      <div id="ln2_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
+   </div>
+</div>
+<script type="text/javascript">
+   $(document).ready(function(){
+      var recharges = new Recharges(MODE_MANAGE_PRICES);
+      
+      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
+   });
+</script>
+<?php
    }
    
    /**
@@ -137,7 +281,7 @@ class Recharges{
       </div>
       <div class="form-group left-align">
          <label for="price">Price per box per year (USD)</label>
-         <input id="price" name="price" class="input-large" />
+         <input id="price" name="price" class="input-large" disabled="disabled" value="<?php echo $this->getStoragePrice();?>" />
       </div>
    </div>
    <div id="space_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
@@ -322,7 +466,7 @@ class Recharges{
             $duration = ($end - $start)/86400;
             $result[$i]['duration'] = $duration;
             
-            $result[$i]['last_period'] = date('d-m-Y', $start);
+            $result[$i]['last_period'] = date('Y-m-d', $start);
          }
          else {
             $result[$i]['duration'] = 0;
@@ -429,9 +573,11 @@ class Recharges{
    }
    
    private function getLabelsPrice($type){
-      $query = "select price "
-              . "from labels_prices "
-              . "where label_type = :type and `start_date` <= curdate()";
+      $query = "select price"
+              . " from labels_prices"
+              . " where label_type = :type and `start_date` <= curdate() and `end_date` >= curdate()"
+              . " order by id desc"
+              . " limit 1";
       $result = $this->Dbase->ExecuteQuery($query, array("type" => $type));
       
       if($result == 1){
@@ -440,10 +586,6 @@ class Recharges{
       }
       else if(count($result) == 1){
          return $result[0]['price'];
-      }
-      else if(count($result) > 1){
-         $this->Dbase->CreateLogEntry("More than one price gotten for label type with id = $type. Returning 0 as label price", "fatal");   
-         return 0;
       }
       else{
          $this->Dbase->CreateLogEntry("No price gotten for label type with id = $type. Returning 0 as label price", "warnings");   
@@ -457,18 +599,42 @@ class Recharges{
     * @return  float    Returns -1 if an error occures or the price of nitrogen
     */
    private function getNitrogenPrice() {
-      $query = "SELECT price FROM `ln2_prices` WHERE `start_date` <= CURDATE()";
+      $query = "SELECT price"
+              . " FROM `ln2_prices`"
+              . " WHERE `start_date` <= CURDATE() and `end_date` >= curdate()"
+              . " order by id desc"
+              . " limit 1";
       $result = $this->Dbase->ExecuteQuery($query);
       if($result!==1) {
          if(sizeof($result)===1){
             return $result[0]['price'];
          }
          else {
-            return -1;
+            return 0;
          }
       }
       else {
-         return -1;
+         return 0;
+      }
+   }
+   
+   private function getStoragePrice() {
+      $query = "SELECT price"
+              . " FROM `storage_prices`"
+              . " WHERE `start_date` <= CURDATE() and `end_date` >= curdate()"
+              . " order by id desc"
+              . " limit 1";
+      $result = $this->Dbase->ExecuteQuery($query);
+      if($result!==1) {
+         if(sizeof($result)===1){
+            return $result[0]['price'];
+         }
+         else {
+            return 0;
+         }
+      }
+      else {
+         return 0;
       }
    }
    
@@ -906,6 +1072,58 @@ class Recharges{
       return array("summary" => array(), "breakdown" => array());
    }
    
+   private function getLabelsPrices(){
+      $query = "select a.id, b.label_type, a.price, a.start_date, a.end_date"
+              . " from labels_prices as a"
+              . " inner join labels_settings as b on a.label_type = b.id"
+              . " where a.id in (select max(id) from labels_prices group by label_type)";
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result == 1){
+         $result = array();
+         $this->Dbase->CreateLogEntry("An error occurred while trying to get labels prices");
+      }
+      
+      $json = array('data' => $result);
+      $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
+      die(json_encode($json));
+   }
+   
+   private function getLN2Prices(){
+      $query = "select id, price, start_date, end_date"
+              . " from ln2_prices"
+              . " order by id desc limit 3";
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result == 1){
+         $result = array();
+         $this->Dbase->CreateLogEntry("An error occurred while trying to get LN2 prices");
+      }
+      
+      $json = array('data' => $result);
+      $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
+      die(json_encode($json));
+   }
+   
+   private function getStoragePrices(){
+      $query = "select id, price, start_date, end_date"
+              . " from storage_prices"
+              . " order by id desc limit 3";
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result == 1){
+         $result = array();
+         $this->Dbase->CreateLogEntry("An error occurred while trying to get LN2 prices");
+      }
+      
+      $json = array('data' => $result);
+      $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
+      die(json_encode($json));
+   }
+   
    /**
     * This function generates a CSV string from a two dimensional array.
     * Make sure each of the second level associative arrays the same size.
@@ -1000,6 +1218,53 @@ class Recharges{
       return $phpExcel;
    }
    
+   private function submitLN2Price(){
+      $periodStarting = $_POST['ln2_period_starting'];
+      $periodEnding = $_POST['ln2_period_ending'];
+      $price = $_POST['ln2_price'];
+      
+      if(strlen($periodStarting) > 0 && strlen($periodEnding) > 0 && is_numeric($price)){
+         $query = "insert into ln2_prices(start_date, end_date, price)"
+                 . " values(:start_date, :end_date, :price)";
+         $this->Dbase->ExecuteQuery($query, array("start_date" => $periodStarting, "end_date" => $periodEnding, "price" => $price));
+         $this->showManagePricesPage("Successfully added LN2 price");
+      }
+      else {
+         $this->showManagePricesPage("The data provided was mulformed. LN2 price not added.");
+      }
+   }
    
+   private function submitLabelsPrice(){
+      $periodStarting = $_POST['labels_period_starting'];
+      $periodEnding = $_POST['labels_period_ending'];
+      $price = $_POST['labels_price'];
+      $type = $_POST['labels_type'];
+      
+      if(strlen($periodStarting) > 0 && strlen($periodEnding) > 0 && is_numeric($price) && is_numeric($type)){
+         $query = "insert into labels_prices(start_date, end_date, label_type, price)"
+                 . " values(:start_date, :end_date, :type, :price)";
+         $this->Dbase->ExecuteQuery($query, array("start_date" => $periodStarting, "end_date" => $periodEnding, "price" => $price, "type" => $type));
+         $this->showManagePricesPage("Successfully added labels price");
+      }
+      else {
+         $this->showManagePricesPage("The data provided was mulformed. Labels price not added.");
+      }
+   }
+   
+   private function submitStoragePrice(){
+      $periodStarting = $_POST['storage_period_starting'];
+      $periodEnding = $_POST['storage_period_ending'];
+      $price = $_POST['storage_price'];
+      
+      if(strlen($periodStarting) > 0 && strlen($periodEnding) > 0 && is_numeric($price)){
+         $query = "insert into storage_prices(start_date, end_date, price)"
+                 . " values(:start_date, :end_date, :price)";
+         $this->Dbase->ExecuteQuery($query, array("start_date" => $periodStarting, "end_date" => $periodEnding, "price" => $price));
+         $this->showManagePricesPage("Successfully added storage price");
+      }
+      else {
+         $this->showManagePricesPage("The data provided was mulformed. Storage price not added.");
+      }
+   }
 }
 ?>
