@@ -962,79 +962,87 @@ class BoxStorage extends Repository{
     */
    private function insertBox(){
       $message = "";
+      if(strlen($_POST['box_label']) > 0
+              && strlen($_POST['box_size']) > 0
+              && strlen($_POST['no_samples']) > 0
+              && strlen($_POST['status']) > 0
+              && strlen($_POST['project']) > 0){
+         //generate box size that lims can understand
+         $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
 
-      //generate box size that lims can understand
-      $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
-
-      //change keeper to biorepository manger if box is in temp position
-      $ownerID = $_POST['owner'];
-      if($_POST['status'] === 'temporary'){
-         $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
-         $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
-         if($result !== 1){
-            $ownerID = $result[0]['count'];
+         //change keeper to biorepository manger if box is in temp position
+         $ownerID = $_POST['owner'];
+         if($_POST['status'] === 'temporary'){
+            $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
+            $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
+            if($result !== 1){
+               $ownerID = $result[0]['count'];
+            }
          }
-      }
 
-      //check if user specified the rack manually
-      $rack = $_POST['rack'];
-      if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
+         //check if user specified the rack manually
+         $rack = $_POST['rack'];
+         if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
-      //get the user id for person responsible for adding the box
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-      }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-      }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $addedBy = $userId[0]['id'];
+         //get the user id for person responsible for adding the box
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $addedBy = $userId[0]['id'];
 
-      $this->Dbase->StartTrans();
-      $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
-      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features']);
-      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
-      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
-
-      $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
-      if($result !== 1) {
-         $boxId = $this->Dbase->dbcon->lastInsertId();
-         //insert extra information in dbase database
-         $now = date('Y-m-d H:i:s');
-
-         /*$project = NULL;
-         if($_POST['status'] === 'temporary')*/
-            $project = $_POST['project'];
-         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) values(:box_id, :status, :date_added, :added_by, :project, :no_samples)';
-         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'no_samples' => $_POST['no_samples']);
-         //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
-         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
+         $this->Dbase->StartTrans();
+         $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
+         $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features']);
+         $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
+         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
 
          $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
-         if($result === 1){
-            $this->Dbase->RollBackTrans();
-            $message = "Unable to add some information from the last request";
-            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+         if($result !== 1) {
+            $boxId = $this->Dbase->dbcon->lastInsertId();
+            //insert extra information in dbase database
+            $now = date('Y-m-d H:i:s');
+
+            /*$project = NULL;
+            if($_POST['status'] === 'temporary')*/
+               $project = $_POST['project'];
+            $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) values(:box_id, :status, :date_added, :added_by, :project, :no_samples)';
+            $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'no_samples' => $_POST['no_samples']);
+            //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
+            $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
+
+            $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
+            if($result === 1){
+               $this->Dbase->RollBackTrans();
+               $message = "Unable to add some information from the last request";
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+            }
+            else{
+               $this->Dbase->CommitTrans();
+               $message = "The box '{$_POST['box_label']}' was added successfully";
+            }
          }
          else{
-            $this->Dbase->CommitTrans();
-            $message = "The box '{$_POST['box_label']}' was added successfully";
+            $this->Dbase->RollBackTrans();
+            $message = "Unable to add the last request. Try again later";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
+         return $message;
       }
-      else{
-         $this->Dbase->RollBackTrans();
-         $message = "Unable to add the last request. Try again later";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      else {
+         return "User provided incomplete data. Box not added to database";
       }
-      return $message;
    }
 
    /**
@@ -1046,88 +1054,98 @@ class BoxStorage extends Repository{
     */
    private function updateBox(){
       $message = "";
-      $error= 0;//set to 1 if error occures
+      
+      //$_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']
+      if(strlen($_POST['status']) > 0
+              && strlen($_POST['project']) > 0
+              && strlen($_POST['box_id']) > 0
+              && strlen($_POST['no_samples']) > 0){
+         $error= 0;//set to 1 if error occures
 
-      //generate box size that lims can understand
-      $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
+         //generate box size that lims can understand
+         $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
 
-      //change keeper to biorepository manger if box is in temp position
-      $ownerID = $_POST['owner'];
-      if($_POST['status'] === 'temporary'){
-         $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
-         $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
-         if($result !== 1){
-            $ownerID = $result[0]['count'];
+         //change keeper to biorepository manger if box is in temp position
+         $ownerID = $_POST['owner'];
+         if($_POST['status'] === 'temporary'){
+            $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
+            $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
+            if($result !== 1){
+               $ownerID = $result[0]['count'];
+            }
          }
-      }
 
-      //check if user specified the rack manually
-      $rack = $_POST['rack'];
-      if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
+         //check if user specified the rack manually
+         $rack = $_POST['rack'];
+         if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
-      //get the user id for person responsible for updating the box
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-      }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-      }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $addedBy = $userId[0]['id'];
+         //get the user id for person responsible for updating the box
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $addedBy = $userId[0]['id'];
 
-      $this->Dbase->StartTrans();
-      $updateQuery = 'update '. Config::$config['azizi_db'] .'.boxes_def set box_name=:box_name, size=:size, box_type=:box_type, location=:location, rack=:rack, rack_position=:rack_position, keeper=:keeper, box_features=:features where box_id=:box_id';
-      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features'], 'box_id' => $_POST['box_id']);
-      //$columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
-      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
-
-      $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
-      if($result !== 1) {
-         $boxId = $this->Dbase->dbcon->lastInsertId();
-         //insert extra information in dbase database
-         $now = date('Y-m-d H:i:s');
-
-         /*$project = NULL;
-         if($_POST['status'] === "temporary")*/
-            $project = $_POST['project'];
-
-         $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) '.
-                 'values(:box_id, :status, :date_added, :added_by, :project, :no_samples) '.
-                 'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project), no_samples=values(no_samples)';
-         $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']);
-         //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
-         $this->Dbase->CreateLogEntry('Update query = '.$updateQuery, 'debug');
+         $this->Dbase->StartTrans();
+         $updateQuery = 'update '. Config::$config['azizi_db'] .'.boxes_def set box_name=:box_name, size=:size, box_type=:box_type, location=:location, rack=:rack, rack_position=:rack_position, keeper=:keeper, box_features=:features where box_id=:box_id';
+         $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features'], 'box_id' => $_POST['box_id']);
+         //$columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
+         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
          $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
-         if($result === 1){
+         if($result !== 1) {
+            $boxId = $this->Dbase->dbcon->lastInsertId();
+            //insert extra information in dbase database
+            $now = date('Y-m-d H:i:s');
+
+            /*$project = NULL;
+            if($_POST['status'] === "temporary")*/
+               $project = $_POST['project'];
+
+            $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) '.
+                    'values(:box_id, :status, :date_added, :added_by, :project, :no_samples) '.
+                    'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project), no_samples=values(no_samples)';
+            $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']);
+            //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
+            $this->Dbase->CreateLogEntry('Update query = '.$updateQuery, 'debug');
+
+            $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
+            if($result === 1){
+               $this->Dbase->RollBackTrans();
+               $message = "Unable to add some information from the last request";
+               $error = 1;
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+            }
+            else{
+               $this->Dbase->CommitTrans();
+               $message = "The box '{$_POST['box_label']}' was updated successfully";
+            }
+         }
+         else{
             $this->Dbase->RollBackTrans();
-            $message = "Unable to add some information from the last request";
+            $message = "Unable to add the last request. Try again later";
             $error = 1;
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
-         else{
-            $this->Dbase->CommitTrans();
-            $message = "The box '{$_POST['box_label']}' was updated successfully";
-         }
+         $json = array();
+         $json["message"] = $message;
+         $json["error"] = $error;
+         return json_encode($json);
       }
-      else{
-         $this->Dbase->RollBackTrans();
-         $message = "Unable to add the last request. Try again later";
-         $error = 1;
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      else {
+         return json_encode(array("error" => 1, "message" => "User provided incomplete data. Box details not updated"));
       }
-      $json = array();
-      $json["message"] = $message;
-      $json["error"] = $error;
-      return json_encode($json);
    }
 
    /**
@@ -1137,45 +1155,52 @@ class BoxStorage extends Repository{
     */
    private function submitRemoveRequest(){
       $message = "";
+      
+      if(strlen($_POST['for_who']) > 0
+              && strlen($_POST['purpose']) > 0){
+         
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $removedBy = $userId[0]['id'];
 
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-      }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-      }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $removedBy = $userId[0]['id'];
+         $now = date('Y-m-d H:i:s');
+         $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
 
-      $now = date('Y-m-d H:i:s');
-      $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
+         $colVals = array($_POST['box_id'], $removedBy, $_POST['for_who'], $_POST['purpose'], $now);
 
-      $colVals = array($_POST['box_id'], $removedBy, $_POST['for_who'], $_POST['purpose'], $now);
+         if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
+            array_push($columns, "analysis");
+            array_push($colVals, $_POST['analysis_type']);
+         }
+         $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['dbase'].".lcmod_retrieved_boxes", $columns, $colVals);
 
-      if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
-         array_push($columns, "analysis");
-         array_push($colVals, $_POST['analysis_type']);
+         if($result === 0){
+            $message = "Unable to remove box for the system.";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+         }
+         else{
+            $message = "Box successfully removed from the system.";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Box successfully retrieved from system by '.$_SESSION['username'], 'debug');
+         }
+
+         return $message;
       }
-      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['dbase'].".lcmod_retrieved_boxes", $columns, $colVals);
-
-      if($result === 0){
-         $message = "Unable to remove box for the system.";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+      else {
+         return "User provided incomplete data. Retrieve not recorded";
       }
-      else{
-         $message = "Box successfully removed from the system.";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Box successfully retrieved from system by '.$_SESSION['username'], 'debug');
-      }
-
-      return $message;
    }
 
    /**
@@ -1187,42 +1212,52 @@ class BoxStorage extends Repository{
     */
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
+      
+      if(strlen($_POST['remove_id']) > 0){
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $returnedBy = $userId[0]['id'];
 
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         //get the last remove recored for the box/box being returned
+         $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
+         $now = date('Y-m-d H:i:s');
+
+         $result = $this->Dbase->ExecuteQuery($query, array($now, $returnedBy, $_POST['return_comment'], $_POST['remove_id']));
+         if($result === 0){
+            $message = "Unable to return box back into the system";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to return box back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+         }
+
+         if($fromAjaxRequest) {
+            $jsonArray = array();
+
+            if(is_array($result)) $jsonArray = $result;
+
+            return json_encode(array("data" => $jsonArray, "error_message" => $message));
+         }
+         else return $message;
       }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      else {
+         if($fromAjaxRequest){
+            $jsonArray = array();
+
+            return json_encode(array("data" => $jsonArray, "error_message" => "User provided incomplete data. Return not recorded"));
+         }
+         else return "User provided incomplete data. Return not recorded";
       }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $returnedBy = $userId[0]['id'];
-
-      //get the last remove recored for the box/box being returned
-      $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
-      $now = date('Y-m-d H:i:s');
-
-      $result = $this->Dbase->ExecuteQuery($query, array($now, $returnedBy, $_POST['return_comment'], $_POST['remove_id']));
-      if($result === 0){
-         $message = "Unable to return box back into the system";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to return box back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
-      }
-
-      if($fromAjaxRequest) {
-         $jsonArray = array();
-
-         if(is_array($result)) $jsonArray = $result;
-
-         return json_encode(array("data" => $jsonArray, "error_message" => $message));
-      }
-      else return $message;
    }
 
    /**
@@ -1233,61 +1268,72 @@ class BoxStorage extends Repository{
     * @return string Results for handling the delete box action in the database. Can be either positive or negative
     */
    private function submitDeleteRequest($fromAjaxRequest = false){
-      $message = "";
-      $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
-      $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
-      if($result !== 1 && count($result) === 1){
-         $deletedBoxesLocId = $result[0]['id'];
-         $this->Dbase->CreateLogEntry('mod_box_storage: deletedBoxesLocId = '.$deletedBoxesLocId, 'debug');
-         $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
-         $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $_POST['box_id']));
-         if($result === 1){
+      if(strlen($_POST['box_id']) > 0){
+         $message = "";
+         $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
+         $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
+         if($result !== 1 && count($result) === 1){
+            $deletedBoxesLocId = $result[0]['id'];
+            $this->Dbase->CreateLogEntry('mod_box_storage: deletedBoxesLocId = '.$deletedBoxesLocId, 'debug');
+            $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
+            $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $_POST['box_id']));
+            if($result === 1){
+               $message = "Unable to delete the box";
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
+            }
+            else{
+               $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
+
+               $userId = 1;
+               if(strlen($_SESSION['username']) > 0){
+                  $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+                  $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+               }
+               //for some reason session['username'] is not set for some users but surname and onames are set
+               else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+                  $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+                  $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+               }
+               if($userId == 1){
+                  $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+                  $this->homePage('There was an error while saving the box');
+                  return;
+               }
+               $deletedBy = $userId[0]['id'];
+
+               $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
+               $now = date('Y-m-d H:i:s');
+
+               $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
+               if($result === 1){
+                  $message = "Unable to record extra information on the delete";
+                  $this->Dbase->CreateLogEntry('mod_box_storage: Unable to record details of the last box delete. Last error is '.$this->Dbase->lastError, 'fatal');
+               }
+            }
+         }
+         else{
             $message = "Unable to delete the box";
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
          }
-         else{
-            $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
 
-            $userId = 1;
-            if(strlen($_SESSION['username']) > 0){
-               $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-               $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-            }
-            //for some reason session['username'] is not set for some users but surname and onames are set
-            else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-               $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-               $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-            }
-            if($userId == 1){
-               $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-               $this->homePage('There was an error while saving the box');
-               return;
-            }
-            $deletedBy = $userId[0]['id'];
+         if($fromAjaxRequest) {
+            $jsonArray = array();
 
-            $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
-            $now = date('Y-m-d H:i:s');
+            if(is_array($result)) $jsonArray = $result;
 
-            $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
-            if($result === 1){
-               $message = "Unable to record extra information on the delete";
-               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to record details of the last box delete. Last error is '.$this->Dbase->lastError, 'fatal');
-            }
+            return json_encode(array("data" => $jsonArray, "error_message" => $message));
+         }
+         else return $message;
+      }
+      else {
+         if($fromAjaxRequest){
+            $jsonArray = array();
+            return json_encode(array("data" => $jsonArray, "error_message" => "User provided incomplete data. Box not deleted"));
+         }
+         else {
+            return "User provided incomplete data. Box not deleted";
          }
       }
-      else{
-         $message = "Unable to delete the box";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
-      }
-
-      if($fromAjaxRequest) {
-         $jsonArray = array();
-
-         if(is_array($result)) $jsonArray = $result;
-
-         return json_encode(array("data" => $jsonArray, "error_message" => $message));
-      }
-      else return $message;
    }
 
    /**
