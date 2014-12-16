@@ -122,6 +122,11 @@ class Recharges{
       <?php
    }
    
+   /**
+    * This function shows the Price List/Manage Prices Page
+    * 
+    * @param type $addInfo Any extra message you want displayed on the page
+    */
    private function showManagePricesPage($addInfo = ''){
       Repository::jqGridFiles();//Really important if you want jqx to load
       
@@ -303,6 +308,11 @@ class Recharges{
       <?php
    }
    
+   /**
+    * This function shows the Recharge Inventory page
+    * 
+    * @param type $addInfo Any extra message you want displayed on the page
+    */
    public function showInventoryPage($addInfo = ''){
       
       Repository::jqGridFiles();//Really important if you want jqx to load
@@ -337,6 +347,11 @@ class Recharges{
       <?php
    }
    
+   /**
+    * This function shows the recharge Liquid nitrogen page
+    * 
+    * @param type $addInfo Any extra message you want displayed on the page
+    */
    public function showLN2page($addInfo = ''){
       Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
@@ -370,6 +385,11 @@ class Recharges{
       <?php
    }
    
+   /**
+    * This function displays the recharge labels page
+    * 
+    * @param type $addInfo Any extra message you want displayed on the page
+    */
    private function showLabelsPage($addInfo = ''){
       Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
@@ -522,6 +542,9 @@ class Recharges{
       die(json_encode($json));
    }
    
+   /**
+    * This function outputs pending Liquid Nitrogen recharges as a json object
+    */
    private function getPendingLN2Recharges(){
        $query = "select '1' as recharge, a.id, b.name as charge_code, a.alt_ccode, a.added_by, a.apprvd_by, a.amount_appr, a.date as date_requested"
               . " from ln2_acquisitions as a"
@@ -547,6 +570,9 @@ class Recharges{
       die(json_encode($json));
    }
    
+   /**
+    * This function outputs pending labels recharges as a json object
+    */
    private function getPendingLabelsRecharges(){
       $query = "select '1' as recharge, a.id, a.requester, b.project_name, b.charge_code, a.type, c.label_type, a.date as date_printed, a.total as labels_printed, a.copies"
               . " from labels_printed as a"
@@ -572,6 +598,14 @@ class Recharges{
       die(json_encode($json));
    }
    
+   /**
+    * This function returns the current price of a label type
+    * 
+    * @param type $type The id of the type of label from the Database
+    * 
+    * @return int The actual price if gotten or 0 if no price found or an error
+    *             occurres
+    */
    private function getLabelsPrice($type){
       $query = "select price"
               . " from labels_prices"
@@ -596,7 +630,7 @@ class Recharges{
    /**
     * Gets the price of nitrogen from the database that is valid for today
     *
-    * @return  float    Returns -1 if an error occures or the price of nitrogen
+    * @return  float    Returns 0 if an error occures or the price of nitrogen
     */
    private function getNitrogenPrice() {
       $query = "SELECT price"
@@ -618,6 +652,11 @@ class Recharges{
       }
    }
    
+   /**
+    * Gets the price of storage space from the database that is valid for today
+    *
+    * @return  float    Returns 0 if an error occures or the price of nitrogen
+    */
    private function getStoragePrice() {
       $query = "SELECT price"
               . " FROM `storage_prices`"
@@ -638,6 +677,9 @@ class Recharges{
       }
    }
    
+   /**
+    * This function processes the current request containing space recharge info
+    */
    private function submitSpaceRecharge(){
       //get all project ids
       $projects = $_REQUEST['projects'];
@@ -740,6 +782,9 @@ class Recharges{
       die(json_encode(array("error" => true, "error_message" => "Something unexpected happened while trying to recharge storage space")));
    }
    
+   /**
+    * This function processes the current request containing inventory recharge info
+    */
    private function submitInventoryRecharge(){
       $return = array("error" => false, "error_message" => "");
       $this->Dbase->CreateLogEntry(print_r($_REQUEST, true), "fatal");
@@ -829,6 +874,9 @@ class Recharges{
        die(json_encode($return));
    }
    
+   /**
+    * This function processes the current request containing Liquid Nitrogen recharge info
+    */
    private function submitLN2Recharge(){
       $return = array("error" => false, "error_message" => "");
       
@@ -910,6 +958,9 @@ class Recharges{
       die(json_encode($return));
    }
    
+   /**
+    * This function processes the current request containing labels recharge info
+    */
    private function submitLabelsRecharge(){
       //id: rowData.id, charge_code: rowData.charge_code, price: rowData.price
       $return = array("error" => false, "error_message" => "");
@@ -1072,6 +1123,9 @@ class Recharges{
       return array("summary" => array(), "breakdown" => array());
    }
    
+   /**
+    * This function outputs all labels prices in the database as a json object
+    */
    private function getLabelsPrices(){
       $query = "select a.id, b.label_type, a.price, DATE_FORMAT(a.start_date,'%D %M %Y') as start_date, DATE_FORMAT(a.end_date, '%D %M %Y') AS end_date"
               . " from labels_prices as a"
@@ -1090,6 +1144,9 @@ class Recharges{
       die(json_encode($json));
    }
    
+   /**
+    * This function outputs all Liquid Nitrogen prices in the database as a json object
+    */
    private function getLN2Prices(){
       $query = "select id, price, DATE_FORMAT(start_date, '%D %M %Y') as start_date, DATE_FORMAT(end_date, '%D %M %Y') as end_date"
               . " from ln2_prices"
@@ -1107,6 +1164,9 @@ class Recharges{
       die(json_encode($json));
    }
    
+   /**
+    * This function outputs all storage space prices in the database as a json object
+    */
    private function getStoragePrices(){
       $query = "select id, price, DATE_FORMAT(start_date, '%D %M %Y') as start_date, DATE_FORMAT(end_date, '%D %M %Y') as end_date"
               . " from storage_prices"
@@ -1207,6 +1267,13 @@ class Recharges{
       return $phpExcel;
    }
    
+   /**
+    * This function creates a PHPExcel object with the relevant metadata info
+    * 
+    * @param type $title The title you want to give the excel document
+    * 
+    * @return PHPExcel
+    */
    private function initExcelSheet($title){
       require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
       $phpExcel = new PHPExcel();
@@ -1218,6 +1285,9 @@ class Recharges{
       return $phpExcel;
    }
    
+   /**
+    * This function adds the Liquid nitrogen price in the current request into the database
+    */
    private function submitLN2Price(){
       $periodStarting = $_POST['ln2_period_starting'];
       $periodEnding = $_POST['ln2_period_ending'];
@@ -1234,6 +1304,9 @@ class Recharges{
       }
    }
    
+   /**
+    * This function adds the lable price in the current request into the database
+    */
    private function submitLabelsPrice(){
       $periodStarting = $_POST['labels_period_starting'];
       $periodEnding = $_POST['labels_period_ending'];
@@ -1251,6 +1324,9 @@ class Recharges{
       }
    }
    
+   /**
+    * This function adds the storage space price in the current request into the database
+    */
    private function submitStoragePrice(){
       $periodStarting = $_POST['storage_period_starting'];
       $periodEnding = $_POST['storage_period_ending'];

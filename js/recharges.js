@@ -8,8 +8,15 @@ var MODE_LABELS = "labels";
 var MODE_INVENTORY = "inventory";
 var MODE_MANAGE_PRICES = "manage_prices";
 
+/**
+ * Constructor for the Recharges class. Add code here that you want to run any
+ * time an object is initialized
+ * 
+ * @param {type} mode   Can be value of MODE_STORAGE, MODE_LN2 e.t.c
+ * 
+ * @returns {Recharges} Returns the instance of Recharges just initialized
+ */
 function Recharges(mode){
-   console.log("called");
    window.rc = this;
    
    //init the data objects
@@ -126,6 +133,11 @@ function Recharges(mode){
    }
 }
 
+/**
+ * This function runs code that is specific to the MODE_MANAGE_PRICES mode
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.initManagePriceSpecificValues = function(){
    
    $("#ln2_period_starting").datepicker({dateFormat: 'yy-mm-dd'});
@@ -172,6 +184,11 @@ Recharges.prototype.initManagePriceSpecificValues = function(){
    window.rc.initStoragePricesTable();
 };
 
+/**
+ * This function runs code that is specific to the MODE_STORAGE mode
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.initStorageSpecificValues = function(){
    $("#period_ending").change(function(){
       window.rc.loadStorageSpaceTable();
@@ -187,19 +204,40 @@ Recharges.prototype.initStorageSpecificValues = function(){
   });
 };
 
+/**
+ * This function runs code that is specific to the MODE_INVENTORY mode
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.initInventorySpecificValues = function(){
    console.log("init inventory specific stuff called");
    window.rc.initInventoryTable();
 };
 
+/**
+ * This function runs code that is specific to the MODE_LN2 mode
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.initLN2SpecificValues = function(){
    window.rc.initLN2Table();
 };
 
+/**
+ * This function runs code that is specific to the MODE_LABELS mode
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.initLabelsSpecificValues = function(){
    window.rc.initLabelsTable();
 };
 
+/**
+ * This function either inits the JQXGrid on the Recharge Storage Space page or
+ * rerenders the table if it's already initialized
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.loadStorageSpaceTable = function(){
    if($("#space_recharge_table").html().length == 0){
       window.rc.initStorageSpaceTable();
@@ -222,6 +260,10 @@ Recharges.prototype.windowResized = function(){
    }
 };
 
+/**
+ * This function the JQXGrid table in the Recharge LN2 Page
+ * @returns {undefined}
+ */
 Recharges.prototype.initLN2PricesTable = function(){
    var theme = '';
    var url = "mod_ajax.php?page=recharges&do=manage_prices";
@@ -284,6 +326,10 @@ Recharges.prototype.initLN2PricesTable = function(){
    }
 };
 
+/**
+ * This function initialized the JQXGrid table in the Recharge Storage Space page
+ * @returns {undefined}
+ */
 Recharges.prototype.initStoragePricesTable = function(){
    var theme = '';
    var url = "mod_ajax.php?page=recharges&do=manage_prices";
@@ -346,6 +392,10 @@ Recharges.prototype.initStoragePricesTable = function(){
    }
 };
 
+/**
+ * This function initialized the JQXGrid table in the Recharge Labels page
+ * @returns {undefined}
+ */
 Recharges.prototype.initLabelsPricesTable = function(){
    var theme = '';
    var url = "mod_ajax.php?page=recharges&do=manage_prices";
@@ -546,6 +596,11 @@ Recharges.prototype.initStorageSpaceTable = function(){
    
 };
 
+/**
+ * This function rerenders the JQXGrid table in the Recharge Storage Space page
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.updateSpaceRechargeProjects = function (rowBoundIndex, dataField, value){
    var dataInfo = $("#space_recharge_table").jqxGrid('getdatainformation');
             
@@ -570,6 +625,11 @@ Recharges.prototype.updateSpaceRechargeProjects = function (rowBoundIndex, dataF
    }
 };
 
+/**
+ * This function rerenders the JQXGrid table in the Recharge Inventory page
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.updateInventoryItems = function(rowBoundIndex, dataField, value){
    var dataInfo = $("#inventory_recharge_table").jqxGrid('getdatainformation');
    
@@ -607,6 +667,11 @@ Recharges.prototype.updateInventoryItems = function(rowBoundIndex, dataField, va
    }
 };
 
+/**
+ * This function rerenders the JQXGrid table in the Recharge Liquid Nitrogen page
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.updateLN2Items = function(rowBoundIndex, dataField, value){
    var dataInfo = $("#ln2_recharge_table").jqxGrid('getdatainformation');
    
@@ -631,6 +696,11 @@ Recharges.prototype.updateLN2Items = function(rowBoundIndex, dataField, value){
    }
 };
 
+/**
+ * This function updates the window.rc.labels.items object
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.updateLabelsItems = function(rowBoundIndex, dataField, value){
    var dataInfo = $("#labels_recharge_table").jqxGrid('getdatainformation');
    
@@ -935,6 +1005,11 @@ Recharges.prototype.submitSpaceRecharge = function(){
    }
 };
 
+/**
+ * This function starts an AJAX request for submitting an inventory recharge
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.submitInventoryRecharge = function(){
    var good = true;
    for(var index = 0; index < window.rc.inventory.items.length; index++){
@@ -995,6 +1070,11 @@ Recharges.prototype.submitInventoryRecharge = function(){
    }
 };
 
+/**
+ * This function starts an AJAX request for submitting a liquid nitrogen recharge
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.submitLN2Recharge = function(){
    var good = true;
    for(var index = 0; index < window.rc.ln2.items.length; index++){
@@ -1053,6 +1133,11 @@ Recharges.prototype.submitLN2Recharge = function(){
    
 };
 
+/**
+ * This function starts an AJAX request for submitting a labels recharge
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.submitLabelsRecharge = function(){
    //TODO: implement
    //id: rowData.id, charge_code: rowData.charge_code, price: rowData.price
@@ -1347,6 +1432,11 @@ Recharges.prototype.initLN2Table = function(){
    
 };
 
+/**
+ * This function initializes the JQXGrid table in the Recharge Labels page
+ * 
+ * @returns {undefined}
+ */
 Recharges.prototype.initLabelsTable = function(){
    
    var theme = '';
@@ -1457,6 +1547,12 @@ Recharges.prototype.initLabelsTable = function(){
    }
 };
 
+/**
+ * This function validates fields related to labels prices in the Manage Recharge
+ * Prices page
+ * 
+ * @returns {Boolean}   TRUE if everything is fine
+ */
 Recharges.prototype.validateLabelsPrices = function(){
    if($("#labels_type").val().length == 0){
       Notification.show({create:true, hide:true, updateText:false, text: "Set the type of label", error:true});
@@ -1486,6 +1582,12 @@ Recharges.prototype.validateLabelsPrices = function(){
    return true;
 };
 
+/**
+ * This function validates fields related to storage space prices in the Manage Recharge
+ * Prices page
+ * 
+ * @returns {Boolean}   TRUE if everything is fine
+ */
 Recharges.prototype.validateStoragePrices = function(){
    if($("#storage_period_starting").val().length == 0){
       Notification.show({create:true, hide:true, updateText:false, text: "Set the period starting date", error:true});
@@ -1510,6 +1612,12 @@ Recharges.prototype.validateStoragePrices = function(){
    return true;
 };
 
+/**
+ * This function validates fields related to liquid nitrogen prices in the Manage Recharge
+ * Prices page
+ * 
+ * @returns {Boolean}   TRUE if everything is fine
+ */
 Recharges.prototype.validateLN2Prices = function(){
    if($("#ln2_period_starting").val().length == 0){
       Notification.show({create:true, hide:true, updateText:false, text: "Set the period starting date", error:true});
