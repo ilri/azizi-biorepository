@@ -1073,7 +1073,7 @@ class Recharges{
    }
    
    private function getLabelsPrices(){
-      $query = "select a.id, b.label_type, a.price, a.start_date, a.end_date"
+      $query = "select a.id, b.label_type, a.price, DATE_FORMAT(a.start_date,'%D %M %Y') as start_date, DATE_FORMAT(a.end_date, '%D %M %Y') AS end_date"
               . " from labels_prices as a"
               . " inner join labels_settings as b on a.label_type = b.id"
               . " where a.id in (select max(id) from labels_prices group by label_type)";
@@ -1091,7 +1091,7 @@ class Recharges{
    }
    
    private function getLN2Prices(){
-      $query = "select id, price, start_date, end_date"
+      $query = "select id, price, DATE_FORMAT(start_date, '%D %M %Y') as start_date, DATE_FORMAT(end_date, '%D %M %Y') as end_date"
               . " from ln2_prices"
               . " order by id desc limit 3";
       
@@ -1108,7 +1108,7 @@ class Recharges{
    }
    
    private function getStoragePrices(){
-      $query = "select id, price, start_date, end_date"
+      $query = "select id, price, DATE_FORMAT(start_date, '%D %M %Y') as start_date, DATE_FORMAT(end_date, '%D %M %Y') as end_date"
               . " from storage_prices"
               . " order by id desc limit 3";
       
