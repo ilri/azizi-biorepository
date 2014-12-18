@@ -100,7 +100,7 @@ class BoxStorage extends Repository{
          <li><a href='?page=box_storage&do=remove_box'>Retrieve a box</a></li>
          <li><a href="?page=box_storage&do=return_box">Return a borrowed box</a></li>
          <li><a href="?page=box_storage&do=search_box">Search a box</a></li>
-         <li><a href="?page=box_storage&do=recharge_space">Recharge Storage Space</a></li>
+         <!--li><a href="?page=box_storage&do=recharge_space">Recharge Storage Space</a></li-->
          <li><a href='?page=box_storage&do=delete_box'>Delete a box</a></li>
       </ul>
    </div>
@@ -1017,7 +1017,7 @@ class BoxStorage extends Repository{
             /*$project = NULL;
             if($_POST['status'] === 'temporary')*/
                $project = $_POST['project'];
-            $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) values(:box_id, :status, :date_added, :added_by, :project, :no_samples)';
+            $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples, rc_period_starting, rc_period_ending, rc_timestamp) values(:box_id, :status, :date_added, :added_by, :project, :no_samples, NOW(), NOW(), NOW())';
             $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'no_samples' => $_POST['no_samples']);
             //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
             $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
@@ -1113,8 +1113,8 @@ class BoxStorage extends Repository{
             if($_POST['status'] === "temporary")*/
                $project = $_POST['project'];
 
-            $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) '.
-                    'values(:box_id, :status, :date_added, :added_by, :project, :no_samples) '.
+            $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples, rc_period_starting, rc_period_ending, rc_timestamp) '.
+                    'values(:box_id, :status, :date_added, :added_by, :project, :no_samples, NOW(), NOW(), NOW()) '.
                     'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project), no_samples=values(no_samples)';
             $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']);
             //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);

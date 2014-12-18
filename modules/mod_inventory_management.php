@@ -108,9 +108,9 @@ class InventoryManager extends Repository{
         </div>
    </form>
    <?php
-      if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+      /*if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
          echo "<div class='center' style='margin-top:10px;margin-left:700px;margin-bottom:10px;'><button id='recharge_btn' type='button' class='btn btn-primary'>Recharge Items</button></div>";
-      }
+      }*/
    ?>
    <div id="issued_items">&nbsp;</div>
    <div id="return_comment_div" style="display: none; position: absolute; width: auto; height: auto; background: white; box-shadow:0 1px 2px #aaa; padding: 1rem;">
@@ -174,9 +174,9 @@ class InventoryManager extends Repository{
       height: 260,
       singleSelect: true
    });
-   $("#recharge_btn").click(function(){
+   /*$("#recharge_btn").click(function(){
       InventoryManager.downloadRechargeFile();
-   });
+   });*/
 </script>
       <?php
    }

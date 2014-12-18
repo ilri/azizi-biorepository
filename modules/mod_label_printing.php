@@ -145,9 +145,9 @@ class LabelPrinter extends Repository{
      </div>
   </form>
   <?php
-  if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+  /*if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
      echo "<div class='center' style='margin-top:10px;margin-left:700px;margin-bottom:10px;'><button id='recharge_btn' type='button' class='btn btn-primary'>Recharge Printed Labels</button></div>";
-  }
+  }*/
   ?>
   <!--div><a href='javascript:;' onClick='LabelPrinter.toggleMe("printed_labels");'>Printed Labels</a></div-->
   <div id='lower_panel' class='hidden'>
@@ -253,9 +253,9 @@ class LabelPrinter extends Repository{
       $("#recharge_btn").click(function(){
          LabelPrinter.showRechargeProjects();
       });
-      $("#download_recharge_btn").click(function(){
+      /*$("#download_recharge_btn").click(function(){
          LabelPrinter.downloadRechargeSheet();
-      });
+      });*/
       $("#selected_recharge_project").change(function(){
          console.log("changed");
          var projectId = $("#selected_recharge_project").val();

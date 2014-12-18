@@ -212,6 +212,12 @@ Recharges.prototype.initStorageSpecificValues = function(){
 Recharges.prototype.initInventorySpecificValues = function(){
    console.log("init inventory specific stuff called");
    window.rc.initInventoryTable();
+   $("#inventory_period_starting").change(function(){
+      window.rc.updateInventoryTable();
+   });
+   $("#inventory_period_ending").change(function(){
+      window.rc.updateInventoryTable();
+   });
 };
 
 /**
@@ -221,6 +227,12 @@ Recharges.prototype.initInventorySpecificValues = function(){
  */
 Recharges.prototype.initLN2SpecificValues = function(){
    window.rc.initLN2Table();
+   $("#ln2_period_starting").change(function(){
+      window.rc.updateLN2Table();
+   });
+   $("#ln2_period_ending").change(function(){
+      window.rc.updateLN2Table();
+   });
 };
 
 /**
@@ -230,6 +242,12 @@ Recharges.prototype.initLN2SpecificValues = function(){
  */
 Recharges.prototype.initLabelsSpecificValues = function(){
    window.rc.initLabelsTable();
+   $("#labels_period_starting").change(function(){
+      window.rc.updateLabelsTable();
+   });
+   $("#labels_period_ending").change(function(){
+      window.rc.updateLabelsTable();
+   });
 };
 
 /**
@@ -512,7 +530,7 @@ Recharges.prototype.initStorageSpaceTable = function(){
             showaggregates: true,
             showstatusbar: true,
             statusbarheight: 35,
-            sortable: false,
+            sortable: true,
             pageable: false,
             ready: function(){
                console.log("grid ready");
@@ -525,12 +543,12 @@ Recharges.prototype.initStorageSpaceTable = function(){
             },
             columns: [
                {text: 'Recharge', datafield: 'recharge', columntype: 'checkbox', width: 100, sortable: false, editable: true},
-               {text: 'Project', datafield: 'project', width: 200, sortable: false, editable: true},
-               {text: 'Last Recharge', datafield: 'last_period', width: 150, sortable: false, editable: true},
-               {text: 'Duration (days)', datafield: 'duration', width: 100, sortable: false, editable: true},
-               {text: 'Cost Per Year (USD)', datafield: 'box_price', width: 100, sortable: false, editable: true},
+               {text: 'Project', datafield: 'project', width: 200, sortable: true, editable: false},
+               {text: 'Last Recharge', datafield: 'last_period', width: 150, sortable: true, editable: false},
+               {text: 'Duration (days)', datafield: 'duration', width: 100, sortable: false, editable: false},
+               {text: 'Cost Per Year (USD)', datafield: 'box_price', width: 100, sortable: false, editable: false},
                {
-                  text: 'No. Boxes', datafield: 'no_boxes', width: 75, sortable: false, editable: true,
+                  text: 'No. Boxes', datafield: 'no_boxes', width: 75, sortable: false, editable: false,
                   aggregates:[{
                      'Number':function(aggregatedValue, currentValue){
                         var dataInfo = $("#space_recharge_table").jqxGrid('getdatainformation');
@@ -551,7 +569,7 @@ Recharges.prototype.initStorageSpaceTable = function(){
                   }]
                },
                {
-                  text: 'Total Cost (USD)', datafield: 'total_price', width: 175, sortable: false, editable: true,
+                  text: 'Total Cost (USD)', datafield: 'total_price', width: 175, sortable: false, editable: false,
                   aggregates:[{
                      'Total':function(aggregatedValue, currentValue){
                         var dataInfo = $("#space_recharge_table").jqxGrid('getdatainformation');
@@ -591,6 +609,9 @@ Recharges.prototype.initStorageSpaceTable = function(){
             $("#space_recharge_table").jqxGrid('refresh');
          });
          
+         $("#space_recharge_table").bind("sort", function(event){
+            window.rc.updateStorageSpaceTable();
+         });
       }
    }
    
@@ -780,7 +801,9 @@ Recharges.prototype.updateStorageSpaceTable = function(){
  */
 Recharges.prototype.updateLabelsTable = function(){
    var data = {
-      action: 'get_recharges'
+      action: 'get_recharges',
+      period_starting: $("#labels_period_starting").val(),
+      period_ending:$("#labels_period_ending").val()
    };
 
    var url = "mod_ajax.php?page=recharges&do=labels";
@@ -816,7 +839,9 @@ Recharges.prototype.updateLabelsTable = function(){
  */
 Recharges.prototype.updateInventoryTable = function(){
    var data = {
-      action: 'get_recharges'
+      action: 'get_recharges',
+      period_starting: $("#inventory_period_starting").val(),
+      period_ending:$("#inventory_period_ending").val()
    };
 
    var url = "mod_ajax.php?page=recharges&do=inventory";
@@ -853,7 +878,9 @@ Recharges.prototype.updateInventoryTable = function(){
  */
 Recharges.prototype.updateLN2Table = function(){
    var data = {
-      action: 'get_recharges'
+      action: 'get_recharges',
+      period_starting: $("#ln2_period_starting").val(),
+      period_ending:$("#ln2_period_ending").val()
    };
 
    var url = "mod_ajax.php?page=recharges&do=ln2";
@@ -1247,7 +1274,7 @@ Recharges.prototype.initInventoryTable = function(){
          showaggregates: true,
          showstatusbar: true,
          statusbarheight: 35,
-         sortable: false,
+         sortable: true,
          pageable: false,
          ready: function(){
             window.rc.updateInventoryItems();
@@ -1259,15 +1286,15 @@ Recharges.prototype.initInventoryTable = function(){
          },
          columns: [
             {text: 'Recharge', datafield: 'recharge', columntype: 'checkbox', width: 70, sortable: false, editable: true},
-            {text: 'Item', datafield: 'item', width: 100, sortable: false, editable: true},
-            {text: 'Issued By', datafield: 'issued_by', width: 100, sortable: false, editable: true},
-            {text: 'Issued To', datafield: 'issued_to', width: 100, sortable: false, editable: true},
-            {text: 'Date of Issue', datafield: 'date_issued', width: 100, sortable: false, editable: true},
-            {text: 'Charge Code', datafield: 'charge_code', width: 220, sortable: false, editable: true},
-            {text: 'Quantity', datafield: 'quantity', width: 70, sortable: false, editable: true},
-            {text: 'Unit Price(USD)', datafield: 'pp_unit', width: 70, sortable: false, editable: true},
+            {text: 'Item', datafield: 'item', width: 100, sortable: true, editable: false},
+            {text: 'Issued By', datafield: 'issued_by', width: 100, sortable: true, editable: false},
+            {text: 'Issued To', datafield: 'issued_to', width: 100, sortable: true, editable: false},
+            {text: 'Date of Issue', datafield: 'date_issued', width: 100, sortable: true, editable: false},
+            {text: 'Charge Code', datafield: 'charge_code', width: 220, sortable: true, editable: false},
+            {text: 'Quantity', datafield: 'quantity', width: 70, sortable: true, editable: false},
+            {text: 'Unit Price(USD)', datafield: 'pp_unit', width: 70, sortable: false, editable: false},
             {
-               text: 'Total Cost (USD)', datafield: 'total', width: 70, sortable: false, editable: true,
+               text: 'Total Cost (USD)', datafield: 'total', width: 70, sortable: false, editable: false,
                aggregates:[{
                   'Total':function(aggregatedValue, currentValue){
                      var dataInfo = $("#inventory_recharge_table").jqxGrid('getdatainformation');
@@ -1301,17 +1328,21 @@ Recharges.prototype.initInventoryTable = function(){
          var rowBoundIndex = event.args.rowindex;
          // cell value
          var value = event.args.value;
+         //rc_charge_code = :charge_code rc_timestamp = now()
          if(dataField != 'recharge' 
-                 && dataField != 'pp_unit' 
+                 /*&& dataField != 'pp_unit' 
                  && dataField != 'quantity'
-                 && dataField != 'item'
+                 && dataField != 'item'*/
                  && dataField != 'charge_code'){
             Notification.show({create:true, hide:true, updateText:false, text: "Change will not be reflected in the database", error:true});
          }
          window.rc.updateInventoryItems(rowBoundIndex, dataField, value);
          $("#inventory_recharge_table").jqxGrid('refresh');
       });
-
+      
+      $("#inventory_recharge_table").bind("sort", function(event){
+         window.rc.updateInventoryTable();
+      });
    }
    
 };
@@ -1366,7 +1397,7 @@ Recharges.prototype.initLN2Table = function(){
          showaggregates: true,
          showstatusbar: true,
          statusbarheight: 35,
-         sortable: false,
+         sortable: true,
          pageable: false,
          ready: function(){
             window.rc.updateLN2Items();
@@ -1378,14 +1409,14 @@ Recharges.prototype.initLN2Table = function(){
          },
          columns: [
             {text: 'Recharge', datafield: 'recharge', columntype: 'checkbox', width: 70, sortable: false, editable: true},
-            {text: 'Requested By', datafield: 'added_by', width: 150, sortable: false, editable: true},
-            {text: 'Request Date', datafield: 'date_requested', width: 100, sortable: false, editable: true},
-            {text: 'Approved By', datafield: 'apprvd_by', width: 100, sortable: false, editable: true},
-            {text: 'Charge Code', datafield: 'charge_code', width: 200, sortable: false, editable: true},
-            {text: 'Amount Approved (Litres)', datafield: 'amount_appr', width: 75, sortable: false, editable: true},
-            {text: 'Price Per Litre (USD)', datafield: 'price', width: 75, sortable: false, editable: true},
+            {text: 'Requested By', datafield: 'added_by', width: 150, sortable: true, editable: false},
+            {text: 'Request Date', datafield: 'date_requested', width: 100, sortable: true, editable: false},
+            {text: 'Approved By', datafield: 'apprvd_by', width: 100, sortable: true, editable: false},
+            {text: 'Charge Code', datafield: 'charge_code', width: 200, sortable: true, editable: false},
+            {text: 'Amount Approved (Litres)', datafield: 'amount_appr', width: 75, sortable: true, editable: false},
+            {text: 'Price Per Litre (USD)', datafield: 'price', width: 75, sortable: false, editable: false},
             {
-               text: 'Total Cost (USD)', datafield: 'cost', width: 130, sortable: false, editable: true,
+               text: 'Total Cost (USD)', datafield: 'cost', width: 130, sortable: false, editable: false,
                aggregates:[{
                   'Total':function(aggregatedValue, currentValue){
                      var dataInfo = $("#ln2_recharge_table").jqxGrid('getdatainformation');
@@ -1418,9 +1449,10 @@ Recharges.prototype.initLN2Table = function(){
          var rowBoundIndex = event.args.rowindex;
          // cell value
          var value = event.args.value;
+         //rc_charge_code = :charge_code, rc_price = :price
          if(dataField != 'recharge' 
                  && dataField != 'charge_code'
-                 && dataField != 'amount_appr'
+                 //&& dataField != 'amount_appr'
                  && dataField != 'price'){
             Notification.show({create:true, hide:true, updateText:false, text: "Change will not be reflected in the database", error:true});
          }
@@ -1428,8 +1460,10 @@ Recharges.prototype.initLN2Table = function(){
          $("#ln2_recharge_table").jqxGrid('refresh');
       });
 
+      $("#ln2_recharge_table").bind("sort", function(event){
+         window.rc.updateLN2Table();
+      });
    }
-   
 };
 
 /**
@@ -1483,7 +1517,7 @@ Recharges.prototype.initLabelsTable = function(){
          showaggregates: true,
          showstatusbar: true,
          statusbarheight: 35,
-         sortable: false,
+         sortable: true,
          pageable: false,
          ready: function(){
             window.rc.updateLabelsItems();
@@ -1495,14 +1529,14 @@ Recharges.prototype.initLabelsTable = function(){
          },
          columns: [
             {text: 'Recharge', datafield: 'recharge', columntype: 'checkbox', width: 70, sortable: false, editable: true},
-            {text: 'Date Printed', datafield: 'date_printed', width: 150, sortable: false, editable: true},
-            {text: 'Project', datafield: 'project_name', width: 150, sortable: false, editable: true},
-            {text: 'Charge Code', datafield: 'charge_code', width: 200, sortable: false, editable: true},
-            {text: 'Type', datafield: 'label_type', width: 100, sortable: false, editable: true},
-            {text: 'Number', datafield: 'labels_printed', width: 60, sortable: false, editable: true},
-            {text: 'Price Per Label (USD)', datafield: 'price', width: 60, sortable: false, editable: true},
+            {text: 'Date Printed', datafield: 'date_printed', width: 150, sortable: true, editable: false},
+            {text: 'Project', datafield: 'project_name', width: 150, sortable: true, editable: false},
+            {text: 'Charge Code', datafield: 'charge_code', width: 200, sortable: true, editable: false},
+            {text: 'Type', datafield: 'label_type', width: 100, sortable: true, editable: false},
+            {text: 'Number', datafield: 'labels_printed', width: 60, sortable: true, editable: false},
+            {text: 'Price Per Label (USD)', datafield: 'price', width: 60, sortable: false, editable: false},
             {
-               text: 'Total Cost (USD)', datafield: 'total', width: 110, sortable: false, editable: true,
+               text: 'Total Cost (USD)', datafield: 'total', width: 110, sortable: false, editable: false,
                aggregates:[{
                   'Total':function(aggregatedValue, currentValue){
                      var dataInfo = $("#labels_recharge_table").jqxGrid('getdatainformation');
@@ -1543,7 +1577,10 @@ Recharges.prototype.initLabelsTable = function(){
          window.rc.updateLabelsItems(rowBoundIndex, dataField, value);
          $("#labels_recharge_table").jqxGrid('refresh');
       });
-
+      
+      $("#labels_recharge_table").bind("sort", function(event){
+         window.rc.updateLabelsTable();
+      });
    }
 };
 

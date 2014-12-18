@@ -148,99 +148,105 @@ class Recharges{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxcheckbox.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.edit.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxtabs.js"></script>
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="manage_prices">
    <?php echo $addInfo;?>
    <h3 class="center">Manage Prices</h3>
-   <div id="labels_prices" style="margin: 15px; padding: 20px; border: 1px solid #d3d3d3;">
-      <h5>Barcode Labels</h5>
-      <div style="display: inline-block; width: 740px;">
-         <form enctype="multipart/form-data" name="labels_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateLabelsPrices();">
-            <input type="hidden" name="action" value="submit_labels_price" />
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="labels_type">Label Type</label>
-               <select id="labels_type" name="labels_type" class="input-large">
-                  <option value=""></option>
-                  <?php
-                  foreach($result as $currType){
-                     echo "<option value='{$currType['id']}'>{$currType['label_type']}</option>";
-                  }
-                  ?>
-               </select>
-            </div>
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="labels_period_starting">Period starting</label>
-               <input id="labels_period_starting" name="labels_period_starting" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="labels_period_ending">Period ending</label>
-               <input id="labels_period_ending" name="labels_period_ending" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="labels_price">Price (USD)</label>
-               <input id="labels_price" name="labels_price" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="right">
-               <input type="submit" class="btn btn-primary" value="Set Label Price" />
-            </div>
-         </form>
+   <div id='price_tabs'>
+      <ul>
+         <li>Barcode Labels</li>
+         <li>Storage Space</li>
+         <li>Liquid Nitrogen</li>
+      </ul>
+      <div id="labels_prices" style="margin: 15px; padding: 20px;">
+         <div style="display: inline-block; width: 740px;">
+            <form enctype="multipart/form-data" name="labels_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateLabelsPrices();">
+               <input type="hidden" name="action" value="submit_labels_price" />
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="labels_type">Label Type</label>
+                  <select id="labels_type" name="labels_type" class="input-large">
+                     <option value=""></option>
+                     <?php
+                     foreach($result as $currType){
+                        echo "<option value='{$currType['id']}'>{$currType['label_type']}</option>";
+                     }
+                     ?>
+                  </select>
+               </div>
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="labels_period_starting">Period starting</label>
+                  <input id="labels_period_starting" name="labels_period_starting" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="labels_period_ending">Period ending</label>
+                  <input id="labels_period_ending" name="labels_period_ending" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="labels_price">Price (USD)</label>
+                  <input id="labels_price" name="labels_price" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="right">
+                  <input type="submit" class="btn btn-primary" value="Set Label Price" />
+               </div>
+            </form>
+         </div>
+         <div id="labels_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
       </div>
-      <div id="labels_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
-   </div>
-   <div id="storage_prices" style="margin: 15px; padding: 20px; border: 1px solid #d3d3d3;">
-      <h5>Storage Space</h5>
-      <div style="display: inline-block; width: 740px;">
-         <form enctype="multipart/form-data" name="storage_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateStoragePrices();">
-            <input type="hidden" name="action" value="submit_storage_price" />
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="storage_period_starting">Period starting</label>
-               <input id="storage_period_starting" name="storage_period_starting" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="storage_period_ending">Period ending</label>
-               <input id="storage_period_ending" name="storage_period_ending" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="storage_price">Price (USD)</label>
-               <input id="storage_price" name="storage_price" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="right">
-               <input type="submit" class="btn btn-primary" value="Set Storage Price" style="margin-top: 15px; margin-right: 230px;" />
-            </div>
-         </form>
+      <div id="storage_prices" style="margin: 15px; padding: 20px;">
+         <div style="display: inline-block; width: 740px;">
+            <form enctype="multipart/form-data" name="storage_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateStoragePrices();">
+               <input type="hidden" name="action" value="submit_storage_price" />
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="storage_period_starting">Period starting</label>
+                  <input id="storage_period_starting" name="storage_period_starting" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="storage_period_ending">Period ending</label>
+                  <input id="storage_period_ending" name="storage_period_ending" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="storage_price">Price (USD)</label>
+                  <input id="storage_price" name="storage_price" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="right">
+                  <input type="submit" class="btn btn-primary" value="Set Storage Price" style="margin-top: 15px; margin-right: 230px;" />
+               </div>
+            </form>
+         </div>
+         <div id="storage_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
       </div>
-      <div id="storage_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
-   </div>
-   <div id="ln2_prices" style="margin: 15px; padding: 20px; border: 1px solid #d3d3d3;">
-      <h5>Liquid Nitrogen</h5>
-      <div style="display: inline-block; width: 740px;">
-         <form enctype="multipart/form-data" name="ln2_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateLN2Prices();">
-            <input type="hidden" name="action" value="submit_ln2_price" />
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="ln2_period_starting">Period starting</label>
-               <input id="ln2_period_starting" name="ln2_period_starting" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="ln2_period_ending">Period ending</label>
-               <input id="ln2_period_ending" name="ln2_period_ending" class="input-medium" type="text" style="height: 28px;" style="height: 28px;" />
-            </div>
-            <div class="form-group left-align" style="margin-left: 20px;">
-               <label for="ln2_price">Price (USD)</label>
-               <input id="ln2_price" name="ln2_price" class="input-medium" type="text" style="height: 28px;" />
-            </div>
-            <div class="right">
-               <input type="submit" class="btn btn-primary" value="Set LN2 Price" style="margin-top: 15px; margin-right: 230px;" />
-            </div>
-         </form>
+      <div id="ln2_prices" style="margin: 15px; padding: 20px;">
+         <div style="display: inline-block; width: 740px;">
+            <form enctype="multipart/form-data" name="ln2_prices" method="POST" action="index.php?page=recharges&do=manage_prices" onsubmit="return window.rc.validateLN2Prices();">
+               <input type="hidden" name="action" value="submit_ln2_price" />
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="ln2_period_starting">Period starting</label>
+                  <input id="ln2_period_starting" name="ln2_period_starting" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="ln2_period_ending">Period ending</label>
+                  <input id="ln2_period_ending" name="ln2_period_ending" class="input-medium" type="text" style="height: 28px;" style="height: 28px;" />
+               </div>
+               <div class="form-group left-align" style="margin-left: 20px;">
+                  <label for="ln2_price">Price (USD)</label>
+                  <input id="ln2_price" name="ln2_price" class="input-medium" type="text" style="height: 28px;" />
+               </div>
+               <div class="right">
+                  <input type="submit" class="btn btn-primary" value="Set LN2 Price" style="margin-top: 15px; margin-right: 230px;" />
+               </div>
+            </form>
+         </div>
+         <div id="ln2_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
       </div>
-      <div id="ln2_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
    </div>
+   
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
       var recharges = new Recharges(MODE_MANAGE_PRICES);
-      
+      $("#price_tabs").jqxTabs({ width: '100%', height: 500, position: 'top'});
       $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
    });
 </script>
@@ -329,6 +335,146 @@ class Recharges{
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="inventory">
    <h3 class="center">Recharge Repository Resources</h3>
+   <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
+      <label for="inventory_period_starting">Period Starting</label>
+      <select id="inventory_period_starting" name="inventory_period_starting" class="input-medium" style="height: 28px;">
+         <option value=""></option>
+         <?php
+         $dateBounds = $this->getInventoryRechargesBoundDates();
+         
+         if($dateBounds['error'] == false){
+            
+            $months = array(
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            );
+            
+            $maxDateTime = strtotime($dateBounds['data']['max']);
+            $minDateTime = strtotime($dateBounds['data']['min']);
+            $minDate = new DateTime();
+            $minDate->setTimestamp($minDateTime);
+            $maxDate = new DateTime();
+            $maxDate->setTimestamp($maxDateTime);
+            
+            $minYear = intval($minDate->format('Y'));
+            $minMonth = intval($minDate->format('m'));
+            $maxYear = intval($maxDate->format('Y'));
+            $maxMonth = intval($maxDate->format('m'));
+            $currMonth = $minMonth;
+            $currYear = $minYear;
+            while($currYear <= $maxYear){
+               /*$currDay = 31;
+               
+               if($currMonth == 4
+                       || $currMonth == 6
+                       || $currMonth == 9
+                       || $currMonth == 11){
+                  $currDay = 30;
+               }
+               if($currMonth == 2){
+                  if(($currYear % 4) == 0){//leap year
+                     $currDay = 29;
+                  }
+                  else{
+                     $currDay = 28;
+                  }
+               }*/
+               $currDay = 1;
+               echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
+               
+               $currMonth++;
+               if($currYear == $maxYear && $currMonth > $maxMonth){
+                  break;
+               }
+               else if($currMonth > 12){
+                  $currMonth = 1;
+                  $currYear++;
+               }
+            }
+         }
+         ?>
+      </select>
+   </div>
+   <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
+      <label for="inventory_period_ending">Period Ending</label>
+      <select id="inventory_period_ending" name="inventory_period_ending" class="input-medium" style="height: 28px;">
+         <option value=""></option>
+         <?php
+         $dateBounds = $this->getInventoryRechargesBoundDates();
+         
+         if($dateBounds['error'] == false){
+            
+            $months = array(
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            );
+            
+            $maxDateTime = strtotime($dateBounds['data']['max']);
+            $minDateTime = strtotime($dateBounds['data']['min']);
+            $minDate = new DateTime();
+            $minDate->setTimestamp($minDateTime);
+            $maxDate = new DateTime();
+            $maxDate->setTimestamp($maxDateTime);
+            
+            $minYear = intval($minDate->format('Y'));
+            $minMonth = intval($minDate->format('m'));
+            $maxYear = intval($maxDate->format('Y'));
+            $maxMonth = intval($maxDate->format('m'));
+            $currMonth = $minMonth;
+            $currYear = $minYear;
+            while($currYear <= $maxYear){
+               $currDay = 31;
+               
+               if($currMonth == 4
+                       || $currMonth == 6
+                       || $currMonth == 9
+                       || $currMonth == 11){
+                  $currDay = 30;
+               }
+               if($currMonth == 2){
+                  if(($currYear % 4) == 0){//leap year
+                     $currDay = 29;
+                  }
+                  else{
+                     $currDay = 28;
+                  }
+               }
+               
+               echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
+               
+               $currMonth++;
+               if($currYear == $maxYear && $currMonth > $maxMonth){
+                  break;
+               }
+               else if($currMonth > 12){
+                  $currMonth = 1;
+                  $currYear++;
+               }
+            }
+         }
+         ?>
+      </select>
+   </div>
    <div id="inventory_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
    <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
 </div>
@@ -367,6 +513,146 @@ class Recharges{
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="ln2">
    <h3 class="center">Recharge Liquid Nitrogen</h3>
+   <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
+      <label for="ln2_period_starting">Period Starting</label>
+      <select id="ln2_period_starting" name="ln2_period_starting" class="input-medium" style="height: 28px;">
+         <option value=""></option>
+         <?php
+         $dateBounds = $this->getLN2RechargesBoundDates();
+         
+         if($dateBounds['error'] == false){
+            
+            $months = array(
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            );
+            
+            $maxDateTime = strtotime($dateBounds['data']['max']);
+            $minDateTime = strtotime($dateBounds['data']['min']);
+            $minDate = new DateTime();
+            $minDate->setTimestamp($minDateTime);
+            $maxDate = new DateTime();
+            $maxDate->setTimestamp($maxDateTime);
+            
+            $minYear = intval($minDate->format('Y'));
+            $minMonth = intval($minDate->format('m'));
+            $maxYear = intval($maxDate->format('Y'));
+            $maxMonth = intval($maxDate->format('m'));
+            $currMonth = $minMonth;
+            $currYear = $minYear;
+            while($currYear <= $maxYear){
+               /*$currDay = 31;
+               
+               if($currMonth == 4
+                       || $currMonth == 6
+                       || $currMonth == 9
+                       || $currMonth == 11){
+                  $currDay = 30;
+               }
+               if($currMonth == 2){
+                  if(($currYear % 4) == 0){//leap year
+                     $currDay = 29;
+                  }
+                  else{
+                     $currDay = 28;
+                  }
+               }*/
+               $currDay = 1;
+               echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
+               
+               $currMonth++;
+               if($currYear == $maxYear && $currMonth > $maxMonth){
+                  break;
+               }
+               else if($currMonth > 12){
+                  $currMonth = 1;
+                  $currYear++;
+               }
+            }
+         }
+         ?>
+      </select>
+   </div>
+   <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
+      <label for="ln2_period_ending">Period Ending</label>
+      <select id="ln2_period_ending" name="ln2_period_ending" class="input-medium" style="height: 28px;">
+         <option value=""></option>
+         <?php
+         $dateBounds = $this->getLN2RechargesBoundDates();
+         
+         if($dateBounds['error'] == false){
+            
+            $months = array(
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            );
+            
+            $maxDateTime = strtotime($dateBounds['data']['max']);
+            $minDateTime = strtotime($dateBounds['data']['min']);
+            $minDate = new DateTime();
+            $minDate->setTimestamp($minDateTime);
+            $maxDate = new DateTime();
+            $maxDate->setTimestamp($maxDateTime);
+            
+            $minYear = intval($minDate->format('Y'));
+            $minMonth = intval($minDate->format('m'));
+            $maxYear = intval($maxDate->format('Y'));
+            $maxMonth = intval($maxDate->format('m'));
+            $currMonth = $minMonth;
+            $currYear = $minYear;
+            while($currYear <= $maxYear){
+               $currDay = 31;
+               
+               if($currMonth == 4
+                       || $currMonth == 6
+                       || $currMonth == 9
+                       || $currMonth == 11){
+                  $currDay = 30;
+               }
+               if($currMonth == 2){
+                  if(($currYear % 4) == 0){//leap year
+                     $currDay = 29;
+                  }
+                  else{
+                     $currDay = 28;
+                  }
+               }
+               
+               echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
+               
+               $currMonth++;
+               if($currYear == $maxYear && $currMonth > $maxMonth){
+                  break;
+               }
+               else if($currMonth > 12){
+                  $currMonth = 1;
+                  $currYear++;
+               }
+            }
+         }
+         ?>
+      </select>
+   </div>
    <div id="ln2_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
    <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
 </div>
@@ -405,6 +691,146 @@ class Recharges{
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
 <div id="labels">
    <h3 class="center">Recharge Barcode Labels</h3>
+   <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
+      <label for="labels_period_starting">Period Starting</label>
+      <select id="labels_period_starting" name="labels_period_starting" class="input-medium" style="height: 28px;">
+         <option value=""></option>
+         <?php
+         $dateBounds = $this->getLabelsRechargesBoundDates();
+         
+         if($dateBounds['error'] == false){
+            
+            $months = array(
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            );
+            
+            $maxDateTime = strtotime($dateBounds['data']['max']);
+            $minDateTime = strtotime($dateBounds['data']['min']);
+            $minDate = new DateTime();
+            $minDate->setTimestamp($minDateTime);
+            $maxDate = new DateTime();
+            $maxDate->setTimestamp($maxDateTime);
+            
+            $minYear = intval($minDate->format('Y'));
+            $minMonth = intval($minDate->format('m'));
+            $maxYear = intval($maxDate->format('Y'));
+            $maxMonth = intval($maxDate->format('m'));
+            $currMonth = $minMonth;
+            $currYear = $minYear;
+            while($currYear <= $maxYear){
+               /*$currDay = 31;
+               
+               if($currMonth == 4
+                       || $currMonth == 6
+                       || $currMonth == 9
+                       || $currMonth == 11){
+                  $currDay = 30;
+               }
+               if($currMonth == 2){
+                  if(($currYear % 4) == 0){//leap year
+                     $currDay = 29;
+                  }
+                  else{
+                     $currDay = 28;
+                  }
+               }*/
+               $currDay = 1;
+               echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
+               
+               $currMonth++;
+               if($currYear == $maxYear && $currMonth > $maxMonth){
+                  break;
+               }
+               else if($currMonth > 12){
+                  $currMonth = 1;
+                  $currYear++;
+               }
+            }
+         }
+         ?>
+      </select>
+   </div>
+   <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
+      <label for="labels_period_ending">Period Ending</label>
+      <select id="labels_period_ending" name="labels_period_ending" class="input-medium" style="height: 28px;">
+         <option value=""></option>
+         <?php
+         $dateBounds = $this->getLabelsRechargesBoundDates();
+         
+         if($dateBounds['error'] == false){
+            
+            $months = array(
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            );
+            
+            $maxDateTime = strtotime($dateBounds['data']['max']);
+            $minDateTime = strtotime($dateBounds['data']['min']);
+            $minDate = new DateTime();
+            $minDate->setTimestamp($minDateTime);
+            $maxDate = new DateTime();
+            $maxDate->setTimestamp($maxDateTime);
+            
+            $minYear = intval($minDate->format('Y'));
+            $minMonth = intval($minDate->format('m'));
+            $maxYear = intval($maxDate->format('Y'));
+            $maxMonth = intval($maxDate->format('m'));
+            $currMonth = $minMonth;
+            $currYear = $minYear;
+            while($currYear <= $maxYear){
+               $currDay = 31;
+               
+               if($currMonth == 4
+                       || $currMonth == 6
+                       || $currMonth == 9
+                       || $currMonth == 11){
+                  $currDay = 30;
+               }
+               if($currMonth == 2){
+                  if(($currYear % 4) == 0){//leap year
+                     $currDay = 29;
+                  }
+                  else{
+                     $currDay = 28;
+                  }
+               }
+               
+               echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
+               
+               $currMonth++;
+               if($currYear == $maxYear && $currMonth > $maxMonth){
+                  break;
+               }
+               else if($currMonth > 12){
+                  $currMonth = 1;
+                  $currYear++;
+               }
+            }
+         }
+         ?>
+      </select>
+   </div>
    <div id="labels_recharge_table" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;"></div>
    <div class="center"><button type="button" class="btn btn-primary" id="recharge_btn">Recharge</button></div>
 </div>
@@ -458,6 +884,19 @@ class Recharges{
     * This function returns pending space recharges grouped by projects
     */
    private function getPendingSpaceRecharges(){
+      $sortColumn = $_REQUEST['sortdatafield'];
+      $sortOrder = $_REQUEST['sortorder'];
+      
+      $orderBy = " order by b.value asc";
+      if(strlen($sortColumn) > 0 && strlen($sortOrder) > 0){
+         if($sortColumn == 'project'){
+            $orderBy = " order by b.value ".$sortOrder;
+         }
+         else if($sortColumn == 'last_period'){
+            $orderBy = " order by a.rc_period_ending ".$sortOrder;
+         }
+      }
+      
       $priceBoxDay = $_POST['price']/365;//price per box per day
       $periodEnding = $_POST['period_ending'];//date in format yyyy-mm-dd
 
@@ -466,7 +905,8 @@ class Recharges{
               . " inner join ".Config::$config['azizi_db'].".boxes_def as c on a.box_id = c.box_id"//the box should also be in lims
               . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
               . " where a.rc_period_ending < :newPeriodEnding"
-              . " group by a.rc_period_ending, a.project";
+              . " group by a.rc_period_ending, a.project"
+              . $orderBy;
       $result = $this->Dbase->ExecuteQuery($query, array("newPeriodEnding" => $periodEnding));
       $this->Dbase->CreateLogEntry("query for fetching recharge boxes = ".$query, "info");
       
@@ -515,11 +955,47 @@ class Recharges{
     * This function returns pending inventory recharges
     */
    private function getPendingInventoryRecharges(){
+      $sortColumn = $_REQUEST['sortdatafield'];
+      $sortOrder = $_REQUEST['sortorder'];
+      $where = "";
+      
+      $orderBy = " order by a.id desc";
+      if(strlen($sortColumn) > 0 && strlen($sortOrder) > 0){
+         if($sortColumn == 'item'){
+            $orderBy = " order by a.item ".$sortOrder;
+         }
+         else if($sortColumn == 'issued_by'){
+            $orderBy = " order by a.issued_by ".$sortOrder;
+         }
+         else if($sortColumn == 'issued_to'){
+            $orderBy = " order by a.issued_to ".$sortOrder;
+         }
+         else if($sortColumn == 'date_issued'){
+            $orderBy = " order by a.date_issued ".$sortOrder;
+         }
+         else if($sortColumn == 'charge_code'){
+            $orderBy = " order by b.name ".$sortOrder.", a.alt_ccode ".$sortOrder;
+         }
+         else if($sortColumn == 'quantity'){
+            $orderBy = " order by a.quantity ".$sortOrder;
+         }
+      }
+      
+      if(isset($_REQUEST['period_starting']) && strlen($_REQUEST['period_starting'] > 0)){
+         $where .= " and DATE(a.date_issued) >= STR_TO_DATE('{$_REQUEST['period_starting']}', '%Y-%c-%d')";
+      }
+      
+      if(isset($_REQUEST['period_ending']) && strlen($_REQUEST['period_ending'] > 0)){
+         $where .= " and DATE(a.date_issued) <= STR_TO_DATE('{$_REQUEST['period_ending']}', '%Y-%c-%d')";
+      }
+      
       $query = "select 1 as recharge, a.id, a.item, a.issued_by, a.issued_to, a.date_issued, b.name as charge_code, a.alt_ccode, a.pp_unit, a.quantity"
                . " from inventory as a"
                . " left join ln2_chargecodes as b on a.chargecode_id=b.id"
-               . " where item_borrowed = 0 and rc_timestamp is null"
-              .  " order by a.id desc";
+               . " where item_borrowed = 0 and rc_timestamp is null".$where
+              .  $orderBy;
+      
+      $this->Dbase->CreateLogEntry($query, "fatal");
       $result = $this->Dbase->ExecuteQuery($query);
       if(is_array($result)){
          for($i = 0 ; $i < count($result); $i++){
@@ -543,15 +1019,73 @@ class Recharges{
    }
    
    /**
+    * This function gets the date bounds for uncharged inventory items
+    */
+   private function getInventoryRechargesBoundDates(){
+      $query = "select DATE_FORMAT(date_issued,'%Y-%c-%d') as date"
+               . " from inventory"
+               . " where item_borrowed = 0 and rc_timestamp is null"
+               . " group by date_issued"
+               . " order by date_issued asc";
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("A problem occurred while trying to get date bounds for inventory recharges","fatal");
+         $result = array();
+      }
+      
+      if(count($result) > 0){
+         
+         $json = array("error" => false, "data" => array("max" => $result[count($result) - 1]['date'], "min" => $result[0]['date']));
+      }
+      else {
+         $json = array("error" => true, "data" => array());
+      }
+      
+      //$this->Dbase->CreateLogEntry(print_r($json, true), "fatal");
+      return $json;
+   }
+   
+   /**
     * This function outputs pending Liquid Nitrogen recharges as a json object
     */
    private function getPendingLN2Recharges(){
+      $sortColumn = $_REQUEST['sortdatafield'];
+      $sortOrder = $_REQUEST['sortorder'];
+      $orderBy = " order by a.id desc";
+      if(strlen($sortColumn) > 0 && strlen($sortOrder) > 0){
+         if($sortColumn == 'added_by'){
+            $orderBy = " order by a.added_by ".$sortOrder;
+         }
+         else if($sortColumn == 'date_requested'){
+            $orderBy = " order by a.date ".$sortOrder;
+         }
+         else if($sortColumn == 'apprvd_by'){
+            $orderBy = " order by a.apprvd_by ".$sortOrder;
+         }
+         else if($sortColumn == 'amount_appr'){
+            $orderBy = " order by a.amount_appr ".$sortOrder;
+         }
+         else if($sortColumn == 'charge_code'){
+            $orderBy = " order by b.name ".$sortOrder.", a.alt_ccode ".$sortOrder;
+         }
+      }
+      
+      $where = "";
+      if(isset($_REQUEST['period_starting']) && strlen($_REQUEST['period_starting'] > 0)){
+         $where .= " and DATE(a.date) >= STR_TO_DATE('{$_REQUEST['period_starting']}', '%Y-%c-%d')";
+      }
+      
+      if(isset($_REQUEST['period_ending']) && strlen($_REQUEST['period_ending'] > 0)){
+         $where .= " and DATE(a.date) <= STR_TO_DATE('{$_REQUEST['period_ending']}', '%Y-%c-%d')";
+      }
        $query = "select '1' as recharge, a.id, b.name as charge_code, a.alt_ccode, a.added_by, a.apprvd_by, a.amount_appr, a.date as date_requested"
               . " from ln2_acquisitions as a"
               . " left join ln2_chargecodes as b on a.project_id = b.id"
-              . " where a.amount_appr is not null and a.rc_timestamp is null"
-              . " order by a.id desc";
+              . " where a.amount_appr is not null and a.rc_timestamp is null".$where
+              . $orderBy;
 
+       $this->Dbase->CreateLogEntry($query, "fatal");
        $result = $this->Dbase->ExecuteQuery($query);
        $price = $this->getNitrogenPrice();
        if(is_array($result)){
@@ -571,15 +1105,73 @@ class Recharges{
    }
    
    /**
+    * This function gets the date bounds for uncharged LN2
+    */
+   private function getLN2RechargesBoundDates(){
+      $query = "select DATE_FORMAT(date,'%Y-%c-%d') as date"
+              . " from ln2_acquisitions"
+              . " where amount_appr is not null and rc_timestamp is null"
+              . " group by date"
+              . " order by date asc";
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("A problem occurred while trying to get date bounds for ln2 recharges","fatal");
+         $result = array();
+      }
+      
+      if(count($result) > 0){
+         
+         $json = array("error" => false, "data" => array("max" => $result[count($result) - 1]['date'], "min" => $result[0]['date']));
+      }
+      else {
+         $json = array("error" => true, "data" => array());
+      }
+      
+      //$this->Dbase->CreateLogEntry(print_r($json, true), "fatal");
+      return $json;
+   }
+   
+   /**
     * This function outputs pending labels recharges as a json object
     */
    private function getPendingLabelsRecharges(){
+      $sortColumn = $_REQUEST['sortdatafield'];
+      $sortOrder = $_REQUEST['sortorder'];
+      $orderBy = " order by a.id desc";
+      if(strlen($sortColumn) > 0 && strlen($sortOrder) > 0){
+         if($sortColumn == 'date_printed'){
+            $orderBy = " order by a.date ".$sortOrder;
+         }
+         else if($sortColumn == 'project_name'){
+            $orderBy = " order by b.project_name ".$sortOrder;
+         }
+         else if($sortColumn == 'charge_code'){
+            $orderBy = " order by b.charge_code ".$sortOrder;
+         }
+         else if($sortColumn == 'label_type'){
+            $orderBy = " order by c.label_type ".$sortOrder;
+         }
+         else if($sortColumn == 'labels_printed'){
+            $orderBy = " order by a.total ".$sortOrder;
+         }
+      }
+      
+      $where = "";
+      if(isset($_REQUEST['period_starting']) && strlen($_REQUEST['period_starting'] > 0)){
+         $where .= " and DATE(a.date) >= STR_TO_DATE('{$_REQUEST['period_starting']}', '%Y-%c-%d')";
+      }
+      
+      if(isset($_REQUEST['period_ending']) && strlen($_REQUEST['period_ending'] > 0)){
+         $where .= " and DATE(a.date) <= STR_TO_DATE('{$_REQUEST['period_ending']}', '%Y-%c-%d')";
+      }
       $query = "select '1' as recharge, a.id, a.requester, b.project_name, b.charge_code, a.type, c.label_type, a.date as date_printed, a.total as labels_printed, a.copies"
               . " from labels_printed as a"
               . " inner join lcmod_projects as b on a.project = b.id"
               . " inner join labels_settings as c on a.type = c.id"
-              . " where rc_timestamp is null"
-              . " order by a.id desc";
+              . " where rc_timestamp is null".$where
+              . $orderBy;
       $result = $this->Dbase->ExecuteQuery($query);
       
       if($result == 1){
@@ -596,6 +1188,35 @@ class Recharges{
       $this->Dbase->CreateLogEntry("number of printing entries to be recharged = ".count($result), "fatal");
       $json = array('data' => $result);
       die(json_encode($json));
+   }
+   
+   /**
+    * This function gets the date bounds for uncharged LN2
+    */
+   private function getLabelsRechargesBoundDates(){
+      $query = "select DATE_FORMAT(date,'%Y-%c-%d') as date"
+              . " from labels_printed"
+              . " where rc_timestamp is null"
+              . " group by date"
+              . " order by date asc";
+      
+      $result = $this->Dbase->ExecuteQuery($query);
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("A problem occurred while trying to get date bounds for labels recharges","fatal");
+         $result = array();
+      }
+      
+      if(count($result) > 0){
+         
+         $json = array("error" => false, "data" => array("max" => $result[count($result) - 1]['date'], "min" => $result[0]['date']));
+      }
+      else {
+         $json = array("error" => true, "data" => array());
+      }
+      
+      //$this->Dbase->CreateLogEntry(print_r($json, true), "fatal");
+      return $json;
    }
    
    /**
@@ -718,12 +1339,12 @@ class Recharges{
              "charge_code" => "Charge Code",
              "sector" => "Sector",
              "no_boxes" => "No. Boxes",
-             "box_ids" => "Box IDs",
              "start_date" => "Period Starting",
              "duration" => "Duration (Days)",
              "end_date" => "Period Ending",
              "price_per_box" => "Price per Box (USD)",
-             "total" => "Total Cost (USD)"
+             "total" => "Total Cost (USD)",
+             "box_ids" => "Box IDs"
          );
          
          $summaryHeadings = array(
@@ -802,9 +1423,10 @@ class Recharges{
       $ids = array();
       foreach($items as $currItem){
          $query = "update inventory"
-                 . " set pp_unit = :pp_unit, rc_charge_code = :charge_code, quantity = :quantity, rc_timestamp = now(), item = :item"
+                 //. " set pp_unit = :pp_unit, rc_charge_code = :charge_code, quantity = :quantity, rc_timestamp = now(), item = :item"
+                 . " set rc_charge_code = :charge_code, rc_timestamp = now()"
                  . " where id = :id";
-         $this->Dbase->ExecuteQuery($query, array("pp_unit" => $currItem['pp_unit'], "charge_code" => $currItem['charge_code'], "quantity" => $currItem['quantity'], "item" => $currItem['item'], "id"=> $currItem['id']));
+         $this->Dbase->ExecuteQuery($query, array(/*"pp_unit" => $currItem['pp_unit'], */"charge_code" => $currItem['charge_code']/*, "quantity" => $currItem['quantity'], "item" => $currItem['item']*/, "id"=> $currItem['id']));
          $ids[] = $currItem['id'];
       }
       
@@ -886,9 +1508,10 @@ class Recharges{
       foreach($items as $currItem){
          //id: rowData.id, amount_appr: rowData.amount_appr, charge_code: rowData.charge_code, price: rowData.price
          $query = "update ln2_acquisitions"
-                 . " set amount_appr = :amount_appr, rc_timestamp = now(), rc_charge_code = :charge_code, rc_price = :price"
+                 //. " set amount_appr = :amount_appr, rc_timestamp = now(), rc_charge_code = :charge_code, rc_price = :price"
+                 . " set rc_timestamp = now(), rc_charge_code = :charge_code, rc_price = :price"
                  . " where id = :id";
-         $this->Dbase->ExecuteQuery($query, array("amount_appr" => $currItem['amount_appr'], "charge_code" => $currItem['charge_code'], "price" => $currItem['price'], "id" => $currItem['id']));
+         $this->Dbase->ExecuteQuery($query, array(/*"amount_appr" => $currItem['amount_appr'], */"charge_code" => $currItem['charge_code'], "price" => $currItem['price'], "id" => $currItem['id']));
          
          $ids[] = $currItem['id'];
       }
@@ -1046,7 +1669,7 @@ class Recharges{
       
       $pricePerBoxPerDay = 0;
       if(is_numeric($pricePerBox)){
-         $pricePerBoxPerDay = $pricePerBox/256;
+         $pricePerBoxPerDay = $pricePerBox/356;
       }
       
       if(strlen($projectID) > 0 && strlen($periodEnding) > 0 && strlen($pricePerBoxPerDay) > 0 && strlen($chargeCode) > 0){
@@ -1077,7 +1700,7 @@ class Recharges{
                   $duration = ($to - $from)/86400;
                }
                
-               $total = round($pricePerBoxPerDay * $duration, 2);
+               $total = round($pricePerBoxPerDay * $duration * $result[$i]['no_boxes'], 2);
                $result[$i]['duration'] = $duration;
                $result[$i]['end_date'] = $periodEnding;
                $result[$i]['price_per_box'] = $pricePerBox;
