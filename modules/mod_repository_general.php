@@ -174,6 +174,11 @@ class Repository extends DBase{
                $account = new Account($this->Dbase);
                $account->trafficController();
             }
+            else if(OPTIONS_REQUESTED_MODULE == 'recharges'){
+               require_once 'mod_recharges.php';
+               $recharges = new Recharges($this->Dbase);
+               $recharges->trafficController();
+            }
             else{
                $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
                $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');

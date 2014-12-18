@@ -78,9 +78,9 @@ class Ln2Requests extends Repository{
       </div>
    </form>
    <?php
-      if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+      /*if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
          echo "<div class='center' style='margin-top:10px;margin-left:700px;margin-bottom:10px;'><button id='recharge_btn' type='button' class='btn btn-primary'>Recharge Liquid Nitrogen</button></div>";
-      }
+      }*/
     ?>
    <div id="past_requests">&nbsp;</div>
 </div>
@@ -145,9 +145,9 @@ class Ln2Requests extends Repository{
       singleSelect: true
    });
    
-   $("#recharge_btn").click(function(){
+   /*$("#recharge_btn").click(function(){
       Ln2Requests.downloadRechargeFile();
-   });
+   });*/
 </script>
       <?php
    }
