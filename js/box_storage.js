@@ -1474,16 +1474,15 @@ var BoxStorage = {
             var row = event.args.rowindex;
             var rowData = $("#searched_boxes").jqxGrid('getrowdata', row);
             
-//            /console.log(rowData.box_id);
             $("#box_id").val(rowData.box_id);
             
             $("#box_label").val(rowData.box_name);
             $("#features").val(rowData.box_features);
             $("#owner").val(rowData.keeper);
             $("input[name='box_size'][value='"+BoxStorage.convertBoxSize(rowData.size)+"']").prop("checked", true);
+            $("#no_samples").val(rowData.no_samples);
             
             //tank details
-            
             $("#tank").val(rowData.tank_id);
             BoxStorage.populateTankSectors();
             $("#sector").val(rowData.sector_id);
