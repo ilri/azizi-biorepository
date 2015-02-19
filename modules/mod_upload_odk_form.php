@@ -177,7 +177,11 @@ class UploadODK extends Repository{
                      )
              )
              */
-            if(count($_FILES['media_files']['name']) > 0){//user wants to upload more than one media file
+            
+            /*when checking if user is uploading media files, check if the name of the first media file has at least one character.
+             * Seems like PHP inserts a 'phantom' media file if none is uploaded by the user. I'm assuming this phantom file has blank fields tied to it
+             */
+            if(count($_FILES['media_files']['name']) > 0 && strlen($_FILES['media_files']['name'][0]) > 0){//user wants to upload more than one media file
                $this->Dbase->CreateLogEntry("The current form has " . count($_FILES['media_files']['name']) . " media files", "debug");
                //for each of the files, try to download them to the tmp media dir
                for($mCount = 0; $mCount < count($_FILES['media_files']['name']); $mCount++){
@@ -294,19 +298,16 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                 */
                $fullXMLFilePath = realpath($this->xmlFileLoc);
                $fullMediaFilePath = realpath($this->tmpDir."/media");
-               if(count($_FILES['media_files']['name']) == 0){
-                  $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
-               }
-               else {
-                  /**
-                   * @todo not sure the next line will work
-                   */
+               if(count($_FILES['media_files']['name']) > 0 && strlen($_FILES['media_files']['name'][0]) > 0) { //user uploading form with media files
                   $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
                   for($mediaCount = 0; $mediaCount < count($_FILES['media_files']['name']); $mediaCount++){
                      //, 'datafile'=>'@'.$fullMediaFilePath
                      $postFields["datafile[".$mediaCount."]"] = "@".$fullMediaFilePath."/".$_FILES['media_files']['name'][$mediaCount];
                   }
                   
+               }
+               else {//user uploading form without media files
+                  $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
                }
                $this->Dbase->CreateLogEntry("POST to formUpload API looks like this ".print_r($postFields, true), "debug");
 
