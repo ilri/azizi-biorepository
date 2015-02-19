@@ -715,12 +715,12 @@ class BoxStorage extends Repository{
       $("#status").change(function(){
          if($('#status').val() === "temporary"){
             //if user sets position to temporary set owner to biorepository manager
-            $("#owner").prop('disabled', 'disabled');
-            $("#project").prop('disabled', false);
+            /*$("#owner").prop('disabled', 'disabled');
+            $("#project").prop('disabled', false);*/
          }
          else{
-            $("#owner").prop('disabled', false);
-            $("#project").prop('disabled', 'disabled');
+            /*$("#owner").prop('disabled', false);
+            $("#project").prop('disabled', 'disabled');*/
          }
       });
    });
