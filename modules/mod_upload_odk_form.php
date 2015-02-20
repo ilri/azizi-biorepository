@@ -143,7 +143,7 @@ class UploadODK extends Repository{
             $this->Dbase->CreateLogEntry("moved file from client to ".$this->excelFileLoc, "debug");
             
             //download the media files
-            
+            $this->emptyMediaDir();//make sure the media dir is empty first
             /*
              structure of $_FILES['media_files'] that contains 2 files is 
              (
@@ -198,8 +198,17 @@ class UploadODK extends Repository{
                   }
                }
             }
-
-            $result = exec("python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
+            
+            //extract external_itemsets from the excel file
+            $itemsetsRes = $this->extractExternalItemsets($this->excelFileLoc, $this->tmpDir."/media");
+            if($itemsetsRes == 1){
+               return "An error occurred while trying to determine if the provided form has an external itemset tied to it";
+            }
+            else if ($itemsetsRes == 2){
+               return "Your form's external_choices sheet and the itemsets.csv file contain similar data. You can use either but not both.";
+            }
+            
+            $result = exec("/usr/bin/python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
             $errorOutput = join("\n", $execOutput);
 $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
             if(file_exists($this->xmlFileLoc) && strlen(file_get_contents($this->xmlFileLoc)) > 1){//no error
@@ -298,11 +307,25 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                 */
                $fullXMLFilePath = realpath($this->xmlFileLoc);
                $fullMediaFilePath = realpath($this->tmpDir."/media");
-               if(count($_FILES['media_files']['name']) > 0 && strlen($_FILES['media_files']['name'][0]) > 0) { //user uploading form with media files
+               $mediaFileNames = scandir($this->tmpDir."/media");
+               /*
+                * scandir() generates an array that looks like this:
+                  Array
+                  (
+                     [0] => .
+                     [1] => ..
+                     [2] => filename1
+                     ..
+                     [n+2] => filenameN
+                 )
+                 make sure you ignore the first two elements in the generated array
+                */
+               
+               if($mediaFileNames !== FALSE && count($mediaFileNames) > 2) { //media directory has at least one file in it
                   $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
-                  for($mediaCount = 0; $mediaCount < count($_FILES['media_files']['name']); $mediaCount++){
+                  for($mediaCount = 0; $mediaCount < count($mediaFileNames) - 2; $mediaCount++){
                      //, 'datafile'=>'@'.$fullMediaFilePath
-                     $postFields["datafile[".$mediaCount."]"] = "@".$fullMediaFilePath."/".$_FILES['media_files']['name'][$mediaCount];
+                     $postFields["datafile[".$mediaCount."]"] = "@".$fullMediaFilePath."/".$mediaFileNames[$mediaCount + 2];
                   }
                   
                }
@@ -439,6 +462,66 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
       }
       else{
          $this->Dbase->CreateLogEntry("The excel file container is empty", "fatal");
+      }
+   }
+   
+   /**
+    * This function checks whether the provided excel file has the external_choices
+    * sheet and generates a itemset.csv file from this that will be uploaded alongside
+    * the xml file to Aggregate
+    * 
+    * @param string $excelFileLoc   The location of the excel file
+    * @param string $mediaDirLoc    Directory to save the itemsets.csv file in
+    * 
+    * @return Integer Returns -1 if excel file does not have an external choices, 0 if able to extract the data, 1 if an error occurred and 2 if itemsets.csv already exists in the media directory
+    */
+   private function extractExternalItemsets($excelFileLoc, $mediaDirLoc){
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel/IOFactory.php';
+      
+      try {
+         //load the excel file
+         $excelFileType = PHPExcel_IOFactory::identify($excelFileLoc);
+         $objReader = PHPExcel_IOFactory::createReader($excelFileType);
+         $excelFileObj = $objReader->load($excelFileLoc);
+         
+         //check if excel file has external_choices sheet
+         $sheetNames = $excelFileObj->getSheetnames();//returns an array of sheet names with the indexes usable in $excelObject->getSheet($index)
+         $ecSheetIndex = array_search("external_choices", $sheetNames);
+         if($ecSheetIndex === FALSE){//please make sure you also check data type of $ecSheetIndex
+            //means external_choices sheet wasn't found
+            $this->Dbase->CreateLogEntry("Form's excel file doens not have the external_choices sheet","info");
+            return -1;
+         }
+         else {//external_choices sheet in excel file
+            //check if media directory has itemsets.csv file
+            if(!file_exists($mediaDirLoc."/itemsets.csv")){//itemsets.csv does not exist in media directory
+               //save the external_choices sheet as itemsets.csv. Refer to https://phpexcel.codeplex.com/discussions/257118
+               $objWriter = PHPExcel_IOFactory::createWriter($excelFileObj, "CSV");
+               $objWriter->setSheetIndex($ecSheetIndex);
+               $objWriter->save($mediaDirLoc."/itemsets.csv");
+               return 0;//fils saved successfully, everything is fine.
+            }
+            else {
+               $this->Dbase->CreateLogEntry("User provided both itemsets.csv and an excel file with external_choices sheet. Sending back error message", "fatal");
+               return 2;
+            }
+         }
+         
+      } 
+      catch (Exception $ex) {
+         $this->Dbase->CreateLogEntry("An error occurred while loading ".$excelFileLoc." into a PHPExcel file. \n".$ex->getMessage(), "fatal");
+      }
+      
+      return 1;//fuction returns error by default. Return 0 when you are sure you are done and everything is fine
+   }
+   
+   private function emptyMediaDir(){
+      $mediaFiles = glob($this->tmpDir."/media/*");
+      foreach($mediaFiles as $file){
+         if(is_file($file)){
+            unlink($file);
+         }
       }
    }
 
