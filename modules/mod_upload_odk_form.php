@@ -31,7 +31,8 @@ class UploadODK extends Repository{
 
       $this->sessionID = session_id();
       if($this->sessionID == NULL || $this->sessionID == "") {
-         $this->sessionID = round(microtime(true) * 1000);
+         $this->Dbase->CreateLogEntry("Unable to get the session id. Rolling back to using time to distinguish session folder", "fatal");
+         $this->sessionID = microtime(true);
       }
 
       if(!file_exists($this->ROOT.'tmp')){
@@ -222,8 +223,8 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                   if(isset($instanceIDs[1]) && count($instanceIDs[1]) === 1 && isset($instanceIDs[2]) && count($instanceIDs[2]) === 1){
                      $preID = $instanceIDs[1][0];
                      $instanceID = $instanceIDs[2][0];
-                     $random = round(microtime(true) * 1000);
-                     $newInstanceID = $instanceID . $random;
+                     $random = microtime(true);
+                     $newInstanceID = $instanceID.$random;
                      $xmlString = preg_replace("/<instance>[\s\n]*<".$preID."\s+id=[\"']".$instanceID."[\"']>/", "<instance>\n<".$preID." id=\"".$newInstanceID."\">", $xmlString);
                      
                      /*preg_match_all("/<h:title>(.*)<\/h:title>/i", $xmlString, $possibleTitle);
