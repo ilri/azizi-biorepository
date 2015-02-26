@@ -97,6 +97,12 @@ class Repository extends DBase{
             $mta = new MTA($this->Dbase);
             $mta->trafficController();
          }
+         else if(OPTIONS_REQUESTED_MODULE == 'odk_workflow'){
+               $this->Dbase->CreateLogEntry("Calling the workflow API",'debug');
+               require_once 'mod_wa_api.php';
+               $odkWorkflowAPI = new ODKWorkflowAPI($this->Dbase);
+               $odkWorkflowAPI->trafficController();
+            }
          return;//do not show the user any more links
       }
       else if($openAccess == 1){//an error occurred
