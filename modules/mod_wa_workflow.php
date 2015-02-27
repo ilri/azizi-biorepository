@@ -384,29 +384,39 @@ class Workflow {
             }
          }
       }
+      
+      $this->database->close();
    }
    
    /**
     * This function returns an array with the status of this object and any 
     * cached error message
     */
-   public function getStatusArray() {
+   public function getCurrentStatus() {
+      return Workflow::getStatusArray($this->healthy, $this->errors);
+   }
+   
+   /**
+    * This function returns an array with the status of this object and any 
+    * cached error message
+    */
+   public static function getStatusArray($health, $errors) {
       $errorMessages = array();
       
-      for($index = 0; $index < count($this->errors); $index++) {
-         $currError = $this->errors[$index];//should be an object of type WAException
-         array_push($errorMessages, array("code" => $currError->getCode(), "message" => $this->getErrorMessage($currError)));
+      for($index = 0; $index < count($errors); $index++) {
+         $currError = $errors[$index];//should be an object of type WAException
+         array_push($errorMessages, array("code" => $currError->getCode(), "message" => Workflow::getErrorMessage($currError)));
       }
       
       $status = array(
-          "healthy" => $this->healthy,
+          "healthy" => $health,
           "errors" => $errorMessages
       );
       
       return $status;
    }
    
-   private function getErrorMessage($exception, $level = 0, $currMessage = "") {
+   private static function getErrorMessage($exception, $level = 0, $currMessage = "") {
       $prepend = " -> ";
       if($level == 0) $prepend = "";
       $currMessage .= $prepend.$exception->getMessage();
@@ -415,7 +425,7 @@ class Workflow {
          return $currMessage;
       }
       else {
-         return $this->getErrorMessage($previous, $level+1, $currMessage);
+         return Workflow::getErrorMessage($previous, $level+1, $currMessage);
       }
    }
    
@@ -424,6 +434,118 @@ class Workflow {
     */
    public function getInstanceId() {
       return $this->instanceId;
+   }
+   
+   /**
+    * This function returns an array containing details of workflows that the
+    * specified user has access to
+    * 
+    * @param array   $config  repository_config object to be used
+    * @param string  $user    user we are getting access for
+    */
+   public static function getUserWorkflows($config, $user) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      
+      $lH = new LogHandler("./");
+      $database = new Database($config);
+      $jsonReturn = array(
+          "workflows" => array(),
+          "status" => array("health" => true, "errors" => array())
+      );//object to store return json for this function
+      
+      //get all the databases that look like store workflow details
+      $query = "show databases";
+      try {
+         $result = $database->runGenericQuery($query, TRUE);
+         if($result !== false){
+            $accessibleDbs = array();//array to store details for all the databases user has access to
+            for($index = 0; $index < count($result); $index++) {
+               $currDbName = $result[$index]['Database'];
+               //check if current database qualifies to store workflow details
+               $query = "show tables in `{$currDbName}`";
+               $tableNames = $database->runGenericQuery($query, true);
+               
+               $metaTables = 0;
+               
+               if($tableNames !== false) {
+                  //check each of the table names to see if the meta tables exist
+                  for($tIndex = 0; $tIndex < count($tableNames); $tIndex++) {
+                     if($tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_ACCESS
+                             || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_CHANGES
+                             || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_DOCUMENT
+                             || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_VAR_NAMES) {
+                        $metaTables++;
+                     }
+                  }
+               }
+               
+               if($metaTables == 4) {//database has all the meta tables
+                  //check whether the user has access to this database
+                  $query = "select * from `{$currDbName}`.`".Workflow::$TABLE_META_ACCESS."` where `user_granted` = '$user'";
+                  $access = $database->runGenericQuery($query, true);
+                  if($access !== false) {
+                     if(count($access) > 0) {//user has access to the workflow
+                        try {
+                           $details = Workflow::getWorkflowDetails($currDbName, $database);
+                           array_push($accessibleDbs, $details);
+                           
+                        } catch (WAException $ex) {
+                           $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
+                           return $jsonReturn;
+                        }
+                     }
+                  }
+                  else {
+                     $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database", WAException::$CODE_DB_QUERY_ERROR, NULL)));
+                     return $jsonReturn;
+                  }
+               }
+               else {//database not usable with this API
+                  $lH->log(4, "static_workflow", "$currDbName not usable with the WorkflowAPI");
+               }
+            }
+            //return the accessible databases
+            $jsonReturn['workflows'] = $accessibleDbs;
+            return $jsonReturn;
+         }
+         else {
+            $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database", WAException::$CODE_DB_QUERY_ERROR, NULL)));
+            return $jsonReturn;
+         }
+      } catch (WAException $ex) {
+         $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to available database in MySQL", WAException::$CODE_DB_QUERY_ERROR, $ex)));
+         return $jsonReturn;
+      }
+   }
+   
+   /**
+    * This function gets the 
+    * @param string     $dbName     The name of the MySQL database where the workflow is stored
+    * @param Database   $database   Database object to be used to perform MySQL queries
+    * 
+    * @return Array  Associative array containing the database details
+    * @throws WAException
+    */
+   private static function getWorkflowDetails($dbName, $database){
+      $query = "select `workflow_name`,`created_by`,`time_created`,`workflow_id`,`working_dir` from `{$dbName}`.`".Workflow::$TABLE_META_DOCUMENT."` order by id desc limit 1";//get the latest document details
+      try {
+         $result = $database->runGenericQuery($query, true);
+         if($result !== false) {
+            if(count($result) > 0) {
+               return $result[0];
+            }
+            else {
+               throw new WAException("No workflow details stored in the database", WAException::$CODE_DB_ZERO_RESULT_ERROR, null);
+            }
+         }
+         else {
+            throw new WAException("Unable to get workflow details from the database", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to get workflow details from the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
    }
 }
 ?>

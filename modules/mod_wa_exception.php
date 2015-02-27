@@ -15,6 +15,7 @@ class WAException extends Exception {
    public static $CODE_DB_COLUMN_MISSMATCH = 100009;//column number missmatch in insert query
    public static $CODE_DB_REGISTER_FILE_ERROR = 100010;//unable to record in the database the existence of a new file
    public static $CODE_FS_RM_DIR_ERROR= 100011;//unable to remove a directory
+   public static $CODE_DB_ZERO_RESULT_ERROR = 100012;//No result returned from the database when at least one result expected
 
    public function __construct($message, $code = 0, Exception $previous = null) {
       parent::__construct($message, $code, $previous);

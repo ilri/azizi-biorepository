@@ -28,31 +28,14 @@ class ODKWorkflowAPI extends Repository {
          $this->lH->log(2, $this->TAG, "Client called API without parameters. Setting status code to ".ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
-      /*
-       * This API component initialises a new workflow instance
-       * Client feeds in:
-       *    - requesting server Address
-       *    - requesting user
-       *    - url where API will fetch file
-       * Client should expect:
-       *    - the assigned workflow ID/null
-       *    - an array of error messages
-       */
       else if (OPTIONS_REQUESTED_SUB_MODULE == "init_workflow"){
          $this->handleInitWorkflowEndpoint();
       }
-      
-      /*
-       * 
-       */
       else if (OPTIONS_REQUESTED_SUB_MODULE == "getRawSheets"){
          
       }
-      /*
-       * 
-       */
-      else if (OPTIONS_REQUESTED_SUB_MODULE == "getUserForms"){
-         
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflows"){
+         $this->handleGetWorkflowsEndpoint();
       }
    }
    
@@ -95,7 +78,7 @@ class ODKWorkflowAPI extends Repository {
                //return details back to user
                $data = array(
                    "workflow_id" => $workflow->getInstanceId(),
-                   "status" => $workflow->getStatusArray()
+                   "status" => $workflow->getCurrentStatus()
                );
                $this->returnResponse($data);
 
@@ -103,6 +86,35 @@ class ODKWorkflowAPI extends Repository {
             else {
                $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
             }
+         }
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_workflow endpoint of the API.
+    * The get_workflow endpoint expects the following json object in the 
+    * $_REQUEST['data'] variable
+    * 
+    * {
+    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
+    *    user        :  "the user making the request"
+    * }
+    * 
+    */
+   private function handleGetWorkflowsEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = json_decode($_REQUEST['data'], true);//decode json to associative array
+         if(array_key_exists("server", $json)
+                 && array_key_exists("user", $json)) {
+            
+            $this->returnResponse(Workflow::getUserWorkflows(Config::$config, $this->generateUserUUID($json['server'], $json['user'])));
+            
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          }
       }
       else {
