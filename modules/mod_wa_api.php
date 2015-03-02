@@ -41,7 +41,7 @@ class ODKWorkflowAPI extends Repository {
          $this->handleProcessMysqlSchemaEndpoint();
       }
       else if (OPTIONS_REQUESTED_SUB_MODULE == "get_working_status"){
-         
+         $this->handleGetWorkingStatusEndpoint();
       }
       else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_tables"){
          
@@ -153,6 +153,8 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("user", $json)
                  && array_key_exists("workflow_id", $json)) {
             $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            
+            $workflow->setIsProcessing(true);//set is processing to be true because workflow instance is going to be left processing after response sent to user
             $data = array(
                 "status" => $workflow->getCurrentStatus()
             );
@@ -160,6 +162,39 @@ class ODKWorkflowAPI extends Repository {
             
             //call this function after sending response to client because it's goin to take some time
             $workflow->convertDataFilesToMySQL();
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_working_status endpoint of the API.
+    * The get_working_status endpoint expects the following json object in the 
+    * $_REQUEST['data'] variable
+    * 
+    * {
+    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
+    *    user        :  "the user making the request"
+    *    workflow_id :  "ID of the workflow"
+    * }
+    * 
+    */
+   private function handleGetWorkingStatusEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = json_decode($_REQUEST['data'], true);
+         if(array_key_exists("server", $json)
+                 && array_key_exists("user", $json)
+                 && array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            $data = array(
+                "status" => $workflow->getCurrentStatus()
+            );
+            $this->returnResponse($data);
          }
          else {
             $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);

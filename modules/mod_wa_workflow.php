@@ -15,11 +15,13 @@ class Workflow {
    private $workingDir;//directory where all the workflow files will be stored
    private $files;//list of WAFiles held by this workflow instance
    private $currUser;//current user interracting with instance
+   private $processing;//flag to be used with asynchronous processes. Set to true if asynchronous task working for current instance (example of task is converting excel sheets to MySQL tables)
    
    private static $TABLE_META_CHANGES = "__meta_changes";
    private static $TABLE_META_VAR_NAMES = "__meta_var_names";
    private static $TABLE_META_ACCESS = "__meta_access";
    private static $TABLE_META_DOCUMENT = "__meta_document";
+   private static $TABLE_META_ERRORS = "__meta_errors";
    
    /**
     * Default class contructor
@@ -41,6 +43,7 @@ class Workflow {
       $this->files = array();
       $this->currUser = $currUser;
       $this->workflowName = $workflowName;
+      $this->processing = false;
       
       $this->instanceId = $instanceId;
       
@@ -85,6 +88,9 @@ class Workflow {
                   $this->healthy = false;
                   array_push($this->errors, new WAException("An error occurred while trying to initialize worflow files", WAException::$CODE_WF_INSTANCE_ERROR, null));
                }
+               
+               //get cached status from the database
+               $this->getCachedStatus();
             } catch (WAException $ex) {
                $this->lH->log(1, $this->TAG, "An error occurred while trying restore workflow state from MySQl database for workflow with id = '{$this->instanceId}'");
                $this->healthy = false;
@@ -150,6 +156,7 @@ class Workflow {
          $this->createMetaChangesTable();
          $this->createMetaDocumentTable();
          $this->createMetaVarNamesTable();
+         $this->createMetaErrorsTable();
       }
       else {
          $this->lH->log(1, $this->TAG, "Unable to create meta tables because database object connected to the wrong database ('{$this->database->getDatabaseName()}')");
@@ -235,7 +242,26 @@ class Workflow {
                      array("name" => "created_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
                      array("name" => "time_created" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
                      array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                     array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
+                     array("name" => "processing" , "type"=>Database::$TYPE_TINYINT , "length"=>4 , "nullable"=>false , "default"=>0 , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
+                     array("name" => "health" , "type"=>Database::$TYPE_TINYINT , "length"=>4 , "nullable"=>false , "default"=>1 , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                     )
+                 );
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to create the ".Workflow::$TABLE_META_DOCUMENT." table");
+         array_push($this->errors, new WAException("Unable to create the ".Workflow::$TABLE_META_DOCUMENT." table", WAException::$CODE_DB_CREATE_ERROR, $ex));
+         $this->healthy = false;
+      }
+   }
+   
+   private function createMetaErrorsTable() {
+      try {
+         $this->database->runCreateTableQuery(Workflow::$TABLE_META_ERRORS,
+                 array(
+                     array("name" => "id" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY , "auto_incr"=>true),
+                     array("name" => "code" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
+                     array("name" => "message" , "type"=>Database::$TYPE_VARCHAR , "length"=>250 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
+                     array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
                      )
                  );
       } catch (WAException $ex) {
@@ -369,6 +395,7 @@ class Workflow {
       } catch (WAException $ex) {
          array_push($this->errors, $ex);
          $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to initialize the database object for workflow with id = {$this->instanceId}");
       }
    }
    
@@ -428,12 +455,23 @@ class Workflow {
    }
    
    /**
+    * This function sets the is processing flag for this instance to either
+    * TRUE or FALSE. Flag will be auto reverted after processing finished
+    * 
+    * @param bool $isProcessing Whether instance has something running
+    */
+   public function setIsProcessing($isProcessing) {
+      $this->processing = $isProcessing;
+   }
+   
+   /**
     * This function takes each of the data files added to this workflow and tries
     * to create MySQL tables for them. Currently only supports one data file
     * 
     * @todo Save processing status in MySQL
     */
    public function convertDataFilesToMySQL() {
+      $this->cacheIsProcessing();
       if($this->database != null 
               && $this->instanceId != null
               && $this->workingDir != null
@@ -467,12 +505,15 @@ class Workflow {
             $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' does not have any linked data files");
             array_push($this->errors, new WAException("Workflow not linked to any data file", WAException::$CODE_WF_INSTANCE_ERROR, null));
          }
-         
       }
       else {
          $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' not initialized properly. Unable to convert workflow's data files to MySQL'");
          array_push($this->errors, new WAException("Workflow not initialized properly. Unable to convert workflow's data files to MySQL'", WAException::$CODE_WF_INSTANCE_ERROR, null));
       }
+      $this->setIsProcessing(false);
+      $this->cacheIsProcessing();
+      $this->cacheErrors();
+      $this->cacheHealth();
    }
    
    /**
@@ -480,14 +521,14 @@ class Workflow {
     * cached error message
     */
    public function getCurrentStatus() {
-      return Workflow::getStatusArray($this->healthy, $this->errors);
+      return Workflow::getStatusArray($this->healthy, $this->errors, $this->processing);
    }
    
    /**
     * This function returns an array with the status of this object and any 
     * cached error message
     */
-   public static function getStatusArray($health, $errors) {
+   public static function getStatusArray($health, $errors, $processing = false) {
       $errorMessages = array();
       
       for($index = 0; $index < count($errors); $index++) {
@@ -497,7 +538,8 @@ class Workflow {
       
       $status = array(
           "healthy" => $health,
-          "errors" => $errorMessages
+          "errors" => $errorMessages,
+          "processing" => $processing
       );
       
       return $status;
@@ -521,6 +563,142 @@ class Workflow {
     */
    public function getInstanceId() {
       return $this->instanceId;
+   }
+   
+   /**
+    * This function sets the processing flag in the META_DOCUMENT table as either 
+    * TRUE or FALSE depending on what is provided
+    */
+   public function cacheIsProcessing() {
+      $processing = $this->processing;
+      if($processing === true) $processing = 1;
+      else $processing = 0;
+      if($this->database->getDatabaseName() == $this->instanceId
+              && $this->instanceId != null) {
+         $query = "update `".Workflow::$TABLE_META_DOCUMENT."` set processing = {$processing} where `workflow_id` = '{$this->instanceId}'";
+         try {
+            $this->database->runGenericQuery($query);
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to update processing flag in ".Workflow::$TABLE_META_DOCUMENT." table for workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to update the processing flag in ".Workflow::$TABLE_META_DOCUMENT." because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to update the processing flag in ".Workflow::$TABLE_META_DOCUMENT." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
+   /**
+    * This function caches health state in the META_DOCUMENT table
+    */
+   public function cacheHealth() {
+      $health = 1;
+      if($this->healthy == false) $health = 0;
+      
+      if($this->database->getDatabaseName() == $this->instanceId
+              && $this->instanceId != null) {
+         $query = "update `".Workflow::$TABLE_META_DOCUMENT."` set health = {$health} where `workflow_id` = '{$this->instanceId}'";
+         try {
+            $this->database->runGenericQuery($query);
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to update health flag in ".Workflow::$TABLE_META_DOCUMENT." table for workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to update the health flag in ".Workflow::$TABLE_META_DOCUMENT." because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to update the health flag in ".Workflow::$TABLE_META_DOCUMENT." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
+   /**
+    * This function caches errors caught by this object in the META_ERRORS table
+    */
+   public function cacheErrors() {
+      if($this->database->getDatabaseName() == $this->instanceId
+              && $this->instanceId != null) {
+         for($index = 0; $index < count($this->errors); $index++) {
+            $currError = $this->errors[$index];
+            try {
+               $this->database->runInsertQuery(Workflow::$TABLE_META_ERRORS, array(
+                   "code" => $currError->getCode(),
+                   "message" => Workflow::getErrorMessage($currError),
+                   "time_added" => Database::getMySQLTime()
+               ));
+            } catch (WAException $ex) {
+               array_push($this->errors, $ex);
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." table for workflow with id = '{$this->instanceId}'");
+            }
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
+   /**
+    * This function gets the cached status from the database
+    */
+   public function getCachedStatus() {
+      if($this->database->getDatabaseName() == $this->instanceId
+              && $this->instanceId != null) {
+         //get processing and health status
+         $query = "select processing, health from `".Workflow::$TABLE_META_DOCUMENT."` order by id desc limit 1";
+         try {
+            $result = $this->database->runGenericQuery($query, true);
+            //get status information
+            if(is_array($result)) {
+               if(count($result) == 1) {
+                  $processing = $result[0]['processing'];
+                  if($processing == 1) $this->processing = true;
+                  else $this->processing = false;
+                  
+                  $health = $result[0]['health'];
+                  if($health == 1) $this->healthy = true;
+                  else $this->healthy = false;
+               }
+               else {
+                  $this->lH->log(2, $this->TAG, "No cached status information for workflow with id = '{$this->instanceId}'");
+               }
+            }
+            else {
+               array_push($this->errors, new WAException("Unable to get cached status from ".Workflow::$TABLE_META_DOCUMENT, WAException::$CODE_DB_QUERY_ERROR, null));
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Unable to get cached status from ".Workflow::$TABLE_META_DOCUMENT." for workflow with id = {$this->instanceId}");
+            }
+            
+            //get cached errors
+            $query = "select `code`, `message` from `".Workflow::$TABLE_META_ERRORS."` order by id";
+            $result = $this->database->runGenericQuery($query, true);
+            if(is_array($result)) {
+               for($index = 0; $index < count($result); $index++) {
+                  array_push($this->errors, new WAException($result[$index]['message'], $result[$index]['code']));
+               }
+            }
+            else {
+               array_push($this->errors, new WAException("Unable to get cached errors from ".Workflow::$TABLE_META_ERRORS, WAException::$CODE_DB_QUERY_ERROR, null));
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Unable to get cached status from ".Workflow::$TABLE_META_ERRORS." for workflow with id = {$this->instanceId}");
+            }
+         } catch (WAException $ex) {
+            array_push($this->errors, new WAException("Unable to get cached status from ".Workflow::$TABLE_META_DOCUMENT, WAException::$CODE_WF_INSTANCE_ERROR, $ex));
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to get cached status from ".Workflow::$TABLE_META_DOCUMENT." for workflow with id = {$this->instanceId}");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to get cached status from ".Workflow::$TABLE_META_DOCUMENT." because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to get cached status from ".Workflow::$TABLE_META_ERRORS." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
    }
    
    /**
