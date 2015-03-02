@@ -32,6 +32,7 @@ class Workflow {
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
       include_once 'mod_wa_file.php';
+      include_once 'mod_wa_excel_file.php';
       
       $this->config = $config;
       $this->lH = new LogHandler("./");
@@ -56,16 +57,48 @@ class Workflow {
             array_push($this->errors, $ex);
             $this->healthy = false;
          }
+         
+         //make sure the working directory exists
+         $this->createWorkingDir();
+
+         //make sure meta tables have been created
+         $this->initMetaDBTables();
+
+         $this->grantUserAccess($this->currUser);
+         $this->saveWorkflowDetails();
       }
-      
-      //make sure the working directory exists
-      $this->createWorkingDir();
-      
-      //make sure meta tables have been created
-      $this->initMetaDBTables();
-      
-      $this->grantUserAccess($this->currUser);
-      $this->saveWorkflowDetails();
+      else {
+         $this->lH->log(3, $this->TAG, "Initializing workflow with id = '$instanceId' from MySQL");
+         if($this->instanceId === $this->database->getDatabaseName()){//make sure you are connected to the right database
+            //initialize all the things
+            try {
+               $workflowDetails = Workflow::getWorkflowDetails($this->instanceId, $this->database);//get workflow details from the MySQL database
+               //`workflow_name`,`created_by`,`time_created`,`workflow_id`,`working_dir`
+               $this->workflowName =  $workflowDetails['workflow_name'];
+               $this->workingDir = $workflowDetails['working_dir'];
+               
+               //initialize all the files
+               try {
+                  $this->files = WAFile::getAllWorkflowFiles($this->config, $this->instanceId, $this->database, $this->workingDir);
+               } catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "An error occurred while trying to intialize files for workflow with id = '{$this->instanceId}'");
+                  $this->healthy = false;
+                  array_push($this->errors, new WAException("An error occurred while trying to initialize worflow files", WAException::$CODE_WF_INSTANCE_ERROR, null));
+               }
+            } catch (WAException $ex) {
+               $this->lH->log(1, $this->TAG, "An error occurred while trying restore workflow state from MySQl database for workflow with id = '{$this->instanceId}'");
+               $this->healthy = false;
+               array_push($this->errors, new WAException("An error occurred while trying to restore state from MySQL database", WAException::$CODE_WF_INSTANCE_ERROR, null));
+            }
+           
+         }
+         else {
+            $this->lH->log(1, $this->TAG, "Database object connected to the wrong database in workflow instance with id = '{$this->instanceId}'");
+            $this->healthy = false;
+            array_push($this->errors, new WAException("Database object connected to the wrong MySQL database", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         }
+         
+      }
    }
    
    /**
@@ -384,8 +417,62 @@ class Workflow {
             }
          }
       }
-      
+   }
+   
+   /**
+    * This function releases all locks on hardware resources. Should be called
+    * last for any workflow object
+    */
+   public function finalize() {
       $this->database->close();
+   }
+   
+   /**
+    * This function takes each of the data files added to this workflow and tries
+    * to create MySQL tables for them. Currently only supports one data file
+    * 
+    * @todo Save processing status in MySQL
+    */
+   public function convertDataFilesToMySQL() {
+      if($this->database != null 
+              && $this->instanceId != null
+              && $this->workingDir != null
+              && $this->config != null
+              && $this->files != null) {
+         //get only the data files
+         $dataFiles = array();
+         for($index = 0; $index < count($this->files); $index++) {
+            $currFile = $this->files[$index];
+            if($currFile->getType() == WAFile::$TYPE_RAW) {
+               array_push($dataFiles, $currFile);
+            }
+         }
+         
+         if(count($dataFiles) > 0) {
+            if(count($dataFiles) == 1) {//currently only support one data file
+               $excelFile = new WAExcelFile($dataFiles[0]);
+               try {
+                  $excelFile->processToMySQL();
+               } catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "Could not process data file for workflow with id = {$this->instanceId} to MySQL");
+                  array_push($this->errors, $ex);
+               }
+            }
+            else {
+               $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' has more than one data file");
+               array_push($this->errors, new WAException("Workflow not linked to more than one data file. Feature currently not supported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
+            }
+         }
+         else {
+            $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' does not have any linked data files");
+            array_push($this->errors, new WAException("Workflow not linked to any data file", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         }
+         
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' not initialized properly. Unable to convert workflow's data files to MySQL'");
+         array_push($this->errors, new WAException("Workflow not initialized properly. Unable to convert workflow's data files to MySQL'", WAException::$CODE_WF_INSTANCE_ERROR, null));
+      }
    }
    
    /**
@@ -521,7 +608,8 @@ class Workflow {
    }
    
    /**
-    * This function gets the 
+    * This function gets the specified workflow's details from the database
+    * 
     * @param string     $dbName     The name of the MySQL database where the workflow is stored
     * @param Database   $database   Database object to be used to perform MySQL queries
     * 

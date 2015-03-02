@@ -16,6 +16,12 @@ class WAException extends Exception {
    public static $CODE_DB_REGISTER_FILE_ERROR = 100010;//unable to record in the database the existence of a new file
    public static $CODE_FS_RM_DIR_ERROR= 100011;//unable to remove a directory
    public static $CODE_DB_ZERO_RESULT_ERROR = 100012;//No result returned from the database when at least one result expected
+   public static $CODE_FS_UNKNOWN_LOCATION_ERROR = 100013;//Unable to determine filesystem location for file
+   public static $CODE_FS_UNKNOWN_TYPE_ERROR = 100014;//Unable to determine type of file (whether raw, processed or backup file)
+   public static $CODE_WF_CREATE_ERROR = 100015;//unable to create an object because of a resource error
+   public static $CODE_WF_PROCESSING_ERROR = 100016;//a general processing error occurred
+   public static $CODE_WF_DATA_MULFORMED_ERROR = 100017;//MySQL or Excel data seems to be mulformed
+   public static $CODE_WF_FEATURE_UNSUPPORTED_ERROR = 100018;//Feature being requested by client not (yet) supported
 
    public function __construct($message, $code = 0, Exception $previous = null) {
       parent::__construct($message, $code, $previous);

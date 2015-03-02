@@ -10,12 +10,15 @@ class ODKWorkflowAPI extends Repository {
    private static $STATUS_CODE_BAD_REQUEST = "HTTP/1.1 400 Bad Request";
    private static $HEADER_CTYPE_JSON = "Content-Type: application/json";
    private $lH;
+   private $config;
    
    public function __construct($Dbase) {
       include_once 'mod_wa_workflow.php';
       include_once 'mod_log.php';
       
       $this->Dbase = $Dbase;
+      $this->config = Config::$config;
+      $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
       $this->lH = new LogHandler("./");
       $this->lH->log(4, $this->TAG, "ODK Workflow API called");
    }
@@ -31,11 +34,17 @@ class ODKWorkflowAPI extends Repository {
       else if (OPTIONS_REQUESTED_SUB_MODULE == "init_workflow"){
          $this->handleInitWorkflowEndpoint();
       }
-      else if (OPTIONS_REQUESTED_SUB_MODULE == "getRawSheets"){
-         
-      }
       else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflows"){
          $this->handleGetWorkflowsEndpoint();
+      }
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "process_mysql_schema"){
+         $this->handleProcessMysqlSchemaEndpoint();
+      }
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_working_status"){
+         
+      }
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_tables"){
+         
       }
    }
    
@@ -67,13 +76,16 @@ class ODKWorkflowAPI extends Repository {
                     && array_search("workflow_name", $jsonKeys) !== false){
 
                //initialize a workflow object
-               $workflow = new Workflow(Config::$config, $json['workflow_name'], $this->generateUserUUID($json['server'],$json['user']));
+               $workflow = new Workflow($this->config, $json['workflow_name'], $this->generateUserUUID($json['server'],$json['user']));
 
                //fetch the form data file from the client
                $workflow->addRawDataFile($json['data_file_url']);
                
                //clean up
                $workflow->cleanUp();
+               
+               //release resources
+               $workflow->finalize();
                
                //return details back to user
                $data = array(
@@ -110,8 +122,44 @@ class ODKWorkflowAPI extends Repository {
          if(array_key_exists("server", $json)
                  && array_key_exists("user", $json)) {
             
-            $this->returnResponse(Workflow::getUserWorkflows(Config::$config, $this->generateUserUUID($json['server'], $json['user'])));
+            $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->generateUserUUID($json['server'], $json['user'])));
             
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the process_mysql_schema endpoint of the API.
+    * The process_mysql_schema endpoint expects the following json object in the 
+    * $_REQUEST['data'] variable
+    * 
+    * {
+    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
+    *    user        :  "the user making the request"
+    *    workflow_id :  "ID of the workflow"
+    * }
+    * 
+    */
+   private function handleProcessMysqlSchemaEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = json_decode($_REQUEST['data'], true);
+         if(array_key_exists("server", $json)
+                 && array_key_exists("user", $json)
+                 && array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            $data = array(
+                "status" => $workflow->getCurrentStatus()
+            );
+            $this->returnResponse($data);
+            
+            //call this function after sending response to client because it's goin to take some time
+            $workflow->convertDataFilesToMySQL();
          }
          else {
             $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);

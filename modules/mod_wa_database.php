@@ -264,8 +264,7 @@ class Database {
                      }
                      else if($nullable === "not null"
                              && ($currColumn['default'] == null || $currColumn['default'] == "NULL" || $currColumn['default'] == "null")) {
-                        //column is not nullable and default value is null
-                        $this->logH->log(2, $this->TAG, "Column '{$currColumn['name']}' for table '{$name}' is set to not null yet default value is null");
+                        //column doesn't have a default value
                      }
                      else {
                         //default value is definately not null column however can be either nullable or not
@@ -304,6 +303,9 @@ class Database {
                $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");
                throw new WAException("Unable to run the create stament for the table '{$name}'", WAException::$CODE_DB_CREATE_ERROR, $ex);
             }
+         }
+         else {
+            $this->logH->log(4, $this->TAG, "Table '$name' already exists. Not creating it");
          }
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "An error occurred while trying to check wheter the table '$name' exists");
