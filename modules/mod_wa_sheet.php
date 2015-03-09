@@ -125,7 +125,7 @@ class WASheet {
                   $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns);
                   
                } catch (WAException $ex) {
-                  $this->lH->log(1, $this->TAG, "Unable to create MySQL table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
+                  $this->lH->log(1, $this->TAG, "Unable to create database table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
                   throw new WAException("Unable to create MySQL table for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
                }
             }

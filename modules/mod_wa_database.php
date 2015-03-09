@@ -17,7 +17,7 @@ class Database {
    public static $QUOTE_SI = '"';//quotes to be used for system identifiers
    public static $TYPE_SERIAL = "serial";//1 to 2147483647
    public static $TYPE_INT = "integer";
-   public static $TYPE_DOUBLE = "double";
+   public static $TYPE_DOUBLE = "double precision";
    public static $TYPE_VARCHAR = "varchar";
    public static $TYPE_TINYINT = "smallint";
    public static $TYPE_TIME = "time without time zone";
@@ -93,26 +93,40 @@ class Database {
     * @throws WAException
     */
    public function runGenericQuery($query, $fetchResults = false) {
-      try {
-         //run a prepared statement (PDO will handle escaping)
-         $stmt = $this->pdoObject->prepare($query);
-         
-         $result = $stmt->execute();
-         if($result === true) {
-            $this->logH->log(4, $this->TAG, "Successfully run the statement '{$query}'");
-            if($fetchResults === TRUE){
-               return $stmt->fetchAll(PDO::FETCH_ASSOC);
+      if($this->pdoObject !== null) {
+         try {
+            //run a prepared statement (PDO will handle escaping)
+            $this->logH->log(4, $this->TAG, "About to run the following statement '$query'");
+            $stmt = $this->pdoObject->prepare($query);
+
+            $result = $stmt->execute();
+            if($result === true) {
+               $this->logH->log(4, $this->TAG, "Successfully run the statement '{$query}'");
+               if($fetchResults === TRUE){
+                  return $stmt->fetchAll(PDO::FETCH_ASSOC);
+               }
             }
+            else {
+               $this->logH->log(1, $this->TAG, "An error occurred while trying to execute the SQL query '$query'");
+               throw new WAException("Unable to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, null);
+            }
+
+         } catch (PDOException $ex) {
+            $this->logH->log(2, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
+            throw new WAException("PDOException thrown while trying to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, $ex);
          }
-         else {
-            $this->logH->log(1, $this->TAG, "An error occurred while trying to execute the SQL query '$query'");
-            throw new WAException("Unable to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, null);
-         }
-         
-      } catch (PDOException $ex) {
-         $this->logH->log(2, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
-         throw new WAException("PDOException thrown while trying to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
+      else {
+         $this->logH->log(1, $this->TAG, "Unable to run statement because PDO object is null for database object connected to '{$this->connectedDb}'");
+         throw new WAException("Unable to run statement because PDO object is null", WAException::$CODE_DB_QUERY_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function quotes strings and escapes special characters
+    */
+   public function quote($string) {
+      return $this->pdoObject->quote($string);
    }
    
    /**
@@ -181,10 +195,13 @@ class Database {
       $query = "SELECT datname FROM pg_database WHERE datistemplate = false";
       try {
          $result = $this->runGenericQuery($query, true);
+         $this->logH->log(4, $this->TAG, "Result from '$query' = ".print_r($result, TRUE));
          $names = array();
          for($index = 0; $index < count($result); $index++) {
-            array_push($names, $result['datname']);
+            array_push($names, $result[$index]['datname']);
          }
+         
+         $this->logH->log(4, $this->TAG, "Database names = ".print_r($names, TRUE));
          
          return $names;
       } catch (WAException $ex) {
@@ -202,7 +219,8 @@ class Database {
     * @throw WAException
     */
    public function getTableNames($databaseName) {
-      $query = "SELECT table_name FROM information_schema.tables where table_catalog = '{$databaseName}'";
+      $this->logH->log(4, $this->TAG, "Getting table names for database with name = '$databaseName'");
+      $query = "SELECT table_name FROM information_schema.tables where table_catalog = '{$databaseName}' and table_schema = 'public'";//only fetch tables that are in the public schema
       try {
          $result = $this->runGenericQuery($query, true);
          $tables = array();
@@ -241,6 +259,8 @@ class Database {
          
          for($index = 0; $index < count($result); $index++) {
             $type = strtolower($result[$index]['data_type']);
+            
+            if($type == "character varying") $type = Database::$TYPE_VARCHAR;
 
             $nullable = false;
             if($result[$index]['is_nullable'] == "YES") {

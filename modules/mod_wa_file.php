@@ -302,7 +302,7 @@ class WAFile {
                }
             }
             
-            $database->close();
+            //$database->close();
             
             return $files;
          }

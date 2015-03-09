@@ -492,7 +492,8 @@ class Workflow {
     */
    public function convertDataFilesToMySQL() {
       $this->cacheIsProcessing();
-      if($this->database != null 
+      if($this->healthy == true
+              && $this->database != null 
               && $this->instanceId != null
               && $this->workingDir != null
               && $this->config != null
@@ -591,11 +592,12 @@ class Workflow {
     */
    public function cacheIsProcessing() {
       $processing = $this->processing;
-      if($processing === true) $processing = 1;
-      else $processing = 0;
+      if($processing === true) $processing = Database::$BOOL_TRUE;
+      else $processing = Database::$BOOL_FALSE;
+      
       if($this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
-         $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set processing = {$processing} where workflow_id = '{$this->instanceId}'";
+         $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set processing = '{$processing}' where workflow_id = '{$this->instanceId}'";
          try {
             $this->database->runGenericQuery($query);
          } catch (WAException $ex) {
@@ -615,12 +617,12 @@ class Workflow {
     * This function caches health state in the META_DOCUMENT table
     */
    public function cacheHealth() {
-      $health = 1;
-      if($this->healthy == false) $health = 0;
+      $health = Database::$BOOL_TRUE;
+      if($this->healthy == false) $health = Database::$BOOL_FALSE;
       
       if($this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
-         $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set health = {$health} where workflow_id = '{$this->instanceId}'";
+         $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set health = '{$health}' where workflow_id = '{$this->instanceId}'";
          try {
             $this->database->runGenericQuery($query);
          } catch (WAException $ex) {
@@ -645,20 +647,21 @@ class Workflow {
          for($index = 0; $index < count($this->errors); $index++) {
             $currError = $this->errors[$index];
             try {
+               $message = $this->database->quote(Workflow::getErrorMessage($currError));//TODO: not sure this will work
                $this->database->runInsertQuery(Workflow::$TABLE_META_ERRORS, array(
                    "code" => $currError->getCode(),
-                   "message" => "'".Workflow::getErrorMessage($currError)."'",
+                   "message" => "'$message'",
                    "time_added" => "'".Database::getMySQLTime()."'"
                ));
             } catch (WAException $ex) {
-               array_push($this->errors, $ex);
+               //array_push($this->errors, $ex);
                $this->healthy = false;
                $this->lH->log(1, $this->TAG, "Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." table for workflow with id = '{$this->instanceId}'");
             }
          }
       }
       else {
-         array_push($this->errors, new WAException("Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         //array_push($this->errors, new WAException("Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
@@ -728,7 +731,7 @@ class Workflow {
     * @return Array Array with schema data for all the data storing MySQL tables
     */
    public function getSchema() {
-      if($this->instanceId == $this->database->getDatabaseName()
+      if($this->healthy == true && $this->instanceId == $this->database->getDatabaseName()
               && $this->instanceId != null) {
          $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
          
