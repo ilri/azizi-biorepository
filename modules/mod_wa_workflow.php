@@ -17,11 +17,11 @@ class Workflow {
    private $currUser;//current user interracting with instance
    private $processing;//flag to be used with asynchronous processes. Set to true if asynchronous task working for current instance (example of task is converting excel sheets to MySQL tables)
    
-   private static $TABLE_META_CHANGES = "__meta_changes";
-   private static $TABLE_META_VAR_NAMES = "__meta_var_names";
-   private static $TABLE_META_ACCESS = "__meta_access";
-   private static $TABLE_META_DOCUMENT = "__meta_document";
-   private static $TABLE_META_ERRORS = "__meta_errors";
+   public static $TABLE_META_CHANGES = "__meta_changes";
+   public static $TABLE_META_VAR_NAMES = "__meta_var_names";
+   public static $TABLE_META_ACCESS = "__meta_access";
+   public static $TABLE_META_DOCUMENT = "__meta_document";
+   public static $TABLE_META_ERRORS = "__meta_errors";
    
    /**
     * Default class contructor
@@ -35,6 +35,7 @@ class Workflow {
       include_once 'mod_log.php';
       include_once 'mod_wa_file.php';
       include_once 'mod_wa_excel_file.php';
+      include_once 'mod_wa_sheet.php';
       
       $this->config = $config;
       $this->lH = new LogHandler("./");
@@ -72,36 +73,42 @@ class Workflow {
       }
       else {
          $this->lH->log(3, $this->TAG, "Initializing workflow with id = '$instanceId' from MySQL");
-         if($this->instanceId === $this->database->getDatabaseName()){//make sure you are connected to the right database
+         if($this->healthy === true){//make sure you are connected to the right database
             //initialize all the things
             try {
-               $workflowDetails = Workflow::getWorkflowDetails($this->instanceId, $this->database);//get workflow details from the MySQL database
-               //`workflow_name`,`created_by`,`time_created`,`workflow_id`,`working_dir`
-               $this->workflowName =  $workflowDetails['workflow_name'];
-               $this->workingDir = $workflowDetails['working_dir'];
-               
-               //initialize all the files
-               try {
-                  $this->files = WAFile::getAllWorkflowFiles($this->config, $this->instanceId, $this->database, $this->workingDir);
-               } catch (WAException $ex) {
-                  $this->lH->log(1, $this->TAG, "An error occurred while trying to intialize files for workflow with id = '{$this->instanceId}'");
-                  $this->healthy = false;
-                  array_push($this->errors, new WAException("An error occurred while trying to initialize worflow files", WAException::$CODE_WF_INSTANCE_ERROR, null));
+               if($this->database->getDatabaseName() == $this->instanceId) {
+                  $workflowDetails = Workflow::getWorkflowDetails($this->config, $this->instanceId);//get workflow details from the MySQL database
+                  $this->workflowName =  $workflowDetails['workflow_name'];
+                  $this->workingDir = $workflowDetails['working_dir'];
+
+                  //initialize all the files
+                  try {
+                     $this->files = WAFile::getAllWorkflowFiles($this->config, $this->instanceId, $this->workingDir);
+                  } catch (WAException $ex) {
+                     $this->lH->log(1, $this->TAG, "An error occurred while trying to intialize files for workflow with id = '{$this->instanceId}'");
+                     $this->healthy = false;
+                     array_push($this->errors, new WAException("An error occurred while trying to initialize worflow files", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
+                  }
+
+                  //get cached status from the database
+                  $this->getCachedStatus();
                }
-               
-               //get cached status from the database
-               $this->getCachedStatus();
+               else {
+                  $this->lH->log(1, $this->TAG, "Unable to restore workflow state from MySQl database for workflow with id = '{$this->instanceId}' because database object connected to the wrong database");
+                  $this->healthy = false;
+                  array_push($this->errors, new WAException("Unable to restore workflow state from database because database object connected to the wrong database", WAException::$CODE_WF_INSTANCE_ERROR, null));
+               }
             } catch (WAException $ex) {
                $this->lH->log(1, $this->TAG, "An error occurred while trying restore workflow state from MySQl database for workflow with id = '{$this->instanceId}'");
                $this->healthy = false;
-               array_push($this->errors, new WAException("An error occurred while trying to restore state from MySQL database", WAException::$CODE_WF_INSTANCE_ERROR, null));
+               array_push($this->errors, new WAException("An error occurred while trying to restore state from database", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
             }
            
          }
          else {
-            $this->lH->log(1, $this->TAG, "Database object connected to the wrong database in workflow instance with id = '{$this->instanceId}'");
+            $this->lH->log(1, $this->TAG, "Cannot continue initializing workflow instance with id = '{$this->instanceId}'. Object is already unhealthy");
             $this->healthy = false;
-            array_push($this->errors, new WAException("Database object connected to the wrong MySQL database", WAException::$CODE_WF_INSTANCE_ERROR, null));
+            array_push($this->errors, new WAException("Cannot continue initializing workflow instance. Object is already unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
          }
          
       }
@@ -115,9 +122,9 @@ class Workflow {
     */
    private function grantUserAccess($user) {
       $columns = array(
-          "user_granted" => $user,
-          "time_granted" => Database::getMySQLTime(),
-          "granted_by" => $this->currUser
+          "user_granted" => "'{$user}'",
+          "time_granted" => "'".Database::getMySQLTime()."'",
+          "granted_by" => "'{$this->currUser}'"
       );
       try {
          $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
@@ -129,12 +136,22 @@ class Workflow {
    }
    
    private function saveWorkflowDetails() {
+      $this->lH->log(4, $this->TAG, "************************************************************ inserting into meta document table");
+      
+      $processing = Database::$BOOL_FALSE;
+      if($this->processing === true) $processing = Database::$BOOL_TRUE;
+      
+      $healthy = Database::$BOOL_FALSE;
+      if($this->healthy === true) $healthy = Database::$BOOL_TRUE;
+      
       $columns = array(
-          "workflow_name" => $this->workflowName,
-          "created_by" => $this->currUser,
-          "time_created" => Database::getMySQLTime(),
-          "workflow_id" => $this->instanceId,
-          "working_dir" => $this->workingDir
+          "workflow_name" => "'{$this->workflowName}'",
+          "created_by" => "'{$this->currUser}'",
+          "time_created" => "'".Database::getMySQLTime()."'",
+          "workflow_id" => "'{$this->instanceId}'",
+          "working_dir" => "'{$this->workingDir}'",
+          "processing" => "'{$processing}'",
+          "health" => "'{$healthy}'"
       );
       
       try {
@@ -173,10 +190,10 @@ class Workflow {
       try {
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_CHANGES,
                  array(
-                     array("name" => "id" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY , "auto_incr"=>true),
-                     array("name" => "change_time" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "submitted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "dump_file" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                     array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                     array("name" => "change_time" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "submitted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "dump_file" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -194,11 +211,11 @@ class Workflow {
       try {
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_VAR_NAMES,
                  array(
-                     array("name" => "id" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY , "auto_incr"=>true),
-                     array("name" => "original_name" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "curr_name" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "change_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "change_time" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                     array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                     array("name" => "original_name" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "curr_name" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "change_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "change_time" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -216,10 +233,10 @@ class Workflow {
       try{
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_ACCESS,
                  array(
-                     array("name" => "id" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY , "auto_incr"=>true),
-                     array("name" => "user_granted" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "time_granted" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "granted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                     array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                     array("name" => "user_granted" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "time_granted" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "granted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -237,14 +254,14 @@ class Workflow {
       try {
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_DOCUMENT,
                  array(
-                     array("name" => "id" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY , "auto_incr"=>true),
-                     array("name" => "workflow_name" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "created_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "time_created" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "processing" , "type"=>Database::$TYPE_TINYINT , "length"=>4 , "nullable"=>false , "default"=>0 , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "health" , "type"=>Database::$TYPE_TINYINT , "length"=>4 , "nullable"=>false , "default"=>1 , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                     array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                     array("name" => "workflow_name" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "created_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "time_created" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "processing" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>0 , "key"=>Database::$KEY_NONE),
+                     array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>1 , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -258,10 +275,10 @@ class Workflow {
       try {
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_ERRORS,
                  array(
-                     array("name" => "id" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY , "auto_incr"=>true),
-                     array("name" => "code" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "message" , "type"=>Database::$TYPE_VARCHAR , "length"=>250 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                     array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                     array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                     array("name" => "code" , "type"=>Database::$TYPE_INT , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "message" , "type"=>Database::$TYPE_VARCHAR , "length"=>250 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -326,11 +343,12 @@ class Workflow {
          
          //check if random id is unique
          try{
-            $result = $this->database->runGenericQuery("show databases", true);//since all databases names correspond to the workflow instances
+            //$result = $this->database->runGenericQuery("show databases", true);//since all databases names correspond to the workflow instances
+            $result = $this->database->getDatabaseNames();
             
             $isDuplicate = false;
             for($index = 0; $index < count($result); $index++){
-               if($result[$index]['Database'] === $randomID) {
+               if($result[$index] === $randomID) {
                   $isDuplicate = true;
                   break;
                }
@@ -428,6 +446,8 @@ class Workflow {
          if($this->instanceId != null) {
             $this->lH->log(2, $this->TAG, "Dropping the '{$this->instanceId}' database");
             try {
+               $this->database->close();
+               $this->database = new Database($this->$config);//make sure you connect to the default database before trying to delete the database storing instance data
                $this->database->runGenericQuery("drop database ".$this->instanceId);
             } catch (Exception $ex) {
                array_push($this->errors, $ex);
@@ -575,7 +595,7 @@ class Workflow {
       else $processing = 0;
       if($this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
-         $query = "update `".Workflow::$TABLE_META_DOCUMENT."` set processing = {$processing} where `workflow_id` = '{$this->instanceId}'";
+         $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set processing = {$processing} where workflow_id = '{$this->instanceId}'";
          try {
             $this->database->runGenericQuery($query);
          } catch (WAException $ex) {
@@ -600,7 +620,7 @@ class Workflow {
       
       if($this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
-         $query = "update `".Workflow::$TABLE_META_DOCUMENT."` set health = {$health} where `workflow_id` = '{$this->instanceId}'";
+         $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set health = {$health} where workflow_id = '{$this->instanceId}'";
          try {
             $this->database->runGenericQuery($query);
          } catch (WAException $ex) {
@@ -627,8 +647,8 @@ class Workflow {
             try {
                $this->database->runInsertQuery(Workflow::$TABLE_META_ERRORS, array(
                    "code" => $currError->getCode(),
-                   "message" => Workflow::getErrorMessage($currError),
-                   "time_added" => Database::getMySQLTime()
+                   "message" => "'".Workflow::getErrorMessage($currError)."'",
+                   "time_added" => "'".Database::getMySQLTime()."'"
                ));
             } catch (WAException $ex) {
                array_push($this->errors, $ex);
@@ -651,18 +671,18 @@ class Workflow {
       if($this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
          //get processing and health status
-         $query = "select processing, health from `".Workflow::$TABLE_META_DOCUMENT."` order by id desc limit 1";
+         $query = "select processing, health from ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." order by id desc limit 1";
          try {
             $result = $this->database->runGenericQuery($query, true);
             //get status information
             if(is_array($result)) {
                if(count($result) == 1) {
                   $processing = $result[0]['processing'];
-                  if($processing == 1) $this->processing = true;
+                  if($processing === Database::$BOOL_TRUE) $this->processing = true;
                   else $this->processing = false;
                   
                   $health = $result[0]['health'];
-                  if($health == 1) $this->healthy = true;
+                  if($health == Database::$BOOL_TRUE) $this->healthy = true;
                   else $this->healthy = false;
                }
                else {
@@ -676,7 +696,7 @@ class Workflow {
             }
             
             //get cached errors
-            $query = "select `code`, `message` from `".Workflow::$TABLE_META_ERRORS."` order by id";
+            $query = "select ".Database::$QUOTE_SI."code".Database::$QUOTE_SI.", ".Database::$QUOTE_SI."message".Database::$QUOTE_SI." from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ERRORS.Database::$QUOTE_SI." order by id";
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
                for($index = 0; $index < count($result); $index++) {
@@ -702,6 +722,44 @@ class Workflow {
    }
    
    /**
+    * This function gets the schema details for all data storing tables from the
+    * MySQL database storing data for this workflow
+    * 
+    * @return Array Array with schema data for all the data storing MySQL tables
+    */
+   public function getSchema() {
+      if($this->instanceId == $this->database->getDatabaseName()
+              && $this->instanceId != null) {
+         $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+         
+         $sheets = array();
+         try {
+            for($index = 0; $index < count($dataTables); $index++) {
+               $currSheet = new WASheet($this->config, $this->database, null, $dataTables[$index]);
+               array_push($sheets, $currSheet->getSchema());
+            }
+            
+            $schema = array(
+                "workflow_id" => $this->instanceId,
+                "title" => $this->workflowName,
+                "sheets" => $sheets
+            );
+            
+            return $schema;
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to get data table schemas for workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to get data tables because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to get data tables because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
+   /**
     * This function returns an array containing details of workflows that the
     * specified user has access to
     * 
@@ -721,26 +779,35 @@ class Workflow {
       );//object to store return json for this function
       
       //get all the databases that look like store workflow details
-      $query = "show databases";
+      //$query = "show databases";
       try {
-         $result = $database->runGenericQuery($query, TRUE);
+         $result = $database->getDatabaseNames();
          if($result !== false){
             $accessibleDbs = array();//array to store details for all the databases user has access to
             for($index = 0; $index < count($result); $index++) {
-               $currDbName = $result[$index]['Database'];
+               //$currDbName = $result[$index]['Database'];
+               $currDbName = $result[$index];
                //check if current database qualifies to store workflow details
-               $query = "show tables in `{$currDbName}`";
-               $tableNames = $database->runGenericQuery($query, true);
+               
+               $newDatabase = new Database($config, $currDbName);
+               
+               $tableNames = $newDatabase->getTableNames($currDbName);
                
                $metaTables = 0;
                
                if($tableNames !== false) {
                   //check each of the table names to see if the meta tables exist
                   for($tIndex = 0; $tIndex < count($tableNames); $tIndex++) {
-                     if($tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_ACCESS
+                     /*if($tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_ACCESS
                              || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_CHANGES
                              || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_DOCUMENT
                              || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_VAR_NAMES) {
+                        $metaTables++;
+                     }*/
+                     if($tableNames[$tIndex] == Workflow::$TABLE_META_ACCESS
+                             || $tableNames[$tIndex] == Workflow::$TABLE_META_CHANGES
+                             || $tableNames[$tIndex] == Workflow::$TABLE_META_DOCUMENT
+                             || $tableNames[$tIndex] == Workflow::$TABLE_META_VAR_NAMES) {
                         $metaTables++;
                      }
                   }
@@ -748,12 +815,14 @@ class Workflow {
                
                if($metaTables == 4) {//database has all the meta tables
                   //check whether the user has access to this database
-                  $query = "select * from `{$currDbName}`.`".Workflow::$TABLE_META_ACCESS."` where `user_granted` = '$user'";
-                  $access = $database->runGenericQuery($query, true);
+                  $query = "select *"
+                          . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
+                          . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user'";
+                  $access = $newDatabase->runGenericQuery($query, true);
                   if($access !== false) {
                      if(count($access) > 0) {//user has access to the workflow
                         try {
-                           $details = Workflow::getWorkflowDetails($currDbName, $database);
+                           $details = Workflow::getWorkflowDetails($config, $currDbName);
                            array_push($accessibleDbs, $details);
                            
                         } catch (WAException $ex) {
@@ -770,6 +839,8 @@ class Workflow {
                else {//database not usable with this API
                   $lH->log(4, "static_workflow", "$currDbName not usable with the WorkflowAPI");
                }
+               
+               $newDatabase->close();
             }
             //return the accessible databases
             $jsonReturn['workflows'] = $accessibleDbs;
@@ -794,8 +865,12 @@ class Workflow {
     * @return Array  Associative array containing the database details
     * @throws WAException
     */
-   private static function getWorkflowDetails($dbName, $database){
-      $query = "select `workflow_name`,`created_by`,`time_created`,`workflow_id`,`working_dir` from `{$dbName}`.`".Workflow::$TABLE_META_DOCUMENT."` order by id desc limit 1";//get the latest document details
+   private static function getWorkflowDetails($config, $dbName){
+      require_once 'mod_wa_database.php';
+      $database = new Database($config, $dbName);
+      $query = "select workflow_name, created_by, time_created, workflow_id, working_dir"
+              . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI
+              . " order by id desc limit 1";//get the latest document details
       try {
          $result = $database->runGenericQuery($query, true);
          if($result !== false) {

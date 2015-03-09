@@ -10,7 +10,8 @@ class WASheet {
    private $config;
    private $lH;
    private $database;
-   private $excelObject;
+   private $excelObject; //excel object and columns can be used interchangebly. They both store the sheet schema
+   private $columns;//array of WAColumns in this object
    private $sheetName;
    private $columnArray;//this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
    
@@ -33,6 +34,65 @@ class WASheet {
       $this->database = $database;
       $this->excelObject = $excelObject;
       $this->sheetName = $sheetName;
+      $this->columns = array();
+      
+      if($this->excelObject == null) {//means data already stored in database
+         $this->getCachedCopy();//this function will not initialize $this->excelObject but instead will initialize $this->$columnSchemas
+      }
+   }
+   
+   /**
+    * This function initializes this object using details stored in the MySQL database
+    * 
+    * @throws WAException
+    */
+   private function getCachedCopy() {
+      if($this->sheetName != null
+              && $this->database != null) {
+         try {
+            //$query = "describe `{$this->sheetName}`";
+            $result = $this->database->getTableDetails($this->database->getDatabaseName(), $this->sheetName);//TODO: might need a check on whether database name is same as workflow instance
+            for($index = 0; $index < count($result); $index++) {
+               $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
+               array_push($this->columns, $currColumn);
+            }
+         } catch (WAException $ex) {
+            $this->lH->log(1, $this->TAG, "Unable to get schema details for data table (sheet) with name = '$this->sheetName'");
+            throw new WAException("Unable to get schema details for data table (sheet) with name = '$this->sheetName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "Unable to get schema details for data table (sheet) with name = '$this->sheetName' from the database because sheet object not initialized correctly");
+         throw new WAException("Unable to get schema details for data table (sheet) with name = '$this->sheetName' from the database because sheet object not initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function returns the schema corresponding to this sheet as an array
+    * 
+    * @return Array
+    */
+   public function getSchema() {
+      if($this->sheetName != null
+              && $this->columns != null) {
+         $schema = array(
+             "name" => $this->sheetName,
+             "columns" => array()
+         );
+         
+         $this->lH->log(4, $this->TAG, "Columns = ".print_r($this->columns, true));
+         
+         for($index = 0; $index < count($this->columns); $index++) {
+            $currColumn = $this->columns[$index];
+            array_push($schema['columns'], $currColumn->getSchema());
+         }
+         
+         return $schema;
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "Unable to get schema details for data table (sheet) with name = '$this->sheetName' because sheet object not initialized correctly");
+         throw new WAException("Unable to get schema details for data table (sheet) with name = '$this->sheetName' because sheet object not initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
    }
    
    /**
@@ -162,5 +222,59 @@ class WASheet {
     */
    public function getCellName($rowIndex, $columnIndex) {
       return PHPExcel_Cell::stringFromColumnIndex($columnIndex).$rowIndex;
+   }
+   
+   /**
+    * This function returns an array with names of all sheets that belong to 
+    * the provided workflow instance
+    * 
+    * @param Object     $config
+    * @param string     $workflowId
+    * @param Database   $database
+    */
+   public static function getAllWASheets($config, $workflowId, $database) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_log.php';
+      include_once 'mod_wa_exception.php';
+      
+      $lH = new LogHandler("./");
+      if($database->getDatabaseName() == $workflowId) {
+         try {
+            $result = $database->getTableNames($workflowId);
+            if(is_array($result)) {
+               $tables = array();
+               $metaTables = array();
+               array_push($metaTables, WAFile::$TABLE_META_FILES);
+               array_push($metaTables, Workflow::$TABLE_META_ACCESS);
+               array_push($metaTables, Workflow::$TABLE_META_CHANGES);
+               array_push($metaTables, Workflow::$TABLE_META_DOCUMENT);
+               array_push($metaTables, Workflow::$TABLE_META_ERRORS);
+               array_push($metaTables, Workflow::$TABLE_META_VAR_NAMES);
+               
+               for($index = 0; $index < count($result); $index++) {
+                  if(!in_array($result[$index], $metaTables)) {
+                     array_push($tables, $result[$index]);
+                  }
+               }
+               
+               if(count($tables) == 0) {
+                  $lH->log(2, "washeet_static", "Workflow with id = '$workflowId' does not have data tables");
+               }
+               
+               return $tables;
+            }
+            else {
+               $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}'");
+               throw new Exception("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, null);
+            }
+         } catch (WAException $ex) {
+            $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}'");
+            throw new Exception("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}' because connected to the wrong database");
+         throw new Exception("Unable to get data sheets for workflow  because connected to the wrong database", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
    }
 }

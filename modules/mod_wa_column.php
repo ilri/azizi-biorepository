@@ -11,6 +11,11 @@ class WAColumn {
    private $lH;
    private $name;
    private $data;
+   private $type;
+   private $length;
+   private $nullable;
+   private $default;
+   private $key;
    
    /**
     * Default constructor for this class
@@ -20,7 +25,7 @@ class WAColumn {
     * @param string     $name       Name of the column
     * @param Array      $data       Data corresponding to that column
     */
-   public function __construct($config, $database, $name, $data) {
+   public function __construct($config, $database, $name, $data = null, $type = null, $length = null, $nullable = null, $default = null, $key = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
@@ -30,6 +35,28 @@ class WAColumn {
       $this->database = $database;
       $this->name = $name;
       $this->data = $data;
+      
+      $this->type = $type;
+      $this->length = $length;
+      $this->nullable = $nullable;
+      $this->default = $default;
+      $this->key = $key;
+   }
+   
+   /**
+    * This function returns the schema representing this object as an array
+    */
+   public function getSchema() {
+      $schema = array(
+          "name" => $this->name,
+          "type" => $this->type,
+          "length" => $this->length,
+          "nullable" => $this->nullable,
+          "default" => $this->default,
+          "key" => $this->key
+      );
+      
+      return $schema;
    }
    
    /**
@@ -144,11 +171,11 @@ class WAColumn {
             }
          }
          
-         return array("name" => $this->name , "type"=>$type , "length"=>$length , "nullable"=>$nullable, "default" => null , "key"=>Database::$KEY_NONE , "auto_incr"=>false);
+         return array("name" => $this->name , "type"=>$type , "length"=>$length , "nullable"=>$nullable, "default" => null , "key"=>Database::$KEY_NONE);
       }
       else {
          $this->lH->log(2, $this->TAG, "Unable to determine datatype for '$name' column because no data was provided. Assuming nullable varchar(50) datatype");
-         return array("name" => $this->name , "type"=>Database::$TYPE_VARCHAR , "length"=>50 , "nullable"=>true, "default" => null , "key"=>Database::$KEY_NONE , "auto_incr"=>false);
+         return array("name" => $this->name , "type"=>Database::$TYPE_VARCHAR , "length"=>50 , "nullable"=>true, "default" => null , "key"=>Database::$KEY_NONE);
       }
    }
    

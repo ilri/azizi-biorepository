@@ -43,8 +43,11 @@ class ODKWorkflowAPI extends Repository {
       else if (OPTIONS_REQUESTED_SUB_MODULE == "get_working_status"){
          $this->handleGetWorkingStatusEndpoint();
       }
-      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_tables"){
-         
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_schema"){
+         $this->handleGetWorkflowSchemaEndpoint();
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
    
@@ -205,6 +208,43 @@ class ODKWorkflowAPI extends Repository {
       }
    }
    
+   /**
+    * This function handles the get_workfow_schema endpoint of the API.
+    * The get_workflow_schema endpoints returns schema details for all the data
+    * storing tables for the provided workflow
+    * $_REQUEST['data'] variable
+    * 
+    * {
+    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
+    *    user        :  "the user making the request"
+    *    workflow_id :  "ID of the workflow"
+    * }
+    */
+   private function handleGetWorkflowSchemaEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = json_decode($_REQUEST['data'], true);
+         if(array_key_exists("server", $json)
+                 && array_key_exists("user", $json)
+                 && array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            $schema = $workflow->getSchema();
+            
+            $data = array(
+                "schema" => $schema,
+                "status" => $workflow->getCurrentStatus()
+            );
+            
+            $this->returnResponse($data);
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+
    /**
     * This function generates a UUID for the user by combining ith with the server address
     */

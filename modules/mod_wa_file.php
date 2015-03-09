@@ -88,12 +88,12 @@ class WAFile {
          try {//try creating the table
             $this->database->runCreateTableQuery(WAFile::$TABLE_META_FILES,
                      array(
-                         array("name" => "id" , "type"=>Database::$TYPE_INT , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY , "auto_incr"=>true),
-                         array("name" => "location" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                         array("name" => "added_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                         array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                         array("name" => "last_modified" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false),
-                         array("name" => "workflow_type" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE , "auto_incr"=>false)
+                         array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                         array("name" => "location" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                         array("name" => "added_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                         array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                         array("name" => "last_modified" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                         array("name" => "workflow_type" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
                          )
            );
          } catch (WAException $ex) {//error occurred while trying to create table
@@ -155,11 +155,11 @@ class WAFile {
       $this->lH->log(4, $this->TAG, "Recording in ".WAFile::$TABLE_META_FILES." the newly added file");
       try {
          $columns = array(
-             "location" => $location,
-             "added_by" => $addedBy,
-             "time_added" => $this->database->getMySQLTime(),
-             "last_modified" => $this->database->getMySQLTime(),
-             "workflow_type" => $this->type
+             "location" => "'$location'",
+             "added_by" => "'$addedBy'",
+             "time_added" => "'{$this->database->getMySQLTime()}'",
+             "last_modified" => "'{$this->database->getMySQLTime()}'",
+             "workflow_type" => "'{$this->type}'"
          );
          
          $this->database->runInsertQuery(WAFile::$TABLE_META_FILES, $columns);
@@ -278,11 +278,15 @@ class WAFile {
     * @return Array  An array with WAFile objects
     * @throws WAException
     */
-   public static function getAllWorkflowFiles($config, $workflowId, $database, $workingDir) {
+   public static function getAllWorkflowFiles($config, $workflowId, $workingDir) {
       include_once 'mod_log.php';
+      include_once 'mod_wa_database.php';
       $lH = new LogHandler("./");
       
-      $query = "select `location`,`workflow_type` from `{$workflowId}`.".WAFile::$TABLE_META_FILES;
+      $database = new Database($config, $workflowId);
+      
+      $query = "select ".Database::$QUOTE_SI."location".Database::$QUOTE_SI.",".Database::$QUOTE_SI."workflow_type".Database::$QUOTE_SI.""
+              . " from ".WAFile::$TABLE_META_FILES;
       try {
          $result = $database->runGenericQuery($query, true);
          if($result !== false){
@@ -293,10 +297,12 @@ class WAFile {
                   $currFile = new WAFile($config, $workflowId, $database, $workingDir, $result[$index]['workflow_type'], $result[$index]['location']);
                   array_push($files, $currFile);
                } catch (WAException $ex) {
-                  $lH->log(1, $this->TAG, "An error occurred while trying to initialize one of the workflow files for workflow with id = '$workflowId'");
+                  $lH->log(1, "wafile_static", "An error occurred while trying to initialize one of the workflow files for workflow with id = '$workflowId'");
                   throw new Exception("An error occurred while trying to initialize one of the workflow files", WAException::$CODE_WF_INSTANCE_ERROR, null);
                }
             }
+            
+            $database->close();
             
             return $files;
          }
