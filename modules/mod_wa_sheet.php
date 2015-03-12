@@ -69,6 +69,16 @@ class WASheet {
       }
    }
    
+   /**
+    * This function unloads all the columns owned by this sheet from memory
+    */
+   public function unload() {
+      unset($this->database);
+      unset($this->excelObject);
+      unset($this->columns);
+      unset($this->columnArray);
+   }
+   
    public function alterColumn($columnDetails) {
       //check whether column already exists
       if(array_key_exists("original_name", $columnDetails) 

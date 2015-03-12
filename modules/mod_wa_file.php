@@ -50,7 +50,7 @@ class WAFile {
          $this->createMetaFilesTable();
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to initialize a WAFile object");
-         throw new Exception("Unable to correctly initialize WAFile object", WAException::$CODE_DB_CREATE_ERROR, $ex);
+         throw new WAException("Unable to correctly initialize WAFile object", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
    
@@ -84,7 +84,10 @@ class WAFile {
     * @throws WAException
     */
    private function createMetaFilesTable() {
-      if($this->workflowID === $this->database->getDatabaseName()) {
+      if(
+              $this->workflowID !== null
+              && $this->database !== null
+              && $this->database->getDatabaseName() == $this->workflowID) {
          try {//try creating the table
             $this->database->runCreateTableQuery(WAFile::$TABLE_META_FILES,
                      array(

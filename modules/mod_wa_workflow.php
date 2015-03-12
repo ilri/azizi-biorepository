@@ -80,7 +80,7 @@ class Workflow {
                   $workflowDetails = Workflow::getWorkflowDetails($this->config, $this->instanceId);//get workflow details from the MySQL database
                   $this->workflowName =  $workflowDetails['workflow_name'];
                   $this->workingDir = $workflowDetails['working_dir'];
-
+                  
                   //initialize all the files
                   try {
                      $this->files = WAFile::getAllWorkflowFiles($this->config, $this->instanceId, $this->workingDir);
@@ -375,13 +375,13 @@ class Workflow {
     * 
     * @return string The id
     */
-   private function generateRandomID(){
+   private function generateRandomID($length = 20){
       //get first random alphabetic character
       $characters = 'abcdefghijklmnopqrstuvwxyz';
       $randomString = $characters[rand(0, strlen($characters))];
       
       //generate the next 19 alphanumerical characters
-      $length = 19;
+      $length = $length - 1;
       $characters = '0123456789abcdefghijklmnopqrstuvwxyz';
       for ($i = 0; $i < $length; $i++) {
           $randomString .= $characters[rand(0, strlen($characters) - 1)];
@@ -425,7 +425,8 @@ class Workflow {
     */
    public function addRawDataFile($url) {
       if($this->workingDir !== null 
-              && $this->instanceId !== null){
+              && $this->instanceId !== null
+              && $this->database !== null){
          try {
             $file = new WAFile($this->config, $this->instanceId, $this->database, $this->workingDir, WAFile::$TYPE_RAW);
             $file->downloadFile($this->instanceId.".xlsx", $url, $this->currUser);
@@ -517,7 +518,9 @@ class Workflow {
             if(count($dataFiles) == 1) {//currently only support one data file
                $excelFile = new WAExcelFile($dataFiles[0]);
                try {
+                  //TODO: how to detect if process is OOM killed by kernel
                   $excelFile->processToMySQL();
+                  $excelFile->unload();//Unloads from memory. Also deletes temporary files
                } catch (WAException $ex) {
                   $this->lH->log(1, $this->TAG, "Could not process data file for workflow with id = {$this->instanceId} to MySQL");
                   array_push($this->errors, $ex);
@@ -734,7 +737,7 @@ class Workflow {
     * This function creates a save point for the workflow
     */
    public function save() {
-      $filename = date("Y_m_d")."_".$this->generateRandomID();
+      $filename = date("Y-m-d_H-i-s")."_".$this->generateRandomID(5).".sql";
       if($this->healthy == true
               && $this->instanceId != null
               && $this->database->getDatabaseName() == $this->instanceId

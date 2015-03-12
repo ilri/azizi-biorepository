@@ -46,8 +46,8 @@ class ODKWorkflowAPI extends Repository {
       else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_schema"){
          $this->handleGetWorkflowSchemaEndpoint();
       }
-      else if (OPTIONS_REQUESTED_SUB_MODULE == "change_field_details") {
-         $this->handleChangeFieldDetailsEndpoint();
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "alter_field") {
+         $this->handleAlterFieldEndpoint();
       }
       else {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -262,7 +262,7 @@ class ODKWorkflowAPI extends Repository {
     *    column      :  {"name", "delete", "type", "length", "nullable", "default", "key"}
     * }
     */
-   private function handleChangeFieldDetailsEndpoint() {
+   private function handleAlterFieldEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = json_decode($_REQUEST['data'], true);
          if(array_key_exists("server", $json)

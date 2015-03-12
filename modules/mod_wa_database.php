@@ -336,7 +336,9 @@ class Database {
     */
    public function backup($workingDir, $filename, $user) {
       try {
-         $dumpFile = new WAFile($this->config, $this->wInstanceId, null, $workingDir, WAFile::$TYPE_BACKUP, $filename);
+         $this->logH->log(2, $this->TAG, "Backing up '".$this->getDatabaseName()."'");
+         //($config, $workflowID, $database, $workingDir, $type, $filename = null)
+         $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
          $subDirPath = $dumpFile->createWorkingSubdir();
          $path = $subDirPath . "/" . $filename;
          $command = "export PGPASSWORD=".$this->config['testbed_pass'].";pg_dump -U ".$this->config['testbed_user']." {$this->getDatabaseName()} > $path";
@@ -375,11 +377,14 @@ class Database {
     */
    public function runAlterColumnQuery($tableName, $currName, $newName, $type, $length, $nullable, $default, $key) {
       //instead of altering the current column, add new column after existing then drop existing
-      $query = "alter ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
-      $query .= getColumnExpression($newName, $type, $length, $key, $default, $nullable)." after ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI;
       try {
+         $tmpName = $currName."_odk_w_delete";
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
          $this->runGenericQuery($query);
-         $query = "alter ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI;
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
+         $query .= $this->getColumnExpression($newName, $type, $length, $key, $default, $nullable);
+         $this->runGenericQuery($query);
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
          $this->runGenericQuery($query);
       } catch (WAException $ex) {
          throw new WAException("Unable to get an update column expression for $'currName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
