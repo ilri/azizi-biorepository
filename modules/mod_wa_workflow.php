@@ -260,8 +260,8 @@ class Workflow {
                      array("name" => "time_created" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                     array("name" => "processing" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>0 , "key"=>Database::$KEY_NONE),
-                     array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>1 , "key"=>Database::$KEY_NONE)
+                     array("name" => "processing" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'false' , "key"=>Database::$KEY_NONE),
+                     array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'true' , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -424,7 +424,8 @@ class Workflow {
     * @param String $url The URL where the data file exists
     */
    public function addRawDataFile($url) {
-      if($this->workingDir !== null){
+      if($this->workingDir !== null 
+              && $this->instanceId !== null){
          try {
             $file = new WAFile($this->config, $this->instanceId, $this->database, $this->workingDir, WAFile::$TYPE_RAW);
             $file->downloadFile($this->instanceId.".xlsx", $url, $this->currUser);
@@ -434,6 +435,11 @@ class Workflow {
             array_push($this->errors, $ex);
             $this->healthy = false;
          }
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to add a new file to the workflow because workflow object not initialized correctly");
+         array_push($this->errors, new WAException("An error occurred while trying to add a new file to the workflow because workflow object not initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
       }
    }
    
@@ -447,7 +453,7 @@ class Workflow {
             $this->lH->log(2, $this->TAG, "Dropping the '{$this->instanceId}' database");
             try {
                $this->database->close();
-               $this->database = new Database($this->$config);//make sure you connect to the default database before trying to delete the database storing instance data
+               $this->database = new Database($this->config);//make sure you connect to the default database before trying to delete the database storing instance data
                $this->database->runGenericQuery("drop database ".$this->instanceId);
             } catch (Exception $ex) {
                array_push($this->errors, $ex);
@@ -722,6 +728,62 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to get cached status from ".Workflow::$TABLE_META_ERRORS." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
+   }
+   
+   /**
+    * This function creates a save point for the workflow
+    */
+   public function save() {
+      $filename = date("Y_m_d")."_".$this->generateRandomID();
+      if($this->healthy == true
+              && $this->instanceId != null
+              && $this->database->getDatabaseName() == $this->instanceId
+              && $this->workingDir != NULL
+              && $this->currUser != null) {
+         try {
+            $this->database->backup($this->workingDir, $filename, $this->currUser);
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to save the workflow with instance id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to save workflow instance because it wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to save workflow with id = '{$this->instanceId}' because it wasn't initialized correctly");
+      }
+   }
+   
+   /**
+    * This function modifies a sheet column
+    * 
+    * @param type $sheet         The name of the sheet
+    * @param type $columnDetails Details of the column to be modified
+    */
+   public function modifyColumn($sheetName, $columnDetails){
+      //try saving the workflow instance first
+      $this->save();
+      if($this->healthy == true) {
+         try {
+            $sheet = new WASheet($this->config, $this->database, null, $sheetName);
+            $sheet->alterColumn($columnDetails);
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Could not modify column details for '{$columnDetails['original_name']}' in '$sheetName' in the workflow with instance '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to modify column because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to modify column because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+      }
+      
+      $this->setIsProcessing(false);
+      $this->cacheIsProcessing();
+      $this->cacheErrors();
+      $this->cacheHealth();
    }
    
    /**

@@ -22,6 +22,7 @@ class WAException extends Exception {
    public static $CODE_WF_PROCESSING_ERROR = 100016;//a general processing error occurred
    public static $CODE_WF_DATA_MULFORMED_ERROR = 100017;//MySQL or Excel data seems to be mulformed
    public static $CODE_WF_FEATURE_UNSUPPORTED_ERROR = 100018;//Feature being requested by client not (yet) supported
+   public static $CODE_DB_BACKUP_ERROR = 100018;//Feature being requested by client not (yet) supported
 
    public function __construct($message, $code = 0, Exception $previous = null) {
       parent::__construct($message, $code, $previous);

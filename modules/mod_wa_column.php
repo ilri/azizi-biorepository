@@ -60,6 +60,40 @@ class WAColumn {
    }
    
    /**
+    * This function returns the current column name (in memory)
+    */
+   public function getName() {
+      return $this->name;
+   }
+   
+   /**
+    * This function updates the column details
+    * 
+    * @param string  $name       New name to be given to the column
+    * @param string  $type       Can be any of the Database::$TYPE_* types
+    * @param int     $length     The length of the column
+    * @param boolean $nullable   TRUE if column is nullable
+    * @param string  $default    The default value for the column
+    * @param string  $key        Can either be Database::$KEY_NONE, Database::$KEY_UNIQUE or Database::$KEY_PRIMARY
+    * 
+    * @throws WAException
+    */
+   public function update($sheetName, $name, $type, $length, $nullable, $default, $key) {
+      
+      try {
+         $this->database->runAlterColumnQuery($sheetName, $this->name, $name, $type, $length, $nullable, $default, $key);
+         $this->name = $name;
+         $this->type = $type;
+         $this->length = $length;
+         $this->nullable = $nullable;
+         $this->default = $default;
+         $this->key = $key;
+      } catch (WAException $ex) {
+         throw new WAException("Unable to alter the column '{$this->name}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+      }
+   }
+   
+   /**
     * This function returns the MySQL details for this column in form of an array
     * that can be used with the database object
     */
@@ -76,6 +110,7 @@ class WAColumn {
          $typeTime = 0;
          $typeDate = 0;
          $typeDateTime = 0;
+         $typeBoolean = 0;
          
          for($index = 0; $index < count($this->data); $index++){
             
@@ -90,6 +125,7 @@ class WAColumn {
                $typeTime++;
                $typeDate++;
                $typeDateTime++;
+               $typeBoolean++;
             }
             else {
                $this->lH->log(4, $this->TAG, "Determining datatype for '{$this->data[$index]}'");
@@ -127,6 +163,10 @@ class WAColumn {
                   $this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type tinyint");
                   $typeTinyInt++;
                }
+               if(WAColumn::isBoolean($this->data[$index])) {
+                  $this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type tinyint");
+                  $typeBoolean++;
+               }
             }
          }
          
@@ -142,7 +182,8 @@ class WAColumn {
                  && $typeTinyInt == $typeVarchar
                  && $typeDate == $typeVarchar
                  && $typeTime == $typeVarchar
-                 && $typeDateTime == $typeVarchar) {//none of the cells could be used to determine type because they were considered null
+                 && $typeDateTime == $typeVarchar
+                 && $typeBoolean == $typeVarchar) {//none of the cells could be used to determine type because they were considered null
             
             $this->lH->log(2, $this->TAG, "Could not determine the datatype for column '{$this->name}'. Setting type to default type varchar");
             $type = Database::$TYPE_VARCHAR;
@@ -155,6 +196,9 @@ class WAColumn {
             }
             if($typeTinyInt == $typeVarchar) {
                $type = Database::$TYPE_TINYINT;
+            }
+            if($typeBoolean == $typeVarchar) {
+               $type = Database::$TYPE_BOOLEAN;
             }
             if($typeDouble == $typeVarchar) {
                $type = Database::$TYPE_DOUBLE;
@@ -303,5 +347,21 @@ class WAColumn {
       return false;
    }
    
+   /**
+    * Checks whether provided string is a boolean
+    * 
+    * @param type $string  String to be checked
+    * 
+    * @return boolean TRUE if provided string is a boolean
+    */
+   public static function isBoolean($string) {
+      if($string === true 
+              || $string === false
+              || preg_match("/true/i", $string) === 1
+              || preg_match("/false/i", $string) === 1) {
+         return true;
+      }
+      return false;
+   }
    
 }

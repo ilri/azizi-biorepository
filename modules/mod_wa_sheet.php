@@ -22,6 +22,7 @@ class WASheet {
     * @param Database $database     The database object to be used for queries
     * @param PHPExcel $excelObject  The excel object where data is to be read from
     * @param string   $sheetName    Name of the sheet in the excelObject to process
+    * 
     */
    public function __construct($config, $database, $excelObject, $sheetName) {
       include_once 'mod_log.php';
@@ -43,6 +44,7 @@ class WASheet {
    
    /**
     * This function initializes this object using details stored in the MySQL database
+    * @param boolean $initColumns   Whether to also initialize all the columns
     * 
     * @throws WAException
     */
@@ -64,6 +66,58 @@ class WASheet {
       else {
          $this->lH->log(1, $this->TAG, "Unable to get schema details for data table (sheet) with name = '$this->sheetName' from the database because sheet object not initialized correctly");
          throw new WAException("Unable to get schema details for data table (sheet) with name = '$this->sheetName' from the database because sheet object not initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   public function alterColumn($columnDetails) {
+      //check whether column already exists
+      if(array_key_exists("original_name", $columnDetails) 
+              && array_key_exists("name", $columnDetails)
+              && array_key_exists("delete", $columnDetails)
+              && array_key_exists("type", $columnDetails)
+              && array_key_exists("length", $columnDetails)
+              && array_key_exists("nullable", $columnDetails)
+              && array_key_exists("default", $columnDetails)
+              && array_key_exists("key", $columnDetails)) {
+         $column = null;
+         for($index = 0; $index < count($this->columns); $index++) {
+            $currColumn = $this->columns[$index];
+            if($currColumn->getName() == $columnDetails['original_name']) {
+               $column = $currColumn;
+               break;
+            }
+         }
+
+         if($column != null) {
+            if($columnDetails['delete'] === false) {
+               $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' in '{$this->sheetName}'");
+               try {
+                  $column->update($this->sheetName, $columnDetails['name'], $columnDetails['type'], $columnDetails['length'], $columnDetails['nullable'], $columnDetails['default'], $columnDetails['key']);
+               }
+               catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "Could not alter column details for '{$columnDetails['original_name']}' in {$this->sheetName}");
+                  throw new WAException("Could not alter table details for sheet '{$this->sheetName}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+               }
+            }
+            else {
+               $this->lH->log(3, $this->TAG, "Dropping '{$columnDetails['original_name']}' in '{$this->sheetName}'");
+               try {
+                  $query = "alter table ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$columnDetails['original_name'].Database::$QUOTE_SI;
+                  $this->database->runGenericQuery($query);
+               } catch (Exception $ex) {
+                  $this->lH->log(1, $this->TAG, "Could not drop column '{$columnDetails['original_name']}' in '{$this->sheetName}'");
+                  throw new WAException("Could not update table details for sheet '{$this->sheetName}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+               }
+            }
+         }
+         else {
+            $this->lH->log(1, $this->TAG, "Could not find column with name '{$columnDetails['original_name']}' in '{$this->sheetName}'");
+            throw new WAException("Could not find column with name '{$columnDetails['original_name']}' in '{$this->sheetName}'", WAException::$CODE_WF_INSTANCE_ERROR, null);
+         }
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "Column details for '{$columnDetails['original_name']}' in '{$this->sheetName}' mulformed");
+         throw new WAException("Column details for '{$columnDetails['original_name']}' mulformed", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
    

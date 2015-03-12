@@ -117,24 +117,35 @@ class WAFile {
     * @throws WAException
     */
    public function downloadFile($filename, $url, $addedBy) {
-      if(filter_var($url, FILTER_VALIDATE_URL)) {//url is valid
+      if(filter_var($url, FILTER_VALIDATE_URL) || file_exists($url)) {//url is valid
          try {
-            $subDirPath = $this->createWorkingSubdir($this->type);//try creating the subdirectory where the file is going to be downloaded into
+            $subDirPath = $this->createWorkingSubdir();//try creating the subdirectory where the file is going to be downloaded into
             $location = $subDirPath."/".$filename;
-            $bytes = file_put_contents($location, fopen($url, 'r'));//get exclusive write rights to file and write
+            if(filter_var($url, FILTER_VALIDATE_URL)){
+               $this->lH->log(4, $this->TAG, "Downloading $url from remote server");
+               $bytes = file_put_contents($location, fopen($url, 'r'));//get exclusive write rights to file and write
 
-            if($bytes === FALSE) {//failed to download the file
-               $this->lH->log(1, $this->TAG, "Unable to donwload the file ".$filename);
-               throw new WAException("Unable to download file ".$filename." from ".$url, WAException::$CODE_FS_DOWNLOAD_ERROR, NULL);
+               if($bytes === FALSE) {//failed to download the file
+                  $this->lH->log(1, $this->TAG, "Unable to donwload the file ".$filename);
+                  throw new WAException("Unable to download file ".$filename." from ".$url, WAException::$CODE_FS_DOWNLOAD_ERROR, NULL);
+               }
+               else {
+                  $this->lH->log(4, $this->TAG, "File ".$filename." successfully downloaded");
+                  $this->filename = $filename;
+                  try {
+                     $this->registerFile($filename, $addedBy);
+                  } catch (WAException $ex) {
+                     $this->lH->log(1, $this->TAG, "File downloaded successfully but unable to record existence of the file in the database");
+                     throw new WAException("Unable to register existence of new file '$filename' in the database", WAException::$CODE_DB_REGISTER_FILE_ERROR, $ex);
+                  }
+               }
             }
             else {
-               $this->lH->log(4, $this->TAG, "File ".$filename." successfully downloaded");
-               $this->filename = $filename;
-               try {
-                  $this->registerFile($filename, $addedBy);
-               } catch (WAException $ex) {
-                  $this->lH->log(1, $this->TAG, "File downloaded successfully but unable to record existence of the file in the database");
-                  throw new WAException("Unable to register existence of new file '$filename' in the database", WAException::$CODE_DB_REGISTER_FILE_ERROR, $ex);
+               $this->lH->log(4, $this->TAG, "Fetching $url as local file");
+               $res = copy($url, $location);
+               if($res === FALSE) {
+                  $this->lH->log(1, $this->TAG, "unable to copy $url to $location");
+                  throw new WAException("Unable to copy file ".$filename." from ".$url, WAException::$CODE_FS_DOWNLOAD_ERROR, NULL);
                }
             }
 
@@ -144,7 +155,7 @@ class WAFile {
       }
       else {
          $this->lH->log(1, $this->TAG, "Provided URL to data file is not valid for workflow with id = {$this->instanceId}");
-         throw new WAException("The provided URL to the data file is not valid", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+         throw new WAException("The provided URL doesn't point to a valid data file", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
       }
    }
    
@@ -174,7 +185,8 @@ class WAFile {
     * @return the path for the created sub directory
     * @throws WAException
     */
-   private function createWorkingSubdir($subDirKey) {
+   public function createWorkingSubdir() {
+      $subDirKey = $this->type;
       if(file_exists($this->workingDir) && is_dir($this->workingDir)){
          $dirKeys = array_keys(WAFile::$WORKING_SUB_DIRS);
          if(array_search($subDirKey, $dirKeys) !== false){//subdir recognised

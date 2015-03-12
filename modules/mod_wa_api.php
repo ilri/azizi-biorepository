@@ -46,6 +46,9 @@ class ODKWorkflowAPI extends Repository {
       else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_schema"){
          $this->handleGetWorkflowSchemaEndpoint();
       }
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "change_field_details") {
+         $this->handleChangeFieldDetailsEndpoint();
+      }
       else {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
@@ -210,7 +213,7 @@ class ODKWorkflowAPI extends Repository {
    
    /**
     * This function handles the get_workfow_schema endpoint of the API.
-    * The get_workflow_schema endpoints returns schema details for all the data
+    * The get_workflow_schema endpoint returns schema details for all the data
     * storing tables for the provided workflow
     * $_REQUEST['data'] variable
     * 
@@ -234,6 +237,53 @@ class ODKWorkflowAPI extends Repository {
                 "status" => $workflow->getCurrentStatus()
             );
             
+            $this->returnResponse($data);
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the change_field_details endpoint of the API.
+    * The change_field_details endpoint changes the schema values for the specified 
+    * field.
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
+    *    user        :  "the user making the request"
+    *    workflow_id :  "Instance id for the workflow"
+    *    sheet       :  "Name of the sheet containing the modified column"
+    *    column      :  {"name", "delete", "type", "length", "nullable", "default", "key"}
+    * }
+    */
+   private function handleChangeFieldDetailsEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = json_decode($_REQUEST['data'], true);
+         if(array_key_exists("server", $json)
+                 && array_key_exists("user", $json)
+                 && array_key_exists("workflow_id", $json)
+                 && array_key_exists("sheet", $json)
+                 && array_key_exists("column", $json)
+                 && array_key_exists("original_name", $json['column'])
+                 && array_key_exists("name", $json['column'])
+                 && array_key_exists("delete", $json['column'])
+                 && array_key_exists("type", $json['column'])
+                 && array_key_exists("length", $json['column'])
+                 && array_key_exists("nullable", $json['column'])
+                 && array_key_exists("default", $json['column'])
+                 && array_key_exists("key", $json['column'])) {
+            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            $workflow->modifyColumn($json['sheet'], $json['column']);
+            
+            $data = array(
+                "status" => $workflow->getCurrentStatus()
+            );
             $this->returnResponse($data);
          }
          else {

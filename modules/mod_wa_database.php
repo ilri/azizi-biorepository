@@ -54,6 +54,7 @@ class Database {
    public function __construct($config, $wInstanceId = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
+      include_once 'mod_wa_file.php';
       
       $this->config = $config;
       
@@ -328,6 +329,64 @@ class Database {
    }
    
    /**
+    * This function dumps the currently connected database to an SQL file
+    * 
+    * @param type $workingDir    The workflow's working directory
+    * @param type $filename      Name to be given to the backup file
+    */
+   public function backup($workingDir, $filename, $user) {
+      try {
+         $dumpFile = new WAFile($this->config, $this->wInstanceId, null, $workingDir, WAFile::$TYPE_BACKUP, $filename);
+         $subDirPath = $dumpFile->createWorkingSubdir();
+         $path = $subDirPath . "/" . $filename;
+         $command = "export PGPASSWORD=".$this->config['testbed_pass'].";pg_dump -U ".$this->config['testbed_user']." {$this->getDatabaseName()} > $path";
+         shell_exec($command);
+         if(file_exists($path)) {
+            $columns = array(
+               "location" => "'$path'",
+               "added_by" => "'$user'",
+               "time_added" => "'{$this->getMySQLTime()}'",
+               "last_modified" => "'{$this->getMySQLTime()}'",
+               "workflow_type" => "'".WAFile::$TYPE_BACKUP."'"
+            );
+            $this->runInsertQuery(WAFile::$TABLE_META_FILES, $columns);
+         }
+         else {
+            $this->logH->log(1, $this->TAG, "Backup command yielded no output file for database '".$this->getDatabaseName()."'");
+            throw new WAException("Backup command yielded no output file", WAException::$CODE_DB_BACKUP_ERROR, null);
+         }
+      } catch (WAException $ex) {
+            $this->logH->log(1, $this->TAG, "An error occurred while trying to create backup file for database '".$this->getDatabaseName()."'");
+            throw new WAException("An error occurred while trying to create backup file for database", WAException::$CODE_DB_BACKUP_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function alters a table column
+    * 
+    * @param type $tableName
+    * @param type $currName
+    * @param type $newName
+    * @param type $type
+    * @param type $length
+    * @param type $nullable
+    * @param type $default
+    * @param type $key
+    */
+   public function runAlterColumnQuery($tableName, $currName, $newName, $type, $length, $nullable, $default, $key) {
+      //instead of altering the current column, add new column after existing then drop existing
+      $query = "alter ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
+      $query .= getColumnExpression($newName, $type, $length, $key, $default, $nullable)." after ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI;
+      try {
+         $this->runGenericQuery($query);
+         $query = "alter ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI;
+         $this->runGenericQuery($query);
+      } catch (WAException $ex) {
+         throw new WAException("Unable to get an update column expression for $'currName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
+   
+   /**
     * This function creates an InnoDB table in the default database
     * 
     * @param string $name     The name of the table
@@ -370,62 +429,13 @@ class Database {
                        && array_search("key", $defKeys) !== false) {
 
                   //add name
-                  $createString .= Database::$QUOTE_SI."{$currColumn['name']}".Database::$QUOTE_SI." ";
-                  if($currColumn['type'] == Database::$TYPE_VARCHAR) {
-                     if($currColumn['length'] != null) {
-                        $createString .= "{$currColumn['type']}({$currColumn['length']}) ";
-                     }
-                     else {
-                        $this->logH->log(1, $this->TAG, "Column '{$currColumn['name']}' is defined as type ".Database::$TYPE_VARCHAR." but length not defined for table with name as '$name' in database '{$this->getDatabaseName()}'");
-                        throw new WAException("Column '{$currColumn['name']}' is defined as type ".Database::$TYPE_VARCHAR." but length not defined for table with name as '$name'", WAException::$CODE_DB_CREATE_ERROR, null);
-                     }
+                  try {
+                     $currColumnExpression = $this->getColumnExpression($currColumn['name'], $currColumn['type'], $currColumn['length'], $currColumn['key'], $currColumn['default'], $currColumn['nullable']);
+                     $createString .= $currColumnExpression;
+                  } catch (WAException $ex) {
+                     throw new WAException("Unable to create database column expression", WAException::$CODE_DB_CREATE_ERROR, $ex);
                   }
-                  else {
-                     $createString .= "{$currColumn['type']} ";
-                  }
-
-                  if($currColumn['key'] == Database::$KEY_NONE
-                          || $currColumn['key'] == Database::$KEY_UNIQUE) {//for columns that are not the primary key
-                     
-                     if($currColumn['key'] == Database::$KEY_UNIQUE) {
-                        $createString .= "UNIQUE KEY ";
-                     }
-                     
-                     //add default value
-                     if($nullable === "null" 
-                             && ($currColumn['default'] == null || $currColumn['default'] == "NULL" || $currColumn['default'] == "null")) {
-                        //column is nullable and default value is null
-                        $createString .= "default null ";
-                     }
-                     else if($nullable === "not null"
-                             && ($currColumn['default'] == null || $currColumn['default'] == "NULL" || $currColumn['default'] == "null")) {
-                        //column doesn't have a default value
-                     }
-                     else {
-                        //default value is definately not null column however can be either nullable or not
-                        if($currColumn['default'] !== null) {
-                           $createString .= "default '{$currColumn['default']}' ";
-                        }
-                        else {
-                           $createString .= "default null ";
-                        }
-                     }
-                     
-                     //add nullable
-                     $nullable = "not null";
-                     if($currColumn['nullable'] === true) $nullable = "null";
-                     $createString .= "{$nullable} ";
-                  }
-                  else if($currColumn['key'] == Database::$KEY_PRIMARY){
-                     $createString .= "PRIMARY KEY ";
-                     
-                     //check if is nullable
-                     if($currColumn['nullable'] === true) {
-                        $this->logH->log(1, $this->TAG, "Column with name '{$currColumn['name']}' in table '$name' defined as the primary key but nullable in database '{$this->getDatabaseName()}'");
-                        throw new WAException("Column with name '{$currColumn['name']}' in table '$name' defined as the primary key but nullable", WAException::$CODE_DB_CREATE_ERROR, null);
-                     }
-                  }
-
+                  
                   if($cIndex == (count($columns) - 1)) {//last element
                      $createString .= ") ";
                   }
@@ -455,6 +465,72 @@ class Database {
          $this->logH->log(1, $this->TAG, "An error occurred while trying to check wheter the table '$name' exists");
          throw new WAException("Unable to check whether the table '$name' already exists", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
+   }
+   
+   /**
+    * This function returns a column expression string that defines the characteristics
+    * of a column to be used in insert and update statements
+    * 
+    * @throws WAException
+    */
+   private function getColumnExpression($name, $type, $length, $key, $default, $isNullable) {
+      $createString = Database::$QUOTE_SI."$name".Database::$QUOTE_SI." ";
+      if($type == Database::$TYPE_VARCHAR) {
+         if($length != null) {
+            $createString .= "{$type}({$length}) ";
+         }
+         else {
+            $this->logH->log(1, $this->TAG, "Column '{$name}' is defined as type ".Database::$TYPE_VARCHAR." but length not defined for table with name as '$name' in database '{$this->getDatabaseName()}'");
+            throw new WAException("Column '{$name}' is defined as type ".Database::$TYPE_VARCHAR." but length not defined for table with name as '$name'", WAException::$CODE_DB_CREATE_ERROR, null);
+         }
+      }
+      else {
+         $createString .= "{$type} ";
+      }
+
+      if($key == Database::$KEY_NONE
+              || $key == Database::$KEY_UNIQUE) {//for columns that are not the primary key
+
+         if($key == Database::$KEY_UNIQUE) {
+            $createString .= "UNIQUE KEY ";
+         }
+
+         //add default value
+         if($nullable === "null" 
+                 && ($default == null || $default == "NULL" || $default == "null")) {
+            //column is nullable and default value is null
+            $createString .= "default null ";
+         }
+         else if($nullable === "not null"
+                 && ($default == null || $default == "NULL" || $default == "null")) {
+            //column doesn't have a default value
+         }
+         else {
+            //default value is definately not null column however can be either nullable or not
+            if($default !== null) {
+               $createString .= "default {$default} ";
+            }
+            else {
+               $createString .= "default null ";
+            }
+         }
+
+         //add nullable
+         $nullable = "not null";
+         if($isNullable === true) $nullable = "null";
+         $createString .= "{$nullable} ";
+      }
+      else if($key == Database::$KEY_PRIMARY){
+         $createString .= "PRIMARY KEY ";
+
+         //check if is nullable
+         if($isNullable === true) {
+            $this->logH->log(1, $this->TAG, "Column with name '{$name}' defined as the primary key but nullable in database '{$this->getDatabaseName()}'");
+            throw new WAException("Column with name '{$name}' defined as the primary key but nullable", WAException::$CODE_DB_CREATE_ERROR, null);
+         }
+      }
+      
+      return $createString;
    }
       
 }
