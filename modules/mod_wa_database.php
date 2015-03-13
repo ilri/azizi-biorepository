@@ -345,7 +345,7 @@ class Database {
          shell_exec($command);
          if(file_exists($path)) {
             $columns = array(
-               "location" => "'$path'",
+               "location" => "'$filename'",
                "added_by" => "'$user'",
                "time_added" => "'{$this->getMySQLTime()}'",
                "last_modified" => "'{$this->getMySQLTime()}'",

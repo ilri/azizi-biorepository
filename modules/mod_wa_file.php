@@ -21,20 +21,26 @@ class WAFile {
    private $type;
    private $workingDir;
    private $filename;
+   private $creator;
+   private $timeCreated;
+   private $timeLastModified;
    
    /**
     * Default constructor for this class
     * 
-    * @param Object     $config        the repository_config object
-    * @param string     $workflowID    Id for the workflow holding this file
-    * @param Database   $database      The database object to use to run queries
-    * @param string     $workingDir    The root working directory for the workflow
-    * @param string     $type          The type of file. Can either be TYPE_RAW or TYPE_PROCESSED
-    * @param string     $filename      Name of the file as stored in the filesystem
+    * @param Object     $config           The repository_config object
+    * @param string     $workflowID       Id for the workflow holding this file
+    * @param Database   $database         The database object to use to run queries
+    * @param string     $workingDir       The root working directory for the workflow
+    * @param string     $type             The type of file. Can either be TYPE_RAW or TYPE_PROCESSED
+    * @param string     $filename         Name of the file as stored in the filesystem
+    * @param string     $creator          URI of the person who created/uploaded the file
+    * @param DateTime   $timeCreated      The time the file was created
+    * @param DateTime   $timeLastModified Last modification date for the file
     * 
     * @throws WAException
     */
-   public function __construct($config, $workflowID, $database, $workingDir, $type, $filename = null) {
+   public function __construct($config, $workflowID, $database, $workingDir, $type, $filename = null, $creator = null, $timeCreated = null, $timeLastModified = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       
@@ -45,12 +51,65 @@ class WAFile {
       $this->workflowID = $workflowID;
       $this->workingDir = $workingDir;
       $this->filename = $filename;
+      $this->creator = $creator;
+      $this->timeCreated = $timeCreated;
+      $this->timeLastModified = $timeLastModified;
       
       try {
          $this->createMetaFilesTable();
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to initialize a WAFile object");
          throw new WAException("Unable to correctly initialize WAFile object", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function returns all file details as an array
+    * 
+    * @return Array An array with the file details
+    */
+   public function getFileDetails() {
+      $time = null;
+      if($this->timeCreated != null) {
+         $time = $this->timeCreated->format(DateTime::ISO8601);
+      }
+      
+      $modifiedTime = null;
+      if($this->timeLastModified != null) {
+         $modifiedTime = $this->timeLastModified->format(DateTime::ISO8601);
+      }
+      
+      $details = array(
+          "filename" => $this->filename,
+          "type" => $this->type,
+          "creator" => $this->creator,
+          "time_created" => $time,
+          "time_last_modified" => $modifiedTime
+      );
+      
+      return $details;
+   }
+   
+   /**
+    * This function checks whether the file exists in the filesystem.
+    * Make sure the filename is set first.
+    * 
+    * @return boolean TRUE if file exists in the filesystem
+    * @throws WAException
+    */
+   public function fileInFilesystem() {
+      if($this->filename != null
+              && $this->workingDir != null
+              && $this->type != null) {
+         $location = $this->workingDir."/".WAFile::$WORKING_SUB_DIRS[$this->type]."/".$this->filename;
+         $this->lH->log(4, $this->TAG, "Checking if ".$location." exists");
+         if(file_exists($location)) {
+            return true;
+         }
+         return false;
+      }
+      else {
+         throw new WAException("Unable to check wheter file exists because it wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
    
@@ -328,6 +387,50 @@ class WAFile {
       } catch (WAException $ex) {
          $lH->log(1, "wafile_static", "Unable to determine which files are owned by workflow with id = '$workflowId'");
          throw new Exception("Unable to determine which files are owned by workflow", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function returns all valid save point files
+    * 
+    * @param Object     $config        repository_config object
+    * @param Workflow   $workflowID    Instance id for the workflow
+    * @param Database   $database      Database object to run queries in
+    * @param string     $workingDir    The working directory for the workflow
+    */
+   public static function getAllSavePointFiles($config, $workflowID, $database, $workingDir) {
+      include_once 'mod_log.php';
+      include_once 'mod_wa_exception.php';
+      $lH = new LogHandler("./");
+      
+      $query = "select location, added_by, time_added, last_modified from ".WAFile::$TABLE_META_FILES." where workflow_type = '".WAFile::$TYPE_BACKUP."'";
+      try {
+         $result = $database->runGenericQuery($query, true);
+         $savePoints = array();
+         if($result != null && is_array($result)) {
+            for($index = 0; $index < count($result); $index++) {
+               $currRow = $result[$index];
+               $currSavePoint = new WAFile($config, $workflowID, $database, $workingDir, WAFile::$TYPE_BACKUP, $currRow['location'], $currRow['added_by'], new DateTime($currRow['time_added']), new DateTime($currRow['last_modified']));
+               
+               try {
+                  if($currSavePoint->fileInFilesystem()) {
+                     array_push($savePoints, $currSavePoint);
+                  }
+               } catch (WAException $ex) {
+                  $lH->log(1, "wafile_static", "Unable to check if one of the backup files exists because it's object wasn't initialized correctly for workflow with instance id = '$workflowID'");
+                  throw new WAException("Unable to check if one of the backup files exists", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+               }
+            }
+            
+            return $savePoints;
+         }
+         else {
+            $lH->log(1, "wafile_static", "Database did not return any results for backup files for workflow with id = '{$workflowID}' ");
+            throw new WAException("Database did not return any results for backup files", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+            $lH->log(1, "wafile_static", "Unable to fetch backup file details from the database for workflow with id = '{$workflowID}'");
+            throw new WAException("Unable to fetch backup file details from the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
 }

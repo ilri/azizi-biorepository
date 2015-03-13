@@ -49,6 +49,9 @@ class ODKWorkflowAPI extends Repository {
       else if (OPTIONS_REQUESTED_SUB_MODULE == "alter_field") {
          $this->handleAlterFieldEndpoint();
       }
+      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_save_points") {
+         $this->handleGetSavePointsEndpoint();
+      }
       else {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
@@ -294,12 +297,56 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
+   
+   /**
+    * This function handles the show_save_points endpoint
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
+    *    user        :  "the user making the request"
+    *    workflow_id :  "Instance id for the workflow"
+    * }
+    */
+   private function handleGetSavePointsEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = json_decode($_REQUEST['data'], true);
+         if(array_key_exists("server", $json)
+                 && array_key_exists("user", $json)
+                 && array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            $savePoints = $workflow->getSavePoints();
+            
+            $data = array(
+                "save_points" => $savePoints,
+                "status" => $workflow->getCurrentStatus()
+            );
+            
+            $this->returnResponse($data);
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
 
    /**
     * This function generates a UUID for the user by combining ith with the server address
     */
    private function generateUserUUID($server, $user) {
       return $server."_:_".$user;
+   }
+   
+   public static function explodeUserUUID($userUUID) {
+      $details = explode("_:_", $userUUID);
+      if(count($details) == 2) {
+         return array("server" => $details[0], "user" => $details[1]);
+      }
+      
+      return null;
    }
    
    private function setStatusCode($code) {

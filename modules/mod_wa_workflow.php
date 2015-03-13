@@ -36,6 +36,7 @@ class Workflow {
       include_once 'mod_wa_file.php';
       include_once 'mod_wa_excel_file.php';
       include_once 'mod_wa_sheet.php';
+      include_once 'mod_wa_api.php';
       
       $this->config = $config;
       $this->lH = new LogHandler("./");
@@ -604,7 +605,9 @@ class Workflow {
       if($processing === true) $processing = Database::$BOOL_TRUE;
       else $processing = Database::$BOOL_FALSE;
       
-      if($this->database->getDatabaseName() == $this->instanceId
+      if($this->database != null
+              && $this->instanceId != null
+              && $this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
          $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set processing = '{$processing}' where workflow_id = '{$this->instanceId}'";
          try {
@@ -818,6 +821,41 @@ class Workflow {
             array_push($this->errors, $ex);
             $this->healthy = false;
             $this->lH->log(1, $this->TAG, "Unable to get data table schemas for workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to get data tables because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to get data tables because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
+   /**
+    * This function gets all the save points for this instance
+    */
+   public function getSavePoints() {
+      if($this->database != null
+              && $this->instanceId != null
+              && $this->instanceId == $this->database->getDatabaseName()) {
+         try {
+            $savePointFiles = WAFile::getAllSavePointFiles($this->config, $this->instanceId, $this->database, $this->workingDir);
+            $formatted = array();
+            for($index = 0; $index < count($savePointFiles); $index++) {
+               $currFile = $savePointFiles[$index];
+               $currFileDetails = $currFile->getFileDetails();
+               
+               $currFileDetails["creator"] = ODKWorkflowAPI::explodeUserUUID($currFileDetails['creator']);
+               unset($currFileDetails["type"]);
+               unset($currFileDetails['time_last_modified']);
+               
+               array_push($formatted, $currFileDetails);
+            }
+            
+            return $formatted;
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to get save point files for workflow with id = '{$this->instanceId}'");
          }
       }
       else {
