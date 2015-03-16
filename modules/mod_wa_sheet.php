@@ -70,6 +70,49 @@ class WASheet {
    }
    
    /**
+    * This function renames this sheet even in the database
+    * 
+    * @param type $newName
+    * @throws WAException
+    */
+   public function rename($newName) {
+      if($this->database != null) {
+         try {
+            $this->database->runAlterTableQuery($this->sheetName, $newName);
+         } catch (WAException $ex) {
+            $this->lH->log(1, $this->TAG, "Could not rename '{$this->sheetName}' because of a database error");
+            throw new WAException("Could not rename '{$this->sheetName}' because of a database error", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+         }
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "Could not rename '{$this->sheetName}' because sheet object wasn't initialized correctly");
+         throw new WAException("Could not rename '{$this->sheetName}' because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function deletes this sheet from the database
+    * 
+    * @throws WAException
+    */
+   public function delete() {
+      if($this->database != null) {
+         $query = "drop table ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI;
+         try {
+            $this->database->runGenericQuery($query);
+            $this->unload();
+         } catch (WAException $ex) {
+            $this->lH->log(1, $this->TAG, "Could not delete '{$this->sheetName}' because of a database error");
+            throw new WAException("Could not delete '{$this->sheetName}' because of a database error", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+         }
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "Could not delete '{$this->sheetName}' because sheet object wasn't initialized correctly");
+         throw new WAException("Could not delete '{$this->sheetName}' because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   /**
     * This function unloads all the columns owned by this sheet from memory
     */
    public function unload() {

@@ -392,6 +392,23 @@ class Database {
    }
    
    /**
+    * This function alters a table
+    * 
+    * @param string $currName    Current table name
+    * @param string $newName     New table name
+    * 
+    * @throws WAException
+    */
+   public function runAlterTableQuery($currName, $newName) {
+      $query = "alter table ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." rename to ".Database::$QUOTE_SI.$newName.Database::$QUOTE_SI;
+      try {
+         $this->runGenericQuery($query);
+      } catch (WAException $ex) {
+         throw new WAException("Unable to rename '$currName' to '$newName'", WAException::$CODE_DB_QUERY_ERROR, null);
+      }
+   }
+   
+   /**
     * This function creates an InnoDB table in the default database
     * 
     * @param string $name     The name of the table
