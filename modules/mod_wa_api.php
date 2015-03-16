@@ -58,6 +58,45 @@ class ODKWorkflowAPI extends Repository {
                   $this->returnResponse($data);
                }
             }
+            else {
+               $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+            }
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == "register") {
+         if(isset($_REQUEST['token'])) {
+            $authJson = json_decode($_REQUEST['token']);
+            if(array_key_exists("server", $authJson)
+                    && array_key_exists("user", $authJson)
+                    && array_key_exists("secret", $authJson)) {
+               try {
+                  $result = $this->addClient($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['secret']);
+                  
+                  $data = array(
+                      "created" => $result,
+                      "status" => array("health" => true, "errors" => array())
+                  );
+                  
+                  $this->returnResponse($data);
+               }
+               catch (WAException $ex) {
+                  $data = array(
+                      "created" => false,
+                      "status" => array("health" => false, "errors" => array($ex->getMessage()))
+                  );
+                  
+                  $this->returnResponse($data);
+               }
+            }
+            else {
+               $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+            }
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          }
       }
       else {
@@ -468,6 +507,37 @@ class ODKWorkflowAPI extends Repository {
       echo json_encode($data);
    }
    
+   private function addClient($uri, $cyperSecret) {
+      $security = new Security($this->Dbase);
+      $decryptedCypher = $security->decryptCypherText($cyperSecret);
+      if($decryptedCypher != null){
+         try {
+            $database = new Database($this->config);
+            if($database != null){
+               $salt = $security->generateSalt();
+               $hash = $security->hashPassword($decryptedCypher, $salt);
+               $columns = array(
+                   "uri" => $uri,
+                   "secret" => $hash,
+                   "salt" => $salt
+               );
+               $database->runInsertQuery("clients", $columns);
+               return true;
+            }
+            else {
+               throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+            }
+         }
+         catch(WAException $ex) {
+            throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         throw new WAException("Unable to add client because cypher text provided couldn't be decrypted", WAException::$CODE_WF_PROCESSING_ERROR, null);
+      }
+      return false;
+   }
+   
    /**
     * This function authenticates a client against the client list
     * 
@@ -481,28 +551,29 @@ class ODKWorkflowAPI extends Repository {
       $security = new Security($this->Dbase);
       $decryptedCypher = $security->decryptCypherText($cypherSecret);
       if($decryptedCypher != null){
-         $database = new Database($this->config);
-         if($database != null){
-            $query = "select salt, secret, id from clients where uri = '{$uri}'";
-            try {
+         try {
+            $database = new Database($this->config);
+            if($database != null){
+               $query = "select salt, secret, id from clients where uri = '{$uri}'";
                $result = $database->runGenericQuery($query, true);
                if(is_array($result) && count($result) == 1) {
                   $salt = $result[0]['salt'];
                   $secret = $result[0]['secret'];
                   $clientId = $result[0]['id'];
-                  if($database->hashPassword($decryptedCypher, $salt) == $secret) {//client authenticated
+                  if($security->hashPassword($decryptedCypher, $salt) == $secret) {//client authenticated
                      //create session id
                      $sessionId = $this->setSessionId($database, $security, $clientId);
-                     
+
                      return $sessionId;
                   }
                }
-            } catch (WAException $ex) {
-               throw new WAException("Unable to authenticate client because of a database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
+            }
+            else {
+               throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
             }
          }
-         else {
-            throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+         catch(WAException $ex) {
+            throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
          }
       }
       else {
