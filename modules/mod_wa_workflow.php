@@ -576,7 +576,7 @@ class Workflow {
       return $status;
    }
    
-   private static function getErrorMessage($exception, $level = 0, $currMessage = "") {
+   public static function getErrorMessage($exception, $level = 0, $currMessage = "") {
       $prepend = " -> ";
       if($level == 0) $prepend = "";
       $currMessage .= $prepend.$exception->getMessage();

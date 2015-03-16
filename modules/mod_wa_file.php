@@ -425,8 +425,8 @@ class WAFile {
             return $savePoints;
          }
          else {
-            $lH->log(1, "wafile_static", "Database did not return any results for backup files for workflow with id = '{$workflowID}' ");
-            throw new WAException("Database did not return any results for backup files", WAException::$CODE_DB_QUERY_ERROR, null);
+            $lH->log(2, "wafile_static", "Database did not return any results for backup files for workflow with id = '{$workflowID}' ");
+            return array();
          }
       } catch (WAException $ex) {
             $lH->log(1, "wafile_static", "Unable to fetch backup file details from the database for workflow with id = '{$workflowID}'");

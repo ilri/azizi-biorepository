@@ -12,6 +12,7 @@ class ODKWorkflowAPI extends Repository {
    private static $HEADER_CTYPE_JSON = "Content-Type: application/json";
    private $lH;
    private $config;
+   private $userUUID;
    
    public function __construct($Dbase) {
       include_once 'mod_wa_workflow.php';
@@ -37,7 +38,7 @@ class ODKWorkflowAPI extends Repository {
       }
       else if (OPTIONS_REQUESTED_SUB_MODULE == "auth"){
          if(isset($_REQUEST['token'])) {
-            $authJson = json_decode($_REQUEST['token']);
+            $authJson = json_decode($_REQUEST['token'], true);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("secret", $authJson)) {
@@ -52,7 +53,7 @@ class ODKWorkflowAPI extends Repository {
                } catch (WAException $ex) {
                   $data = array(
                       "session" => null,
-                      "status" => array("health" => FALSE, "errors" =>array($ex->getMessage()))
+                      "status" => array("health" => FALSE, "errors" =>array(Workflow::getErrorMessage($ex)))
                   );
                   
                   $this->returnResponse($data);
@@ -68,11 +69,12 @@ class ODKWorkflowAPI extends Repository {
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == "register") {
          if(isset($_REQUEST['token'])) {
-            $authJson = json_decode($_REQUEST['token']);
+            $authJson = json_decode($_REQUEST['token'], true);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("secret", $authJson)) {
                try {
+                  $this->lH->log(4, $this->TAG, "Token json looks like this ".print_r($authJson, true));
                   $result = $this->addClient($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['secret']);
                   
                   $data = array(
@@ -85,7 +87,7 @@ class ODKWorkflowAPI extends Repository {
                catch (WAException $ex) {
                   $data = array(
                       "created" => false,
-                      "status" => array("health" => false, "errors" => array($ex->getMessage()))
+                      "status" => array("health" => false, "errors" => array(Workflow::getErrorMessage($ex)))
                   );
                   
                   $this->returnResponse($data);
@@ -102,13 +104,14 @@ class ODKWorkflowAPI extends Repository {
       else {
          //check if client provided token
          if(isset($_REQUEST['token'])) {
-            $authJson = json_decode($_REQUEST['token']);
+            $authJson = json_decode($_REQUEST['token'], true);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("session", $authJson)) {
                //check if session id is still valid
                try {
-                  if($this->isSessionValid($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['session'])) {//session valid
+                  $this->userUUID = $this->generateUserUUID($authJson['server'], $authJson['user']);
+                  if($this->isSessionValid($this->userUUID, $authJson['session'])) {//session valid
                      if (OPTIONS_REQUESTED_SUB_MODULE == "init_workflow"){
                         $this->handleInitWorkflowEndpoint();
                      }
@@ -142,7 +145,7 @@ class ODKWorkflowAPI extends Repository {
                   }
                } catch (WAException $ex) {
                   $data = array(
-                      "status" => array("health" => FALSE, "errors" =>array($ex->getMessage()))
+                      "status" => array("health" => FALSE, "errors" =>array(Workflow::getErrorMessage($ex)))
                   );
                   
                   $this->returnResponse($data);
@@ -181,13 +184,11 @@ class ODKWorkflowAPI extends Repository {
             $jsonKeys = array_keys($json);
 
             //check if json has all the expected fields
-            if(array_search("server", $jsonKeys) !== false
-                    && array_search("user", $jsonKeys) !== false
-                    && array_search("data_file_url", $jsonKeys) !== false
+            if(array_search("data_file_url", $jsonKeys) !== false
                     && array_search("workflow_name", $jsonKeys) !== false){
 
                //initialize a workflow object
-               $workflow = new Workflow($this->config, $json['workflow_name'], $this->generateUserUUID($json['server'],$json['user']));
+               $workflow = new Workflow($this->config, $json['workflow_name'], $this->userUUID);
 
                //fetch the form data file from the client
                $workflow->addRawDataFile($json['data_file_url']);
@@ -228,21 +229,7 @@ class ODKWorkflowAPI extends Repository {
     * 
     */
    private function handleGetWorkflowsEndpoint() {
-      if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);//decode json to associative array
-         if(array_key_exists("server", $json)
-                 && array_key_exists("user", $json)) {
-            
-            $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->generateUserUUID($json['server'], $json['user'])));
-            
-         }
-         else {
-            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
-         }
-      }
-      else {
-         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
-      }
+      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->userUUID));
    }
    
    /**
@@ -260,10 +247,8 @@ class ODKWorkflowAPI extends Repository {
    private function handleProcessMysqlSchemaEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = json_decode($_REQUEST['data'], true);
-         if(array_key_exists("server", $json)
-                 && array_key_exists("user", $json)
-                 && array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             
             $workflow->setIsProcessing(true);//set is processing to be true because workflow instance is going to be left processing after response sent to user
             $data = array(
@@ -298,10 +283,8 @@ class ODKWorkflowAPI extends Repository {
    private function handleGetWorkingStatusEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = json_decode($_REQUEST['data'], true);
-         if(array_key_exists("server", $json)
-                 && array_key_exists("user", $json)
-                 && array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $data = array(
                 "status" => $workflow->getCurrentStatus()
             );
@@ -331,10 +314,8 @@ class ODKWorkflowAPI extends Repository {
    private function handleGetWorkflowSchemaEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = json_decode($_REQUEST['data'], true);
-         if(array_key_exists("server", $json)
-                 && array_key_exists("user", $json)
-                 && array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $schema = $workflow->getSchema();
             
             $data = array(
@@ -370,9 +351,7 @@ class ODKWorkflowAPI extends Repository {
    private function handleAlterFieldEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = json_decode($_REQUEST['data'], true);
-         if(array_key_exists("server", $json)
-                 && array_key_exists("user", $json)
-                 && array_key_exists("workflow_id", $json)
+         if(array_key_exists("workflow_id", $json)
                  && array_key_exists("sheet", $json)
                  && array_key_exists("column", $json)
                  && array_key_exists("original_name", $json['column'])
@@ -383,7 +362,7 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("nullable", $json['column'])
                  && array_key_exists("default", $json['column'])
                  && array_key_exists("key", $json['column'])) {
-            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $workflow->modifyColumn($json['sheet'], $json['column']);
             
             $data = array(
@@ -416,14 +395,12 @@ class ODKWorkflowAPI extends Repository {
    private function handleAlterSheetEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = json_decode($_REQUEST['data'], true);
-         if(array_key_exists("server", $json)
-                 && array_key_exists("user", $json)
-                 && array_key_exists("workflow_id", $json)
+         if(array_key_exists("workflow_id", $json)
                  && array_key_exists("sheet", $json)
                  && array_key_exists("original_name", $json['sheet'])
                  && array_key_exists("name", $json['sheet'])
                  && array_key_exists("delete", $json['sheet'])) {
-            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $workflow->modifySheet($json['sheet']);
             
             $data = array(
@@ -453,10 +430,8 @@ class ODKWorkflowAPI extends Repository {
    private function handleGetSavePointsEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = json_decode($_REQUEST['data'], true);
-         if(array_key_exists("server", $json)
-                 && array_key_exists("user", $json)
-                 && array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->generateUserUUID($json['server'], $json['user']), $json['workflow_id']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $savePoints = $workflow->getSavePoints();
             
             $data = array(
@@ -517,9 +492,9 @@ class ODKWorkflowAPI extends Repository {
                $salt = $security->generateSalt();
                $hash = $security->hashPassword($decryptedCypher, $salt);
                $columns = array(
-                   "uri" => $uri,
-                   "secret" => $hash,
-                   "salt" => $salt
+                   "uri" => "'$uri'",
+                   "secret" => "'$hash'",
+                   "salt" => "'$salt'"
                );
                $database->runInsertQuery("clients", $columns);
                return true;
@@ -595,8 +570,8 @@ class ODKWorkflowAPI extends Repository {
             $query = "select update_time from sessions where session_id = '$sessionId' and client_id = $clientId";
             $result = $database->runGenericQuery($query, true);
             if(is_array($result) && count($result) == 1) {
-               $lastUpdateTime = DateTime($result[0]['update_time']);
-               $timeDifference = (time() - $lastUpdateTime->getTime())/60;//time difference in minutes
+               $lastUpdateTime = new DateTime($result[0]['update_time']);
+               $timeDifference = (time() - $lastUpdateTime->getTimestamp())/60;//time difference in minutes
                if($timeDifference <= $this->config['timeout']) {
                   $query = "update sessions set update_time = '".Database::getMySQLTime()."' where session_id = '".$sessionId."'";
                   $database->runGenericQuery($query);
