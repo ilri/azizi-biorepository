@@ -22,7 +22,8 @@ class ODKWorkflowAPI extends Repository {
       $this->Dbase = $Dbase;
       $this->config = Config::$config;
       $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
-      $this->config['timeout'] = Config::$timeout;
+      //$this->config['timeout'] = Config::$timeout;//TODO: uncomment when deploying
+      $this->config['timeout'] = 100000000;
       include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
       $this->lH = new LogHandler("./");
       $this->lH->log(4, $this->TAG, "ODK Workflow API called");
@@ -168,8 +169,6 @@ class ODKWorkflowAPI extends Repository {
     * $_REQUEST['data'] variable
     * 
     * {
-    *    server         :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user           :  "The user in the server making the request"
     *    data_file_url  :  "URL to the data file that is resolvable from the DMZ"
     *    workflow_name  :  "The name to give the workflow instance"
     * }
@@ -219,14 +218,6 @@ class ODKWorkflowAPI extends Repository {
    
    /**
     * This function handles the get_workflow endpoint of the API.
-    * The get_workflow endpoint expects the following json object in the 
-    * $_REQUEST['data'] variable
-    * 
-    * {
-    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user        :  "the user making the request"
-    * }
-    * 
     */
    private function handleGetWorkflowsEndpoint() {
       $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->userUUID));
@@ -238,8 +229,6 @@ class ODKWorkflowAPI extends Repository {
     * $_REQUEST['data'] variable
     * 
     * {
-    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user        :  "the user making the request"
     *    workflow_id :  "ID of the workflow"
     * }
     * 
@@ -274,8 +263,6 @@ class ODKWorkflowAPI extends Repository {
     * $_REQUEST['data'] variable
     * 
     * {
-    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user        :  "the user making the request"
     *    workflow_id :  "ID of the workflow"
     * }
     * 
@@ -306,8 +293,6 @@ class ODKWorkflowAPI extends Repository {
     * $_REQUEST['data'] variable
     * 
     * {
-    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user        :  "the user making the request"
     *    workflow_id :  "ID of the workflow"
     * }
     */
@@ -341,8 +326,6 @@ class ODKWorkflowAPI extends Repository {
     * 
     * $_REQUEST['data'] variable
     * {
-    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user        :  "the user making the request"
     *    workflow_id :  "Instance id for the workflow"
     *    sheet       :  "Name of the sheet containing the modified column"
     *    column      :  {"original_name", "name", "delete", "type", "length", "nullable", "default", "key"}
@@ -386,8 +369,6 @@ class ODKWorkflowAPI extends Repository {
     * 
     * $_REQUEST['data'] variable
     * {
-    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user        :  "the user making the request"
     *    workflow_id :  "Instance id for the workflow"
     *    sheet       :  {"original_name", "name", "delete"}
     * }
@@ -422,8 +403,6 @@ class ODKWorkflowAPI extends Repository {
     * 
     * $_REQUEST['data'] variable
     * {
-    *    server      :  "requesting server IP (Address should be ILRI DMZ subnet addresses)"
-    *    user        :  "the user making the request"
     *    workflow_id :  "Instance id for the workflow"
     * }
     */
