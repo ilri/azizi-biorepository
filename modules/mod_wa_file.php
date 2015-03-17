@@ -433,6 +433,18 @@ class WAFile {
             throw new WAException("Unable to fetch backup file details from the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
+   
+   /**
+    * This function returns the path for the backup file correspoinding to the provided save point
+    * 
+    * @param string  $savePoint  Name of the save point file
+    * 
+    * @return string Path to the .sql dump file corresponding to the save point
+    */
+   public static function getSavePointFilePath($workingDir, $savePoint) {
+      $location = $workingDir.WAFile::$WORKING_SUB_DIRS[WAFile::$TYPE_BACKUP]."/".$savePoint;
+      return $location;
+   }
 }
 ?>
 

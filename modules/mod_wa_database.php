@@ -179,13 +179,16 @@ class Database {
             $result = $this->getDatabaseNames();
             
             if(in_array($name, $result) === false) {//no database with said name exists
-               $query = "create database {$name}";
+               $query = "create database {$name} with owner = ".$this->config['testbed_user'];
                try {
                   $this->runGenericQuery($query);
                } 
                catch (WAException $ex) {
                   throw new WAException("Unable to create the {$name} database", WAException::$CODE_DB_CREATE_ERROR, $ex);
                }
+            }
+            else {
+               $this->logH->log(2, $this->TAG, "Database '$name' already exists. Not creating it");
             }
          } catch (WAException $ex) {
             //die(print_r($ex->getPrevious()->getPrevious()->getTrace(), true));
@@ -357,12 +360,13 @@ class Database {
     */
    public function backup($workingDir, $filename, $user) {
       try {
-         $this->logH->log(2, $this->TAG, "Backing up '".$this->getDatabaseName()."'");
+         $this->logH->log(3, $this->TAG, "Backing up '".$this->getDatabaseName()."'");
          //($config, $workflowID, $database, $workingDir, $type, $filename = null)
          $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
          $subDirPath = $dumpFile->createWorkingSubdir();
          $path = $subDirPath . "/" . $filename;
-         $command = "export PGPASSWORD=".$this->config['testbed_pass'].";pg_dump -U ".$this->config['testbed_user']." {$this->getDatabaseName()} > $path";
+         $command = "export PGPASSWORD=".$this->config['testbed_pass'].";pg_dump --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} > $path";
+         $this->logH->log(4, $this->TAG, "Backup command is '$command'");
          shell_exec($command);
          if(file_exists($path)) {
             $columns = array(
@@ -381,6 +385,31 @@ class Database {
       } catch (WAException $ex) {
             $this->logH->log(1, $this->TAG, "An error occurred while trying to create backup file for database '".$this->getDatabaseName()."'");
             throw new WAException("An error occurred while trying to create backup file for database", WAException::$CODE_DB_BACKUP_ERROR, $ex);
+      }
+   }
+   
+   public function restore($databaseName, $restoreFile) {
+      if(file_exists($restoreFile)) {
+         try {
+            $this->logH->log(3, $this->TAG, "Restoring '$databaseName' to state defined in '$restoreFile'");
+            /*$query = "drop database $databaseName";
+            $this->runGenericQuery($query);*/
+            /*$command = "export PGPASSWORD=".$this->config['testbed_pass'].";dropdb -U ".$this->config['testbed_user']." {$databaseName}";
+            shell_exec($command);*/
+
+            $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
+            $command = "export PGPASSWORD=".$this->config['testbed_pass'].";psql -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile";
+            $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);
+            $output = shell_exec($command);
+            $this->logH->log(4, $this->TAG, "Message from pg_restore is ".$output);
+         } catch (WAException $ex) {
+            $this->logH->log(1, $this->TAG, "Could not restore database '$databaseName' because a database error occurred");
+            throw new WAException("Could not restore database because a database (SQL) error occurred", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         $this->logH->log(1, $this->TAG, "Could not restore database '$databaseName' because backup file '$restoreFile' does not exist");
+         throw new WAException("Could not restore database because backup file does not exist", WAException::$CODE_DB_BACKUP_ERROR, null);
       }
    }
    
@@ -502,7 +531,7 @@ class Database {
             }
          }
          else {
-            $this->logH->log(4, $this->TAG, "Table '$name' already exists. Not creating it");
+            $this->logH->log(2, $this->TAG, "Table '$name' already exists. Not creating it");
          }
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "An error occurred while trying to check wheter the table '$name' exists");

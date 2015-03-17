@@ -764,6 +764,27 @@ class Workflow {
    }
    
    /**
+    * 
+    * @param type $restorePoint
+    */
+   public function restore($restorePoint) {
+      try {
+         //connect to default database before trying to restore workflow database
+         if($this->database != null) $this->database->close();
+         $this->database = new Database($this->config);
+         
+         $path = WAFile::getSavePointFilePath($this->workingDir, $restorePoint);
+         $this->database->restore($this->instanceId, $path);
+      } catch (WAException $ex) {
+         if($ex->getCode() != WAException::$CODE_DB_CLOSE_ERROR) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to restore workflow with id = '{$this->instanceId}' to '$restorePoint' save point");
+         }
+      }
+   }
+   
+   /**
     * This function modifies a sheet column
     * 
     * @param type $sheet         The name of the sheet

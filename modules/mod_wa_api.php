@@ -137,6 +137,9 @@ class ODKWorkflowAPI extends Repository {
                      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_save_points") {
                         $this->handleGetSavePointsEndpoint();
                      }
+                     else if (OPTIONS_REQUESTED_SUB_MODULE == "restore_save_point") {
+                        $this->handleRestoreSavePointEndpoint();
+                     }
                      else {
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
                      }
@@ -415,6 +418,38 @@ class ODKWorkflowAPI extends Repository {
             
             $data = array(
                 "save_points" => $savePoints,
+                "status" => $workflow->getCurrentStatus()
+            );
+            
+            $this->returnResponse($data);
+         }
+         else {
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the restore_save_point endpoint
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    *    save_point  :  "Filename of the save point to restore to"
+    * }
+    */
+   private function handleRestoreSavePointEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = json_decode($_REQUEST['data'], true);
+         if(array_key_exists("workflow_id", $json)
+                 && array_key_exists("save_point", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow->restore($json['save_point']);
+            
+            $data = array(
                 "status" => $workflow->getCurrentStatus()
             );
             
