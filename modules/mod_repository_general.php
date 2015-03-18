@@ -185,6 +185,11 @@ class Repository extends DBase{
                $recharges = new Recharges($this->Dbase);
                $recharges->trafficController();
             }
+            else if(OPTIONS_REQUESTED_MODULE == 'dmp'){
+               require_once 'mod_dmp.php';
+               $dmp = new DMP($this->Dbase);
+               $dmp->trafficController();
+            }
             else{
                $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
                $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');

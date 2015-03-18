@@ -53,7 +53,8 @@ class WAColumn {
           "length" => $this->length,
           "nullable" => $this->nullable,
           "default" => $this->default,
-          "key" => $this->key
+          "key" => $this->key,
+          "present" => true
       );
       
       return $schema;

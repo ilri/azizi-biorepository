@@ -39,7 +39,7 @@ class ODKWorkflowAPI extends Repository {
       }
       else if (OPTIONS_REQUESTED_SUB_MODULE == "auth"){
          if(isset($_REQUEST['token'])) {
-            $authJson = json_decode($_REQUEST['token'], true);
+            $authJson = $this->getData($_REQUEST['token']);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("secret", $authJson)) {
@@ -70,7 +70,7 @@ class ODKWorkflowAPI extends Repository {
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == "register") {
          if(isset($_REQUEST['token'])) {
-            $authJson = json_decode($_REQUEST['token'], true);
+            $authJson = $this->getData($_REQUEST['token']);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("secret", $authJson)) {
@@ -105,7 +105,7 @@ class ODKWorkflowAPI extends Repository {
       else {
          //check if client provided token
          if(isset($_REQUEST['token'])) {
-            $authJson = json_decode($_REQUEST['token'], true);
+            $authJson = $this->getData($_REQUEST['token']);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("session", $authJson)) {
@@ -166,6 +166,18 @@ class ODKWorkflowAPI extends Repository {
       
    }
    
+   private function getData($variable) {
+      $array = null;
+      if(gettype($variable) == "string") {
+         $array = json_decode($variable, true);
+      }
+      else if(gettype($variable) == "array") {
+         $array = $variable;
+      }
+      
+      return $array;
+   }
+   
    /**
     * This function handles the initWorkflow endpoint of the API.
     * The initWorkflow endpoint expects the following json object in the 
@@ -178,7 +190,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleInitWorkflowEndpoint() {
       if (isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);//decode as an associative array
+         $json = $this->getData($_REQUEST['data']);//decode as an associative array
          if($json === null) {
             $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          }
@@ -238,7 +250,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleProcessMysqlSchemaEndpoint() {
       if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);
+         $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             
@@ -272,7 +284,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleGetWorkingStatusEndpoint() {
       if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);
+         $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $data = array(
@@ -301,7 +313,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleGetWorkflowSchemaEndpoint() {
       if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);
+         $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $schema = $workflow->getSchema();
@@ -336,7 +348,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleAlterFieldEndpoint() {
       if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);
+         $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("sheet", $json)
                  && array_key_exists("column", $json)
@@ -378,7 +390,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleAlterSheetEndpoint() {
       if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);
+         $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("sheet", $json)
                  && array_key_exists("original_name", $json['sheet'])
@@ -411,7 +423,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleGetSavePointsEndpoint() {
       if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);
+         $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $savePoints = $workflow->getSavePoints();
@@ -443,7 +455,7 @@ class ODKWorkflowAPI extends Repository {
     */
    private function handleRestoreSavePointEndpoint() {
       if(isset($_REQUEST['data'])) {
-         $json = json_decode($_REQUEST['data'], true);
+         $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("save_point", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
@@ -482,6 +494,9 @@ class ODKWorkflowAPI extends Repository {
    
    private function setStatusCode($code) {
       $this->lH->log(3, $this->TAG, "Setting HTTP status code to '$code'");
+      if($code == ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST) {
+         $this->lH->log(4, $this->TAG, print_r($_REQUEST, true));
+      }
       header($code);
    }
    
