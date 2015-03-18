@@ -13,9 +13,9 @@ class Repository extends DBase{
     * @var Object An object with the database functions and properties. Implemented here to avoid having a million & 1 database connections
     */
    public $Dbase;
-   
+
    /**
-    * @var Object An object that is responsible for all security functions eg (authing user, getting modules user has access to) 
+    * @var Object An object that is responsible for all security functions eg (authing user, getting modules user has access to)
     */
    private $security;
 
@@ -55,7 +55,7 @@ class Repository extends DBase{
          $res = $this->Dbase->ConfirmUser($_GET['u'], $_GET['t']);
          if($res != 0) die('Permission Denied. You do not have permission to access this module');
       }*/
-      
+
       $this->security = new Security($this->Dbase);
    }
 
@@ -63,13 +63,12 @@ class Repository extends DBase{
     * Controls the program execution
     */
    public function TrafficController(){
-      
       if(OPTIONS_REQUESTED_MODULE != 'login' && !Config::$downloadFile){  //when we are normally browsing, check that we have the right credentials
          //we hope that we have still have the right credentials
          $this->Dbase->ManageSession();
          $this->whoisme = "{$_SESSION['surname']} {$_SESSION['onames']}, {$_SESSION['user_level']}";
       }
-      
+
       if(!Config::$downloadFile && ($this->Dbase->session['error'] || $this->Dbase->session['timeout'])){
          if(OPTIONS_REQUEST_TYPE == 'normal'){
             $this->LoginPage($this->Dbase->session['message'], $_SESSION['username']);
@@ -77,14 +76,15 @@ class Repository extends DBase{
          }
          elseif(OPTIONS_REQUEST_TYPE == 'ajax') die('-1' . $this->Dbase->session['message']);
       }
-      
+
       //allow access to open access module
       $openAccess = $this->security->isModuleOpenAccess(OPTIONS_REQUESTED_MODULE);
-      
+      $this->Dbase->CreateLogEntry("Open access = ".$openAccess, "info");
+
       if($openAccess == 0){//the requested module is under open access
          if(OPTIONS_REQUESTED_MODULE == 'samples_vis'){
             require_once 'mod_visualize_samples.php';
-            $visSamples = new VisualizeSamples($this->Dbase); 
+            $visSamples = new VisualizeSamples($this->Dbase);
             $visSamples->trafficController();
          }
          else if(OPTIONS_REQUESTED_MODULE == 'repository_3d'){
@@ -109,9 +109,8 @@ class Repository extends DBase{
             return;
          }
       }
-      
-      //Check if user has access to the requested module
 
+      //Check if user has access to the requested module
       if(OPTIONS_REQUEST_TYPE == 'normal' && !in_array(OPTIONS_REQUESTED_MODULE, array('logout', 'login')) ) $this->WhoIsMe();
       //Set the default footer links
       $this->footerLinks = "";
@@ -122,7 +121,7 @@ class Repository extends DBase{
       else{//other modules require permission
          //check if user has access to the context
          $access = $this->security->isUserAllowed(OPTIONS_REQUESTED_MODULE, OPTIONS_REQUESTED_SUB_MODULE, OPTIONS_REQUESTED_ACTION);
-         
+
          if($access == 0){//user has access
             if(OPTIONS_REQUESTED_MODULE == 'ln2_requests'){
                require_once 'mod_ln2_requests.php';
@@ -248,23 +247,23 @@ class Repository extends DBase{
     * Creates the home page for the users after they login
     */
    public function RepositoryHomePage($addinfo = ''){
-      
+
       //get modules that user's groups have access to
       $modules = $this->security->getClosedAccessModules(false);
       if($modules == null){
          $addinfo .= " Unable to get the subsystems you have access to";
       }
-      
+
       $addinfo = ($addinfo == '') ? '' : "<div id='addinfo'>$addinfo</div>" ;
       echo $addinfo;
-      
+
       if($modules != null){
 ?>
 <div class="user_options">
    <ul>
 <?php
          $moduleURIs = array_keys($modules);
-         
+
          foreach($moduleURIs as $currURI){
             echo "<li><a href='?page=".$currURI."'>".$modules[$currURI]."</a></li>";
          }
@@ -280,10 +279,10 @@ class Repository extends DBase{
     */
    private function ValidateUser(){
       $this->Dbase->CreateLogEntry("About to auth user", "debug");
-      
+
       $username = $_POST['username'];
       $encryptedPW = $_POST['password'];
-      
+
       $authRes = $this->security->authUser($username, $encryptedPW);
       /*
        * authRes can be:
@@ -293,8 +292,7 @@ class Repository extends DBase{
        *    3 - user does not exist
        *    4 - accout disabled
        */
-      
-      $this->Dbase->CreateLogEntry("Auth results = ".$authRes, "debug");
+      $this->Dbase->CreateLogEntry("Auth results = ".$authRes, "info");
       if($authRes == 0){
          $this->WhoIsMe();
          $this->RepositoryHomePage();
@@ -332,11 +330,11 @@ class Repository extends DBase{
       if (OPTIONS_REQUEST_TYPE == 'ajax') return;
       //display the credentials of the person who is logged in
       $mainUserGroup = "Unspecified Group";
-      
+
       if(is_array($_SESSION['user_type']) && count($_SESSION['user_type']) > 0){
          $mainUserGroup = $_SESSION['user_type'][0];
       }
-      
+
       Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$mainUserGroup}";
       echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='?page=own_account'>My Account</a> | <a href='?page=logout'>Logout</a>";
 
