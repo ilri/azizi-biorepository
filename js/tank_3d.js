@@ -21,6 +21,14 @@ function Tank3D(sector) {
    window.r3d.t3d = this;
    window.r3d.t3d.sector = sector;
    
+   //if displaying all boxes in a sector then reset the tmp mta boxes and add boxes one by one again
+   if(window.r3d.t3d.sector.isTank == true){
+      window.r3d.resetMTABoxes();
+   }
+   
+   jQuery(window.r3d.mtaBoxListDiv).hide();
+   //window.r3d.tmp.mta_box = undefined;//TODO:might not work
+   
    //create global variables
    
    //init event listener
@@ -150,6 +158,9 @@ Tank3D.prototype.initScene = function(){
  * @returns {undefined}
  */
 Tank3D.prototype.clear = function(){
+   //window.r3d.tmp.mta_box = undefined;
+   jQuery(window.r3d.mtaBoxListDiv).hide();
+   
    jQuery(window.r3d.statsBox).hide();
    jQuery(window.r3d.virtBox).hide();
    
@@ -185,6 +196,11 @@ Tank3D.prototype.clear = function(){
       }
       jQuery(window.r3d.zoomOutButton).html("Zoom Out");
       window.r3d.t3d.meshes = new Array();
+      
+      /*if(window.r3d.t3d.sector.isTank == true){//if we are in tank mode, reset tmp mta boxes
+         window.r3d.tmp.mta_boxes = new Array();
+         console.log("clearing tmp MTA boxes from reset function");
+      }*/
       
       if(!window.r3d.t3d.sector.isTank) {//if zooming out from search results, just zoom out completely
          //console.log("called from tank3d");
@@ -329,6 +345,15 @@ Tank3D.prototype.createBox = function(towerMesh, boxData){
    boxMesh.position.z = z;
    boxMesh.rotation.x = (-Math.PI);
    window.r3d.scene.add(boxMesh);
+   //console.log(boxData);
+   
+   //add box to mta_boxes
+   if(window.r3d.t3d.sector.isTank == true){//only push boxes if we are in tank mode and not search mode
+      window.r3d.addToMTABoxes(boxData.box_id, boxData.box_name);
+      
+      console.log(".");
+   }
+   
    window.r3d.t3d.meshes.push({type:"box", mesh:boxMesh, data:boxData});
 };
 
@@ -422,8 +447,14 @@ Tank3D.prototype.onRackClicked = function(raycaster){
             }
          }
       }
+      
+      if(typeof window.r3d.tmp.mta_box == 'undefined') window.r3d.tmp.mta_box = new Array();
+      window.r3d.tmp.mta_box.push({id: window.r3d.t3d.meshes[clickedBoxes[0]].data.box_id, name: window.r3d.t3d.meshes[clickedBoxes[0]].data.box_name});
+      
       window.r3d.moveCameraToObject(window.r3d.t3d.meshes[clickedBoxes[0]].mesh, false, null, 3.2);
       window.r3d.t3d.showBoxStatistics(window.r3d.t3d.meshes[clickedBoxes[0]].data);
+      
+      
    }
    else{
       //console.log("More than one box clicked");

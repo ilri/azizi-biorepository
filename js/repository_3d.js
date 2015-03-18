@@ -14,6 +14,7 @@ function Repository3D(inTemplate) {
    window.r3d.loadingBox = document.getElementById("loading_box");
    window.r3d.loadingBox.style.left = (WIDTH/2 - (jQuery(window.r3d.loadingBox).width()/2));
    window.r3d.loadingBox.style.top = (HEIGHT/2 - (jQuery(window.r3d.loadingBox).height()/2));
+   jQuery(window.r3d.loadingBox).css("z-index", 6);
    
    //set up global variables
    window.r3d.serverURI = "mod_ajax.php?page=repository_3d&do=ajax&action=";
@@ -25,7 +26,14 @@ function Repository3D(inTemplate) {
    window.r3d.floorWidth = 15;
    window.r3d.floorLength = 20;
    window.r3d.tmp = {};
+   window.r3d.mtaFinalList = new Array();//final list of boxes to be submitted for an MTA
    
+   window.r3d.tmp['mta_boxes'] = new Array();//an array that will store IDs of boxes that are going to be considered when filling in the MTA
+   window.r3d.tmp['mta_box'] = undefined;//object to store details of a box if said box is zeroed in by the user
+   
+   /*
+    * window.r3d.tmp['mta_boxes'] modified when user either searches and boxes are gotten or narrowes down to a specific set of boxes
+    */
    
    //create the scene
    window.r3d.scene = new THREE.Scene();
@@ -48,6 +56,7 @@ function Repository3D(inTemplate) {
    window.r3d.virtBox.style.top = ((HEIGHT * 0.6 ) - jQuery(window.r3d.virtBox).height() - 30) + "px";
    window.r3d.tooltip = document.getElementById("sample_ttip");
    
+   //init the small zoom in and out buttons
    window.r3d.zoomOut = document.getElementById("zoom_out");
    window.r3d.zoomOut.style.left = (WIDTH - 80) + 'px';
    window.r3d.zoomOut.style.top = 90 + 'px';
@@ -56,6 +65,29 @@ function Repository3D(inTemplate) {
    window.r3d.zoomIn.style.left = (WIDTH - 130) + 'px';
    window.r3d.zoomIn.style.top = 90 + 'px';
    
+   //initialize views to be used for handling mta
+   window.r3d.addBoxMTAButton = document.getElementById("add_box_mta_btn");
+   window.r3d.addBoxMTAButton.style.left = jQuery(window.r3d.zoomOutButton).position().left - (50 + jQuery(window.r3d.addBoxMTAButton).width())+"px";
+   jQuery(window.r3d.addBoxMTAButton).hide();
+   
+   window.r3d.mtaDialog = document.getElementById("mta_dialog");
+   window.r3d.mtaDialog.style.left = (window.innerWidth/2 - jQuery(window.r3d.mtaDialog).width()/2)+ "px";
+   window.r3d.mtaDialog.style.top = (window.innerHeight/2 - jQuery(window.r3d.mtaDialog).height()/2)+ "px";
+
+   window.r3d.mtaDialogToggle = document.getElementById("mta_dialog_toggle");
+   window.r3d.mtaButton = document.getElementById('mta_btn');
+   window.r3d.mtaButton.style.left = jQuery(window.r3d.zoomOutButton).position().left - (jQuery(window.r3d.mtaButton).width() + 100 + jQuery(window.r3d.addBoxMTAButton).width())+"px";
+   jQuery(window.r3d.mtaButton).hide();
+   //window.r3d.mtaButton.style.top = 125+'px';
+   window.r3d.mtaSubmitButton = document.getElementById('mta_submit_btn');
+   window.r3d.mtaBoxSubmitButton = document.getElementById('mta_box_submit_btn');//button in confirm boxes dialog
+   
+   window.r3d.mtaBoxListDiv = document.getElementById("mta_box_list_div");
+   window.r3d.mtaBoxListDiv.style.left = (window.innerWidth/2 - jQuery(window.r3d.mtaBoxListDiv).width()/2) + 'px';
+   window.r3d.mtaBoxListDiv.style.top = (window.innerHeight/2 - jQuery(window.r3d.mtaBoxListDiv).height()/2) + 'px';
+   window.r3d.mtaBoxList = document.getElementById("mta_box_list");
+   window.r3d.mtaBoxListToggle = document.getElementById("mta_box_list_toggle");
+
    window.r3d.loadingBox = document.getElementById("loading_box");
    window.r3d.loadingBox.style.left = (WIDTH/2 - (jQuery(window.r3d.loadingBox).width()/2));
    window.r3d.loadingBox.style.top = (HEIGHT/2 - (jQuery(window.r3d.loadingBox).height()/2));
@@ -101,6 +133,8 @@ function Repository3D(inTemplate) {
          jQuery(window.r3d.searchBox).val('');
          jQuery(window.r3d.searchCanvas).empty();
          jQuery(window.r3d.clearSearch).hide();
+         
+         window.r3d.resetMTABoxes();
       });
       jQuery(window.r3d.searchBox).keyup(window.r3d.onSearchChange);
 
@@ -127,6 +161,43 @@ function Repository3D(inTemplate) {
          //console.log("zoom button clicked");
          window.r3d.handleZoomButtonEvent();
       }, false);
+      
+      jQuery(window.r3d.mtaButton).click(function(){
+         window.r3d.populateMTABoxList();
+         jQuery(window.r3d.mtaBoxListDiv).show();
+      });
+      
+      jQuery(window.r3d.addBoxMTAButton).click(function(){
+         jQuery(window.r3d.mtaButton).show();
+         //check if user wants to add a single box or multiple boxes
+         window.r3d.mtaFinalList = new Array();
+         
+         if(typeof window.r3d.tmp.mta_box == 'undefined'){//user probably wants to add a bunch of boxes
+            for(var i = 0; i < window.r3d.tmp.mta_boxes.length; i++){//add the to mtaFinalList one by one to prevent js from creating pointer
+               window.r3d.mtaFinalList.push({id:window.r3d.tmp.mta_boxes[i].id, name:window.r3d.tmp.mta_boxes[i].name});
+            }
+         }
+         else {//use boxes that where individually picked out and added to the MTA list
+            for(var i = 0; i < window.r3d.tmp.mta_box.length; i++){
+               window.r3d.mtaFinalList.push({id:window.r3d.tmp.mta_box[i].id, name:window.r3d.tmp.mta_box[i].name});
+            }
+         }
+      });
+      
+      jQuery(window.r3d.mtaBoxListToggle).click(function(){
+         console.log("click");
+         jQuery(window.r3d.mtaBoxListDiv).hide();
+      });
+      
+      jQuery(window.r3d.mtaBoxSubmitButton).click(function(){
+         jQuery(window.r3d.mtaDialog).show();
+      });
+      jQuery(window.r3d.mtaDialogToggle).click(function(){
+         jQuery(window.r3d.mtaDialog).hide();
+      });
+      jQuery(window.r3d.mtaSubmitButton).click(function(){
+         window.r3d.processMTARequest();
+      });
    }
    else {
       window.alert("A problem occurred while trying to initializing the rendering engine. Try accessing this site using a different browser.");
@@ -408,6 +479,14 @@ Repository3D.prototype.onDocumentResize = function() {
    window.r3d.statsBox.style.top = (HEIGHT * 0.6 ) + "px";
    window.r3d.virtBox.style.left = (WIDTH -  jQuery(window.r3d.virtBox).width() - 100) + "px";
    window.r3d.virtBox.style.top = ((HEIGHT * 0.6 ) - jQuery(window.r3d.virtBox).height() - 30) + "px";
+   window.r3d.addBoxMTAButton.style.left = jQuery(window.r3d.zoomOutButton).position().left - (50 + jQuery(window.r3d.addBoxMTAButton).width())+"px";
+   window.r3d.mtaButton.style.left = jQuery(window.r3d.zoomOutButton).position().left - (jQuery(window.r3d.mtaButton).width() + 100 + jQuery(window.r3d.addBoxMTAButton).width())+"px";
+   
+   window.r3d.mtaBoxListDiv.style.left = (window.innerWidth/2 - jQuery(window.r3d.mtaBoxListDiv).width()/2) + 'px';
+   window.r3d.mtaBoxListDiv.style.top = (window.innerHeight/2 - jQuery(window.r3d.mtaBoxListDiv).height()/2) + 'px';
+   
+   window.r3d.mtaDialog.style.left = (window.innerWidth/2 - jQuery(window.r3d.mtaDialog).width()/2)+ "px";
+   window.r3d.mtaDialog.style.top = (window.innerHeight/2 - jQuery(window.r3d.mtaDialog).height()/2)+ "px";
 };
 
 /**
@@ -981,6 +1060,7 @@ Repository3D.prototype.onSearchChange = function(){
    else {
       jQuery(window.r3d.searchCanvas).empty();
       jQuery(window.r3d.clearSearch).hide();
+      window.r3d.resetMTABoxes();
    }
 };
 
@@ -1069,6 +1149,8 @@ Repository3D.prototype.showSearchResults = function(results) {
    //console.log("showSearchResults called");
    
    var groups = window.r3d.groupSearchResults(results);
+   
+   window.r3d.updateMTABoxes(groups);
    //console.log(groups);
    
    jQuery(window.r3d.searchCanvas).empty();
@@ -1134,6 +1216,10 @@ Repository3D.prototype.showSearchResults = function(results) {
                      window.r3d.t3d.clear();
                   }
                   
+                  //set MTA boxes to all the searchec boxes
+                  window.r3d.updateMTABoxes(groups);
+                  
+                  //render all the searched boxes
                   var tank3D = new Tank3D({isTank: false, data:groups});
                }
                else {//hide all other boxes
@@ -1141,6 +1227,10 @@ Repository3D.prototype.showSearchResults = function(results) {
                      window.r3d.t3d.clear();
                   }
                   
+                  //set MTA boxes to only the ones in the clicked card
+                  window.r3d.updateMTABoxes([groups[groupIndex]]);
+                  
+                  //render boxes from the clicked group/card
                   var tank3D = new Tank3D({isTank: false, data:[groups[groupIndex]]});
                }
            }
@@ -1719,4 +1809,205 @@ Repository3D.prototype.isZoomedOutCompletely = function () {
       return true;
    }
    return false;
+};
+
+/**
+ * This function updates the array box IDs in window.r3d.tmp['mta_boxes']
+ * 
+ * @param {Array} groupedResults Object generated by groupSearchResults containing boxes to be considered in when creating the MTA
+ * 
+ * @returns {undefined}
+ */
+Repository3D.prototype.updateMTABoxes = function (groupedResults) {
+   console.log("update MTA boxes called");
+   window.r3d.resetMTABoxes();
+   
+   var boxIDs = new Array();
+   for(var i = 0; i < groupedResults.length; i++){
+      if(groupedResults[i].type == 'box'){
+         var groupBoxes = groupedResults[i].extra;
+         for(var j = 0; j < groupBoxes.length; j++){
+            var boxIndex = groupBoxes[j].index;//an array of parent indexes in the window.r3d.tankData object
+            var boxID = window.r3d.tankData.data[boxIndex[0]].sectors[boxIndex[1]].racks[boxIndex[2]].boxes[boxIndex[3]].box_id;
+            var boxName = window.r3d.tankData.data[boxIndex[0]].sectors[boxIndex[1]].racks[boxIndex[2]].boxes[boxIndex[3]].box_name;
+            window.r3d.addToMTABoxes(boxID, boxName);
+         }
+      }
+   }
+};
+
+/**
+ * This function adds a box to the tmp MTA box list
+ * 
+ * @param {type} boxId
+ * @param {type} boxName
+ * @returns {undefined}
+ */
+Repository3D.prototype.addToMTABoxes = function(boxId, boxName){
+   //make sure the MTA box list is hidded while adding boxes
+   if(jQuery(window.r3d.mtaBoxListDiv).is(":visible")){
+      jQuery(window.r3d.mtaBoxListDiv).hide();
+   }
+   
+   if(!jQuery(window.r3d.addBoxMTAButton).is(":visible")){
+      console.log("showing MTA button");
+      
+      jQuery(window.r3d.addBoxMTAButton).show();
+   }
+   
+   window.r3d.tmp.mta_boxes.push({id: boxId, name:boxName});
+};
+
+
+/**
+ * This function resets the tmp MTA boxes to a blank array and does the necesary events related to the MTA array being empty
+ * @returns {undefined}
+ */
+Repository3D.prototype.resetMTABoxes = function() {
+   if(jQuery(window.r3d.mtaBoxListDiv).is(":visible")){
+      jQuery(window.r3d.mtaBoxListDiv).hide();
+   }
+   
+   console.log("reset MTA boxes called");
+   
+   window.r3d.tmp['mta_boxes'] = new Array();
+   
+   if(typeof window.r3d.tmp.mta_box == "undefined") jQuery(window.r3d.mtaButton).hide();//only hide the MTA button if user has not already started adding individual boxes to the MTA
+   
+   jQuery(window.r3d.addBoxMTAButton).hide();
+   
+};
+
+/**
+ * This function populates the list of boxes that can be added to the MTA
+ * @returns {undefined}
+ */
+Repository3D.prototype.populateMTABoxList = function(){
+   jQuery(window.r3d.mtaBoxList).empty();
+   for(var i = 0; i < window.r3d.mtaFinalList.length; i++){
+      jQuery(window.r3d.mtaBoxList).append("<li><input type='checkbox' id='"+window.r3d.mtaFinalList[i].id+"' checked='checked'/>"+window.r3d.mtaFinalList[i].name+"<br /></li>");
+   }
+   
+   window.r3d.mtaBoxListDiv.style.left = (window.innerWidth/2 - jQuery(window.r3d.mtaBoxListDiv).width()/2) + 'px';
+   window.r3d.mtaBoxListDiv.style.top = (window.innerHeight/2 - jQuery(window.r3d.mtaBoxListDiv).height()/2) + 'px';
+};
+
+/**
+ * This function validates fields in an MTA request
+ * @returns {Boolean} true if MTA request is valid
+ */
+Repository3D.prototype.validateMTARequest = function(){
+   var emailRegex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+   
+   if($("#mta_pi_name").val().length == 0){
+      window.alert("Please enter the Principal Investigator's name");
+      $("#mta_pi_name").focus();
+      return false;
+   }
+   else if($("#mta_pi_name").val().split(/\s+/).length < 2){
+      window.alert("Please provide the Principal Investigator's two names");
+      $("#mta_pi_name").focus();
+      return false;
+   }
+   if($("#mta_pi_email").val().length == 0){
+      window.alert("Please enter the Principal Investigator's email address");
+      $("#mta_pi_email").focus();
+      return false;
+   }
+   else if(emailRegex.test($("#mta_pi_email").val()) != true){
+      window.alert("Email address provided is wrong");
+      $("#mta_pi_email").focus();
+      return false;
+   }
+   if($("#mta_research_title").val().length == 0){
+      window.alert("Please provide the research title");
+      $("#mta_research_title").focus();
+      return false;
+   }
+   if($("#mta_org").val().length == 0){
+      window.alert("Please provide your Organisation's name");
+      $("#mta_org").focus();
+      return false;
+   }
+   if($("#mta_material").val().length == 0){
+      window.alert("Please enter the type of sample material");
+      $("#mta_material").focus();
+      return false;
+   }
+   if($("#mta_format").val().length == 0){
+      window.alert("Please provide a format");
+      $("#mta_format").focus();
+      return false;
+   }
+   if($("#mta_assoc_data").val().length == 0){
+      window.alert("What associated data do you need?");
+      $("#mta_assoc_data").focus();
+      return false;
+   }
+   
+   var boxIDs = new Array();
+   $('#mta_box_list input:checked').each(function() {
+      boxIDs.push($(this).attr('id'));
+   });
+   
+   if(boxIDs.length == 0){
+      window.alert("Please select at least one box for the MTA");
+      return false;
+   }
+   
+   return true;
+};
+
+Repository3D.prototype.processMTARequest = function(){
+   if(window.r3d.validateMTARequest()){
+      var boxIDs = "";
+      $('#mta_box_list input:checked').each(function() {
+         if(boxIDs.length > 0){
+            boxIDs = boxIDs + "," + $(this).attr('id');
+         }
+         else {
+            boxIDs = $(this).attr('id');
+         }
+      });
+      
+      $("#mta_submit_btn").attr("disabled", true);
+      jQuery(window.r3d.loadingBox).show();
+      jQuery.ajax({
+         url:'mod_ajax.php?page=mta&do=process_mta',
+         method:'POST',
+         async:true,
+         data:{
+            pi_name:$("#mta_pi_name").val(),
+            pi_email:$("#mta_pi_email").val(),
+            research_title:$("#mta_research_title").val(),
+            org:$("#mta_org").val(),
+            material:$("#mta_material").val(),
+            format:$("#mta_format").val(),
+            storage_safety:$("#mta_storage_safety").val(),
+            assoc_data:$("#mta_assoc_data").val(),
+            box_ids:boxIDs
+         },
+         success:function(data){
+            console.log(data);
+            var json = jQuery.parseJSON(data);
+            if(json.error == false){
+               jQuery(window.r3d.mtaDialog).hide();
+               jQuery(window.r3d.mtaBoxListDiv).hide();
+               window.alert("Your request has been successfully submitted");
+            }
+            else {
+               window.alert(json.error_message);
+            }
+         },
+         error:function(){
+            window.alert("An error occurred while proccessing your request");
+         },
+         complete: function(){
+            jQuery(window.r3d.loadingBox).hide();
+            console.log("complete");
+            $("#mta_submit_btn").removeAttr("disabled");
+         }
+         
+      });
+   }
 };

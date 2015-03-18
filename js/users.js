@@ -24,6 +24,7 @@ function Users(context, pwSettingsS, publicKey){
    
    window.users.pass1 = jQuery("#pass_1");
    window.users.pass2 = jQuery("#pass_2");
+   window.users.email = jQuery("#email");
    window.users.ldap = jQuery("#ldap");
    window.users.ldap.change(function(){
       console.log("value of ldap = "+window.users.ldap.val());
@@ -105,7 +106,19 @@ Users.prototype.validateInput = function() {
          }
       }
    }
-   if($("#ldap").val() == 0){//only check the correctness of the passowrd if user not going to use ldap auth
+   var emailRegex = /.+@.+\.[a-z0-9]+/i;
+   
+   if($("#email").val().length == 0){
+      Notification.show({create:true, hide:true, updateText:false, text:'Please specify an email address', error:true});
+      $("#email").focus();
+      return false;
+   }
+   else if($("#email").val().match(emailRegex) == null){
+      Notification.show({create:true, hide:true, updateText:false, text:'Incorrect email address', error:true});
+      $("#email").focus();
+      return false;
+   }
+   /*if($("#ldap").val() == 0){//only check the correctness of the passowrd if user not going to use ldap auth
       if(window.users.userData == null || (window.users.userData != null && $("#pass_1").val().length > 0)){//if creating a new user or modifying password for an existing user
          if($("#pass_1").val().length === 0){
             Notification.show({create:true, hide:true, updateText:false, text:'Please enter a password', error:true});
@@ -153,7 +166,7 @@ Users.prototype.validateInput = function() {
    else {//user going to use ldap auth, reset passwords to blank
       $("#pass_1").val("");
       $("#pass_2").val("");
-   }
+   }*/
    
    //if you have reached here, then everything is fine
    //set the action post variable

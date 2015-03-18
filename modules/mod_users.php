@@ -97,14 +97,7 @@ class Users {
 <form action="?page=users&do=create_account" method="post" class="form-horizontal user_form">
    <div class="form-group"><label for="sname" class="control-label">Surname: </label><input id="sname" name="sname" type="text" class="form-control" /></div>
    <div class="form-group"><label for="onames" class="control-label">Other Names: </label><input id="onames" name="onames" type="text" class="form-control" /></div>
-   <div class="form-group"><label for="project" class="control-label">Project: </label><select id="project" name="project" class="form-control">
-         <option value=""></option>
-<?php
-   foreach($projects AS $currProject){
-      echo "<option value='".$currProject['id']."'>".$currProject['name']."</option>";
-   }
-?>
-   </select></div>
+   <div class="form-group"><label for="email" class="control-label">Email: </label><input id="email" name="email" type="email" class="form-control" /></div>
    <div class="form-group"><label for="username" class="control-label">Username: </label><input id="username" name="username" type="text" class="form-control" /></div>
    <div class="form-group">
       <label for="ldap" class="control-label">Use LDAP Authentication: </label>
@@ -113,8 +106,16 @@ class Users {
          <option value="1">Yes</option>
       </select>
    </div>
-   <div class="form-group"><label for="pass_1" class="control-label">Password: </label><input id="pass_1" name="pass_1" type="password" class="form-control" /></div>
-   <div class="form-group"><label for="pass_2" class="control-label">Confirm Password: </label><input id="pass_2" name="pass_2" type="password" class="form-control" /></div>
+   <div class="form-group" style="display: none;"><label for="pass_1" class="control-label">Password: </label><input id="pass_1" name="pass_1" type="password" class="form-control" /></div>
+   <div class="form-group" style="display: none;"><label for="pass_2" class="control-label">Confirm Password: </label><input id="pass_2" name="pass_2" type="password" class="form-control" /></div>
+   <div class="form-group"><label for="project" class="control-label">Project: </label><select id="project" name="project" class="form-control">
+         <option value=""></option>
+<?php
+   foreach($projects AS $currProject){
+      echo "<option value='".$currProject['id']."'>".$currProject['name']."</option>";
+   }
+?>
+   </select></div>
    <h4 style="margin-left: 10%;">Groups</h4>
    <div class="form-group"><label for="pass_2" class="control-label">Add to group:</label>
       <select id="group" class="form-control">
@@ -320,7 +321,7 @@ class Users {
          $result = $this->editGroup();
          
          if($result == 0){
-            $addinfo = "Successfully added group";
+            $addinfo = "Successfully updated group";
          }
          else {
             $addinfo = "An error occurred while trying to add group";
@@ -382,7 +383,7 @@ class Users {
       <input type="hidden" id="group_actions" name="group_actions" />
       <input type="hidden" name="action" id="action" />
       <input type="hidden" name="group_id" id="group_id" />
-   <div class="center"><button type="submit" id="create_group_btn" class="btn-primary">Add</button></div>
+   <div class="center"><button type="submit" id="create_group_btn" class="btn-primary">Update</button></div>
 </form>
 <script>
    $('#whoisme .back').html('<a href=\'?page=users\'>Back</a>');//back link
@@ -395,23 +396,51 @@ class Users {
     * This function adds a user into the database
     */
    private function addUser(){
-      
       $groupIDs = explode(",",$_POST['user_groups']);
       
-      $result = $this->security->createUser($_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap']);
+      $email = $_POST['email'];
       
-      if($result == 0){//user successfully added
-         return "User successfully added";
+      $result = $this->security->createUser($_POST['username'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap']);
+      
+      if($result == null || (!is_numeric($result) && strlen($result) > 1)){//probably means the password returned therefore successfully created user
+         $this->sendUserPassword($_POST['onames'], $email, $_POST['username'], $result, $_POST['ldap']);
+         return "User successfully added. Email dispatched to user";
       }
       else {
          return "Something went wrong while trying to add user";
       }
    }
    
+   private function sendUserPassword($oNames, $email, $username, $password, $ldap){
+      $firstName = explode(" ", $oNames);
+      $firstName = $firstName[0];
+      $emailSubject = "Access to ILRI's Biorepository Portal";
+      $emailBody = "Hi ".$firstName.",\nYou have been granted access to ILRI's Biorepository portal.\n";
+      
+      if($ldap == 0){//user logs in using local auth
+         $emailBody .= "Your credentials are as follows:\n\n";
+         $emailBody .= "   Username: ".$username."\n";
+         $emailBody .= "   Password: ".$password."\n\n";
+         $emailBody .= "You can change this password once you log into the system.\n";
+      }
+      else {
+         $emailBody .= "Use your CGIAR username (".$username.") and password to log into the system.\n";
+      }
+      $emailBody .= "The system can be accessed by going to http://azizi.ilri.cgiar.org/repository.\n\n"
+              . "Regards,\n"
+              . "Azizi Biorepository";
+      
+      shell_exec('echo "'.$emailBody.'"|'.Config::$config['mutt_bin'].' -F '.Config::$config['mutt_config'].' -s "'.$emailSubject.'" -- '.$email);
+   }
+   
    private function editUser(){
       $groupIDs = explode(",",$_POST['user_groups']);
       
       return $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap'], $_POST['allowed']);
+   }
+   
+   private function editOwnAccount(){
+      
    }
    
    private function getExistingUsers($encode = true){
@@ -454,7 +483,6 @@ class Users {
     * This function gets data corresponding to a user from the database
     */
    private function getUserData(){
-      $this->Dbase->CreateLogEntry("user id = ".$_GET['id'], "fatal");
       $query = "SELECT id, login, sname, onames, project, allowed, ldap_authentication as ldap"
               . " FROM users"
               . " WHERE id = :id";
@@ -494,7 +522,6 @@ class Users {
               . " WHERE a.group_id = :groupID"
               . " ORDER BY d.uri, c.uri, b.uri";
       
-      $this->Dbase->CreateLogEntry("group id = ".$groupID, "fatal");
       $result = $this->Dbase->ExecuteQuery($query, array("groupID" => $groupID));
       
       if($result == 1){

@@ -25,7 +25,7 @@ class Ln2Requests extends Repository{
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.flexigrid/flexigrid.pack.js' /></script>";
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.ui/js/jquery-ui.min.js' /></script>";
          echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.flexigrid/css/flexigrid.pack.css' />";
-         echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.ui/css//smoothness/jquery-ui.css' />";
+         echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "jquery.ui/css/smoothness/jquery-ui.css' />";
       }
 
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
@@ -33,6 +33,7 @@ class Ln2Requests extends Repository{
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'fetch') $this->fetchRequestHistory ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'setAmountApproved') $this->setAmountApproved ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'getProjects') $this->getProjects ();
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "download_recharge_file") $this->downloadRechargeFile();
    }
 
    /**
@@ -76,6 +77,11 @@ class Ln2Requests extends Repository{
          </div>
       </div>
    </form>
+   <?php
+      /*if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+         echo "<div class='center' style='margin-top:10px;margin-left:700px;margin-bottom:10px;'><button id='recharge_btn' type='button' class='btn btn-primary'>Recharge Liquid Nitrogen</button></div>";
+      }*/
+    ?>
    <div id="past_requests">&nbsp;</div>
 </div>
 <div id="dialog-modal" title="Set the amount approved" style="display: none;">
@@ -138,6 +144,10 @@ class Ln2Requests extends Repository{
       height: 260,
       singleSelect: true
    });
+   
+   /*$("#recharge_btn").click(function(){
+      Ln2Requests.downloadRechargeFile();
+   });*/
 </script>
       <?php
    }
@@ -455,6 +465,126 @@ class Ln2Requests extends Repository{
       $query = "SELECT * FROM ln2_chargecodes";
       $result = $this->Dbase->ExecuteQuery($query);
       return $result;
+   }
+   
+   private function downloadRechargeFile(){
+      //check if user is allowed to do recharges
+      if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {
+         $query = "select b.name as charge_code, a.alt_ccode, count(*) as number_requests, group_concat(a.id) as request_ids, group_concat(distinct a.added_by) as requesters, sum(a.amount_appr) as total_ln2_requested"
+                 . " from ln2_acquisitions as a"
+                 . " left join ln2_chargecodes as b on a.project_id = b.id"
+                 . " where a.amount_appr is not null and a.rc_timestamp is null"
+                 . " group by a.project_id, a.alt_ccode";
+
+          $result = $this->Dbase->ExecuteQuery($query);
+          $price = $this->getNitrogenPrice();
+          if(is_array($result)){
+             for($i = 0; $i < count($result); $i++){
+                $result[$i]['price'] = $price;
+                $result[$i]['total_cost'] = $price * $result[$i]['total_ln2_requested'];
+                
+                if($result[$i]['charge_code'] == null){
+                   $result[$i]['charge_code'] = $result[$i]['alt_ccode'];
+                }
+                unset($result[$i]['alt_ccode']);
+                
+                $requestIDs = $result[$i]['request_ids'];
+                $query = "update ln2_acquisitions"
+                        . " set rc_timestamp = now(), rc_charge_code = :charge_code, rc_price = :price where id in(:ids)";
+                $this->Dbase->ExecuteQuery($query, array("charge_code" => $result[$i]['charge_code'], "price" => $result[$i]['price'], "ids" => $requestIDs));
+             }
+
+             $fileName = "ln2_recharges_".date("Y_m_d").".csv";
+
+             if(count($result) > 0){
+                $headings = array(
+                    "charge_code" => "Charge Code",
+                    "number_requests" => "No. LN2 Requests",
+                    "request_ids" => "Request IDs",
+                    "requesters" => "Requesters",
+                    "total_ln2_requested" => "Total LN2 Requested (Litres)",
+                    "price" => "Price per Liter",
+                    "total_cost" => "Total Cost"
+                );
+                $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
+             }
+             else {
+                $csv = "No recharges for liquid nitorgen found";
+             }
+
+             file_put_contents("/tmp/".$fileName, $csv);
+             header('Content-type: document');
+             header('Content-Disposition: attachment; filename='. $fileName);
+             header("Expires: 0"); 
+             header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+             header("Content-length: " . filesize("/tmp/".$fileName));
+             header('Content-Transfer-Encoding: binary');
+             header('Pragma: public');
+             //header('Content-Transfer-Encoding: binary');
+             ob_clean();
+             flush();
+             readfile("/tmp/" . $fileName);
+
+             if(count($result) > 0){//if we actually have at least one item to recharge
+                $emailSubject = "Recharging Liquid Nitrogen";
+                $emailMessage = "Find attached a spreadsheet containing recharges made for liquid nitrogen.";
+                $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailMessage, "/tmp/".$fileName);
+             }
+             else{
+                $emailSubject = "Recharging Liquid Nitrogen";
+                $emailMessage = "No record of Liquid Nitrogen purchase found that can be recharged.";
+                $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailMessage);
+             }
+
+             unlink("/tmp/" . $fileName);
+
+          }
+          else {
+             $this->Dbase->CreateLogEntry("An error occurred while trying to get liquid nitrogen requests for recharging. Returning nothing to user","fatal");
+          }
+      }
+   }
+   
+   /**
+    * This function generates a csv string from a two dimensional associative array
+    * 
+    * @param type $array            The two dimensional array to be used to generate the csv string
+    * @param type $headingsFromKeys Set to true if you want to get headings from the keys in the associative array
+    * @return string                Comma seperated string corresponding to the array. Will be empty if array is empty or something goes wrong
+    */
+   private function generateCSV($array, $headingsFromKeys = true){
+      $csv = "";
+      if(count($array) > 0){
+         $colNum = count($array[0]);
+         
+         if($headingsFromKeys === true){
+            $keys = array_keys($array[0]);
+            $csv .= "\"".implode("\",\"", $keys)."\"\n";
+         }
+         
+         foreach($array as $currRow){
+            $csv .= "\"".implode("\",\"", $currRow)."\"\n";
+         }
+      }
+      
+      return $csv;
+   }
+   
+   /**
+    * This function sends emails using the biorepository's email address. Duh
+    * 
+    * @param type $address Email address of the recipient
+    * @param type $subject Email's subject
+    * @param type $message Email's body/message
+    * @param type $file    Attachements for the email. Set to null if none
+    */
+   private function sendRechargeEmail($address, $subject, $message, $file = null){
+      if($file != null){
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
+      }
+      else {
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
+      }
    }
 }
 ?>

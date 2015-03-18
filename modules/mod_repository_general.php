@@ -51,10 +51,10 @@ class Repository extends DBase{
       $this->Dbase->InitializeLogs();
 
       //if we are looking to download a file, log in first
-      if(Config::$downloadFile){
+      /*if(Config::$downloadFile){
          $res = $this->Dbase->ConfirmUser($_GET['u'], $_GET['t']);
          if($res != 0) die('Permission Denied. You do not have permission to access this module');
-      }
+      }*/
 
       $this->security = new Security($this->Dbase);
    }
@@ -79,7 +79,6 @@ class Repository extends DBase{
 
       //allow access to open access module
       $openAccess = $this->security->isModuleOpenAccess(OPTIONS_REQUESTED_MODULE);
-
       $this->Dbase->CreateLogEntry("Open access = ".$openAccess, "info");
 
       if($openAccess == 0){//the requested module is under open access
@@ -92,6 +91,11 @@ class Repository extends DBase{
             require_once 'mod_repository_3d.php';
             $repository3D = new Repository3D($this->Dbase);
             $repository3D->TrafficController();
+         }
+         else if(OPTIONS_REQUESTED_MODULE == "mta"){
+            require_once 'mod_mta.php';
+            $mta = new MTA($this->Dbase);
+            $mta->trafficController();
          }
          return;//do not show the user any more links
       }
@@ -164,6 +168,16 @@ class Repository extends DBase{
                $users = new Users($this->Dbase);
                $users->trafficController();
             }
+            else if(OPTIONS_REQUESTED_MODULE == 'own_account'){
+               require_once 'mod_account.php';
+               $account = new Account($this->Dbase);
+               $account->trafficController();
+            }
+            else if(OPTIONS_REQUESTED_MODULE == 'recharges'){
+               require_once 'mod_recharges.php';
+               $recharges = new Recharges($this->Dbase);
+               $recharges->trafficController();
+            }
             else{
                $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
                $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
@@ -235,7 +249,7 @@ class Repository extends DBase{
    public function RepositoryHomePage($addinfo = ''){
 
       //get modules that user's groups have access to
-      $modules = $this->security->getClosedAccessModules();
+      $modules = $this->security->getClosedAccessModules(false);
       if($modules == null){
          $addinfo .= " Unable to get the subsystems you have access to";
       }
@@ -278,7 +292,6 @@ class Repository extends DBase{
        *    3 - user does not exist
        *    4 - accout disabled
        */
-
       $this->Dbase->CreateLogEntry("Auth results = ".$authRes, "info");
       if($authRes == 0){
          $this->WhoIsMe();
@@ -323,7 +336,7 @@ class Repository extends DBase{
       }
 
       Config::$curUser = "{$_SESSION['surname']} {$_SESSION['onames']}, {$mainUserGroup}";
-      echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='javascript:;'>My Account</a> | <a href='?page=logout'>Logout</a>";
+      echo "<div id='whoisme'><span class='back'>&nbsp;</span><span class='user'>" . Config::$curUser . " | <a href='?page=own_account'>My Account</a> | <a href='?page=logout'>Logout</a>";
 
       //show the howto link for LN2 engineers
       if(OPTIONS_REQUESTED_MODULE === "ln2_transfers" ){

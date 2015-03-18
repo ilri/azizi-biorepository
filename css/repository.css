@@ -284,6 +284,11 @@ body {
     margin: 1px 10px 1px 0px;
 }
 
+#recharge_projects{
+   border-radius:2px;
+   box-shadow:0 1px 2px #aaa;
+}
+
 #whoisme .user{ float: right; margin-right: 10px; }
 #whoisme .back{ padding-left: 10px; text-align: left; }
 
@@ -321,15 +326,16 @@ body {
 #return_div select, #return_div input {width: 200px; margin: 5px 2px;}
 #return_div input, #search_div input, #edit_div input {height: 30px;}
 #search_div input {margin-top: 10px;}
-#search_div .search_criteria {display: inline-block;}
+#search_div .search_criteria, #recharge_div {display: inline-block;}
 #search_div .search_criteria select{width: 150px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
 #box_location .left-align{margin: 5px 2px;}
 #box_location .loc_divs{width: 250px;} 
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
+.jqx-grid-column-header, #statusbarspace_recharge_table, #statusbarln2_recharge_table, #statusbarlabels_recharge_table, #statusbarinventory_recharge_table{z-index:0!important;}
 
-#tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes {margin: 5px;}
+#tank_boxes, #retrieved_boxes, #returned_boxes, #deleted_boxes, #searched_boxes, #recharge_details_div {margin: 5px;}
 
 #inventory_form .left-align {width: 240px;}
 #inventory_form {margin: 20px;}
@@ -338,9 +344,10 @@ body {
 #odk_table input { height: 25px; }
 #odk_heading, .mod_user_heading { text-align: center; margin: 10px 0px 0px 0px; }
 .center{ text-align: center; clear: both;}
+.right{ text-align: right; clear: both;}
 .odk_parser div, .user_form div{ margin: 8px 0px; }
 .odk_parser label, .user_form label{ width: 350px !important; }
-.odk_parser input[type="text"], .odk_parser select, .odk_parser input[type="file"], .user_form input[type="text"], .user_form select, .user_form input[type="password"]{ height: 25px !important; margin-left: 7px !important; }
+.odk_parser input[type="text"], .odk_parser select, .odk_parser input[type="file"], .user_form input[type="text"], .user_form select, .user_form input[type="password"], .user_form input[type="email"]{ height: 25px !important; margin-left: 7px !important; }
 #parseType, #dwnldImages{width: 170px; height: 28px !important; }
 .issue_inv div{ margin: 8px 0px; }
 .issue_inv label{ width: 350px !important; }
@@ -355,9 +362,31 @@ ul.ui-autocomplete {z-index: 1000!important; }
 
 /*Repository 3d specific styles*/
 #repo_container {position: absolute; left:0px; top:0px; width: 100%; height: 100%; font-family: 'Roboto', sans-serif;}
-#reset_button {cursor: pointer; position: absolute; left:0px; top:10px; width: 100px; height: 35px; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; padding-top: 10px; color: #ffffff; border: 1px solid; border-radius: 25px;font-family: 'Roboto', sans-serif;}
+#reset_button {cursor: pointer; position: absolute; left:0px; top:10px; width: 100px; height: 45px; line-height: 45px; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; color: #ffffff; border: 1px solid; border-radius: 25px;font-family: 'Roboto', sans-serif;}
+#mta_btn {cursor: pointer; position: absolute; left:0px; top:10px; width: 100px; height: 45px; line-height: 45px; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; color: #ffffff; border: 1px solid; border-radius: 25px;font-family: 'Roboto', sans-serif;}
+#add_box_mta_btn {cursor: pointer; position: absolute; left:0px; top:10px; width: 100px; height: 45px; line-height: 45px; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; color: #ffffff; border: 1px solid; border-radius: 25px;font-family: 'Roboto', sans-serif;}
 .zoom_button {cursor: pointer; position: absolute; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; width: 35px; height: 35px; line-height: 35px; color: #ffffff; border: 1px solid;
                border-radius: 50%; font-size: 25px; font-weight: bolder;  -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+
+#mta_box_list_div{
+   width: auto;
+   height: auto;
+   position: absolute;
+   display: none;
+   background: white;
+   padding: 1rem;
+   border-radius:2px;
+   box-shadow:0 1px 2px #aaa;
+   font-size: 15px;
+}
+
+#mta_box_list{
+   width: 200px;
+   height: auto;
+   max-height: 200px;
+   overflow-y: scroll;
+   list-style-type: none;
+}
 #loading_box {
    cursor: pointer;
    position: absolute;
@@ -851,7 +880,8 @@ ul.ui-autocomplete {z-index: 1000!important; }
    box-shadow:0 1px 2px #aaa;
 }
 
-#email_dialog {
+#email_dialog, #mta_dialog, #instructions_dialog, .repo_dialog {
+   position: fixed !important;
    display: none;
    z-index: 3;
    width: 30rem;
@@ -861,14 +891,15 @@ ul.ui-autocomplete {z-index: 1000!important; }
    padding: 1rem;
    border-radius:2px;
    box-shadow:0 1px 2px #aaa;
+   font-size: 15px;
 }
 
-#email_dialog.a:link {
+#email_dialog.a:link, #mta_dialog.a:link, .repo_dialog.a:link {
    color: #5677fc;
    text-decoration: none;
 }
 
-#email_dialog_toggle {
+#email_dialog_toggle, #mta_dialog_toggle, #instructions_dialog_toggle, #mta_box_list_toggle, .repo_dialog_close {
    cursor: pointer;
    width: 1.2rem;
    height: 1.2rem;
@@ -884,7 +915,6 @@ ul.ui-autocomplete {z-index: 1000!important; }
    display: inline-block;
    width: 15rem;
    height: 100%;
-   line-height: 1.7rem;
    position: relative;
    font-size: 15px;
    top: 0%;

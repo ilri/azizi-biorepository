@@ -29,6 +29,7 @@ class BoxStorage extends Repository{
        *    - return_box
        *       - submit_return
        *    - search_box
+       *    - recharge_space
        *    - delete_box
        *    - ajax
        *       - get_tank_details
@@ -41,6 +42,8 @@ class BoxStorage extends Repository{
        *       - fetch_deleted_boxes
        *       - fetch_sample_types
        *       - print_added_boxes
+       *       - recharge_details
+       *       - download_recharge_file
        *
        */
       if(OPTIONS_REQUEST_TYPE == 'normal'){
@@ -53,6 +56,7 @@ class BoxStorage extends Repository{
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'remove_box') $this->retrieveBox (); // retrieve a box temporarily from the LN2 tanks
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'return_box') $this->returnBox (); // return a box that had been removed/borrowed
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'search_box') $this->searchBox (); // search for a box in the system
+      elseif (OPTIONS_REQUESTED_SUB_MODULE == 'recharge_space') $this->rechargeSpace(); //recharge storage space in the tanks
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'delete_box') $this->deleteBox (); // delete box from database (with or without it's metadata)
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "get_tank_details") $this->getTankDetails ();
       elseif (OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION == "fetch_boxes") $this->fetchBoxes ();
@@ -76,6 +80,8 @@ class BoxStorage extends Repository{
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "submit_delete_request") die($this->submitDeleteRequest(TRUE));
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "fetch_sample_types") $this->fetchSampleTypes ();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "recharge_details") $this->getRechargeDetails();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax' && OPTIONS_REQUESTED_ACTION === "download_recharge_file") $this->downloadRechargeFile();
       //TODO: check if you need another sub module for viewing boxes
    }
 
@@ -94,6 +100,7 @@ class BoxStorage extends Repository{
          <li><a href='?page=box_storage&do=remove_box'>Retrieve a box</a></li>
          <li><a href="?page=box_storage&do=return_box">Return a borrowed box</a></li>
          <li><a href="?page=box_storage&do=search_box">Search a box</a></li>
+         <!--li><a href="?page=box_storage&do=recharge_space">Recharge Storage Space</a></li-->
          <li><a href='?page=box_storage&do=delete_box'>Delete a box</a></li>
       </ul>
    </div>
@@ -114,7 +121,7 @@ class BoxStorage extends Repository{
     * @return null   Return called to initialize the render
     */
    private function addBox($addInfo = ''){
-      Repository::jqGridFiles();
+      Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
@@ -259,11 +266,12 @@ class BoxStorage extends Repository{
          
          var selectHTML = "";
          var projectIDs = new Array();
-         for(var bIndex = 0; bIndex < Main.printBoxes.data.length; bIndex++){
-            if(jQuery.inArray(Main.printBoxes.data[bIndex].project_id, projectIDs) == -1){//not in array
-               projectIDs.push(Main.printBoxes.data[bIndex].project_id);
-               selectHTML = selectHTML + "<option value='"+Main.printBoxes.data[bIndex].project_id+"'>"+Main.printBoxes.data[bIndex].project+"</option>";
-            }
+         for(var bIndex = 0; bIndex < Main.printBoxes.length; bIndex++){
+            console.log(Main.printBoxes[bIndex].id);
+            //if(jQuery.inArray(Main.printBoxes.data[bIndex].project_id, projectIDs) == -1){//not in array
+            //   projectIDs.push(Main.printBoxes.data[bIndex].project_id);
+            selectHTML = selectHTML + "<option value='"+Main.printBoxes[bIndex].id+"'>"+Main.printBoxes[bIndex].value+"</option>";
+            //}
          }
          
          $("#project_print_list").empty();
@@ -275,15 +283,8 @@ class BoxStorage extends Repository{
       $("#print_btn_2").click(function(){
          //get the selected project
          projectID = $("#project_print_list").val();
-         var boxIDs = new Array();
          
-         for(var bIndex = 0; bIndex < Main.printBoxes.data.length; bIndex++){
-            if(Main.printBoxes.data[bIndex].project_id == projectID){
-               boxIDs.push(Main.printBoxes.data[bIndex].box_id);
-            }
-         }
-         
-         BoxStorage.printBoxesBtnClicked(boxIDs);
+         BoxStorage.printBoxesBtnClicked(projectID);
          $("#project_print").hide();
       });
    });
@@ -723,6 +724,144 @@ class BoxStorage extends Repository{
 </script>
       <?php
    }
+   
+   /**
+    * This function displays the recharge space page
+    */
+   private function rechargeSpace(){
+      Repository::jqGridFiles();//Really important if you want jqx to load
+      
+      $query = "select min(a.rc_period_ending) as min_period_ending, max(a.rc_period_ending) as max_period_ending, b.val_id, b.value, count(*) as box_number"
+              . " from ".Config::$config['azizi_db'].".boxes_def as c"
+              . " left join ".Config::$config['dbase'].".lcmod_boxes_def as a on c.box_id = a.box_id"//left joining with boxes in lims so that we can know boxes that dont have projects
+              . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
+              . " group by a.project";
+      $projects = $this->Dbase->ExecuteQuery($query);
+      
+      $numOrphans = 0;
+      for($i = 0; $i < count($projects); $i++){
+         if($projects[$i]['val_id'] == null){
+            $numOrphans = $numOrphans + $projects[$i]['box_number'];
+            array_splice($projects, $i, 1);
+         }
+      }
+      
+      $query = "SELECT * FROM ".Config::$config['dbase'].".ln2_chargecodes";
+      $dbCCodes = $this->Dbase->ExecuteQuery($query);
+      if($dbCCodes == 1){
+         $this->RepositoryHomePage("There was an error while fetching data from the database.");
+         return;
+      }
+      $activityCodes = array();
+      $chargeCodes = array();
+      foreach ($dbCCodes as $currentP) {
+         $activityCodes[] = $currentP['charge_code'];
+         $chargeCodes[$currentP['charge_code']] = $currentP['name'];
+      }
+      if($numOrphans > 0){
+         echo "<div class='center'>You have ".$numOrphans." boxes without projects</div>";
+      }
+?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.sort.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<div id="box_storage">
+   <h3 class="center">Recharge Storage Space</h3>
+   <div id="recharge_div">
+      <!--legend>Box Information</legend-->
+      <div class="form-group left-align">
+         <label for="project">Project</label>
+         <select id="project" name="project" class="input-large">
+            <option value=""></option>
+            <?php
+               foreach ($projects as $currProject) echo '<option value="' . $currProject['val_id'] . '">' . $currProject['value'] . " project</option>\n";
+            ?>
+         </select>
+      </div>
+      <div class="form-group left-align">
+         <label for="period_starting">Period starting</label>
+         <input id="period_starting" name="period_starting" disabled="disabled" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="period_ending">Period ending</label>
+         <input id="period_ending" name="period_ending" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="price">Price per box per year (USD)</label>
+         <input id="price" name="price" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="charge_code">Charge code</label>
+         <input id="charge_code" name="charge_code" disabled="disabled" class="input-large" />
+      </div>
+      <div class="form-group left-align">
+         <label for="activity_code">Activity code</label>
+         <input id="activity_code" name="activity_code" class="input-large" />
+      </div>
+   </div>
+   <div class="center" id="submit_button_div">
+      <button type="button" class="btn btn-primary" id="download_btn">Download File</button>
+   </div>
+   <div id="recharge_details_div" style="margin-top: 20px;"></div>
+</div>
+<script type="text/javascript">
+   $(document).ready(function(){
+      $( "#period_ending" ).datepicker({dateFormat: 'yy-mm-dd'});
+
+      Main.rechargeProjects = <?php echo json_encode($projects); ?>;
+
+      var activityCodes = <?php echo json_encode($activityCodes); ?>;
+      var chargeCodes = <?php echo json_encode($chargeCodes); ?>;
+
+      for(var i = 0; i < activityCodes.length; i++) {
+         if(activityCodes[i] === null) {
+            activityCodes.splice(i, 1);
+            i--;
+         }
+      }
+
+      $("#project").change(function(){
+         //get the last period_ending and using as our period_starting
+         var projectID = $("#project").val();
+         for(var i = 0; i < Main.rechargeProjects.length; i++){
+            if(Main.rechargeProjects[i].val_id == projectID){
+               $("#period_starting").val(Main.rechargeProjects[i].min_period_ending);
+               $("#period_ending").val("");
+               $("#period_ending").datepicker('destroy');
+               $("#period_ending" ).datepicker({dateFormat: 'yy-mm-dd', minDate: new Date(Main.rechargeProjects[i].max_period_ending)});
+            }
+         }
+
+         BoxStorage.updateRechargeGrid();
+      });
+      $("#activity_code").autocomplete({
+         source: activityCodes,
+         minLength: 2,
+         select: function (event, ui) {
+            var value = ui.item.value;
+            $("#charge_code").val(chargeCodes[value]);
+         }
+      });
+      $("#period_ending").change(function(){
+         BoxStorage.updateRechargeGrid();
+      });
+      $("#price").change(function(){
+         BoxStorage.updateRechargeGrid();
+      });
+      
+      $("#download_btn").click(function(){
+         BoxStorage.downloadRechargingFile();
+      });
+
+      BoxStorage.initiateRechargeGrid();
+      $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=box_storage\'>Back</a>');//back link
+   });
+</script>
+<?php
+   }
 
    /**
     * This function displays the Delete Box page to the user
@@ -823,79 +962,87 @@ class BoxStorage extends Repository{
     */
    private function insertBox(){
       $message = "";
+      if(strlen($_POST['box_label']) > 0
+              && strlen($_POST['box_size']) > 0
+              && strlen($_POST['no_samples']) > 0
+              && strlen($_POST['status']) > 0
+              && strlen($_POST['project']) > 0){
+         //generate box size that lims can understand
+         $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
 
-      //generate box size that lims can understand
-      $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
-
-      //change keeper to biorepository manger if box is in temp position
-      $ownerID = $_POST['owner'];
-      if($_POST['status'] === 'temporary'){
-         $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
-         $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
-         if($result !== 1){
-            $ownerID = $result[0]['count'];
+         //change keeper to biorepository manger if box is in temp position
+         $ownerID = $_POST['owner'];
+         if($_POST['status'] === 'temporary'){
+            $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
+            $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
+            if($result !== 1){
+               $ownerID = $result[0]['count'];
+            }
          }
-      }
 
-      //check if user specified the rack manually
-      $rack = $_POST['rack'];
-      if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
+         //check if user specified the rack manually
+         $rack = $_POST['rack'];
+         if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
-      //get the user id for person responsible for adding the box
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-      }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-      }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $addedBy = $userId[0]['id'];
+         //get the user id for person responsible for adding the box
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $addedBy = $userId[0]['id'];
 
-      $this->Dbase->StartTrans();
-      $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
-      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features']);
-      $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
-      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
-
-      $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
-      if($result !== 1) {
-         $boxId = $this->Dbase->dbcon->lastInsertId();
-         //insert extra information in dbase database
-         $now = date('Y-m-d H:i:s');
-
-         /*$project = NULL;
-         if($_POST['status'] === 'temporary')*/
-            $project = $_POST['project'];
-         $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) values(:box_id, :status, :date_added, :added_by, :project, :no_samples)';
-         $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'no_samples' => $_POST['no_samples']);
-         //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
-         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
+         $this->Dbase->StartTrans();
+         $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.boxes_def(box_name, size, box_type, location, rack, rack_position, keeper, box_features) values(:box_name, :size, :box_type, :location, :rack, :rack_position, :keeper, :features)';
+         $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features']);
+         $columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
+         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columnValues, true), 'debug');
 
          $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
-         if($result === 1){
-            $this->Dbase->RollBackTrans();
-            $message = "Unable to add some information from the last request";
-            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+         if($result !== 1) {
+            $boxId = $this->Dbase->dbcon->lastInsertId();
+            //insert extra information in dbase database
+            $now = date('Y-m-d H:i:s');
+
+            /*$project = NULL;
+            if($_POST['status'] === 'temporary')*/
+               $project = $_POST['project'];
+            $insertQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples, rc_period_starting, rc_period_ending, rc_timestamp) values(:box_id, :status, :date_added, :added_by, :project, :no_samples, NOW(), NOW(), NOW())';
+            $columns = array('box_id' => $boxId, 'status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'no_samples' => $_POST['no_samples']);
+            //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
+            $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
+
+            $result = $this->Dbase->ExecuteQuery($insertQuery, $columns);
+            if($result === 1){
+               $this->Dbase->RollBackTrans();
+               $message = "Unable to add some information from the last request";
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+            }
+            else{
+               $this->Dbase->CommitTrans();
+               $message = "The box '{$_POST['box_label']}' was added successfully";
+            }
          }
          else{
-            $this->Dbase->CommitTrans();
-            $message = "The box '{$_POST['box_label']}' was added successfully";
+            $this->Dbase->RollBackTrans();
+            $message = "Unable to add the last request. Try again later";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
+         return $message;
       }
-      else{
-         $this->Dbase->RollBackTrans();
-         $message = "Unable to add the last request. Try again later";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      else {
+         return "User provided incomplete data. Box not added to database";
       }
-      return $message;
    }
 
    /**
@@ -907,88 +1054,98 @@ class BoxStorage extends Repository{
     */
    private function updateBox(){
       $message = "";
-      $error= 0;//set to 1 if error occures
+      
+      //$_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']
+      if(strlen($_POST['status']) > 0
+              && strlen($_POST['project']) > 0
+              && strlen($_POST['box_id']) > 0
+              && strlen($_POST['no_samples']) > 0){
+         $error= 0;//set to 1 if error occures
 
-      //generate box size that lims can understand
-      $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
+         //generate box size that lims can understand
+         $boxSizeInLIMS = GeneralTasks::NumericSize2LCSize($_POST['box_size']);
 
-      //change keeper to biorepository manger if box is in temp position
-      $ownerID = $_POST['owner'];
-      if($_POST['status'] === 'temporary'){
-         $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
-         $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
-         if($result !== 1){
-            $ownerID = $result[0]['count'];
+         //change keeper to biorepository manger if box is in temp position
+         $ownerID = $_POST['owner'];
+         if($_POST['status'] === 'temporary'){
+            $query = "SELECT count FROM ".Config::$config['azizi_db'].".contacts WHERE email = ?";
+            $result = $this->Dbase->ExecuteQuery($query, array(Config::$limsManager));
+            if($result !== 1){
+               $ownerID = $result[0]['count'];
+            }
          }
-      }
 
-      //check if user specified the rack manually
-      $rack = $_POST['rack'];
-      if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
+         //check if user specified the rack manually
+         $rack = $_POST['rack'];
+         if($rack=== "n£WR@ck") $rack = $_POST['rack_spec'];
 
-      //get the user id for person responsible for updating the box
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-      }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-      }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $addedBy = $userId[0]['id'];
+         //get the user id for person responsible for updating the box
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $addedBy = $userId[0]['id'];
 
-      $this->Dbase->StartTrans();
-      $updateQuery = 'update '. Config::$config['azizi_db'] .'.boxes_def set box_name=:box_name, size=:size, box_type=:box_type, location=:location, rack=:rack, rack_position=:rack_position, keeper=:keeper, box_features=:features where box_id=:box_id';
-      $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features'], 'box_id' => $_POST['box_id']);
-      //$columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
-      $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
-
-      $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
-      if($result !== 1) {
-         $boxId = $this->Dbase->dbcon->lastInsertId();
-         //insert extra information in dbase database
-         $now = date('Y-m-d H:i:s');
-
-         /*$project = NULL;
-         if($_POST['status'] === "temporary")*/
-            $project = $_POST['project'];
-
-         $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples) '.
-                 'values(:box_id, :status, :date_added, :added_by, :project, :no_samples) '.
-                 'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project), no_samples=values(no_samples)';
-         $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']);
-         //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
-         $this->Dbase->CreateLogEntry('Update query = '.$updateQuery, 'debug');
+         $this->Dbase->StartTrans();
+         $updateQuery = 'update '. Config::$config['azizi_db'] .'.boxes_def set box_name=:box_name, size=:size, box_type=:box_type, location=:location, rack=:rack, rack_position=:rack_position, keeper=:keeper, box_features=:features where box_id=:box_id';
+         $columns = array('box_name' => $_POST['box_label'], 'size' => $boxSizeInLIMS, 'box_type' => 'box', 'location' => $_POST['sector'], 'rack' => $rack, 'rack_position' => $_POST['position'], 'keeper' => $ownerID, 'features' => $_POST['features'], 'box_id' => $_POST['box_id']);
+         //$columnValues = array($_POST['box_label'], $boxSizeInLIMS, "box", $_POST['sector'], $rack, $_POST['position'], $ownerID);
+         $this->Dbase->CreateLogEntry('About to insert the following row of data to boxes table -> '.print_r($columns, true), 'debug');
 
          $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
-         if($result === 1){
+         if($result !== 1) {
+            $boxId = $this->Dbase->dbcon->lastInsertId();
+            //insert extra information in dbase database
+            $now = date('Y-m-d H:i:s');
+
+            /*$project = NULL;
+            if($_POST['status'] === "temporary")*/
+               $project = $_POST['project'];
+
+            $updateQuery = 'insert into '. Config::$config['dbase'] .'.lcmod_boxes_def(box_id, status, date_added, added_by, project, no_samples, rc_period_starting, rc_period_ending, rc_timestamp) '.
+                    'values(:box_id, :status, :date_added, :added_by, :project, :no_samples, NOW(), NOW(), NOW()) '.
+                    'on duplicate key update status=values(status), date_added=values(date_added), added_by=values(added_by), project=values(project), no_samples=values(no_samples)';
+            $columns = array('status' => $_POST['status'], 'date_added' => $now, 'added_by' => $addedBy, 'project' => $project, 'box_id' => $_POST['box_id'], 'no_samples' => $_POST['no_samples']);
+            //$columnValues = array($boxId, $_POST['status'], $_POST['features'], $_POST['sample_types'], $now, $addedBy);
+            $this->Dbase->CreateLogEntry('Update query = '.$updateQuery, 'debug');
+
+            $result = $this->Dbase->ExecuteQuery($updateQuery, $columns);
+            if($result === 1){
+               $this->Dbase->RollBackTrans();
+               $message = "Unable to add some information from the last request";
+               $error = 1;
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+            }
+            else{
+               $this->Dbase->CommitTrans();
+               $message = "The box '{$_POST['box_label']}' was updated successfully";
+            }
+         }
+         else{
             $this->Dbase->RollBackTrans();
-            $message = "Unable to add some information from the last request";
+            $message = "Unable to add the last request. Try again later";
             $error = 1;
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
          }
-         else{
-            $this->Dbase->CommitTrans();
-            $message = "The box '{$_POST['box_label']}' was updated successfully";
-         }
+         $json = array();
+         $json["message"] = $message;
+         $json["error"] = $error;
+         return json_encode($json);
       }
-      else{
-         $this->Dbase->RollBackTrans();
-         $message = "Unable to add the last request. Try again later";
-         $error = 1;
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to make the last insertBox request. Last thrown error is '.$this->Dbase->lastError, 'fatal');//used fatal instead of warning because the dbase file seems to only use the fatal log
+      else {
+         return json_encode(array("error" => 1, "message" => "User provided incomplete data. Box details not updated"));
       }
-      $json = array();
-      $json["message"] = $message;
-      $json["error"] = $error;
-      return json_encode($json);
    }
 
    /**
@@ -998,45 +1155,52 @@ class BoxStorage extends Repository{
     */
    private function submitRemoveRequest(){
       $message = "";
+      
+      if(strlen($_POST['for_who']) > 0
+              && strlen($_POST['purpose']) > 0){
+         
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $removedBy = $userId[0]['id'];
 
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-      }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-      }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $removedBy = $userId[0]['id'];
+         $now = date('Y-m-d H:i:s');
+         $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
 
-      $now = date('Y-m-d H:i:s');
-      $columns = array("box_def", "removed_by", "removed_for", "purpose", "date_removed");
+         $colVals = array($_POST['box_id'], $removedBy, $_POST['for_who'], $_POST['purpose'], $now);
 
-      $colVals = array($_POST['box_id'], $removedBy, $_POST['for_who'], $_POST['purpose'], $now);
+         if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
+            array_push($columns, "analysis");
+            array_push($colVals, $_POST['analysis_type']);
+         }
+         $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['dbase'].".lcmod_retrieved_boxes", $columns, $colVals);
 
-      if(isset($_POST['analysis_type']) && strlen($_POST['analysis_type']) > 0 ){//use strlen insead of comparison to empty string. Later not always correctly captured
-         array_push($columns, "analysis");
-         array_push($colVals, $_POST['analysis_type']);
+         if($result === 0){
+            $message = "Unable to remove box for the system.";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+         }
+         else{
+            $message = "Box successfully removed from the system.";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Box successfully retrieved from system by '.$_SESSION['username'], 'debug');
+         }
+
+         return $message;
       }
-      $result = $this->Dbase->InsertOnDuplicateUpdate(Config::$config['dbase'].".lcmod_retrieved_boxes", $columns, $colVals);
-
-      if($result === 0){
-         $message = "Unable to remove box for the system.";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to remove box from system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+      else {
+         return "User provided incomplete data. Retrieve not recorded";
       }
-      else{
-         $message = "Box successfully removed from the system.";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Box successfully retrieved from system by '.$_SESSION['username'], 'debug');
-      }
-
-      return $message;
    }
 
    /**
@@ -1048,42 +1212,52 @@ class BoxStorage extends Repository{
     */
    private function submitReturnRequest($fromAjaxRequest = false) {
       $message = "";
+      
+      if(strlen($_POST['remove_id']) > 0){
+         $userId = 1;
+         if(strlen($_SESSION['username']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+            $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         }
+         //for some reason session['username'] is not set for some users but surname and onames are set
+         else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+            $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+            $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+         }
+         if($userId == 1){
+            $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+            $this->homePage('There was an error while saving the box');
+            return;
+         }
+         $returnedBy = $userId[0]['id'];
 
-      $userId = 1;
-      if(strlen($_SESSION['username']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-         $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+         //get the last remove recored for the box/box being returned
+         $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
+         $now = date('Y-m-d H:i:s');
+
+         $result = $this->Dbase->ExecuteQuery($query, array($now, $returnedBy, $_POST['return_comment'], $_POST['remove_id']));
+         if($result === 0){
+            $message = "Unable to return box back into the system";
+            $this->Dbase->CreateLogEntry('mod_box_storage: Unable to return box back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
+         }
+
+         if($fromAjaxRequest) {
+            $jsonArray = array();
+
+            if(is_array($result)) $jsonArray = $result;
+
+            return json_encode(array("data" => $jsonArray, "error_message" => $message));
+         }
+         else return $message;
       }
-      //for some reason session['username'] is not set for some users but surname and onames are set
-      else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-         $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-         $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+      else {
+         if($fromAjaxRequest){
+            $jsonArray = array();
+
+            return json_encode(array("data" => $jsonArray, "error_message" => "User provided incomplete data. Return not recorded"));
+         }
+         else return "User provided incomplete data. Return not recorded";
       }
-      if($userId == 1){
-         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-         $this->homePage('There was an error while saving the box');
-         return;
-      }
-      $returnedBy = $userId[0]['id'];
-
-      //get the last remove recored for the box/box being returned
-      $query = "UPDATE ".Config::$config['dbase'].".lcmod_retrieved_boxes SET `date_returned` = ?, `returned_by` = ?, `return_comment` = ? WHERE id = ?";
-      $now = date('Y-m-d H:i:s');
-
-      $result = $this->Dbase->ExecuteQuery($query, array($now, $returnedBy, $_POST['return_comment'], $_POST['remove_id']));
-      if($result === 0){
-         $message = "Unable to return box back into the system";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to return box back into system. Last thrown error is '.$this->Dbase->lastError, 'fatal');
-      }
-
-      if($fromAjaxRequest) {
-         $jsonArray = array();
-
-         if(is_array($result)) $jsonArray = $result;
-
-         return json_encode(array("data" => $jsonArray, "error_message" => $message));
-      }
-      else return $message;
    }
 
    /**
@@ -1094,61 +1268,72 @@ class BoxStorage extends Repository{
     * @return string Results for handling the delete box action in the database. Can be either positive or negative
     */
    private function submitDeleteRequest($fromAjaxRequest = false){
-      $message = "";
-      $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
-      $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
-      if($result !== 1 && count($result) === 1){
-         $deletedBoxesLocId = $result[0]['id'];
-         $this->Dbase->CreateLogEntry('mod_box_storage: deletedBoxesLocId = '.$deletedBoxesLocId, 'debug');
-         $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
-         $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $_POST['box_id']));
-         if($result === 1){
+      if(strlen($_POST['box_id']) > 0){
+         $message = "";
+         $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
+         $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
+         if($result !== 1 && count($result) === 1){
+            $deletedBoxesLocId = $result[0]['id'];
+            $this->Dbase->CreateLogEntry('mod_box_storage: deletedBoxesLocId = '.$deletedBoxesLocId, 'debug');
+            $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
+            $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $_POST['box_id']));
+            if($result === 1){
+               $message = "Unable to delete the box";
+               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
+            }
+            else{
+               $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
+
+               $userId = 1;
+               if(strlen($_SESSION['username']) > 0){
+                  $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
+                  $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
+               }
+               //for some reason session['username'] is not set for some users but surname and onames are set
+               else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
+                  $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
+                  $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
+               }
+               if($userId == 1){
+                  $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+                  $this->homePage('There was an error while saving the box');
+                  return;
+               }
+               $deletedBy = $userId[0]['id'];
+
+               $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
+               $now = date('Y-m-d H:i:s');
+
+               $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
+               if($result === 1){
+                  $message = "Unable to record extra information on the delete";
+                  $this->Dbase->CreateLogEntry('mod_box_storage: Unable to record details of the last box delete. Last error is '.$this->Dbase->lastError, 'fatal');
+               }
+            }
+         }
+         else{
             $message = "Unable to delete the box";
             $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
          }
-         else{
-            $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
 
-            $userId = 1;
-            if(strlen($_SESSION['username']) > 0){
-               $query = 'select id from '. Config::$config['dbase'] .'.users where login = :login';
-               $userId = $this->Dbase->ExecuteQuery($query, array('login' => $_SESSION['username']));
-            }
-            //for some reason session['username'] is not set for some users but surname and onames are set
-            else if(strlen($_SESSION['surname']) > 0 && strlen($_SESSION['onames']) > 0){
-               $query = 'select id from '. Config::$config['dbase'] .'.users where sname = :sname AND onames = :onames';
-               $userId = $this->Dbase->ExecuteQuery($query, array('sname' => $_SESSION['surname'], 'onames' => $_SESSION['onames']));
-            }
-            if($userId == 1){
-               $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
-               $this->homePage('There was an error while saving the box');
-               return;
-            }
-            $deletedBy = $userId[0]['id'];
+         if($fromAjaxRequest) {
+            $jsonArray = array();
 
-            $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
-            $now = date('Y-m-d H:i:s');
+            if(is_array($result)) $jsonArray = $result;
 
-            $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
-            if($result === 1){
-               $message = "Unable to record extra information on the delete";
-               $this->Dbase->CreateLogEntry('mod_box_storage: Unable to record details of the last box delete. Last error is '.$this->Dbase->lastError, 'fatal');
-            }
+            return json_encode(array("data" => $jsonArray, "error_message" => $message));
+         }
+         else return $message;
+      }
+      else {
+         if($fromAjaxRequest){
+            $jsonArray = array();
+            return json_encode(array("data" => $jsonArray, "error_message" => "User provided incomplete data. Box not deleted"));
+         }
+         else {
+            return "User provided incomplete data. Box not deleted";
          }
       }
-      else{
-         $message = "Unable to delete the box";
-         $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
-      }
-
-      if($fromAjaxRequest) {
-         $jsonArray = array();
-
-         if(is_array($result)) $jsonArray = $result;
-
-         return json_encode(array("data" => $jsonArray, "error_message" => $message));
-      }
-      else return $message;
    }
 
    /**
@@ -1277,9 +1462,11 @@ class BoxStorage extends Repository{
          if(count($result) > 0){
             $result[0]['total_row_count'] = $totalRowCount;
          }
+         $query = "select a.project as id,b.value from ".Config::$config['dbase'].".lcmod_boxes_def as a inner join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id where date(date_added) = date(now()) group by project";
+         $projects = $this->Dbase->ExecuteQuery($query);
 
          header("Content-type: application/json");
-         die('{"data":'. json_encode($result) .'}');
+         die('{"data":'. json_encode($result).',"projects":'.json_encode($projects).'}');
       }
       else{
          die('{"data":'. json_encode(array()) .'}');
@@ -1623,7 +1810,9 @@ class BoxStorage extends Repository{
    }
    
    private function printAddedBoxes(){
-      $boxIDs = explode(",", $_GET['boxIDs']);
+      $projectID = $_GET['projectID'];
+      $query = "select box_id from ".Config::$config['dbase'].".lcmod_boxes_def where project = :project and date(date_added) = date(now())";//get all boxes added today for the selected project
+      $boxIDs = $this->Dbase->ExecuteQuery($query, array("project" => $projectID));
       
       $this->Dbase->CreateLogEntry(print_r($boxIDs, true), "fatal");
       
@@ -1635,7 +1824,7 @@ class BoxStorage extends Repository{
                  'inner join '. Config::$config['azizi_db'] .'.boxes_def as b on a.box_id = b.box_id '.
                  'inner join '. Config::$config['azizi_db'] .'.boxes_local_def as c on b.location = c.id '.
                  'where a.box_id = :id';
-          $result = $this->Dbase->ExecuteQuery($query, array("id" => $currBox));
+          $result = $this->Dbase->ExecuteQuery($query, array("id" => $currBox['box_id']));
           
           if(is_array($result)){
              preg_match("/.*Tank([0-9]+).+/i", $result[0]['facility'], $tank);
@@ -1734,6 +1923,7 @@ class BoxStorage extends Repository{
       header("Content-length: " . filesize("/tmp/" . $pdfName . ".pdf"));
       header('Content-Transfer-Encoding: binary');
       readfile("/tmp/" . $pdfName . ".pdf");
+      unlink("/tmp/" . $pdfName . ".pdf");
    }
    
    /**
@@ -1757,6 +1947,217 @@ class BoxStorage extends Repository{
       }
       
       return $result;
+   }
+   
+   /**
+    * This function gets recharging details for a particular project
+    */
+   private function getRechargeDetails(){
+      $projectID = $_POST['project'];
+      $priceBoxDay = $_POST['price']/365;//price per box per day
+      $periodEnding = $_POST['period_ending'];//date in format yyyy-mm-dd
+
+      $query = "select a.rc_period_ending as last_period, b.value as project, count(*) as no_boxes"
+              . " from ".Config::$config['dbase'].".lcmod_boxes_def as a"
+              . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
+              . " where a.project = :project"
+              . " group by a.rc_period_ending";
+      $result = $this->Dbase->ExecuteQuery($query, array("project" => $projectID));
+      
+      if($result == 1){
+         $this->Dbase->CreateLogEntry("An error occurred while trying to get recharge details from the database. Sending user nothing","fatal");
+         $result = array();
+      }
+      
+      for($i = 0; $i < count($result); $i++){
+         //calculate the number of days between last charged date and current recharge end date
+         //charge nothing if last charged date not set
+         $start = strtotime($result[$i]['last_period']);
+         $end = strtotime($periodEnding);
+         if($start != false && $end != false && $result[$i]['last_period'] != "0000-00-00"){
+            //get number of days
+            $duration = ($end - $start)/86400;
+            $result[$i]['duration'] = $duration;
+         }
+         else {
+            $result[$i]['duration'] = 0;
+         }
+         
+         //calculate the total recharge price
+         $result[$i]['total_price'] = round($result[$i]['duration'] * $priceBoxDay * $result[$i]['no_boxes'], 2);
+      }
+      
+      $json = array('data'=>$result);
+      die(json_encode($json));
+   }
+   
+   /**
+    * This function generates a csv file containing data for space recharges to the specified (in get request) project
+    */
+   private function downloadRechargeFile(){
+      $projectID= $_REQUEST['project'];
+      $periodEnding = $_REQUEST['period_ending'];
+      $pricePerBoxPerDay = $_REQUEST['price']/365;
+      $chargeCode = $_REQUEST['charge_code'];
+      if(strlen($chargeCode) == 0){
+         $chargeCode = $_REQUEST['activity_code'];
+      }
+      
+      if(strlen($projectID) > 0 && strlen($periodEnding) > 0 && strlen($pricePerBoxPerDay) > 0 && strlen($chargeCode) > 0){
+//         $query = "select count(*) as no_boxes, c.value as project, d.facility as sector, a.rc_period_ending as start_date"
+//                 . " from ".Config::$config['dbase'].".lcmod_boxes_def as a"
+//                 . " inner join ".Config::$config['azizi_db'].".boxes_def as b on a.box_id=b.box_id"
+//                 . " inner join ".Config::$config['dbase'].".modules_custom_values as c on a.project=c.val_id"
+//                 . " inner join ".Config::$config['dbase'].".boxes_local_def as d on b.location=d.id"
+//                 . " where a.project = :project"
+//                 . " group by b.location, a.rc_period_ending";
+         $query = "select b.value as project, count(*) as no_boxes, d.facility as sector, group_concat(c.box_id) as box_ids, a.rc_period_ending as start_date"
+                 . " from ".Config::$config['azizi_db'].".boxes_def as c"
+                 . " left join ".Config::$config['dbase'].".lcmod_boxes_def as a on c.box_id = a.box_id"
+                 . " left join ".Config::$config['azizi_db'].".modules_custom_values as b on a.project=b.val_id"
+                 . " left join ".Config::$config['azizi_db'].".boxes_local_def as d on c.location = d.id"
+                 . " where a.project = :project and a.rc_period_ending != '0000-00-00'"
+                 . " group by a.rc_period_ending, d.id";
+         
+         $this->Dbase->CreateLogEntry($query, "info");
+         $result = $this->Dbase->ExecuteQuery($query, array("project" => $projectID));
+         
+         if($result == 1){
+            $this->Dbase->CreateLogEntry("Unable to get details of boxes for recharging from the database. Sending empty file", "fatal");
+            $result = array();
+         }
+         else {
+            $allBoxIDs = array();
+            for($i = 0; $i < count($result); $i++){
+               //calculate days between current period ending and last period ending
+               $from = strtotime($result[$i]['start_date']);
+               $to = strtotime($periodEnding);
+               $duration = 0;
+               if($to != false && $from != false && $result[$i]['start_date'] != "0000-00-00"){
+                  $duration = ($to - $from)/86400;
+               }
+               
+               $total = round($pricePerBoxPerDay * $duration, 2);
+               $result[$i]['duration'] = $duration;
+               $result[$i]['end_date'] = $_REQUEST['period_ending'];
+               $result[$i]['price_per_box'] = $_REQUEST['price'];
+               $result[$i]['total'] = $total;
+               $result[$i]['charge_code'] = $chargeCode;
+               
+               $allBoxIDs[] = $result[$i]['box_ids'];//list of box ids seperated using commas
+            }
+            
+            $this->Dbase->CreateLogEntry(print_r($result,true), "info");
+            
+            //headings should be in the order of respective items in associative array
+            $headings = array(
+                "project" => "Project",
+                "no_boxes" => "No. Boxes",
+                "sector" => "Sector",
+                "box_ids" => "Box IDs",
+                "start_date" => "Period Starting",
+                "duration" => "Duration (days)",
+                "end_date" => "Period Ending",
+                "price_per_box" => "Price per Box",
+                "total" => "Total Cost (USD)",
+                "charge_code" => "Charge Code");
+            $csv = $this->generateCSV(array_merge(array($headings), $result), false);
+            
+            if(count($result) > 0){
+               $fileName = "space_recharge_".$result[0]['project']."_".$result[0]['end_date'].".csv";
+               
+               $emailSubject = "Storage space recharge for ".$result[0]['project'];
+               $emailBody = "Find attached a csv file containing data for storage space recharge to ".$result[0]['project']." for the period ending ".$result[0]['end_date'].".";
+            }
+            else {
+               $fileName = "no_data.csv";
+               
+               $query = "select value from ".Config::$config['azizi_db'].".modules_custom_values where val_id = :project_id";
+               $projectName = $this->Dbase->ExecuteQuery($query, array("project_id" => $projectID));
+               
+               $emailSubject = "Storage space recharge for ".$projectName[0]['value'];
+               $emailBody = "Could not file boxes owned by ".$projectName[0]['value']." for storage recharging for the period ending ".$periodEnding.". This might mean the column sc_period_ending for all the boxes associated to this project are null or set to '0000-00-00'. Make sure you record the last date of storage recharge for all the boxes, or you'll end up losing money ;) .";
+            }
+            
+            //update all the boxes 
+            for($i = 0; $i < count($allBoxIDs); $i++){
+               $query = "update ".Config::$config['dbase'].".lcmod_boxes_def"
+                       . " set rc_timestamp = now(), rc_period_starting = rc_period_ending, rc_period_ending = :ending, rc_price = :price, rc_charge_code = :charge_code"
+                       . " where box_id in(:box_ids)";
+               $this->Dbase->ExecuteQuery($query, array("ending" => $_REQUEST['period_ending'], "price" => $_REQUEST['price'], "charge_code" => $chargeCode, "box_ids" => $allBoxIDs[$i]));
+               $this->Dbase->CreateLogEntry("updated box ids = ".$allBoxIDs[$i], "info");
+            }
+            
+            file_put_contents("/tmp/".$fileName, $csv);
+            header('Content-type: document');
+            header('Content-Disposition: attachment; filename='. $fileName);
+            header("Expires: 0"); 
+            header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+            header("Content-length: " . filesize("/tmp/".$fileName));
+            header('Content-Transfer-Encoding: binary');
+            readfile("/tmp/" . $fileName);
+            
+            $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
+            
+            $this->Dbase->CreateLogEntry("Recharging file at /tmp/".$fileName, "info");
+            unlink("/tmp/" . $fileName);
+            
+            //return json_encode(array("error" => false, "error_message" => ""));
+         }
+         //return json_encode(array("error" => true, "error_message" => "Problem getting data from the database"));
+      }
+      
+      $this->Dbase->CreateLogEntry("Problem with the data provided by user".print_r($_REQUEST, true), "fatal");
+      
+      //return json_encode(array("error" => true, "error_message" => "Problem with the data you provided"));
+   }
+   
+   /**
+    * This function generates a CSV string from a two dimensional array.
+    * Make sure each of the second level associative arrays the same size.
+    * The following array will not be parsed correctly:
+    *  [
+    *    [0,1,2]
+    *    [0,1]
+    *    [0,1,2]
+    *  ]
+    * 
+    * @param type $array
+    * @param type $headingsFromKeys
+    */
+   private function generateCSV($array, $headingsFromKeys = true){
+      $csv = "";
+      if(count($array) > 0){
+         $colNum = count($array[0]);
+         
+         if($headingsFromKeys === true){
+            $keys = array_keys($array[0]);
+            $csv .= "\"".implode("\",\"", $keys)."\"\n";
+         }
+         
+         foreach($array as $currRow){
+            $csv .= "\"".implode("\",\"", $currRow)."\"\n";
+         }
+      }
+      
+      return $csv;
+   }
+   
+   /**
+    * This function sends emails using the biorepository's email address. Duh
+    * 
+    * @param type $address Email address of the recipient
+    * @param type $subject Email's subject
+    * @param type $message Email's body/message
+    * @param type $file    Attachements for the email. Set to null if none
+    */
+   private function sendRechargeEmail($address, $subject, $message, $file = null){
+      if($file != null){
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
+      }
+      else {
+         shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -- '.$address);
+      }
    }
 }
 ?>

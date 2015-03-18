@@ -229,6 +229,8 @@ class Repository3D{
 <div id="reset_button">Reset</div>
 <div id="zoom_in" class="zoom_button" style="display: none;">+</div>
 <div id="zoom_out" class="zoom_button" style="display: none;">-</div>
+<div id="mta_btn">Fill MTA</div>
+<div id="add_box_mta_btn">Add to MTA</div>
 <input id="search_box_3d" placeholder="Search" />
 <div id="search_canvas" style="display: none;"></div>
 <div id="virt_box" style="display: none;"></div>
@@ -236,6 +238,54 @@ class Repository3D{
 <div id="sample_ttip" style="display: none;"></div>
 <div id="loading_box">Loading...</div>
 <div id="clear_search" style="display: none;">X</div>
+<div id="mta_dialog">
+   <div id="mta_dialog_toggle"></div>
+   <div style="margin-bottom: 15px; font-size: 20px;">Material Transfer Agreement</div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_pi_name">Principal Investigator</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_pi_name" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_pi_email">PI's Email Address</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_pi_email" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_research_title">Research Title</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_research_title" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_org">Organisation</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_org" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_material">Sample Material</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_material" type="text" placeholder="e.g serum" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_format">Format</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_format" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_storage_safety">Handling, Storage & Safety</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_storage_safety" type="text" /></div>
+   </div>
+   <div class="form-group" style="margin-bottom:10px; width:auto;">
+      <div style="width: 200px; margin-left:50px; display:inline-block;"><label for="mta_assoc_data">Accompanying data</label></div>
+      <div style="width: 100px; display:inline-block;"><input id="mta_assoc_data" type="text" value="associated metadata" /></div>
+   </div>
+   <div class="center">
+      <button id="mta_submit_btn">Send Request</button>
+   </div>
+</div>
+<div id="mta_box_list_div" style="background: white;">
+   <div id="mta_box_list_toggle"></div>
+   <div>Confirm Boxes to be added to the MTA</div>
+   <div>
+      <ul id="mta_box_list">
+      </ul>
+   </div>
+   <div class="center"><button type="button" id="mta_box_submit_btn" class="primary">Okay</button></div>
+</div>
 <script>
    var repository3D = new Repository3D();
 </script>

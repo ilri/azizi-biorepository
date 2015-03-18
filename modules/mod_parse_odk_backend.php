@@ -593,7 +593,7 @@ class Parser {
                   if(filter_var($values[$index], FILTER_VALIDATE_URL) && $this->dwnldImages === "yes") {
                      //$values[$index] = $this->downloadImage($values[$index]);
                      $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
-                     $values[$index] = $this->gTasks->downloadImage($values[$index], $this->imagesDir);
+                     $values[$index] = $this->gTasks->downloadImage($values[$index], $this->imagesDir, $this->logHandler);
                   }
                   
                   $values[$index] = $this->formatTime($values[$index]);//format values[index] if it is time
@@ -723,7 +723,7 @@ class Parser {
         }
         else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $this->isImage($cellString) ===TRUE && $this->dwnldImages === "yes"){ //is image
             $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
-            $cellString = $this->gTasks->downloadImage($cellString, $this->imagesDir);
+            $cellString = $this->gTasks->downloadImage($cellString, $this->imagesDir, $this->logHandler);
             $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
         }
         else {
@@ -940,108 +940,114 @@ class Parser {
         curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
 
         $html = curl_exec($ch);
+        $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         $html = str_replace("\n", " ", $html);
 
-        $htmlTables = array();
-
-        preg_match_all("/<table(.*\n*.*)<\/table>/",$html,$htmlTables);
-
         //check the number of tables in page (should be one)
-        if(sizeof($htmlTables[1])===1) {
-            $dataTable = $htmlTables[1][0];
-            //print_r($htmlTables);
-            //get the table headers <th>
-            $th = array();
-            $uncleanTHs = explode('</th>', $dataTable);
-            $cleanTHCount = 0;
-            foreach($uncleanTHs as $currTH){
-               if(strpos($currTH, '<th>') !== FALSE){
-                  $splitTH = explode('<th>',$currTH);
-                  $th[$cleanTHCount] = $splitTH[1];
-                  $cleanTHCount++;
+        if($httpStatus < 400){
+           
+           $htmlTables = array();
+           preg_match_all("/<table(.*\n*.*)<\/table>/",$html,$htmlTables);
+           
+           if(sizeof($htmlTables[1])===1) {//allow only http redirects and 200 status codes
+               $dataTable = $htmlTables[1][0];
+               //print_r($htmlTables);
+               //get the table headers <th>
+               $th = array();
+               $uncleanTHs = explode('</th>', $dataTable);
+               $cleanTHCount = 0;
+               foreach($uncleanTHs as $currTH){
+                  if(strpos($currTH, '<th>') !== FALSE){
+                     $splitTH = explode('<th>',$currTH);
+                     $th[$cleanTHCount] = $splitTH[1];
+                     $cleanTHCount++;
+                  }
                }
-            }
-            $headings = $th;//table headings gotten
+               $headings = $th;//table headings gotten
 
-            for($i=0; $i<sizeof($headings); $i++){
-                $headings[$i] = $sheetName."-".$headings[$i];
-            }
-
-            array_unshift($headings, "secondary_key");
-
-            $sheetNames = array_keys($this->sheets);
-            if(!in_array($sheetName, $sheetNames)){
-               for($hIndex = 0; $hIndex < sizeof($headings); $hIndex++){
-                   $this->insertCSVCell($headings[$hIndex], $this->nextRowName[$sheetName], $headings[$hIndex], $sheetName);
+               for($i=0; $i<sizeof($headings); $i++){
+                   $headings[$i] = $sheetName."-".$headings[$i];
                }
-               $this->nextRowName[$sheetName]++;
-            }
+
+               array_unshift($headings, "secondary_key");
+
+               $sheetNames = array_keys($this->sheets);
+               if(!in_array($sheetName, $sheetNames)){
+                  for($hIndex = 0; $hIndex < sizeof($headings); $hIndex++){
+                      $this->insertCSVCell($headings[$hIndex], $this->nextRowName[$sheetName], $headings[$hIndex], $sheetName);
+                  }
+                  $this->nextRowName[$sheetName]++;
+               }
 
 
-            $tr = array();
-            preg_match_all("/<\/th>\s*(<tr>.*<\/tr>$)/",$dataTable,$tr);
-            $tr = $tr[1];
+               $tr = array();
+               preg_match_all("/<\/th>\s*(<tr>.*<\/tr>$)/",$dataTable,$tr);
+               $tr = $tr[1];
 
-            if(sizeof($tr) === 1){
-                $rows = explode("</tr>", $tr[0]);
-                for($rowIndex = 0; $rowIndex < sizeof($rows); $rowIndex++){
-                    //check if row is actual table row
-                    if(strpos($rows[$rowIndex],'<tr>') !== false){
-                        $rows[$rowIndex] = str_replace("<tr>","",$rows[$rowIndex]);
-                        $rowColumns = explode("</td>", $rows[$rowIndex]);
+               if(sizeof($tr) === 1){
+                   $rows = explode("</tr>", $tr[0]);
+                   for($rowIndex = 0; $rowIndex < sizeof($rows); $rowIndex++){
+                       //check if row is actual table row
+                       if(strpos($rows[$rowIndex],'<tr>') !== false){
+                           $rows[$rowIndex] = str_replace("<tr>","",$rows[$rowIndex]);
+                           $rowColumns = explode("</td>", $rows[$rowIndex]);
 
-                        array_unshift($rowColumns, $this->odkInstance."_".$secondaryKey);
+                           array_unshift($rowColumns, $this->odkInstance."_".$secondaryKey);
 
-                        if((sizeof($headings)+1) === sizeof($rowColumns)){
-                            for($columnIndex = 0; $columnIndex < sizeof($rowColumns); $columnIndex++){
-                                if($columnIndex<sizeof($headings)){
-                                   $rowColumns[$columnIndex] = str_replace("<td>","", $rowColumns[$columnIndex]);
-                                   
-                                   //check if contents of cell is a link (<a></a>) to image
-                                   if(preg_match( '/<a\s*href/i', $rowColumns[$columnIndex]) === 1){//cell value is a link to image
-                                      //using preg_split for extracting the image url instead of preg_match inorder to avoid a gready fetch at '.*' in the regex /<a\s*href\s*=\s*['\"].*/
-                                      $linkSegments = preg_split("/<a\s*href\s*=\s*['\"]/i", $rowColumns[$columnIndex]);
-                                      if(count($linkSegments) === 2){
-                                         $linkSegments = $linkSegments[1];
-                                         $linkSegments = preg_split("/['\"]\s*target\s*=\s*.*$/i", $linkSegments);
-                                         if(count($linkSegments) === 2)
-                                            $rowColumns[$columnIndex] = $linkSegments[0];
-                                         else{
-                                            //probably means that we are parsing from an older version of aggregate
-                                            $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell. Using a different strategy');
-                                            $linkSegments = $linkSegments[0];
-                                            $linkSegments = preg_split("/['\"]>view<\/a>/i", $linkSegments);
-                                            if(count($linkSegments) === 2){
+                           if((sizeof($headings)+1) === sizeof($rowColumns)){
+                               for($columnIndex = 0; $columnIndex < sizeof($rowColumns); $columnIndex++){
+                                   if($columnIndex<sizeof($headings)){
+                                      $rowColumns[$columnIndex] = str_replace("<td>","", $rowColumns[$columnIndex]);
+
+                                      //check if contents of cell is a link (<a></a>) to image
+                                      if(preg_match( '/<a\s*href/i', $rowColumns[$columnIndex]) === 1){//cell value is a link to image
+                                         //using preg_split for extracting the image url instead of preg_match inorder to avoid a gready fetch at '.*' in the regex /<a\s*href\s*=\s*['\"].*/
+                                         $linkSegments = preg_split("/<a\s*href\s*=\s*['\"]/i", $rowColumns[$columnIndex]);
+                                         if(count($linkSegments) === 2){
+                                            $linkSegments = $linkSegments[1];
+                                            $linkSegments = preg_split("/['\"]\s*target\s*=\s*.*$/i", $linkSegments);
+                                            if(count($linkSegments) === 2)
                                                $rowColumns[$columnIndex] = $linkSegments[0];
-                                            }
                                             else{
-                                               $this->logHandler->log(2, $this->TAG, 'Latter method for extracting image url failed. Something might be wrong with the url');
+                                               //probably means that we are parsing from an older version of aggregate
+                                               $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell. Using a different strategy');
+                                               $linkSegments = $linkSegments[0];
+                                               $linkSegments = preg_split("/['\"]>view<\/a>/i", $linkSegments);
+                                               if(count($linkSegments) === 2){
+                                                  $rowColumns[$columnIndex] = $linkSegments[0];
+                                               }
+                                               else{
+                                                  $this->logHandler->log(2, $this->TAG, 'Latter method for extracting image url failed. Something might be wrong with the url');
+                                               }
                                             }
                                          }
+                                         else
+                                            $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell (removing first part)');
                                       }
-                                      else
-                                         $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell (removing first part)');
+
+                                      $this->insertCSVCell($rowColumns[$columnIndex], $this->nextRowName[$sheetName], $headings[$columnIndex], $sheetName);
                                    }
-                                   
-                                   $this->insertCSVCell($rowColumns[$columnIndex], $this->nextRowName[$sheetName], $headings[$columnIndex], $sheetName);
-                                }
-                            }
-                        }
-                        else{
-                            $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: '.sizeof($headings).' '.sizeof($rowColumns).' '.$html );
-                            $this->logHandler->log(1, $this->TAG, 'it appears the rows in html table were parsed badly, exiting');
-                            exit();
-                        }
-                        $this->nextRowName[$sheetName]++;
-                    }
-                }
-            }
+                               }
+                           }
+                           else{
+                               $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: '.sizeof($headings).' '.sizeof($rowColumns).' '.$html );
+                               $this->logHandler->log(1, $this->TAG, 'it appears the rows in html table were parsed badly, exiting');
+                               exit();
+                           }
+                           $this->nextRowName[$sheetName]++;
+                       }
+                   }
+               }
+           }
+           else{
+               $this->logHandler->log(4, $this->TAG, 'Badly parsed html looks like this: '.$html);
+               $this->logHandler->log(1, $this->TAG, 'HTML appears to have been parsed badly, exiting');
+               exit();
+           }
         }
-        else{
-            $this->logHandler->log(4, $this->TAG, 'Badly parsed html looks like this: '.$html);
-            $this->logHandler->log(1, $this->TAG, 'HTML appears to have been parsed badly, exiting');
-            exit();
+        else {
+           $this->logHandler->log(2, $this->TAG, 'Got a status code of '.$httpStatus.' while trying to get table from '.$url);
         }
 
         //print_r($htmlTables);

@@ -53,8 +53,8 @@ var InventoryManager = {
          $("#project").focus();
          return false;
       }*/
-      if($("#borrowed").val()== "no" && $('#pp_unit').val().match(/[A-Z]{3}[0-9]+/i) === null){
-          Notification.show({create:true, hide:true, updateText:false, text:"Please enter the price per unit e.g KES200", error:true});
+      if($("#borrowed").val()== "no" && $('#pp_unit').val().match(/[0-9]+/i) === null){
+          Notification.show({create:true, hide:true, updateText:false, text:"Please enter a valid price", error:true});
           $("#pp_unit").focus();
           return false;
       }
@@ -115,5 +115,13 @@ var InventoryManager = {
             });
          });
       }
+   },
+   
+   downloadRechargeFile: function() {
+      var url = "mod_ajax.php?page=inventory&do=ajax&action=download_recharge_file";
+      
+      $("#hiddenDownloader").remove();
+      $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
+      $("#hiddenDownloader").attr("src", url);
    }
 };
