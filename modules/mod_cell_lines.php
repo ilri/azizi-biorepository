@@ -35,8 +35,8 @@ class CellLines extends SpreadSheet {
          array('name' =>'storage_box', 'regex' => '/^storage\s+box$/i', 'required' => true, 'lc_ref' => 'box_id'),
          array('name' =>'sample_pos', 'regex' => '/^position\s+in\s+box$/i', 'data_regex' => '/^[1-9]?[0-9]|100|[a-z][0-9]0?$/i', 'required' => true, 'lc_ref' => 'box_details'),
          array('name' =>'comments', 'regex' => '/^comments$/i', 'required' => false, 'lc_ref' => 'origin'),
-         /*array('name' =>'latitude', 'regex' => '/^latitude$/i', 'required' => true, 'lc_ref' => 'Latitude'),
-         array('name' =>'longitude', 'regex' => '/^longitude$/i', 'required' => true, 'lc_ref' => 'Longitude'),*/
+         array('name' =>'date_created', 'regex' => '/^date_created$/i', 'required' => false, 'lc_ref' => 'date_created'),     // to ensure this date is added, though it wont appear on the spreadsheet
+         array('name' =>'date_updated', 'regex' => '/^date_updated$/i', 'required' => false, 'lc_ref' => 'date_updated'),     // to ensure this date is added, though it wont appear on the spreadsheet
          array('name' =>'owner', 'regex' => '/^owner$/i', 'data_regex' => '/^[a-z\s\']+$/i', 'required' => true, 'lc_ref' => 'keeper')
       )
    );
@@ -161,7 +161,6 @@ class CellLines extends SpreadSheet {
           }
           $this->data[$key]['record_type'] = $this->allRecordTypes[$t['record_type']];
 
-
           // Strain Names
           if(!array_key_exists($t['strain'], $this->allStrains)){
              $strainNameId = $this->isCustomValueSaved($t['strain'], $strainId);
@@ -170,6 +169,12 @@ class CellLines extends SpreadSheet {
           }
           $this->data[$key]['strain'] = $this->allStrains[$t['strain']];
 
+          // format the freezing date
+          $this->data[$key]['freezing_date'] = date('Y-m-d',strtotime(str_replace('/', '-', $t['freezing_date'])));
+          $this->data[$key]['date_created'] = date('Y-m-d');
+          $this->data[$key]['date_updated'] = date('Y-m-d');
+
+          // format the cell line position
           $this->data[$key]['sample_pos'] = $Repository->NumericPosition2LCPosition($t['sample_pos'], 100);
 
           //create the comments from the columns which go nowhere
