@@ -150,7 +150,9 @@ class LimsUploader{
     * Downloads the template defined for the specified process
     */
    private function DownloadSampleSheet(){
-      $file = (OPTIONS_REQUESTED_SUB_MODULE == 'samples') ? Config::$samplesTemplate : Config::$primersTemplate;
+      if(OPTIONS_REQUESTED_ACTION == 'samples') $file = Config::$samplesTemplate;
+      elseif(OPTIONS_REQUESTED_ACTION == 'primers') $file = Config::$primersTemplate;
+      elseif(OPTIONS_REQUESTED_ACTION == 'cell_lines') $file = Config::$cellLinesTemplate;
 
       //now offer the label for download
       header("Content-Disposition: attachment; filename=$file");
