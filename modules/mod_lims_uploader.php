@@ -99,6 +99,7 @@ class LimsUploader{
       $samplesChecked = ($module == 'samples') ? 'checked' : '';
       $elisaChecked = ($module == 'elisa') ? 'checked' : '';
       $strainsChecked = ($module == 'strains') ? 'checked' : '';
+      $cell_linesChecked = ($module == 'cell_lines') ? 'checked' : '';
 ?>
 <div id="main">
    <div id="top" class="center">
@@ -106,6 +107,7 @@ class LimsUploader{
       <input type="radio" name="module" value="primers" <?php echo $primersChecked; ?> />Primers&nbsp;&nbsp;&nbsp;
       <input type="radio" name="module" value="elisa" <?php echo $elisaChecked; ?> />Elisa Results&nbsp;&nbsp;&nbsp;
       <input type="radio" name="module" value="strains" <?php echo $strainsChecked; ?> />Strains&nbsp;&nbsp;&nbsp;
+      <input type="radio" name="module" value="cell_lines" <?php echo $cell_linesChecked; ?> />Cell Lines&nbsp;&nbsp;&nbsp;
    </div>
    <div id="uhondo">
       <div id='left_panel'>
@@ -135,6 +137,7 @@ class LimsUploader{
       if(OPTIONS_REQUESTED_ACTION == 'samples') $file = Config::$samplesTemplate;
       elseif(OPTIONS_REQUESTED_ACTION == 'primers') $file = Config::$primersTemplate;
       elseif(OPTIONS_REQUESTED_ACTION == 'strains') $file = Config::$strainsTemplate;
+      elseif(OPTIONS_REQUESTED_ACTION == 'cell_lines') $file = Config::$cellLinesTemplate;
 
       $Template = new Spreadsheet_Excel_Reader($file);
 
@@ -168,7 +171,7 @@ class LimsUploader{
     * @return  object   Returns a reference to the object which was created after processing the parsed file
     */
    private function CommonFileProcessing($module, $file){
-      set_include_path(get_include_path() . PATH_SEPARATOR . '/var/www/html/azizi.ilri.org/common/PHPExcel/Classes/' . PATH_SEPARATOR . '/var/www/common/PHPExcel/Classes/');     //add the classes path to the include path
+      set_include_path(get_include_path() . PATH_SEPARATOR . '/var/www/html/azizi.ilri.org/common/PHPExcel/Classes/' . PATH_SEPARATOR . '/www/common/PHPExcel/Classes/');     //add the classes path to the include path
 
       include 'PHPExcel/IOFactory.php';      //add the PHPExcel_IOFactory
 //      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.2.php';
@@ -177,6 +180,7 @@ class LimsUploader{
       elseif($module == 'samples') require_once 'mod_samples.php';
       elseif($module == 'elisa') require_once 'mod_elisa.php';
       elseif($module == 'strains') require_once 'mod_strains.php';
+      elseif($module == 'cell_lines') require_once 'mod_cell_lines.php';
 
       //determine the type of file that was uploaded
       $inputFileType = PHPExcel_IOFactory::identify($file);
@@ -191,6 +195,7 @@ class LimsUploader{
       else if ($module == 'primers') $mainSheeet = 'Final Primers';
       else if ($module == 'elisa') $mainSheeet = 'Final Elisa';
       else if ($module == 'strains') $mainSheeet = 'Final Strains';
+      else if ($module == 'cell_lines') $mainSheeet = 'Cell Lines';
 
       $secondarySheetsNames = array();
       //there is need to determine the main sheet. This will be the first sheet or the one named 'Final Samples' or 'Final Primers'
@@ -217,6 +222,7 @@ class LimsUploader{
          elseif($module == 'samples') $curfile[$index] = new Samples('', $file, $sheetData);
          elseif($module == 'elisa') $curfile[$index] = new Elisa('', $file, $sheetData);
          elseif($module == 'strains') $curfile[$index] = new Strains('', $file, $sheetData);
+         elseif($module == 'cell_lines') $curfile[$index] = new CellLines('', $file, $sheetData);
 
          $writer = PHPExcel_IOFactory::createWriter($excelReader, 'HTML');
          $curfile[$index]->htmlData = $writer->setSheetIndex($index)->generateSheetData();
