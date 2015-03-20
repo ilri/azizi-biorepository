@@ -122,6 +122,7 @@ class Workflow {
     * @param type $grantedBy  The user granting the access
     */
    private function grantUserAccess($user) {
+      $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
       $columns = array(
           "user_granted" => "'{$user}'",
           "time_granted" => "'".Database::getMySQLTime()."'",
@@ -137,6 +138,7 @@ class Workflow {
    }
    
    private function saveWorkflowDetails() {
+      $this->lH->log(3, $this->TAG, "Saving details for workflow with id = '{$this->instanceId}'");
       $this->lH->log(4, $this->TAG, "************************************************************ inserting into meta document table");
       
       $processing = Database::$BOOL_FALSE;
@@ -337,6 +339,7 @@ class Workflow {
     * @return String Returns the instance id or null if an error occurres
     */
    private function generateInstanceID() {
+      $this->lH->log(3, $this->TAG, "Generating an instance id for this new workflow");
       $generated = false;
       while($generated === false) {
          //generate random id
@@ -425,6 +428,7 @@ class Workflow {
     * @param String $url The URL where the data file exists
     */
    public function addRawDataFile($url) {
+      $this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
       if($this->workingDir !== null 
               && $this->instanceId !== null
               && $this->database !== null){
@@ -449,6 +453,7 @@ class Workflow {
     * This function cleans up all the resources if this object is unhealthy
     */
    public function cleanUp() {
+      $this->lH->log(3, $this->TAG, "Cleaing up workflow with id = '{$this->instanceId}'");
       if($this->healthy == FALSE) {
          $this->lH->log(2, $this->TAG, "Workflow instance appears to be unhealthy. Cleaning the database and files");
          if($this->instanceId != null) {
@@ -499,6 +504,7 @@ class Workflow {
     * @todo Save processing status in MySQL
     */
    public function convertDataFilesToMySQL() {
+      $this->lH->log(3, $this->TAG, "Converting data files to SQL for workflow with id = '{$this->instanceId}'");
       $this->cacheIsProcessing();
       if($this->healthy == true
               && $this->database != null 
@@ -742,6 +748,7 @@ class Workflow {
     * This function creates a save point for the workflow
     */
    public function save() {
+      $this->lH->log(3, $this->TAG, "Creating a database dump for workflow with id = '{$this->instanceId}'");
       $filename = date("Y-m-d_H-i-s")."_".$this->generateRandomID(5).".sql";
       if($this->healthy == true
               && $this->instanceId != null
@@ -750,6 +757,7 @@ class Workflow {
               && $this->currUser != null) {
          try {
             $this->database->backup($this->workingDir, $filename, $this->currUser);
+            return $filename;
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
             $this->healthy = false;
@@ -761,27 +769,41 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to save workflow with id = '{$this->instanceId}' because it wasn't initialized correctly");
       }
+      return null;
    }
    
    /**
+    * This function restores the specified workflow to a previous state
     * 
+    * @param type $config
+    * @param type $instanceId
     * @param type $restorePoint
+    * @return array  Status showing whether operation was successful
     */
-   public function restore($restorePoint) {
+   public static function restore($config, $instanceId, $restorePoint) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      $lH = new LogHandler("./");
+      $healthy = true;
+      $errors = array();
+      $lH->log(3, "waworkflow_static", "Restoring workflow with id = '{$instanceId}' to '$restorePoint' restore point");
       try {
-         //connect to default database before trying to restore workflow database
-         if($this->database != null) $this->database->close();
-         $this->database = new Database($this->config);
-         
-         $path = WAFile::getSavePointFilePath($this->workingDir, $restorePoint);
-         $this->database->restore($this->instanceId, $path);
+         $database = new Database($config);
+         $workflowDetails = Workflow::getWorkflowDetails($config, $instanceId);
+         $workingDir = $workflowDetails['working_dir'];
+         $path = WAFile::getSavePointFilePath($workingDir, $restorePoint);
+         $database->restore($instanceId, $path);
       } catch (WAException $ex) {
          if($ex->getCode() != WAException::$CODE_DB_CLOSE_ERROR) {
-            array_push($this->errors, $ex);
-            $this->healthy = false;
-            $this->lH->log(1, $this->TAG, "Unable to restore workflow with id = '{$this->instanceId}' to '$restorePoint' save point");
+            array_push($errors, $ex);
+            $healthy = false;
+            $lH->log(1, "waworkflow_static", "Unable to restore workflow with id = '{$instanceId}' to '$restorePoint' save point");
          }
       }
+      
+      $status = Workflow::getStatusArray($healthy, $errors);
+      return $status;
    }
    
    /**
@@ -791,8 +813,9 @@ class Workflow {
     * @param type $columnDetails Details of the column to be modified
     */
    public function modifyColumn($sheetName, $columnDetails){
+      $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
       //try saving the workflow instance first
-      $this->save();
+      $savePoint = $this->save();
       if($this->healthy == true) {
          try {
             $sheet = new WASheet($this->config, $this->database, null, $sheetName);
@@ -813,6 +836,7 @@ class Workflow {
       $this->cacheIsProcessing();
       $this->cacheErrors();
       $this->cacheHealth();
+      return $savePoint;
    }
    
    /**
@@ -821,10 +845,12 @@ class Workflow {
     * @param array $sheetDetails
     */
    public function modifySheet($sheetDetails) {
+      $this->lH->log(3, $this->TAG, "Modifying sheet in workflow with id = '{$this->instanceId}'. Sheet details = ".  print_r($sheetDetails, true));
+      $savePoint = null;
       if(array_key_exists("original_name", $sheetDetails)
               && array_key_exists("name", $sheetDetails)
               && array_key_exists("delete", $sheetDetails)) {
-         $this->save();
+         $savePoint = $this->save();
          if($this->healthy == true) {
             try {
                $sheet = new WASheet($this->config, $this->database, null, $sheetDetails['original_name']);
@@ -858,6 +884,7 @@ class Workflow {
       $this->cacheIsProcessing();
       $this->cacheErrors();
       $this->cacheHealth();
+      return $savePoint;
    }
    
    /**
@@ -867,6 +894,7 @@ class Workflow {
     * @return Array Array with schema data for all the data storing MySQL tables
     */
    public function getSchema() {
+      $this->lH->log(3, $this->TAG, "Getting schema for workflow with id = '{$this->instanceId}'");
       if($this->healthy == true && $this->instanceId == $this->database->getDatabaseName()
               && $this->instanceId != null) {
          $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
@@ -899,15 +927,30 @@ class Workflow {
    }
    
    /**
-    * This function gets all the save points for this instance
+    * This function gets all the save points for this instance.
+    * Function is static inorder to avoid importing messed up workflow context if
+    * an error occurres in the workflow. Allows clients to rollback to previous 
+    * savepoints event if workflow health is bad
     */
-   public function getSavePoints() {
-      if($this->database != null
-              && $this->instanceId != null
-              && $this->instanceId == $this->database->getDatabaseName()) {
+   public static function getSavePoints($config, $instanceId) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_file.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      
+      $errors = array();
+      $healthy = true;
+      $formatted = array();//list of formatted save points
+      $lH = new LogHandler("./");
+      $lH->log(3, "waworkflow_static", "Getting save points for workflow with id = '{$instanceId}'");
+      $database = new Database($config, $instanceId);
+      if($database != null
+              && $instanceId != null
+              && $instanceId == $database->getDatabaseName()) {
+         $workflowDetails = Workflow::getWorkflowDetails($config, $instanceId);
+         $workingDir = $workflowDetails['working_dir'];
          try {
-            $savePointFiles = WAFile::getAllSavePointFiles($this->config, $this->instanceId, $this->database, $this->workingDir);
-            $formatted = array();
+            $savePointFiles = WAFile::getAllSavePointFiles($config, $instanceId, $database, $workingDir);
             for($index = 0; $index < count($savePointFiles); $index++) {
                $currFile = $savePointFiles[$index];
                $currFileDetails = $currFile->getFileDetails();
@@ -918,19 +961,23 @@ class Workflow {
                
                array_push($formatted, $currFileDetails);
             }
-            
-            return $formatted;
          } catch (WAException $ex) {
-            array_push($this->errors, $ex);
-            $this->healthy = false;
-            $this->lH->log(1, $this->TAG, "Unable to get save point files for workflow with id = '{$this->instanceId}'");
+            array_push($errors, $ex);
+            $healthy = false;
+            $lH->log(1, "waworkflow_static", "Unable to get save point files for workflow with id = '{$instanceId}'");
          }
       }
       else {
-         array_push($this->errors, new WAException("Unable to get data tables because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
-         $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "Unable to get data tables because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+         array_push($errors, new WAException("Unable to get data tables because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $healthy = false;
+         $lH->log(1, "waworkflow_static", "Unable to get data tables because workflow with id = '{$instanceId}' wasn't initialized correctly");
       }
+      
+      $result = array(
+          "save_points" => $formatted,
+          "status" => Workflow::getStatusArray($healthy, $errors)
+      );
+      return $result;
    }
    
    /**

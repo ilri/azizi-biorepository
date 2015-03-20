@@ -187,7 +187,7 @@ class WASheet {
              "columns" => array()
          );
          
-         $this->lH->log(4, $this->TAG, "Columns = ".print_r($this->columns, true));
+         //$this->lH->log(4, $this->TAG, "Columns = ".print_r($this->columns, true));
          
          for($index = 0; $index < count($this->columns); $index++) {
             $currColumn = $this->columns[$index];

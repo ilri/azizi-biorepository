@@ -64,8 +64,32 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxfileupload.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxcheckbox.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxnumberinput.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxmenu.js"></script>
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
-<div style="margin-top: 50px;">
+<div id="menu_bar">
+   <ul>
+      <li>Project
+         <ul style="width: 250px;">
+            <li>Home</li>
+            <li>Contributors</li>
+         </ul>
+      </li>
+      <li>Edit
+          <ul style='width: 250px;'>
+              <li>Undo
+                 <ul id="undo_container" style='width: 220px;'>
+                  </ul>
+              </li>
+          </ul>
+      </li>
+      <li>Help
+         
+      </li>
+  </ul>
+</div>
+<div style="margin-top: 10px;">
    <div id="new_project_wndw" style="display: none;">
       <div>Create a new project</div>
       <div>
@@ -86,7 +110,13 @@ class DMP extends Repository{
       <div id="sheets"></div>
       <div id="columns"></div>
    </div>
-   <div id="loading_box" style="display: none;">Loading</div>
+   <div style="margin-top:20px; margin-right: 50px; text-align: right;">
+      <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>
+      <button type="button" id="update_btn" class="btn btn-primary" disabled>Update</button>
+   </div>
+   <div id="loading_box" style="display: none;">Loading..</div>
+   <div id="enotification_pp"></div>
+   <div id="inotification_pp"></div>
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
