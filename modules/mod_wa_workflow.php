@@ -757,7 +757,7 @@ class Workflow {
    /**
     * This function creates a save point for the workflow
     */
-   public function save() {
+   public function save($description) {
       $this->lH->log(3, $this->TAG, "Creating a database dump for workflow with id = '{$this->instanceId}'");
       $filename = date("Y-m-d_H-i-s")."_".$this->generateRandomID(5).".sql";
       if($this->healthy == true
@@ -766,7 +766,7 @@ class Workflow {
               && $this->workingDir != NULL
               && $this->currUser != null) {
          try {
-            $this->database->backup($this->workingDir, $filename, $this->currUser);
+            $this->database->backup($this->workingDir, $filename, $this->currUser, $description);
             return $filename;
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
@@ -847,7 +847,11 @@ class Workflow {
    public function modifyColumn($sheetName, $columnDetails){
       $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
       //try saving the workflow instance first
-      $savePoint = $this->save();
+      $description = "Modify $sheetName -> {$columnDetails['original_name']}";
+      if($columnDetails['delete'] == true) {
+         $description = "Delete $sheetName -> {$columnDetails['original_name']}";
+      }
+      $savePoint = $this->save($description);
       if($this->healthy == true) {
          try {
             $sheet = new WASheet($this->config, $this->database, null, $sheetName);
@@ -882,7 +886,11 @@ class Workflow {
       if(array_key_exists("original_name", $sheetDetails)
               && array_key_exists("name", $sheetDetails)
               && array_key_exists("delete", $sheetDetails)) {
-         $savePoint = $this->save();
+         $description = "Modify ".$sheetDetails['original_name'];
+         if($sheetDetails['delete'] == true) {
+            $description = "Delete ".$sheetDetails['original_name'];
+         }
+         $savePoint = $this->save($description);
          if($this->healthy == true) {
             try {
                $sheet = new WASheet($this->config, $this->database, null, $sheetDetails['original_name']);

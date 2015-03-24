@@ -443,12 +443,19 @@ DMPVSchema.prototype.refreshSavePoints = function() {
                   var html = "";
                   var savePoints = jsonResult.save_points;
                   for(var index = 0; index < savePoints.length; index++) {
-                     html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].time_created+"</li>";
+                     html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].comment+"</li>";
                   }
                   $("#undo_container").html(html);
                   $("#undo_container li").css("cursor", "pointer");
                   $("#undo_container li").click(function(){
                      window.dvs.restoreSavePoint($(this).attr("id"));
+                  });
+                  $("#undo_container li").mouseover(function(){
+                     console.log("focus in");
+                     $(this).css("background", "#D1D1D1");
+                  });
+                  $("#undo_container li").mouseleave(function(){
+                     $(this).css("background", "#FFFFFF");
                   });
                }
                else if(jsonResult.status.healthy == false) {

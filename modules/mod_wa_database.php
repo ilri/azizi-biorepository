@@ -372,7 +372,7 @@ class Database {
     * @param type $workingDir    The workflow's working directory
     * @param type $filename      Name to be given to the backup file
     */
-   public function backup($workingDir, $filename, $user) {
+   public function backup($workingDir, $filename, $user, $description) {
       try {
          $this->logH->log(3, $this->TAG, "Backing up '".$this->getDatabaseName()."'");
          //($config, $workflowID, $database, $workingDir, $type, $filename = null)
@@ -388,7 +388,8 @@ class Database {
                "added_by" => "'$user'",
                "time_added" => "'{$this->getMySQLTime()}'",
                "last_modified" => "'{$this->getMySQLTime()}'",
-               "workflow_type" => "'".WAFile::$TYPE_BACKUP."'"
+               "workflow_type" => "'".WAFile::$TYPE_BACKUP."'",
+               "comment" => "'$description'"
             );
             $this->runInsertQuery(WAFile::$TABLE_META_FILES, $columns);
          }

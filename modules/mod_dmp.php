@@ -86,8 +86,8 @@ class DMP extends Repository{
       </li>
       <li>Edit
           <ul style='width: 250px;'>
-              <li>Undo
-                 <ul id="undo_container" style='width: 220px; color: black;'>
+              <li>Rollback
+                 <ul id="undo_container" style='color: black; min-width: 300px;'>
                   </ul>
               </li>
               <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
@@ -148,7 +148,7 @@ class DMP extends Repository{
       <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>
       <button type="button" id="update_btn" class="btn btn-primary" disabled>Update</button>
    </div>
-   <div id="loading_box" style="display: none;">Loading..</div>
+   <div id="loading_box" style="display: none;background-color: rgb(212, 125, 120)">Loading..</div>
    <div id="enotification_pp"></div>
    <div id="inotification_pp"></div>
 </div>

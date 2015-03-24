@@ -24,6 +24,7 @@ class WAFile {
    private $creator;
    private $timeCreated;
    private $timeLastModified;
+   private $comment;
    
    /**
     * Default constructor for this class
@@ -40,7 +41,7 @@ class WAFile {
     * 
     * @throws WAException
     */
-   public function __construct($config, $workflowID, $database, $workingDir, $type, $filename = null, $creator = null, $timeCreated = null, $timeLastModified = null) {
+   public function __construct($config, $workflowID, $database, $workingDir, $type, $filename = null, $creator = null, $timeCreated = null, $timeLastModified = null, $comment = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       
@@ -54,6 +55,7 @@ class WAFile {
       $this->creator = $creator;
       $this->timeCreated = $timeCreated;
       $this->timeLastModified = $timeLastModified;
+      $this->comment = $comment;
       
       try {
          $this->createMetaFilesTable();
@@ -84,7 +86,8 @@ class WAFile {
           "type" => $this->type,
           "creator" => $this->creator,
           "time_created" => $time,
-          "time_last_modified" => $modifiedTime
+          "time_last_modified" => $modifiedTime,
+          "comment" => $this->comment
       );
       
       return $details;
@@ -155,7 +158,8 @@ class WAFile {
                          array("name" => "added_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                          array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                          array("name" => "last_modified" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                         array("name" => "workflow_type" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
+                         array("name" => "workflow_type" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                         array("name" => "comment" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>true , "default"=>"''" , "key"=>Database::$KEY_NONE)
                          )
            );
          } catch (WAException $ex) {//error occurred while trying to create table
@@ -411,14 +415,14 @@ class WAFile {
       include_once 'mod_wa_exception.php';
       $lH = new LogHandler("./");
       
-      $query = "select location, added_by, time_added, last_modified from ".WAFile::$TABLE_META_FILES." where workflow_type = '".WAFile::$TYPE_BACKUP."'";
+      $query = "select location, added_by, time_added, last_modified, comment from ".WAFile::$TABLE_META_FILES." where workflow_type = '".WAFile::$TYPE_BACKUP."'";
       try {
          $result = $database->runGenericQuery($query, true);
          $savePoints = array();
          if($result != null && is_array($result)) {
             for($index = 0; $index < count($result); $index++) {
                $currRow = $result[$index];
-               $currSavePoint = new WAFile($config, $workflowID, $database, $workingDir, WAFile::$TYPE_BACKUP, $currRow['location'], $currRow['added_by'], new DateTime($currRow['time_added']), new DateTime($currRow['last_modified']));
+               $currSavePoint = new WAFile($config, $workflowID, $database, $workingDir, WAFile::$TYPE_BACKUP, $currRow['location'], $currRow['added_by'], new DateTime($currRow['time_added']), new DateTime($currRow['last_modified']), $currRow['comment']);
                
                try {
                   if($currSavePoint->fileInFilesystem()) {
