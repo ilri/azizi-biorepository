@@ -183,6 +183,8 @@ class WAFile {
          try {
             $subDirPath = $this->createWorkingSubdir();//try creating the subdirectory where the file is going to be downloaded into
             $location = $subDirPath."/".$filename;
+            $fileDownloaded = false;
+            //depending on whether file is local or remote, copy it to workflow working directory
             if(filter_var($url, FILTER_VALIDATE_URL)){
                $this->lH->log(4, $this->TAG, "Downloading $url from remote server");
                $bytes = file_put_contents($location, fopen($url, 'r'));//get exclusive write rights to file and write
@@ -192,14 +194,7 @@ class WAFile {
                   throw new WAException("Unable to download file ".$filename." from ".$url, WAException::$CODE_FS_DOWNLOAD_ERROR, NULL);
                }
                else {
-                  $this->lH->log(4, $this->TAG, "File ".$filename." successfully downloaded");
-                  $this->filename = $filename;
-                  try {
-                     $this->registerFile($filename, $addedBy);
-                  } catch (WAException $ex) {
-                     $this->lH->log(1, $this->TAG, "File downloaded successfully but unable to record existence of the file in the database");
-                     throw new WAException("Unable to register existence of new file '$filename' in the database", WAException::$CODE_DB_REGISTER_FILE_ERROR, $ex);
-                  }
+                  $fileDownloaded = true;
                }
             }
             else {
@@ -209,8 +204,21 @@ class WAFile {
                   $this->lH->log(1, $this->TAG, "unable to copy $url to $location");
                   throw new WAException("Unable to copy file ".$filename." from ".$url, WAException::$CODE_FS_DOWNLOAD_ERROR, NULL);
                }
+               else {
+                  $fileDownloaded = true;
+               }
             }
-
+            //record existance of file in database
+            if($fileDownloaded == true) {
+               $this->lH->log(4, $this->TAG, "File ".$filename." successfully downloaded");
+               $this->filename = $filename;
+               try {
+                  $this->registerFile($filename, $addedBy);
+               } catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "File downloaded successfully but unable to record existence of the file in the database");
+                  throw new WAException("Unable to register existence of new file '$filename' in the database", WAException::$CODE_DB_REGISTER_FILE_ERROR, $ex);
+               }
+            }
          } catch (WAException $ex) {
             throw new WAException("Unable to create subdirectory where downloading file is going to be stored", WAException::$CODE_FS_DOWNLOAD_ERROR, $ex);
          }

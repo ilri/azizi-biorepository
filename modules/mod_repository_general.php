@@ -12,7 +12,7 @@ class Repository extends DBase{
    /**
     * @var Object An object with the database functions and properties. Implemented here to avoid having a million & 1 database connections
     */
-   public $Dbase;
+   protected $Dbase;
    
    /**
     * @var Object An object that is responsible for all security functions eg (authing user, getting modules user has access to) 
@@ -57,6 +57,10 @@ class Repository extends DBase{
       }*/
       
       $this->security = new Security($this->Dbase);
+   }
+   
+   public function sessionStart() {
+      $this->Dbase->SessionStart();
    }
 
    /**

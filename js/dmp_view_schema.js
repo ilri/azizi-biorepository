@@ -12,6 +12,8 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.leftSideWidth = 0;
    window.dvs.rightSideWidth = 0;
    window.dvs.lastSavePoint = null;
+   window.dvs.uploadFileLoc = null;
+   $("#whoisme").hide();
    //initialize source for project_list_box
    $(document).ready(function(){
       window.dvs.documentReady();
@@ -20,6 +22,7 @@ function DMPVSchema(server, user, session, project) {
    if(window.dvs.project == null || window.dvs.project.length == 0) {//if project is not set
       //show create project popup
       $("#new_project_wndw").show();
+      $("#project_title").html("New Project");
    }
 }
 
@@ -32,20 +35,365 @@ DMPVSchema.prototype.documentReady = function() {
    var pWidth = window.innerWidth*0.942;//split_window width
    window.dvs.leftSideWidth = pWidth*0.2;//30% of split_window
    window.dvs.rightSideWidth = pWidth - window.dvs.leftSideWidth;
-   $("#new_project_wndw").jqxWindow({height: 350, width: 600, theme: ''});
-   $("#manual_file_upload").jqxFileUpload({width:500, fileInputName: "file"});
-   $("#split_window").jqxSplitter({  width: pWidth, height: 600, panels: [{ size: window.dvs.leftSideWidth, min: '10%' }, {size: window.dvs.rightSideWidth, min: '50%'}] });
+   var newProjectWindowPos = {
+      y:window.innerHeight/2 - 220/2 - window.innerHeight*0.1,
+      x:window.innerWidth/2 - 600/2
+   };
+   $("#new_project_wndw").jqxWindow({height: 220, width: 600, position:newProjectWindowPos, theme: ''});
+   var deleteProjectWindowPos = {
+      y:window.innerHeight/2 - 100/2 - window.innerHeight*0.1,
+      x:window.innerWidth/2 - 300/2
+   };
+   $("#delete_project_wndw").jqxWindow({height: 100, width: 300, position: deleteProjectWindowPos, theme: ''});
+   var renameSheetWindowPos = {
+      y:window.innerHeight/2 - 150/2 - window.innerHeight*0.1,
+      x:window.innerWidth/2 - 400/2
+   };
+   $("#rename_sheet_wndw").jqxWindow({height: 150, width: 400, position: renameSheetWindowPos, theme: ''});
+   $("#manual_file_upload").jqxFileUpload({
+      width:500,
+      fileInputName: "data_file",
+      uploadUrl: "mod_ajax.php?page=dmp&do=ajax&action=upload_data_file",
+      autoUpload: true
+   });
+   $("#manual_file_upload").on("uploadEnd", window.dvs.fileUploadEnd);
+   $("#manual_file_upload").on("uploadStart", window.dvs.fileUploadStart);
+   $("#split_window").jqxSplitter({  width: pWidth, height: window.innerHeight*0.8, panels: [{ size: window.dvs.leftSideWidth, min: '10%' }, {size: window.dvs.rightSideWidth, min: '50%'}] });
    $("#loading_box").css("top", (window.innerHeight/2 - (window.innerHeight*0.1))-($("#loading_box").height()/2)+"px");
    $("#loading_box").css("left", (window.innerWidth/2)-($("#loading_box").width()/2)+"px");
    $("#inotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: true, template:"info"});
    $("#enotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: false, template:"error"});
    window.dvs.initSheetList();
    window.dvs.initColumnGrid();
-   window.dvs.initFileDropArea();
+   //window.dvs.initFileDropArea();
    $("#cancel_btn").click(window.dvs.cancelButtonClicked);
    $("#update_btn").click(window.dvs.updateButtonClicked);
+   $("#create_project_btn").click(window.dvs.createProjectButtonClicked);
+   $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
+   $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
+   $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
    $("#menu_bar").jqxMenu();
-   window.dvs.refreshSavePoints();
+   $("#right_click_menu").jqxMenu({mode: "popup", width: "200px", autoOpenPopup: false});
+   $("#delete_sheet_btn").click(window.dvs.deleteSheetButtonClicked);
+   $("#rename_sheet_btn").click(window.dvs.renameSheetButtonClicked);
+   $("#rename_sheet_btn2").click(window.dvs.renameSheetButton2Clicked);
+};
+
+/**
+ * This function is called when the rename button in contextual right click menu is clicked
+ * 
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.renameSheetButtonClicked = function (event) {
+   var sheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
+   var sheet = window.dvs.schema.sheets[sheetIndex];
+   $("#sheet_old_name").val(sheet.name);
+   $("#rename_sheet_wndw").show();
+};
+
+/**
+ * This function is called when the rename button in the rename sheet window is clicked
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.renameSheetButton2Clicked = function () {
+   if($("#sheet_old_name").val().length > 0 && $("#sheet_name").val().length > 0 && window.dvs.project != null) {
+      var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
+      var sheet = window.dvs.schema.sheets[selectedSheetIndex];
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "sheet":{"original_name":$("#sheet_old_name").val(), "name":$("#sheet_name").val(), "delete":false}
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      var canContinue = true;
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=alter_sheet",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could rename "+sheet.name);
+               $("#enotification_pp").jqxNotification("open");
+               canContinue = false;
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to rename "+sheet.name);
+               $("#enotification_pp").jqxNotification("open");
+               canContinue = false;
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from alter_sheet endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not rename sheet");
+                  $("#enotification_pp").jqxNotification("open");
+                  canContinue = false;
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not rename sheet");
+               $("#enotification_pp").jqxNotification("open");
+               canContinue = false;
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            window.dvs.updateSheetList();
+         }
+      });
+      if(canContinue == true) {
+         $("#rename_sheet_wndw").hide();
+         $("#inotification_pp").html(" successfully renamed "+$("#sheet_old_name").val()+" to "+$("#sheet_name").val());
+         $("#inotification_pp").jqxNotification("open");
+      }
+   }
+};
+
+DMPVSchema.prototype.deleteSheetButtonClicked = function() {
+   if(window.dvs.project != null) {
+      var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
+      var sheet = window.dvs.schema.sheets[selectedSheetIndex];
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "sheet":{"original_name":sheet.name, "name":sheet.name, "delete":true}
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      var canContinue = true;
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=alter_sheet",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could delete "+sheet.name);
+               $("#enotification_pp").jqxNotification("open");
+               canContinue = false;
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to delete "+sheet.name);
+               $("#enotification_pp").jqxNotification("open");
+               canContinue = false;
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from alter_sheet endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not delete sheet "+sheet.name);
+                  $("#enotification_pp").jqxNotification("open");
+                  canContinue = false;
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not delete sheet "+sheet.name);
+               $("#enotification_pp").jqxNotification("open");
+               canContinue = false;
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            window.dvs.updateSheetList();
+         }
+      });
+      if(canContinue == true) {
+         $("#inotification_pp").html(sheet.name+" successfully deleted");
+         $("#inotification_pp").jqxNotification("open");
+      }
+   }
+};
+
+DMPVSchema.prototype.deleteProjectButtonClicked = function() {
+   if(window.dvs.project != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=delete_workflow",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could delete project");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to delete projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == true) {
+                  window.location.href = "?page=dmp";
+               }
+               else if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not delete project");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not delete project");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").show();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.fileUploadEnd = function(event) {
+   console.log(event);
+   var serverResponse = event.args.response;
+   var jsonResponse = $.parseJSON(serverResponse);
+   var error = false;
+   if(typeof jsonResponse.healthy !== 'undefined' && jsonResponse.healthy == true) {
+      window.dvs.uploadFileLoc = jsonResponse.name;
+      if(window.dvs.uploadFileLoc == null || window.dvs.uploadFileLoc.length == 0) {
+         error = true;
+         window.dvs.uploadFileLoc = null;
+      }
+   }
+   else {
+      error = true;
+   }
+   
+   if(error==true) {
+      $("#enotification_pp").html("Unable to upload file");
+      $("#enotification_pp").jqxNotification("open");
+   }
+   else {
+      $("#inotification_pp").html("Successfully uploaded file");
+      $("#inotification_pp").jqxNotification("open");
+   }
+};
+
+DMPVSchema.prototype.fileUploadStart = function() {
+   window.dvs.uploadFileLoc = null;
+};
+
+DMPVSchema.prototype.createProjectButtonClicked = function() {
+   //check if project name and upload file are set
+   var projectName = $("#project_name").val();
+   var fileLoc = window.dvs.uploadFileLoc;
+   if(projectName.length > 0 && fileLoc != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "data_file_url": fileLoc,
+         "workflow_name": projectName
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=init_workflow",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could create project");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to create projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == true) {
+                  $("#inotification_pp").html("Done creating project");
+                  $("#inotification_pp").jqxNotification("open");
+                  $("#new_project_wndw").hide();
+                  window.dvs.project = jsonResult.workflow_id;
+                  window.dvs.processProjectSchema();
+               }
+               else if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not create project");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not fetch save points");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.processProjectSchema = function() {
+   if(window.dvs.project != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=process_mysql_schema",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could not process the project's schema");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to process schemas");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == true) {
+                  $("#inotification_pp").html("Done processing project schema");
+                  $("#inotification_pp").jqxNotification("open");
+                  window.dvs.updateSheetList();
+               }
+               else if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not fetch save points");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not fetch save points");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+         }
+      });
+   }
 };
 
 DMPVSchema.prototype.cancelButtonClicked = function() {
@@ -60,57 +408,64 @@ DMPVSchema.prototype.cancelButtonClicked = function() {
    $("#update_btn").prop('disabled', true);
 };
 
+DMPVSchema.prototype.sheetsRightClicked = function() {
+   
+};
+
 DMPVSchema.prototype.refreshSavePoints = function() {
-   console.log("refreshing save points");
-   var sData = JSON.stringify({"workflow_id": window.dvs.project});
-   var sToken = JSON.stringify({
-      "server":window.dvs.server,
-      "user": window.dvs.user,
-      "session": window.dvs.session
-   });
-   $.ajax({
-      url: "mod_ajax.php?page=odk_workflow&do=get_save_points",
-      type: "POST",
-      async: true,
-      data: {data: sData, token: sToken},
-      statusCode: {
-         400: function() {//bad request
-            $("#enotification_pp").html("Could not fetch save points");
-            $("#enotification_pp").jqxNotification("open");
-         },
-         403: function() {//forbidden
-            $("#enotification_pp").html("User not allowed to fetch save points");
-            $("#enotification_pp").jqxNotification("open");
-         }
-      },
-      success: function(jsonResult, textStatus, jqXHR){
-         if(jsonResult !== null) {
-            if(jsonResult.status.healthy == true) {
-               var html = "";
-               var savePoints = jsonResult.save_points;
-               for(var index = 0; index < savePoints.length; index++) {
-                  html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].time_created+"</li>";
-               }
-               $("#undo_container").html(html);
-               $("#undo_container li").css("cursor", "pointer");
-               $("#undo_container li").click(function(){
-                  window.dvs.restoreSavePoint($(this).attr("id"));
-               });
+   console.log("refresh save points called");
+   if(window.dvs.project != null && window.dvs.project.length > 0) {
+      console.log("refreshing save points");
+      var sData = JSON.stringify({"workflow_id": window.dvs.project});
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_save_points",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could not fetch save points");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to fetch save points");
+               $("#enotification_pp").jqxNotification("open");
             }
-            else if(jsonResult.status.healthy == false) {
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == true) {
+                  var html = "";
+                  var savePoints = jsonResult.save_points;
+                  for(var index = 0; index < savePoints.length; index++) {
+                     html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].time_created+"</li>";
+                  }
+                  $("#undo_container").html(html);
+                  $("#undo_container li").css("cursor", "pointer");
+                  $("#undo_container li").click(function(){
+                     window.dvs.restoreSavePoint($(this).attr("id"));
+                  });
+               }
+               else if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not fetch save points");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            }
+            else {
                $("#enotification_pp").html("Could not fetch save points");
                $("#enotification_pp").jqxNotification("open");
             }
+         },
+         complete: function() {
+            $("#loading_box").hide();
          }
-         else {
-            $("#enotification_pp").html("Could not fetch save points");
-            $("#enotification_pp").jqxNotification("open");
-         }
-      },
-      complete: function() {
-         $("#loading_box").hide();
-      }
-   });
+      });
+   }
 };
 
 DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
@@ -143,7 +498,6 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
          if(jsonResult !== null) {
             if(jsonResult.status.healthy == true) {
                window.dvs.updateSheetList();
-               window.dvs.refreshSavePoints();
                $("#inotification_pp").html("Changes undone");
                $("#inotification_pp").jqxNotification("open");
             }
@@ -243,7 +597,6 @@ DMPVSchema.prototype.updateButtonClicked = function() {
    $("#loading_box").hide();
    $("#loading_box").html("Loading..");
    window.dvs.updateSheetList();
-   window.dvs.refreshSavePoints();
 };
 
 /**
@@ -253,7 +606,7 @@ DMPVSchema.prototype.updateButtonClicked = function() {
 DMPVSchema.prototype.initFileDropArea = function() {
    //check if browser supports the W3 File API
    if(window.File && window.FileList && window.FileReader) {
-      $("#file_drop_area").bind("drop", function(event) {
+      /*$("#file_drop_area").bind("drop", function(event) {
          $("#file_drop_area").css("border", "2px #aaa dashed");
          $("#file_drop_area").removeClass("mouse-over");
          //prevent the browser from trying to download the file
@@ -272,7 +625,7 @@ DMPVSchema.prototype.initFileDropArea = function() {
       $("#file_drop_area").bind("dragend", function(e){
          e.target.className = "";
          $("#file_drop_area").css("border", "2px #aaa dashed");
-      });
+      });*/
       
    }
    else {
@@ -304,10 +657,10 @@ DMPVSchema.prototype.initSheetList = function() {
          id: "name",
          beforeprocessing: function(data) {
             window.dvs.schema = data.schema;
+            $("#project_title").html(window.dvs.schema.title);
             var sheets = new Array();
             //TODO: alert user if data is null
             if(data != null) {
-               console.log(data);
                if(data.status.healthy == true){
                   for(var index = 0; index < data.schema.sheets.length; index++) {
                      sheets[index] = {};
@@ -319,7 +672,6 @@ DMPVSchema.prototype.initSheetList = function() {
                   $("#enotification_pp").jqxNotification("open");
                }
             }
-            console.log(sheets);
             data.sheet_names = sheets;
          }
       };
@@ -341,6 +693,7 @@ DMPVSchema.prototype.initSheetList = function() {
    
    window.dvs.sheetListAdapter = new $.jqx.dataAdapter(source, {loadComplete: function(){
          $("#loading_box").hide();
+         window.dvs.refreshSavePoints();
          console.log("load complete");
          if(window.dvs.schema != null && window.dvs.schema.sheets.length > 0){
             $("#sheets").jqxListBox('selectIndex', 0);
@@ -359,6 +712,22 @@ DMPVSchema.prototype.initSheetList = function() {
                break;
             }
          }
+      }
+   });
+   //disable default right click context menu
+   $(document).on('contextmenu', function (e) {
+      return false;
+   });
+   $("#sheets").mousedown(function(e) {
+      if(e.button == 2) {//right click
+         var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
+         var sheet = window.dvs.schema.sheets[selectedSheetIndex];
+         var scrollTop = $(window).scrollTop();
+         var scrollLeft = $(window).scrollLeft();
+         $("#delete_sheet_btn").html("Delete "+sheet.name);
+         $("#rename_sheet_btn").html("Rename "+sheet.name);
+         $("#right_click_menu").jqxMenu('open', parseInt(event.clientX) + 5 + scrollLeft, parseInt(event.clientY) + 5 + scrollTop);
+         return false;
       }
    });
 };
@@ -387,6 +756,7 @@ DMPVSchema.prototype.updateSheetList = function() {
          id: "name",
          beforeprocessing: function(data) {
             window.dvs.schema = data.schema;
+            $("#project_title").html(window.dvs.schema.title);
             var sheets = new Array();
             //TODO: alert user if data is null
             if(data != null) {
@@ -395,7 +765,6 @@ DMPVSchema.prototype.updateSheetList = function() {
                   sheets[index].name = data.schema.sheets[index].name;
                }
             }
-            console.log(sheets);
             data.sheet_names = sheets;
          }
       };
@@ -417,6 +786,7 @@ DMPVSchema.prototype.updateSheetList = function() {
    
    window.dvs.sheetListAdapter = new $.jqx.dataAdapter(source, {loadComplete: function(){
          $("#loading_box").hide();
+         window.dvs.refreshSavePoints();
          console.log("load complete");
          if(window.dvs.schema != null && window.dvs.schema.sheets.length > 0){
             $("#sheets").jqxListBox('selectIndex', 0);

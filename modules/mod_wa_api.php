@@ -18,6 +18,7 @@ class ODKWorkflowAPI extends Repository {
       include_once 'mod_wa_workflow.php';
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
       
       $this->Dbase = $Dbase;
       $this->config = Config::$config;
@@ -42,9 +43,11 @@ class ODKWorkflowAPI extends Repository {
             $authJson = $this->getData($_REQUEST['token']);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
-                    && array_key_exists("secret", $authJson)) {
+                    && array_key_exists("secret", $authJson)
+                    && array_key_exists("auth_mode", $authJson)
+                    && ($authJson['auth_mode'] == "local" || $authJson['auth_mode'] == "ldap")) {
                try {
-                  $sessionId = $this->authUser($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['secret']);
+                  $sessionId = $this->authUser($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['auth_mode'], $authJson['secret']);
                   $data = array(
                       "session" => $sessionId,
                       "status" => array("healthy" => true, "errors" => array())
@@ -61,7 +64,7 @@ class ODKWorkflowAPI extends Repository {
                }
             }
             else {
-               $this->lH->log(2, $this->TAG, "Either server, secret or user not set in data provided to auth endpoint");
+               $this->lH->log(2, $this->TAG, "Either server, secret or user not set in data provided to auth endpoint '".$_REQUEST['token']."'");
                $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
             }
          }
@@ -75,10 +78,12 @@ class ODKWorkflowAPI extends Repository {
             $authJson = $this->getData($_REQUEST['token']);
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
-                    && array_key_exists("secret", $authJson)) {
+                    && array_key_exists("secret", $authJson)
+                    && array_key_exists("auth_mode", $authJson)
+                    && ($authJson['auth_mode'] == "local" || $authJson['auth_mode'] == "ldap")) {
                try {
                   $this->lH->log(4, $this->TAG, "Token json looks like this ".print_r($authJson, true));
-                  $result = $this->addClient($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['secret']);
+                  $result = $this->addClient($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['auth_mode'], $authJson['secret']);
                   
                   $data = array(
                       "created" => $result,
@@ -143,6 +148,9 @@ class ODKWorkflowAPI extends Repository {
                      }
                      else if (OPTIONS_REQUESTED_SUB_MODULE == "restore_save_point") {
                         $this->handleRestoreSavePointEndpoint();
+                     }
+                     else if (OPTIONS_REQUESTED_SUB_MODULE == "delete_workflow") {
+                        $this->handleDeleteWorkflowEndpoint();
                      }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
@@ -267,10 +275,9 @@ class ODKWorkflowAPI extends Repository {
             $data = array(
                 "status" => $workflow->getCurrentStatus()
             );
-            $this->returnResponse($data);
-            
             //call this function after sending response to client because it's goin to take some time
             $workflow->convertDataFilesToMySQL();
+            $this->returnResponse($data);
          }
          else {
             $this->lH->log(2, $this->TAG, "workflow_id variable not set in data provided to process_mysql_schema endpoint");
@@ -493,6 +500,37 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
+   
+   /**
+    * This function handles the delete_workflow endpoint
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    * }
+    */
+   private function handleDeleteWorkflowEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $status = Workflow::delete($this->config, $json['workflow_id']);
+            
+            $data = array(
+                "status" => $status
+            );
+            
+            $this->returnResponse($data);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id not set in data provided to delete_workflow endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to restore_savepoint endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
 
    /**
     * This function generates a UUID for the user by combining ith with the server address
@@ -529,29 +567,67 @@ class ODKWorkflowAPI extends Repository {
       echo json_encode($data);
    }
    
-   private function addClient($uri, $cyperSecret) {
+   private function addClient($uri, $authMode, $cyperSecret) {
       $security = new Security($this->Dbase);
       $decryptedCypher = $security->decryptCypherText($cyperSecret);
       if($decryptedCypher != null){
-         try {
-            $database = new Database($this->config);
-            if($database != null){
-               $salt = $security->generateSalt();
-               $hash = $security->hashPassword($decryptedCypher, $salt);
-               $columns = array(
-                   "uri" => "'$uri'",
-                   "secret" => "'$hash'",
-                   "salt" => "'$salt'"
-               );
-               $database->runInsertQuery("clients", $columns);
-               return true;
+         if($authMode == "local") {
+            try {
+               $database = new Database($this->config);
+               if($database != null){
+                  $salt = $security->generateSalt();
+                  $hash = $security->hashPassword($decryptedCypher, $salt);
+                  $columns = array(
+                      "uri" => "'$uri'",
+                      "ldap_auth" => "'f'",
+                      "secret" => "'$hash'",
+                      "salt" => "'$salt'"
+                  );
+                  $database->runInsertQuery("clients", $columns);
+                  return true;
+               }
+               else {
+                  throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+               }
             }
-            else {
-               throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+            catch(WAException $ex) {
+               throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
             }
          }
-         catch(WAException $ex) {
-            throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         else if($authMode == "ldap") {
+            try {
+               $database = new Database($this->config);
+               if($database != null){
+                  //try log see if can log in using ldap
+                  $userURI = ODKWorkflowAPI::explodeUserUUID($uri);
+                  $ldapAuth = $security->ldapAuth($userURI["user"], $decryptedCypher);
+                  //1 if an error occured, 2 if user not authed and 0 if everything is fine. Return values should matche those from authUser($user, $pass)
+                  if($ldapAuth == 0) {//user authed
+                     $salt = "";
+                     $hash = "";
+                     $columns = array(
+                         "uri" => "'$uri'",
+                         "ldap_auth" => "'t'",
+                         "secret" => "'$hash'",
+                         "salt" => "'$salt'"
+                     );
+                     $database->runInsertQuery("clients", $columns);
+                     return true;
+                  }
+                  else if($ldapAuth == 1) {//an error occurred
+                     throw new WAException("An error occurred while trying to authenticate user over LDAP", WAException::$CODE_WF_PROCESSING_ERROR, null);
+                  }
+                  else if($ldapAuth == 2) {//user not authed
+                     throw new WAException("An error occurred while trying to authenticate user over LDAP", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+                  }
+               }
+               else {
+                  throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+               }
+            }
+            catch(WAException $ex) {
+               throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
+            }
          }
       }
       else {
@@ -569,33 +645,63 @@ class ODKWorkflowAPI extends Repository {
     * @return string Auth Token/session id
     * @throws WAException
     */
-   private function authUser($uri, $cypherSecret) {
+   private function authUser($uri, $authMode, $cypherSecret) {
+      $this->lH->log(4, $this->TAG, "Dbase object = ".print_r($this->Dbase, TRUE));
       $security = new Security($this->Dbase);
-      $decryptedCypher = $security->decryptCypherText($cypherSecret);
+      $decryptedCypher = $security->decryptCypherText(base64_decode($cypherSecret));
       if($decryptedCypher != null){
-         try {
-            $database = new Database($this->config);
-            if($database != null){
-               $query = "select salt, secret, id from clients where uri = '{$uri}'";
-               $result = $database->runGenericQuery($query, true);
-               if(is_array($result) && count($result) == 1) {
-                  $salt = $result[0]['salt'];
-                  $secret = $result[0]['secret'];
-                  $clientId = $result[0]['id'];
-                  if($security->hashPassword($decryptedCypher, $salt) == $secret) {//client authenticated
-                     //create session id
-                     $sessionId = $this->setSessionId($database, $security, $clientId);
+         if($authMode == "local") {
+            try {
+               $database = new Database($this->config);
+               if($database != null){
+                  $query = "select salt, secret, id from clients where uri = '{$uri}'";
+                  $result = $database->runGenericQuery($query, true);
+                  if(is_array($result) && count($result) == 1) {
+                     $salt = $result[0]['salt'];
+                     $secret = $result[0]['secret'];
+                     $clientId = $result[0]['id'];
+                     if($security->hashPassword($decryptedCypher, $salt) == $secret) {//client authenticated
+                        //create session id
+                        $sessionId = $this->setSessionId($database, $security, $clientId);
 
-                     return $sessionId;
+                        return $sessionId;
+                     }
                   }
                }
+               else {
+                  throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+               }
             }
-            else {
-               throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+            catch(WAException $ex) {
+               throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
             }
          }
-         catch(WAException $ex) {
-            throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         else if($authMode == "ldap") {
+            try {
+               $database = new Database($this->config);
+               if($database != null){
+                  $query = "select salt, secret, id, ldap_auth from clients where uri = '{$uri}'";
+                  $result = $database->runGenericQuery($query, true);
+                  if(is_array($result) && count($result) == 1) {
+                     $clientId = $result[0]['id'];
+                     $ldapAuth = $result[0]['ldap_auth'];
+                     $userURI = ODKWorkflowAPI::explodeUserUUID($uri);
+                     $ldapRes = $security->ldapAuth($userURI['user'], $decryptedCypher);
+                     if($ldapAuth == "t" && $ldapRes == 0) {//client authenticated
+                        //create session id
+                        $sessionId = $this->setSessionId($database, $security, $clientId);
+
+                        return $sessionId;
+                     }
+                  }
+               }
+               else {
+                  throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+               }
+            }
+            catch(WAException $ex) {
+               throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
+            }
          }
       }
       else {

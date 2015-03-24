@@ -22,6 +22,7 @@ class Workflow {
    public static $TABLE_META_ACCESS = "__meta_access";
    public static $TABLE_META_DOCUMENT = "__meta_document";
    public static $TABLE_META_ERRORS = "__meta_errors";
+   public static $WORKFLOW_ROOT_DIR = "../odk_workflow/";
    
    /**
     * Default class contructor
@@ -297,7 +298,7 @@ class Workflow {
    private function createWorkingDir() {
       $this->lH->log(4, $this->TAG, "Creating working directory for workflow instance");
       if($this->instanceId != null){
-         $this->workingDir = "../odk_workflow/".$this->instanceId;
+         $this->workingDir = Workflow::$WORKFLOW_ROOT_DIR.$this->instanceId;
          if(file_exists($this->workingDir)) {//file exists
             //check if is directory
             if(is_dir($this->workingDir)) {
@@ -523,6 +524,14 @@ class Workflow {
          
          if(count($dataFiles) > 0) {
             if(count($dataFiles) == 1) {//currently only support one data file
+               //delete any existing data table in the database
+               $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+               if(count($dataTables) > 0) {
+                  $this->lH->log(2, $this->TAG, "Workflow already has ".  count($dataTables)." data tables (before generating schema from Excel file). Dropping this tables");
+               }
+               for($i = 0; $i < count($dataTables); $i++) {
+                  $this->database->runGenericQuery("drop table ".Database::$QUOTE_SI.$dataTables[$i].Database::$QUOTE_SI);
+               }
                $excelFile = new WAExcelFile($dataFiles[0]);
                try {
                   //TODO: how to detect if process is OOM killed by kernel
@@ -545,6 +554,7 @@ class Workflow {
       }
       else {
          $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' not initialized properly. Unable to convert workflow's data files to MySQL'");
+         $this->lH->log(4, $this->TAG, "Workflow instance details ".  print_r($this, true));
          array_push($this->errors, new WAException("Workflow not initialized properly. Unable to convert workflow's data files to MySQL'", WAException::$CODE_WF_INSTANCE_ERROR, null));
       }
       $this->setIsProcessing(false);
@@ -800,6 +810,28 @@ class Workflow {
             $healthy = false;
             $lH->log(1, "waworkflow_static", "Unable to restore workflow with id = '{$instanceId}' to '$restorePoint' save point");
          }
+      }
+      
+      $status = Workflow::getStatusArray($healthy, $errors);
+      return $status;
+   }
+   
+   public static function delete($config, $instanceId) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      $lH = new LogHandler("./");
+      $healthy = true;
+      $errors = array();
+      $lH->log(3, "waworkflow_static", "Deleting workflow with id = '{$instanceId}'");
+      try {
+         $database = new Database($config);
+         $database->runDropDatabaseQuery($instanceId);
+         rmdir(Workflow::$WORKFLOW_ROOT_DIR.$instanceId);
+      } catch (WAException $ex) {
+         array_push($errors, $ex);
+         $healthy = false;
+         $lH->log(1, "waworkflow_static", "Unable to delete workflow with id = '{$instanceId}'");
       }
       
       $status = Workflow::getStatusArray($healthy, $errors);

@@ -131,7 +131,7 @@ class Database {
          $config['user'] = $config['testbed_user'];
          $config['pass'] = $config['testbed_pass'];
          $dbase->InitializeConnection($config);
-         
+         $this->logH->log(4, $this->TAG, "About to run query '$query'");
          $result = $dbase->ExecuteQuery($query, NULL, PDO::FETCH_ASSOC, $fetchResults);
          if($fetchResults) return $result;
       } catch (PDOException $pdoException) {//thrown while trying to create dbase object
@@ -197,6 +197,20 @@ class Database {
       }
       else {
          throw new WAException("Database name is null. Cannot create database", WAException::$CODE_DB_CREATE_ERROR, null);
+      }
+   }
+   
+   public function runDropDatabaseQuery($name) {
+      if($name != null && $this->getDatabaseName() != $name) {
+         try {
+            $query = "drop database ".$name;
+            $this->runGenericQuery($query);
+         } catch (WAException $ex) {
+            throw new WAException("Unable to drop database '$name'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         throw new WAException("Unable to drop database because object is currently connected to it", WAException::$CODE_DB_CLOSE_ERROR, null);
       }
    }
    
@@ -396,7 +410,12 @@ class Database {
             $this->runGenericQuery($query);*/
             /*$command = "export PGPASSWORD=".$this->config['testbed_pass'].";dropdb -U ".$this->config['testbed_user']." {$databaseName}";
             shell_exec($command);*/
-
+            //drop all the tables
+            $db2 = new Database($this->config, $databaseName);
+            $db2->runGenericQuery("drop schema public");
+            $db2->runGenericQuery("create schema public");
+            $db2->close();
+            $this->runDropDatabaseQuery($databaseName);
             $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
             $command = "export PGPASSWORD=".$this->config['testbed_pass'].";psql -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile";
             $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);

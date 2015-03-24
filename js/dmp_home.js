@@ -1,9 +1,6 @@
 function DMPHome(server, user, session) {
    //hide all the repository elements we dont need
    window.dhome = this;
-   console.log("server = ", server);
-   console.log("user = ", server);
-   console.log("session = ", server);
    window.dhome.server = server;
    window.dhome.user = user;
    window.dhome.session = session;
@@ -26,6 +23,12 @@ DMPHome.prototype.documentReady = function () {
    $("#new_project_btn").click(function () {
       window.dhome.openProject();
    });
+   $("#inotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: true, template:"info"});
+   $("#enotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: false, template:"error"});
+   if(window.dhome.session == null || window.dhome.session.length == 0) {
+      $("#enotification_pp").html("User not registered");
+      $("#enotification_pp").jqxNotification("open");
+   }
 };
 
 /**

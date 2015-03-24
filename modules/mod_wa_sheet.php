@@ -237,6 +237,9 @@ class WASheet {
                }
             }
          }
+         else {
+            $this->lH->log(2, $this->TAG, "Unable to get column details for sheet with name '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
+         }
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to process columns for sheet with name = '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
          throw new WAException("Unable to process columns for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
@@ -252,9 +255,47 @@ class WASheet {
    private function processColumns() {
       try {
          $this->switchToThisSheet();
-         foreach($this->excelObject->getActiveSheet()->getRowIterator() as $row){
-            $rowIndex = $row->getRowIndex();
+         /*Refer to http://stackoverflow.com/questions/8583915/phpexcel-read-all-values-date-time-numbers-as-strings
+          * for an explanation on how to use toArray
+          */
+         
+         $activeSheet = $this->excelObject->getActiveSheet()->toArray(null, true, false, false);
+         for($rowIndex = 0; $rowIndex < count($activeSheet); $rowIndex++){
             $this->lH->log(4, $this->TAG, "Current row index = $rowIndex");
+            $columnNumber = -1;
+            if($rowIndex == 0) {//we are in the first row (assume first row has column headings)
+               //create an array for each column heading
+               $columnIndex = 0;
+               while($columnNumber == -1) {//while the number of columns is still unknown
+                  $cellValue = trim($activeSheet[$rowIndex][$columnIndex]);
+                  if(strlen($cellValue) == 0) {//the cell is empty (Column headings should not be empty unless all other rows for respective column are also empty)
+                     $columnNumber = $columnIndex;
+                     $this->lH->log(3, $this->TAG, "Sheet '{$this->sheetName}' has $columnNumber columns");
+                  }
+                  else {
+                     $this->columnArray[$cellValue] = array();
+                  }
+                  $columnIndex++;
+               }
+            }
+            else {//iterating though data rows (not heading rows)
+               if(count($this->columnArray) > 0) {
+                  
+                  for($columnIndex = 0; $columnIndex < count($this->columnArray); $columnIndex++){
+                     $headingCell = $activeSheet[0][$columnIndex];
+                     $cellValue = trim($activeSheet[$rowIndex][$columnIndex]);
+                     $this->columnArray[$headingCell][$rowIndex - 1] = $cellValue;
+                  }
+                  
+                  //$this->lH->log(4, $this->TAG, "Columns for sheet '{$this->sheetName}' are ".print_r($this->columnArray, true));
+               }
+               else {
+                  $this->lH->log(2, $this->TAG, "Sheet with name = '{$this->sheetName}' has no heading columns. Will be ignoring this sheet");
+               }
+            }
+         }
+         /*foreach($this->excelObject->getActiveSheet()->getRowIterator() as $row){
+            $rowIndex = $row->getRowIndex();
             
             $columnNumber = -1;
             if($rowIndex == 1){//the first row
@@ -296,7 +337,7 @@ class WASheet {
                   $this->lH->log(2, $this->TAG, "Sheet with name = '{$this->sheetName}' has no heading columns. Will be ignoring this sheet");
                }
             }
-         }
+         }*/
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to process columns in sheet with name = '{$this->sheetName}' for workflow with id = {$this->database->getDatabaseName()}");
          throw new WAException("Unable to process columns in sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
