@@ -289,6 +289,8 @@ class Database {
               . " where table_name = '$tableName' and table_catalog = '$database'";
       //TODO: determine if column is serial and a key
       try {
+         $pKeys = $this->getTablePrimaryKeys($tableName);
+         $uKeys = $this->getTableUniqueKeys($tableName);
          $result = $this->runGenericQuery($query, true);
          $columns = array();
          
@@ -311,14 +313,16 @@ class Database {
 
             $default = $result[$index]['Default'];
             if($default == "NULL") $default = null;//TODO: not sure if this will work with PostgreSQL
-            
+            $key = Database::$KEY_NONE;
+            if(in_array($result[$index]['column_name'], $pKeys)) $key = Database::$KEY_PRIMARY;
+            else if(in_array($result[$index]['column_name'], $uKeys)) $key = Database::$KEY_UNIQUE;
             $currColumn = array(
                 "name" => $result[$index]['column_name'],
                 "type" => $type,
                 "length" => $result[$index]['character_maximum_length'],
                 "nullable" => $nullable,
                 "default" => $default,
-                "key" => Database::$KEY_NONE
+                "key" => $key
             );
             
             array_push($columns, $currColumn);
@@ -363,6 +367,92 @@ class Database {
          $this->runGenericQuery($query);
       } catch (WAException $ex) {
          throw new WAException("An error occurred while trying to run insert query in '$table'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function gets the primary keys corresponding to a table
+    * @param type $tableName  Name of the table to get the keys
+    */
+   public function getTablePrimaryKeys($tableName) {
+      $query = "SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type
+         FROM pg_index i
+         JOIN pg_attribute a ON a.attrelid = i.indrelid
+         AND a.attnum = ANY(i.indkey)
+         WHERE i.indrelid = (SELECT oid FROM pg_class WHERE relname = '$tableName')
+         AND i.indisprimary";
+      try {
+         $result = $this->runGenericQuery($query, true);
+         $pkeys = array();
+         if(is_array($result)) {
+            if(count($result) == 0) {
+               $this->logH->log(2, $this->TAG, "'$tableName' does not have a primary key in the database '{$this->getDatabaseName()}'");
+            }
+            for($index = 0; $index < count($result); $index++) {
+               array_push($pkeys, $result[$index]['attname']);
+            }
+            return $pkeys;
+         }
+         else {
+            throw new WAException("Unable to retrieve primary keys for '$tableName' because of an error in the query", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to retrieve primary keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   public function getTableForeignKeys($tableName) {
+      $query = "SELECT tc.constraint_name, array_agg(kcu.column_name::text) columns, 
+         max(ccu.table_name::text) AS foreign_table_name,
+         array_agg(ccu.column_name::text) AS foreign_column_name 
+         FROM information_schema.table_constraints AS tc 
+         JOIN information_schema.key_column_usage AS kcu
+         ON tc.constraint_name = kcu.constraint_name
+         JOIN information_schema.constraint_column_usage AS ccu
+         ON ccu.constraint_name = tc.constraint_name
+         WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='$tableName' group by tc.constraint_name";
+      try {
+         $result = $this->runGenericQuery($query, true);
+         if(is_array($result)) {
+            $foreignKeys = array();
+            for($index = 0; $index < count($result); $index++) {
+               $columns = array_unique(explode('","', substr($result[$index]['columns'], 2, -2)));
+               $refColumns = array_unique(explode('","', substr($result[$index]['foreign_column_name'], 2, -2)));
+               $foreignKeys[$result[$index]['constraint_name']] = array(
+                   "columns" => $columns,
+                   "ref_table" => $result[$index]['foreign_table_name'],
+                   "ref_columns" => $refColumns
+               );
+            }
+            return $foreignKeys;
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to get foreign keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   public function getTableUniqueKeys($tableName) {
+      $query = "SELECT kcu.column_name
+         FROM information_schema.table_constraints AS tc 
+         JOIN information_schema.key_column_usage AS kcu
+         ON tc.constraint_name = kcu.constraint_name
+         JOIN information_schema.constraint_column_usage AS ccu
+         ON ccu.constraint_name = tc.constraint_name
+         WHERE constraint_type = 'UNIQUE' AND tc.table_name='$tableName'";
+      try {
+         $result = $this->runGenericQuery($query, true);
+         if(is_array($result)) {
+            $keys = array();
+            for($index = 0; $index < count($result); $index++) {
+               array_push($keys, $result[$index]['column_name']);
+            }
+            return $keys;
+         }
+         else {
+            throw new WAException("Unable to retrieve unique keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to retrieve unique keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
    
@@ -448,6 +538,8 @@ class Database {
    public function runAlterColumnQuery($tableName, $currName, $newName, $type, $length, $nullable, $default, $key) {
       //instead of altering the current column, add new column after existing then drop existing
       try {
+         //if column was previously part of the primary key, the primary key will be deleted
+         //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
          $tmpName = $currName."_odk_w_delete";
          $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
          $this->runGenericQuery($query);
@@ -456,8 +548,76 @@ class Database {
          $this->runGenericQuery($query);
          $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
          $this->runGenericQuery($query);
+         if($key == Database::$KEY_PRIMARY){
+            $this->addColumnsToPrimaryKey($tableName, array($newName));
+         }
       } catch (WAException $ex) {
          throw new WAException("Unable to get an update column expression for $'currName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function adds the specified columns to the table's primary key
+    * 
+    * @param type $tableName
+    * @param type $primaryKeyColumns
+    */
+   public function addColumnsToPrimaryKey($tableName, $primaryKeyColumns) {
+      try {
+         $existingKey = $this->getTablePrimaryKeys($tableName);
+         if(count($existingKey) > 0) {//drop existing primary key
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop constraint ".Database::$QUOTE_SI.$tableName."_pkey".Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+         }
+         //make sure only unique columns exist in $primaryKeyColumns
+         for($index = 0; $index < count($existingKey); $index++) {
+            if(!in_array($existingKey[$index], $primaryKeyColumns)) {
+               array_push($primaryKeyColumns, $existingKey[$index]);
+            }
+         }
+         
+         //try creating the new primary key
+         $pKey = Database::$QUOTE_SI . implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $primaryKeyColumns) . Database::$QUOTE_SI;
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add primary key($pKey)";
+         $this->runGenericQuery($query);
+         
+      } catch (WAException $ex) {
+         throw new WAException("Unable to update the primary key for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function adds a foreign key to the specified table
+    * 
+    * @param type $table         The table to add the foreign key
+    * @param type $columns       The columns in the foreign key
+    * @param type $refTable      The reference table
+    * @param type $refColumns    The reference Columns
+    */
+   public function addForeignKey($table, $columns, $refTable, $refColumns) {
+      if(count($columns) == count($refColumns)) {
+         try {
+            $foreignKeys = $this->getTableForeignKeys($table);
+            $fKeys = array_keys($foreignKeys);
+            //check if a foreign key joins table with refTable
+            for($index = 0; $index < count($fKeys); $index++) {
+               if($foreignKeys[$fKeys[$index]]['ref_table'] == $refTable) {
+                  $query = "alter table ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." drop constraint ".Database::$QUOTE_SI.$fKeys[$index].Database::$QUOTE_SI;
+                  $this->logH->log(2, $this->TAG, "About to drop '$table' foreign key ".  print_r($foreignKeys[$fKeys[$index]], true));
+                  $this->runGenericQuery($query);
+               }
+            }
+            //add foreign key
+            $columns = Database::$QUOTE_SI.implode(Database::$QUOTE_SI.','.Database::$QUOTE_SI, $columns).Database::$QUOTE_SI;
+            $rColumns = Database::$QUOTE_SI.implode(Database::$QUOTE_SI.','.Database::$QUOTE_SI, $refColumns).Database::$QUOTE_SI;
+            $query = "alter table ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." add foreign key($columns) references ".Database::$QUOTE_SI.$refTable.Database::$QUOTE_SI."($rColumns)";
+            $this->runGenericQuery($query);
+         } catch (WAException $ex) {
+            throw new WAException("Could not create foreign key from '$table' referencing '$refTable'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         throw new WAException("Could not create foreign key from '$table' referencing '$refTable' because of a column count missmatch", WAException::$CODE_DB_QUERY_ERROR, null);
       }
    }
    
@@ -504,6 +664,7 @@ class Database {
          $result = $this->getTableNames($this->getDatabaseName());
          if(in_array($name, $result) === false) {//the table does not exist
             //create table
+            $pKey = array();
             $createString = "create table ".Database::$QUOTE_SI.$name.Database::$QUOTE_SI." ";
             for($cIndex = 0; $cIndex < count($columns); $cIndex++) {
                if($cIndex == 0){
@@ -523,6 +684,7 @@ class Database {
                   //add name
                   try {
                      $currColumnExpression = $this->getColumnExpression($currColumn['name'], $currColumn['type'], $currColumn['length'], $currColumn['key'], $currColumn['default'], $currColumn['nullable']);
+                     if($currColumn['key'] == Database::$KEY_PRIMARY) array_push ($pKey, $currColumn['name']);
                      $createString .= $currColumnExpression;
                   } catch (WAException $ex) {
                      throw new WAException("Unable to create database column expression", WAException::$CODE_DB_CREATE_ERROR, $ex);
@@ -544,6 +706,7 @@ class Database {
             $this->logH->log(4, $this->TAG, "About to run the following query ".$createString);
             try {
                $this->runGenericQuery($createString);
+               $this->addColumnsToPrimaryKey($name, $pKey);
                $this->logH->log(4, $this->TAG, "Query run successfully");
             } catch (WAException $ex) {
                $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");
@@ -612,7 +775,7 @@ class Database {
          if($isNullable === true) $nullable = "null";
          $createString .= "{$nullable} ";
       }
-      else if($key == Database::$KEY_PRIMARY){
+      /*else if($key == Database::$KEY_PRIMARY){
          $createString .= "PRIMARY KEY ";
 
          //check if is nullable
@@ -620,7 +783,7 @@ class Database {
             $this->logH->log(1, $this->TAG, "Column with name '{$name}' defined as the primary key but nullable in database '{$this->getDatabaseName()}'");
             throw new WAException("Column with name '{$name}' defined as the primary key but nullable", WAException::$CODE_DB_CREATE_ERROR, null);
          }
-      }
+      }*/
       
       return $createString;
    }

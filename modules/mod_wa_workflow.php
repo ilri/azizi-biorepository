@@ -967,6 +967,25 @@ class Workflow {
    }
    
    /**
+    * This function adds a foreign key to the workflow
+    * 
+    * @param type $sheet
+    * @param type $columns
+    * @param type $referencing
+    */
+   public function addForeignKey($sheet, $columns, $referencing) {
+      $savePoint = $this->save("Add foreign key ".$sheet."(".implode(",", $columns).")");
+      if($this->healthy == true) {
+         $this->database->addForeignKey($sheet, $columns, $referencing['sheet'], $referencing['columns']);
+      }
+      $this->setIsProcessing(false);
+      $this->cacheIsProcessing();
+      $this->cacheErrors();
+      $this->cacheHealth();
+      return $savePoint;
+   }
+   
+   /**
     * This function gets all the save points for this instance.
     * Function is static inorder to avoid importing messed up workflow context if
     * an error occurres in the workflow. Allows clients to rollback to previous 

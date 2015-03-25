@@ -152,6 +152,9 @@ class ODKWorkflowAPI extends Repository {
                      else if (OPTIONS_REQUESTED_SUB_MODULE == "delete_workflow") {
                         $this->handleDeleteWorkflowEndpoint();
                      }
+                     else if (OPTIONS_REQUESTED_SUB_MODULE == "add_foreign_key") {
+                        $this->handleAddForeignKeyEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -527,7 +530,48 @@ class ODKWorkflowAPI extends Repository {
          }
       }
       else {
-         $this->lH->log(2, $this->TAG, "data variable not set in data provided to restore_savepoint endpoint");
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to delete_workflow endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function hanles the add_foreign_key endpoint
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    *    sheet:         "The sheet to add the foreign key"
+    *    columns:        "The columns in the sheet where the foreign key is to be applied"
+    *    referencing:   {sheet, columns:[]}
+    * }
+    */
+   private function handleAddForeignKeyEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+                 && array_key_exists("sheet", $json)
+                 && array_key_exists("columns", $json)
+                 && array_key_exists("references", $json)
+                 && array_key_exists("sheet", $json["references"])
+                 && array_key_exists("columns", $json["references"])
+                 && count($json['columns']) == count($json["references"]['columns'])) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->addForeignKey($json['sheet'], $json['columns'], $json['references']);
+            $status = $workflow->getCurrentStatus();
+            $data = array(
+                "save_point" => $savePoint,
+                "status" => $status
+            );
+            
+            $this->returnResponse($data);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id or sheet or columns or references not set in data provided to add_foreign_key endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to add_foreign_key endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
