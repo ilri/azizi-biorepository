@@ -29,6 +29,7 @@ function DMPVSchema(server, user, session, project) {
 /**
  * This function initializes resources that need to be initialized after the DOM
  * has fully loaded
+ * 
  * @returns {undefined}
  */
 DMPVSchema.prototype.documentReady = function() {
@@ -93,6 +94,7 @@ DMPVSchema.prototype.renameSheetButtonClicked = function (event) {
 
 /**
  * This function is called when the rename button in the rename sheet window is clicked
+ * 
  * @returns {undefined}
  */
 DMPVSchema.prototype.renameSheetButton2Clicked = function () {
@@ -155,6 +157,12 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function () {
    }
 };
 
+/**
+ * This function is fired whenever the delete sheet button is clicked on the right
+ * click contextual menu
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.deleteSheetButtonClicked = function() {
    if(window.dvs.project != null) {
       var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
@@ -214,6 +222,12 @@ DMPVSchema.prototype.deleteSheetButtonClicked = function() {
    }
 };
 
+/**
+ * This function is fired whenever the delete button in the delete_project_wndw
+ * is clicked
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.deleteProjectButtonClicked = function() {
    if(window.dvs.project != null) {
       $("#loading_box").show();
@@ -262,6 +276,12 @@ DMPVSchema.prototype.deleteProjectButtonClicked = function() {
    }
 };
 
+/**
+ * This function is fired whenever a file is uploaded using the jqxFile element
+ * 
+ * @param {Object} event   Event object returned from the listener
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.fileUploadEnd = function(event) {
    console.log(event);
    var serverResponse = event.args.response;
@@ -288,10 +308,20 @@ DMPVSchema.prototype.fileUploadEnd = function(event) {
    }
 };
 
+/**
+ * This function does everthing that needs to be done before a file upload starts
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.fileUploadStart = function() {
    window.dvs.uploadFileLoc = null;
 };
 
+/**
+ * This function is fired whenever the create button is clicked in the new_project_wndw
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.createProjectButtonClicked = function() {
    //check if project name and upload file are set
    var projectName = $("#project_name").val();
@@ -347,6 +377,11 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
    }
 };
 
+/**
+ * This function calls the process_mysql_schema endpoint in the ODK Workflow API
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.processProjectSchema = function() {
    if(window.dvs.project != null) {
       $("#loading_box").show();
@@ -396,6 +431,11 @@ DMPVSchema.prototype.processProjectSchema = function() {
    }
 };
 
+/**
+ * This function is fired wheneve the cancel button (below the jqxGrid) is clicked
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.cancelButtonClicked = function() {
    console.log("Cancel button clicked");
    window.dvs.schemaChanges = {};
@@ -408,10 +448,12 @@ DMPVSchema.prototype.cancelButtonClicked = function() {
    $("#update_btn").prop('disabled', true);
 };
 
-DMPVSchema.prototype.sheetsRightClicked = function() {
-   
-};
-
+/**
+ * This function refreshes the list of save points corresponding to the current
+ * project
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.refreshSavePoints = function() {
    console.log("refresh save points called");
    if(window.dvs.project != null && window.dvs.project.length > 0) {
@@ -475,6 +517,12 @@ DMPVSchema.prototype.refreshSavePoints = function() {
    }
 };
 
+/**
+ * This function restores a project to the specifed save point
+ * 
+ * @param {type} savePoint The name of the save point to restore to
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
    var sData = JSON.stringify({
       "workflow_id": window.dvs.project,
@@ -524,6 +572,11 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
    });
 };
 
+/**
+ * This function is fired whenever the update button (belos the jqxGrid) is clicked
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.updateButtonClicked = function() {
    console.log("Update button clicked");
    //go through each and every changed sheet
@@ -608,6 +661,7 @@ DMPVSchema.prototype.updateButtonClicked = function() {
 
 /**
  * This function initializes the file drop area
+ * 
  * @returns {undefined}
  */
 DMPVSchema.prototype.initFileDropArea = function() {
@@ -642,6 +696,7 @@ DMPVSchema.prototype.initFileDropArea = function() {
 
 /**
  * This function initializes the source for the project_list_box jqxList
+ * 
  * @returns {undefined}
  */
 DMPVSchema.prototype.initSheetList = function() {
@@ -741,6 +796,7 @@ DMPVSchema.prototype.initSheetList = function() {
 
 /**
  * This function initializes the source for the project_list_box jqxList
+ * 
  * @returns {undefined}
  */
 DMPVSchema.prototype.updateSheetList = function() {
@@ -805,6 +861,11 @@ DMPVSchema.prototype.updateSheetList = function() {
    $("#sheets").jqxListBox({source: window.dvs.sheetListAdapter});
 };
 
+/**
+ * This function initializes the jqxGrid displaying the schema
+ * 
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.initColumnGrid = function() {
    console.log("initializing column grid");
    var data = {
@@ -878,6 +939,13 @@ DMPVSchema.prototype.initColumnGrid = function() {
    $("#columns").on('cellendedit', window.dvs.columnGridCellValueChanged);
 };
 
+/**
+ * This function is fired whenever a value in the jqxGrid displaying the schema
+ * changes
+ * 
+ * @param {Object} event  The event object returned from the handler
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
    if(window.dvs.schema != null && event.args.oldvalue !== event.args.value) {
       console.log(event);
@@ -956,6 +1024,12 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
    
 };
 
+/**
+ * This function updates the jqxGrid displaying the schema
+ * 
+ * @param {type} data   The data to be displayed in the grid
+ * @returns {undefined}
+ */
 DMPVSchema.prototype.updateColumnGrid = function(data) {
    console.log("updating column grid");
    var source = {
