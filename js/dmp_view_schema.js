@@ -482,10 +482,40 @@ DMPVSchema.prototype.refreshSavePoints = function() {
          success: function(jsonResult, textStatus, jqXHR){
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == true) {
+                  Number.prototype.toOrdinal = function() {
+                     var n = this.valueOf(),
+                     s = [ 'th', 'st', 'nd', 'rd' ],
+                     v = n % 100;
+                     return n + (s[(v-20)%10] || s[v] || s[0]);
+                  };
+                  Number.prototype.timePad = function() {
+                     var n = this.valueOf()+"";//convert to string
+                     if(n.length == 1) n = "0"+n;
+                     return n;
+                  };
+                  var months = ["Jan", "Feb", "March", "April", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"];
                   var html = "";
                   var savePoints = jsonResult.save_points;
                   for(var index = 0; index < savePoints.length; index++) {
-                     html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].comment+"</li>";
+                     var today = new Date();
+                     var savePointDate = new Date(savePoints[index].time_created);
+                     var year = -1;
+                     if(today.getFullYear() != savePointDate.getFullYear()) year = savePointDate.getFullYear();
+                     var month = -1;
+                     if(today.getMonth() != savePointDate.getMonth() || year != -1) month = savePointDate.getMonth();
+                     var day = -1;
+                     if(today.getDate() != savePointDate.getDate() || month != -1) day = savePointDate.getDate();
+                     if(day != -1) day = " " + day.toOrdinal();
+                     else day = "";
+                     if(month == -1) month = "";
+                     else month = " " + months[month];
+                     if(year == -1) year = "";
+                     else year = " " + year;
+                     var timeString = day + month + year;
+                     if(timeString.length > 0)timeString = "on the "+timeString+" at ";
+                     else timeString = "at ";
+                     timeString = timeString + (savePointDate.getHours()+1).timePad() + ":" + savePointDate.getMinutes().timePad() + ":" + savePointDate.getSeconds().timePad();
+                     html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].comment+" "+timeString+"</li>";
                   }
                   $("#undo_container").html(html);
                   $("#undo_container li").css("cursor", "pointer");

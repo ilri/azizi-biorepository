@@ -49,7 +49,8 @@ class DMP extends Repository{
 <div id="inotification_pp"></div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
-   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>");
+   //var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>");
+   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>");
 </script>
 <?php
    }
@@ -153,7 +154,8 @@ class DMP extends Repository{
    <div id="inotification_pp"></div>
 </div>
 <script type="text/javascript">
-   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
+   //var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
+   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
 </script>
 <?php
    }
