@@ -9,6 +9,7 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.columnGridAdapter = null;
    window.dvs.schemaChanges={};
    window.dvs.columnDictionary={};//object storing the original and new column names
+   window.dvs.foreignKeys = null;
    window.dvs.leftSideWidth = 0;
    window.dvs.rightSideWidth = 0;
    window.dvs.lastSavePoint = null;
@@ -51,6 +52,11 @@ DMPVSchema.prototype.documentReady = function() {
       x:window.innerWidth/2 - 400/2
    };
    $("#rename_sheet_wndw").jqxWindow({height: 150, width: 400, position: renameSheetWindowPos, theme: ''});
+   var newForeignKeyWindowPos = {
+      y:window.innerHeight/2 - 230/2 - window.innerHeight*0.1,
+      x:window.innerWidth/2 - 400/2
+   };
+   $("#new_foreign_key_wndw").jqxWindow({height: 230, width: 400, position: newForeignKeyWindowPos, theme: ''});
    $("#manual_file_upload").jqxFileUpload({
       width:500,
       fileInputName: "data_file",
@@ -78,6 +84,7 @@ DMPVSchema.prototype.documentReady = function() {
    $("#delete_sheet_btn").click(window.dvs.deleteSheetButtonClicked);
    $("#rename_sheet_btn").click(window.dvs.renameSheetButtonClicked);
    $("#rename_sheet_btn2").click(window.dvs.renameSheetButton2Clicked);
+   $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
 };
 
 /**
@@ -751,7 +758,6 @@ DMPVSchema.prototype.initSheetList = function() {
             window.dvs.schema = data.schema;
             $("#project_title").html(window.dvs.schema.title);
             var sheets = new Array();
-            //TODO: alert user if data is null
             if(data != null) {
                if(data.status.healthy == true){
                   for(var index = 0; index < data.schema.sheets.length; index++) {
@@ -764,6 +770,7 @@ DMPVSchema.prototype.initSheetList = function() {
                   $("#enotification_pp").jqxNotification("open");
                }
             }
+            //TODO: alert user if data is null
             data.sheet_names = sheets;
          }
       };
@@ -793,6 +800,8 @@ DMPVSchema.prototype.initSheetList = function() {
    },
    beforeSend: function() {
       $("#loading_box").show();
+      //TODO: get foreign keys for workflow
+      window.dvs.refreshForeignKeys();
    }});
    $("#sheets").jqxListBox({width: window.dvs.leftSideWidth, height:'100%', source: window.dvs.sheetListAdapter, displayMember: "name", valueMember: "name", theme: ''});
    $("#sheets").bind("select", function(event){
@@ -822,6 +831,58 @@ DMPVSchema.prototype.initSheetList = function() {
          return false;
       }
    });
+};
+
+/**
+ * This function refreshes the list of foreign keys in the project
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.refreshForeignKeys = function() {
+   console.log("refresh foreign keys called");
+   if(window.dvs.project != null && window.dvs.project.length > 0) {
+      window.dvs.foreignKeys = null;
+      console.log("refreshing foreign keys");
+      var sData = JSON.stringify({"workflow_id": window.dvs.project});
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_foreign_keys",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could not fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == true) {
+                  window.dvs.foreignKeys = jsonResult.foreign_keys;
+               }
+               else if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not fetch foreign keys");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
 };
 
 /**
@@ -910,7 +971,8 @@ DMPVSchema.prototype.initColumnGrid = function() {
          {name: 'length'},
          {name: 'nullable'},
          {name: 'default'},
-         {name: 'key'}
+         {name: 'key'},
+         {name: 'link'}
       ],
       root: 'columns',
       localdata: data
@@ -961,13 +1023,122 @@ DMPVSchema.prototype.initColumnGrid = function() {
                editor.jqxDropDownList({ source: nullableTypes});
          }},
          {text: 'Default', datafield: 'default', width: gridWidth*0.1471},
-         {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1471,initeditor: function (row, cellvalue, editor) {
+         {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1471*0.5,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: keyTypes});
-         }}
+         }},
+         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.1471*0.5,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+               if(value == false) return "Add";
+               else return "Edit";
+         },buttonclick:window.dvs.foreignKeyButtonClicked}
       ]
    });
    
    $("#columns").on('cellendedit', window.dvs.columnGridCellValueChanged);
+};
+
+/**
+ * This function is fired whenever the "Edit" or "Add" link button is clicked 
+ * in the jqxGrid displaying the schema
+ * 
+ * @param {type} rowIndex
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.foreignKeyButtonClicked = function(rowIndex) {
+   var sheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
+   var data = $("#columns").jqxGrid("getrowdata", rowIndex);
+   $("#foreign_key_column").val(data.name);
+   //get all primary keys
+   var primaryKeys = [];
+   for(var sIndex = 0; sIndex < window.dvs.schema.sheets.length; sIndex++) {
+      if(sIndex != sheetIndex) {
+         var columns = window.dvs.schema.sheets[sIndex].columns;
+         for(var cIndex = 0; cIndex < columns.length; cIndex++) {
+            if(columns[cIndex].key == "primary") {
+               primaryKeys.push({
+                  sheet: window.dvs.schema.sheets[sIndex].name,
+                  column: columns[cIndex].name
+               });
+            }
+         }
+      }
+   }
+   if(primaryKeys.length == 0){
+      $("#inotification_pp").html("Please define primary keys first");
+      $("#inotification_pp").jqxNotification("open");
+   }
+   var html = "";
+   for(var index = 0; index < primaryKeys.length; index++) {
+      html = html + "<option value='"+JSON.stringify(primaryKeys[index])+"'>"+primaryKeys[index].sheet+"->"+primaryKeys[index].column+"</option>";
+   }
+   $("#foreign_key_ref_column").html(html);
+   $("#new_foreign_key_wndw").show();
+};
+
+/**
+ * This function is fired whenever the add_foreign_key_btn in new foreign key window
+ * is clicked
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
+   var sheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
+   var sheetName = window.dvs.schema.sheets[sheetIndex].name;
+   var column = $("#foreign_key_column").val();
+   var refColumn = $("#foreign_key_ref_column").val();
+   if(column.length > 0 && refColumn.length > 0) {
+      $("#loading_box").show();
+      var references = $.parseJSON($("#foreign_key_ref_column").val());
+      console.log("adding a foreign key");
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "sheet": sheetName,
+         "columns": new Array(column),
+         "references" : {
+            "sheet": references.sheet,
+            "columns": new Array(references.column)
+         }
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=add_foreign_key",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could not fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == true) {
+                  $("#inotification_pp").html("Successfully added foreign key");
+                  $("#inotification_pp").jqxNotification("open");
+               }
+               else if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not fetch foreign keys");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#new_foreign_key_wndw").hide();
+            $("#loading_box").hide();
+         }
+      });
+   }
 };
 
 /**
@@ -1063,6 +1234,28 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
  */
 DMPVSchema.prototype.updateColumnGrid = function(data) {
    console.log("updating column grid");
+   //check if each of the columns is in a foreing key
+   if(typeof window.dvs.foreignKeys[data.name] != 'undefined') {//the current sheet has foreign keys
+      var foreignKeys = window.dvs.foreignKeys[data.name];
+      var allFKeyColumns = [];
+      for(var index = 0; index < foreignKeys.length; index++) {
+         allFKeyColumns = allFKeyColumns.concat(foreignKeys[index].columns);
+      }
+      for(var index = 0; index < data.columns.length; index++) {
+         if(allFKeyColumns.indexOf(data.columns[index].name) != -1) {
+            data.columns[index].link = true;
+         }
+         else {
+            data.columns[index].link = false;
+         }
+      }
+   }
+   else {
+      for(var index = 0; index < data.columns.length; index++) {
+         data.columns[index].link = false;
+      }
+   }
+   
    var source = {
       datatype: "json",
       datafields: [
@@ -1072,7 +1265,8 @@ DMPVSchema.prototype.updateColumnGrid = function(data) {
          {name: 'length'},
          {name: 'nullable'},
          {name: 'default'},
-         {name: 'key'}
+         {name: 'key'},
+         {name: 'link'}
       ],
       root: 'columns',
       localdata: data

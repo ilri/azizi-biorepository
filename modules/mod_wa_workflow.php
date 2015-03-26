@@ -1009,7 +1009,12 @@ class Workflow {
                $this->lH->log(4, $this->TAG, "Curr fK = ".  print_r($currFKeys, true));
                $formatted = array();
                for($keyIndex = 0; $keyIndex < count($fKeyKeys); $keyIndex++) {
-                  $formatted[] = array("sheet" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_table'], "columns" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_columns']);
+                  $this->lH->log(4, $this->TAG, "Foreign keys = ".print_r($currFKeys[$fKeyKeys[$keyIndex]], true));
+                  $formatted[] = array(
+                      "ref_sheet" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_table'], 
+                      "ref_columns" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_columns'],
+                      "columns" => $currFKeys[$fKeyKeys[$keyIndex]]['columns']
+                  );
                }
                if(count($formatted) > 0) {
                   $return[$tables[$index]] = $formatted;

@@ -115,6 +115,20 @@ class DMP extends Repository{
          <button type="button" id="create_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Create</button>
       </div>
    </div>
+   <div id="new_foreign_key_wndw" style="display: none;">
+      <div>Create a foreign key</div>
+      <div>
+         <div style="margin-left: 5%">
+            <label for="foreign_key_column">Column</label>
+            <input type="text" id="foreign_key_column" style="height: 25px; width: 300px;" disabled/>
+         </div>
+         <div style="margin-left: 5%">
+            <label for="foreign_key_ref_column">Reference Column</label>
+            <select type="text" id="foreign_key_ref_column" style="height: 25px; width: 300px;"></select>
+         </div>
+         <button type="button" id="add_foreign_key_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
+      </div>
+   </div>
    <div id="rename_sheet_wndw" style="display: none;">
       <div>Rename sheet</div>
       <div>

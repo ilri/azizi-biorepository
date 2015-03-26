@@ -416,8 +416,20 @@ class Database {
          if(is_array($result)) {
             $foreignKeys = array();
             for($index = 0; $index < count($result); $index++) {
-               $columns = array_unique(explode('","', substr($result[$index]['columns'], 2, -2)));
-               $refColumns = array_unique(explode('","', substr($result[$index]['foreign_column_name'], 2, -2)));
+               $this->logH->log(3, $this->TAG, "foreign key = ".$result[$index]['columns']);
+               $this->logH->log(3, $this->TAG, "First character in foreign key = ".substr($result[$index]['columns'], 0, 1));
+               if(substr($result[$index]['columns'], 0, 2) == '{"') {
+                  $columns = array_values(array_unique(explode('","', substr($result[$index]['columns'], 2, -2))));
+               }
+               else {
+                  $columns = array_values(array_unique(explode(',', substr($result[$index]['columns'], 1, -1))));
+               }
+               if(substr($result[$index]['foreign_column_name'], 0, 2) == '{"') {
+                  $refColumns = array_values(array_unique(explode('","', substr($result[$index]['foreign_column_name'], 2, -2))));
+               }
+               else {
+                  $refColumns = array_values(array_unique(explode(',', substr($result[$index]['foreign_column_name'], 1, -1))));
+               }
                $foreignKeys[$result[$index]['constraint_name']] = array(
                    "columns" => $columns,
                    "ref_table" => $result[$index]['foreign_table_name'],
