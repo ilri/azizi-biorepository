@@ -5,8 +5,10 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.session = session;
    window.dvs.project = project;
    window.dvs.schema = null;
+   window.dvs.sheetData = {};
    window.dvs.sheetListAdapter = null;
    window.dvs.columnGridAdapter = null;
+   window.dvs.dataGridAdapter = null;
    window.dvs.schemaChanges={};
    window.dvs.columnDictionary={};//object storing the original and new column names
    window.dvs.foreignKeys = null;
@@ -811,6 +813,7 @@ DMPVSchema.prototype.initSheetList = function() {
          for(var index = 0; index < window.dvs.schema.sheets.length; index++) {
             if(window.dvs.schema.sheets[index].name == sheetName){
                window.dvs.updateColumnGrid(window.dvs.schema.sheets[index]);
+               window.dvs.loadSheetData(window.dvs.schema.sheets[index].name);
                break;
             }
          }
@@ -832,6 +835,59 @@ DMPVSchema.prototype.initSheetList = function() {
          return false;
       }
    });
+};
+
+DMPVSchema.prototype.loadSheetData = function(sheetName) {
+   if(typeof window.dvs.sheetData[sheetName] != 'undefined') {
+      window.dvs.updateDataGrid(window.dvs.sheetData[sheetName]);
+   }
+   else {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "sheet":sheetName
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_sheet_data",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Could not fetch sheet data");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to fetch sheet data");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == true) {
+                  window.dvs.sheetData[sheetName] = jsonResult.data;
+                  window.dvs.updateDataGrid(window.dvs.sheetData[sheetName]);
+               }
+               else if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could not fetch sheet data");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not fetch sheet data");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
 };
 
 /**
@@ -1035,6 +1091,57 @@ DMPVSchema.prototype.initColumnGrid = function() {
    });
    
    $("#columns").on('cellendedit', window.dvs.columnGridCellValueChanged);
+};
+
+DMPVSchema.prototype.updateDataGrid = function(sheetData) {
+   var columnNames = Object.keys(sheetData);
+   var dataFields = [];
+   var columns = [];
+   for(var index = 0; index < columnNames.length; index++) {
+      dataFields.push({
+         "name":columnNames[index]
+      });
+      columns.push({
+         "text": columnNames[index],
+         "datafield":columnNames[index],
+         "minwidth":80
+      });
+   }
+   var formattedData = [];
+   var isComplex = false;
+   if(columnNames.length > 50) {
+      isComplex = true;
+   }
+   for(var index = 0; index < sheetData[columnNames[0]].length; index++){
+      formattedData[index] = {};
+      for(var cIndex = 0; cIndex < columnNames.length; cIndex++){
+         formattedData[index][columnNames[cIndex]] = sheetData[columnNames[cIndex]][index];
+      }
+      /*if(isComplex) {
+         index = index + Math.floor(sheetData[columnNames[0]].length*0.1);
+      }*/
+   }
+   var source = {
+      datatype: "json",
+      datafields: dataFields,
+      localdata: formattedData
+   };
+   
+   window.dvs.dataGridAdapter = new $.jqx.dataAdapter(source);
+   $("#sheet_data").jqxGrid({
+      width: window.dvs.rightSideWidth,
+      height: '100%',
+      source: window.dvs.dataGridAdapter,
+      columnsresize: true,
+      theme: '',
+      selectionmode: "singlerow",
+      pageable: false,
+      editable: false,
+      rendergridrows: function() {
+         return window.dvs.dataGridAdapter.records;
+      },
+      columns: columns
+   });
 };
 
 /**
