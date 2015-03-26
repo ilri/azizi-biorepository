@@ -55,7 +55,7 @@ class Database {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_wa_file.php';
-      //include_once $config['common_folder_path'].'dbmodules/mod_objectbased_dbase_v1.2.php';
+      //include_once $config['common_folder_path'].'dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
       
       $this->config = $config;
       
@@ -95,7 +95,7 @@ class Database {
     * @throws WAException
     */
    public function runGenericQuery($query, $fetchResults = false) {
-      /*if($this->pdoObject !== null) {
+      if($this->pdoObject !== null) {
          try {
             //run a prepared statement (PDO will handle escaping)
             $this->logH->log(4, $this->TAG, "About to run the following statement '$query'");
@@ -121,9 +121,9 @@ class Database {
       else {
          $this->logH->log(1, $this->TAG, "Unable to run statement because PDO object is null for database object connected to '{$this->connectedDb}'");
          throw new WAException("Unable to run statement because PDO object is null", WAException::$CODE_DB_QUERY_ERROR, null);
-      }*/
+      }
       
-      try {
+      /*try {
          $dbase = new DBase("pgsql");
          $config = $this->config;
          $config['dbase'] = $this->getDatabaseName();
@@ -141,7 +141,7 @@ class Database {
       catch (Exception $genericException) {//thrown while trying to execute the actual query
          $this->logH->log(1, $this->TAG, "Exception {$genericException->getMessage()} thrown while trying to execute this SQL query '$query'");
          throw new WAException("Exception {$genericException->getMessage()} thrown while trying to execute this SQL query '$query'", WAException::$CODE_DB_QUERY_ERROR, $genericException);
-      }
+      }*/
    }
    
    /**

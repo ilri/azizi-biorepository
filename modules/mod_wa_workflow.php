@@ -680,7 +680,7 @@ class Workflow {
                $message = $this->database->quote(Workflow::getErrorMessage($currError));//TODO: not sure this will work
                $this->database->runInsertQuery(Workflow::$TABLE_META_ERRORS, array(
                    "code" => $currError->getCode(),
-                   "message" => "'$message'",
+                   "message" => "''",//TODO:find a way of nicely caching the error messages without creating an error in the process (of caching in the database)
                    "time_added" => "'".Database::getMySQLTime()."'"
                ));
             } catch (WAException $ex) {
@@ -976,13 +976,57 @@ class Workflow {
    public function addForeignKey($sheet, $columns, $referencing) {
       $savePoint = $this->save("Add foreign key ".$sheet."(".implode(",", $columns).")");
       if($this->healthy == true) {
-         $this->database->addForeignKey($sheet, $columns, $referencing['sheet'], $referencing['columns']);
+         try {
+            $this->database->addForeignKey($sheet, $columns, $referencing['sheet'], $referencing['columns']);
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to add a foreign key to workflow with id = '{$this->instanceId}'");
+         }
       }
       $this->setIsProcessing(false);
       $this->cacheIsProcessing();
       $this->cacheErrors();
       $this->cacheHealth();
       return $savePoint;
+   }
+   
+   /**
+    * This function gets all foreign keys in the the database corresponding to this
+    * workflow
+    */
+   public function getForeignKeys() {
+      if($this->healthy == true
+              && $this->database != null
+              && $this->instanceId != null
+              && $this->database->getDatabaseName() == $this->instanceId) {
+         try {
+            $tables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+            $return = array();
+            for($index = 0; $index < count($tables); $index++) {
+               $currFKeys = $this->database->getTableForeignKeys($tables[$index]);
+               $fKeyKeys = array_keys($currFKeys);
+               $this->lH->log(4, $this->TAG, "Curr fK = ".  print_r($currFKeys, true));
+               $formatted = array();
+               for($keyIndex = 0; $keyIndex < count($fKeyKeys); $keyIndex++) {
+                  $formatted[] = array("sheet" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_table'], "columns" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_columns']);
+               }
+               if(count($formatted) > 0) {
+                  $return[$tables[$index]] = $formatted;
+               }
+            }
+            return $return;
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to get foreign keys because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to get foreign keys because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to get foreign keys because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
    }
    
    /**

@@ -14,19 +14,20 @@ class ODKWorkflowAPI extends Repository {
    private $config;
    private $userUUID;
    
-   public function __construct($Dbase) {
+   public function __construct() {
       include_once 'mod_wa_workflow.php';
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       
-      $this->Dbase = $Dbase;
       $this->config = Config::$config;
       $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
       //$this->config['timeout'] = Config::$timeout;//TODO: uncomment when deploying
       $this->config['timeout'] = 100000000;
       include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
       $this->lH = new LogHandler("./");
+      $this->Dbase = new DBase("mysql");
+      $this->Dbase->InitializeConnection($this->config);
       $this->lH->log(4, $this->TAG, "ODK Workflow API called");
    }
    
@@ -154,6 +155,9 @@ class ODKWorkflowAPI extends Repository {
                      }
                      else if (OPTIONS_REQUESTED_SUB_MODULE == "add_foreign_key") {
                         $this->handleAddForeignKeyEndpoint();
+                     }
+                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_foreign_keys") {
+                        $this->handleGetForeignKeyEndpoint();
                      }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
@@ -572,6 +576,38 @@ class ODKWorkflowAPI extends Repository {
       }
       else {
          $this->lH->log(2, $this->TAG, "data variable not set in data provided to add_foreign_key endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_foreign_keys endpoint
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    * }
+    */
+   private function handleGetForeignKeyEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $foreignKeys = $workflow->getForeignKeys();
+            $status = $workflow->getCurrentStatus();
+            $data = array(
+                "foreign_keys" => $foreignKeys,
+                "status" => $status
+            );
+            $this->returnResponse($data);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id not set in data provided to get_foreign_keys endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_foreign_keys endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }

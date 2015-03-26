@@ -944,6 +944,7 @@ DMPVSchema.prototype.initColumnGrid = function() {
       source: window.dvs.columnGridAdapter,
       columnsresize: false,
       theme: '',
+      selectionmode: "singlerow",
       pageable: false,
       editable: true,
       rendergridrows: function() {
