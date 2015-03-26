@@ -1035,6 +1035,49 @@ class Workflow {
    }
    
    /**
+    * This function returns the data corresponding to the provided sheet
+    * @param type $sheetName
+    */
+   public function getSheetData($sheetName) {
+      if($this->files != null
+              && is_array($this->files)) {
+         try {
+            $dataFiles = array();
+            for($index = 0; $index < count($this->files); $index++) {
+               $currFile = $this->files[$index];
+               if($currFile->getType() == WAFile::$TYPE_RAW) {
+                  $dataFiles[] = $currFile;
+               }
+            }
+            if(count($dataFiles) == 1) {
+               $excelFile = new WAExcelFile($dataFiles[0]);
+               $data = $excelFile->getSheetData($sheetName);
+               return $data;
+            }
+            else if(count($dataFiles) == 0) {//should not happen
+               array_push($this->errors, new WAException("Workflow does not have data files", WAException::$CODE_WF_INSTANCE_ERROR, null));
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Workflow with id = '{$this->instanceId}'does not have data files");
+            }
+            else {//currently not supported
+               array_push($this->errors, new WAException("Workflow has more than one data file. This feature is currently unsupported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Workflow with id = '{$this->instanceId}' has more than one data file. This feature is currently unsupported");
+            }
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Could not get data for Workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to get sheet data because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to get sheet data for '$sheetName' because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
+   /**
     * This function gets all the save points for this instance.
     * Function is static inorder to avoid importing messed up workflow context if
     * an error occurres in the workflow. Allows clients to rollback to previous 

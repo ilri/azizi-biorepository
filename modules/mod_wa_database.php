@@ -203,6 +203,9 @@ class Database {
    public function runDropDatabaseQuery($name) {
       if($name != null && $this->getDatabaseName() != $name) {
          try {
+            $db2 = new Database($this->config, $name);
+            $db2->dropAllOtherConnections();
+            $db2->close();
             $query = "drop database ".$name;
             $this->runGenericQuery($query);
          } catch (WAException $ex) {
@@ -515,7 +518,8 @@ class Database {
             shell_exec($command);*/
             //drop all the tables
             $db2 = new Database($this->config, $databaseName);
-            $db2->runGenericQuery("drop schema public");
+            $db2->dropAllOtherConnections();
+            $db2->runGenericQuery("drop schema public cascade");
             $db2->runGenericQuery("create schema public");
             $db2->close();
             $this->runDropDatabaseQuery($databaseName);
@@ -532,6 +536,19 @@ class Database {
       else {
          $this->logH->log(1, $this->TAG, "Could not restore database '$databaseName' because backup file '$restoreFile' does not exist");
          throw new WAException("Could not restore database because backup file does not exist", WAException::$CODE_DB_BACKUP_ERROR, null);
+      }
+   }
+   
+   public function dropAllOtherConnections() {
+      $query = "SELECT pg_terminate_backend(pg_stat_activity.procpid)
+               FROM pg_stat_activity
+               WHERE datname = current_database()
+               AND procpid <> pg_backend_pid()";
+      //change procpid to pid when updating to PostgreSQL 9.2 and above
+      try {
+         $this->runGenericQuery($query);
+      } catch (WAException $ex) {
+         throw new WAException("Could not drop all other exisiting connections to database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
    
@@ -692,8 +709,6 @@ class Database {
                        && array_search("nullable", $defKeys) !== false
                        && array_search("default", $defKeys) !== false
                        && array_search("key", $defKeys) !== false) {
-
-                  //add name
                   try {
                      $currColumnExpression = $this->getColumnExpression($currColumn['name'], $currColumn['type'], $currColumn['length'], $currColumn['key'], $currColumn['default'], $currColumn['nullable']);
                      if($currColumn['key'] == Database::$KEY_PRIMARY) array_push ($pKey, $currColumn['name']);
@@ -718,7 +733,7 @@ class Database {
             $this->logH->log(4, $this->TAG, "About to run the following query ".$createString);
             try {
                $this->runGenericQuery($createString);
-               $this->addColumnsToPrimaryKey($name, $pKey);
+               if(count($pKey) > 0) $this->addColumnsToPrimaryKey($name, $pKey);
                $this->logH->log(4, $this->TAG, "Query run successfully");
             } catch (WAException $ex) {
                $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");

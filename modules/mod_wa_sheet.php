@@ -247,6 +247,19 @@ class WASheet {
    }
    
    /**
+    * This function returns the sheet's data as an associative array
+    */
+   public function getData() {
+      try {
+         $this->processColumns();
+         return $this->columnArray;
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "Unable to extract data from sheet with name = '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
+         throw new WAException("Unable to extract data from sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+   }
+   
+   /**
     * This function processes each of the columns in the sheet to determin their
     * datatypes
     * 

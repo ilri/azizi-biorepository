@@ -76,6 +76,7 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxnumberinput.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxnotification.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxtabs.js"></script>
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;">New Project</div>
 <div id="menu_bar">
@@ -157,7 +158,14 @@ class DMP extends Repository{
    </div>
    <div id="split_window">
       <div id="sheets"></div>
-      <div id="columns"></div>
+      <div id="tabs">
+         <ul>
+            <li>Schema</li>
+            <li>Data</li>
+         </ul>
+         <div id="columns"></div>
+         <div id="sheet_data"></div>
+      </div>
    </div>
    <div style="margin-top:20px; margin-right: 50px; text-align: right;">
       <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>

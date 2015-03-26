@@ -63,6 +63,7 @@ DMPVSchema.prototype.documentReady = function() {
       uploadUrl: "mod_ajax.php?page=dmp&do=ajax&action=upload_data_file",
       autoUpload: true
    });
+   $("#tabs").jqxTabs({width:"100%", height: "100%", position: "top"});
    $("#manual_file_upload").on("uploadEnd", window.dvs.fileUploadEnd);
    $("#manual_file_upload").on("uploadStart", window.dvs.fileUploadStart);
    $("#split_window").jqxSplitter({  width: pWidth, height: window.innerHeight*0.8, panels: [{ size: window.dvs.leftSideWidth, min: '10%' }, {size: window.dvs.rightSideWidth, min: '50%'}] });
@@ -1136,6 +1137,7 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
          complete: function() {
             $("#new_foreign_key_wndw").hide();
             $("#loading_box").hide();
+            window.dvs.updateSheetList();
          }
       });
    }

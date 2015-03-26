@@ -159,6 +159,9 @@ class ODKWorkflowAPI extends Repository {
                      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_foreign_keys") {
                         $this->handleGetForeignKeyEndpoint();
                      }
+                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_sheet_data") {
+                        $this->handleGetSheetDataEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -597,6 +600,40 @@ class ODKWorkflowAPI extends Repository {
             $status = $workflow->getCurrentStatus();
             $data = array(
                 "foreign_keys" => $foreignKeys,
+                "status" => $status
+            );
+            $this->returnResponse($data);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id not set in data provided to get_foreign_keys endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_foreign_keys endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_sheet_data endpoint
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    *    sheet:         "Name of the sheet to get the data for"
+    * }
+    */
+   private function handleGetSheetDataEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+                 && array_key_exists("sheet", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $sheetData = $workflow->getSheetData($json['sheet']);
+            $status = $workflow->getCurrentStatus();
+            $data = array(
+                "data" => $sheetData,
                 "status" => $status
             );
             $this->returnResponse($data);
