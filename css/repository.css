@@ -330,7 +330,7 @@ body {
 #search_div .search_criteria select{width: 150px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
 #box_location .left-align{margin: 5px 2px;}
-#box_location .loc_divs{width: 250px;} 
+#box_location .loc_divs{width: 250px;}
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
 .jqx-grid-column-header, #statusbarspace_recharge_table, #statusbarln2_recharge_table, #statusbarlabels_recharge_table, #statusbarinventory_recharge_table{z-index:0!important;}
@@ -940,4 +940,16 @@ ul.ui-autocomplete {z-index: 1000!important; }
    margin-left: 1rem;
    border-radius: 5px;
    border: 0;
+}
+
+#animals .left{
+   float: left !important;
+   margin: 0px;
+   margin: 0px;
+   width: 450px;
+}
+
+#animals .right{
+   float: left !important;
+   width: 450px;
 }

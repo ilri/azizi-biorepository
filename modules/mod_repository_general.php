@@ -178,6 +178,11 @@ class Repository extends DBase{
                $recharges = new Recharges($this->Dbase);
                $recharges->trafficController();
             }
+            else if(OPTIONS_REQUESTED_MODULE == 'farm_animals'){
+               require_once 'mod_farm_animals.php';
+               $farmAnimals = new FarmAnimals($this->Dbase);
+               $farmAnimals->trafficController();
+            }
             else{
                $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
                $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');
