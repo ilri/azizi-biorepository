@@ -75,14 +75,19 @@ class WAExcelFile {
     * 
     * @throws WAException
     */
-   public function processToMySQL() {
+   public function processToMySQL($linkSheets) {
       if($this->excelObject != null) {
          $sheetNames = $this->excelObject->getSheetNames();
          $this->lH->log(4, $this->TAG, "{$this->waFile->getFSLocation()} has the following sheets ".print_r($sheetNames, true));
+         if($sheetNames[0] != "main_sheet") $linkSheets = false;
          for($index = 0; $index < count($sheetNames); $index++){
             try {
                $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
-               $currSheet->saveAsMySQLTable();
+               $primaryKeyThere = $currSheet->processColumns();
+               if($sheetNames[$index] == "main_sheet" && $linkSheets == true) {
+                  $linkSheets = $primaryKeyThere;
+               }
+               $currSheet->saveAsMySQLTable($linkSheets);
                
                //offload $currSheet from memory to prevent this process from being OOM killed
                $currSheet->unload();
@@ -104,27 +109,33 @@ class WAExcelFile {
     * @param type $sheetName
     */
    public function getSheetData($sheetName) {
-      if($this->excelObject != null) {
-         $sheetNames = $this->excelObject->getSheetNames();
-         $this->lH->log(4, $this->TAG, "Sheet names  = ".print_r($sheetNames, true));
-         if(array_search($sheetName, $sheetNames) !== false) {
-            try {
-               $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetName);
-               $data = $currSheet->getData();
-               return $data;
-            } catch (WAException $ex) {
-               $this->lH->log(1, $this->TAG, "Unable to extract data from data file for workflow with id = '{$this->database->getDatabaseName()}'");
-               throw new WAException("Unable to extract data from data file", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+      try {
+         if($this->excelObject != null) {
+            $sheetNames = $this->excelObject->getSheetNames();
+            $this->lH->log(4, $this->TAG, "Sheet names  = ".print_r($sheetNames, true));
+            $sheetName = WASheet::getSheetOriginalName($this->database, $sheetName);
+            if(array_search($sheetName, $sheetNames) !== false) {
+               try {
+                  $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetName);
+                  $data = $currSheet->getData();
+                  return $data;
+               } catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "Unable to extract data from data file for workflow with id = '{$this->database->getDatabaseName()}'");
+                  throw new WAException("Unable to extract data from data file", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+               }
+            }
+            else {
+               $this->lH->log(1, $this->TAG, "Unable to locate sheet with name '$sheetName'");
+               throw new WAException("Unable to locate sheet with name '$sheetName'", WAException::$CODE_WF_INSTANCE_ERROR, null);
             }
          }
          else {
-            $this->lH->log(1, $this->TAG, "Unable to locate sheet with name '$sheetName'");
-            throw new WAException("Unable to locate sheet with name '$sheetName'", WAException::$CODE_WF_INSTANCE_ERROR, null);
+            $this->lH->log(1, $this->TAG, "Unable to extract data from the excel file at {$this->waFile->getFSLocation()}");
+            throw new WAException("Unable to extract data from the excel file at {$this->waFile->getFSLocation()}", WAException::$CODE_WF_INSTANCE_ERROR, null);
          }
-      }
-      else {
-         $this->lH->log(1, $this->TAG, "Unable to extract data from the excel file at {$this->waFile->getFSLocation()}");
-         throw new WAException("Unable to extract data from the excel file at {$this->waFile->getFSLocation()}", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "Unable to get data for sheet '$sheetName' in workflow with id = '{$this->database->getDatabaseName()}'");
+         throw new WAException("Unable to get data for sheet '$sheetName'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
    

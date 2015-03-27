@@ -363,6 +363,7 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from init_workflow endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == true) {
                   $("#inotification_pp").html("Done creating project");
@@ -396,7 +397,8 @@ DMPVSchema.prototype.processProjectSchema = function() {
    if(window.dvs.project != null) {
       $("#loading_box").show();
       var sData = JSON.stringify({
-         "workflow_id": window.dvs.project
+         "workflow_id": window.dvs.project,
+         "link_sheets": true
       });
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -419,6 +421,7 @@ DMPVSchema.prototype.processProjectSchema = function() {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from process_mysql_schema endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == true) {
                   $("#inotification_pp").html("Done processing project schema");
@@ -426,12 +429,12 @@ DMPVSchema.prototype.processProjectSchema = function() {
                   window.dvs.updateSheetList();
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not fetch save points");
+                  $("#enotification_pp").html("Could process project schema");
                   $("#enotification_pp").jqxNotification("open");
                }
             }
             else {
-               $("#enotification_pp").html("Could not fetch save points");
+               $("#enotification_pp").html("Could not process project schema");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -490,6 +493,7 @@ DMPVSchema.prototype.refreshSavePoints = function() {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_save_points endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == true) {
                   Number.prototype.toOrdinal = function() {
@@ -590,6 +594,7 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
          }
       },
       success: function(jsonResult, textStatus, jqXHR){
+         console.log("Response from restore_save_point endpoint = ", jsonResult);
          if(jsonResult !== null) {
             if(jsonResult.status.healthy == true) {
                window.dvs.updateSheetList();
@@ -602,7 +607,7 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
             }
          }
          else {
-            $("#enotification_pp").html("Could not fetch save points");
+            $("#enotification_pp").html("Could not undo changes");
             $("#enotification_pp").jqxNotification("open");
          }
       },
@@ -665,6 +670,7 @@ DMPVSchema.prototype.updateButtonClicked = function() {
                      }
                   },
                   success: function(jsonResult, textStatus, jqXHR){
+                     console.log("Response from alter_field endpoint = ", jsonResult);
                      if(jsonResult !== null) {
                         if(jsonResult.status.healthy == true && isFirstColumn) {
                            window.dvs.lastSavePoint = jsonResult.save_point;
@@ -868,6 +874,7 @@ DMPVSchema.prototype.loadSheetData = function(sheetName) {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_sheet_data endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == true) {
                   window.dvs.sheetData[sheetName] = jsonResult.data;
@@ -921,6 +928,7 @@ DMPVSchema.prototype.refreshForeignKeys = function() {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_foreign_keys endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == true) {
                   window.dvs.foreignKeys = jsonResult.foreign_keys;
@@ -1226,6 +1234,7 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from add_foreign_key endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == true) {
                   $("#inotification_pp").html("Successfully added foreign key");

@@ -98,7 +98,7 @@ class WAColumn {
     * This function returns the MySQL details for this column in form of an array
     * that can be used with the database object
     */
-   public function getMySQLDetails(){
+   public function getMySQLDetails($linkSheets = false){
       if($this->data != null || count($this->data) > 0) {
          $type = Database::$TYPE_VARCHAR;
          $length = -1;
@@ -214,8 +214,9 @@ class WAColumn {
                $type = Database::$TYPE_DATETIME;
             }
          }
-         
-         return array("name" => $this->name , "type"=>$type , "length"=>$length , "nullable"=>$nullable, "default" => null , "key"=>Database::$KEY_NONE);
+         $key = Database::$KEY_NONE;
+         if($linkSheets == true && $this->name == "primary_key") $key = Database::$KEY_UNIQUE; 
+         return array("name" => $this->name , "type"=>$type , "length"=>$length , "nullable"=>$nullable, "default" => null , "key"=>$key);
       }
       else {
          $this->lH->log(2, $this->TAG, "Unable to determine datatype for '$name' column because no data was provided. Assuming nullable varchar(50) datatype");

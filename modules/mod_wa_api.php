@@ -278,7 +278,8 @@ class ODKWorkflowAPI extends Repository {
    private function handleProcessMysqlSchemaEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
-         if(array_key_exists("workflow_id", $json)) {
+         if(array_key_exists("workflow_id", $json)
+                 && array_key_exists("link_sheets", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             
             $workflow->setIsProcessing(true);//set is processing to be true because workflow instance is going to be left processing after response sent to user
@@ -286,7 +287,7 @@ class ODKWorkflowAPI extends Repository {
                 "status" => $workflow->getCurrentStatus()
             );
             //call this function after sending response to client because it's goin to take some time
-            $workflow->convertDataFilesToMySQL();
+            $workflow->convertDataFilesToMySQL($json['link_sheets']);
             $this->returnResponse($data);
          }
          else {

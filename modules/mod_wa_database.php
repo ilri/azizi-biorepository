@@ -626,6 +626,7 @@ class Database {
    public function addForeignKey($table, $columns, $refTable, $refColumns) {
       if(count($columns) == count($refColumns)) {
          try {
+            $this->logH->log(3, $this->TAG, "Creating a foreign key in '$table'");
             $foreignKeys = $this->getTableForeignKeys($table);
             $fKeys = array_keys($foreignKeys);
             //check if a foreign key joins table with refTable
@@ -687,7 +688,7 @@ class Database {
     * 
     * @throws WAException
     */
-   public function runCreateTableQuery($name, $columns) {
+   public function runCreateTableQuery($name, $columns, $linkTables = false) {
       
       try {//check if table already exists
          $result = $this->getTableNames($this->getDatabaseName());
@@ -695,6 +696,7 @@ class Database {
             //create table
             $pKey = array();
             $createString = "create table ".Database::$QUOTE_SI.$name.Database::$QUOTE_SI." ";
+            $columnNames = array();
             for($cIndex = 0; $cIndex < count($columns); $cIndex++) {
                if($cIndex == 0){
                   $createString .= "(";
@@ -710,6 +712,7 @@ class Database {
                        && array_search("default", $defKeys) !== false
                        && array_search("key", $defKeys) !== false) {
                   try {
+                     array_push($columnNames, $currColumn['name']);
                      $currColumnExpression = $this->getColumnExpression($currColumn['name'], $currColumn['type'], $currColumn['length'], $currColumn['key'], $currColumn['default'], $currColumn['nullable']);
                      if($currColumn['key'] == Database::$KEY_PRIMARY) array_push ($pKey, $currColumn['name']);
                      $createString .= $currColumnExpression;
@@ -734,7 +737,9 @@ class Database {
             try {
                $this->runGenericQuery($createString);
                if(count($pKey) > 0) $this->addColumnsToPrimaryKey($name, $pKey);
-               $this->logH->log(4, $this->TAG, "Query run successfully");
+               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false) {
+                  $this->addForeignKey($name, array("secondary_key"), "main_sheet", array("primary_key"));
+               }
             } catch (WAException $ex) {
                $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");
                throw new WAException("Unable to run the create stament for the table '{$name}'", WAException::$CODE_DB_CREATE_ERROR, $ex);
@@ -774,7 +779,8 @@ class Database {
               || $key == Database::$KEY_UNIQUE) {//for columns that are not the primary key
 
          if($key == Database::$KEY_UNIQUE) {
-            $createString .= "UNIQUE KEY ";
+            $this->logH->log(3, $this->TAG, "'$name' has a unique key");
+            $createString .= "UNIQUE ";
          }
 
          //add default value

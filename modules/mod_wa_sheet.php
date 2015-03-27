@@ -97,7 +97,7 @@ class WASheet {
     */
    public function delete() {
       if($this->database != null) {
-         $query = "drop table ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI;
+         $query = "drop table ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI." cascade";
          try {
             $this->database->runGenericQuery($query);
             $this->unload();
@@ -208,28 +208,35 @@ class WASheet {
     * 
     * @throws WAException
     */
-   public function saveAsMySQLTable() {
+   public function saveAsMySQLTable($linkSheets) {
       try {
-         $this->processColumns();
+         //$this->processColumns();
+         $this->switchToThisSheet();
          if(is_array($this->columnArray) 
                  && count($this->columnArray) > 0) {
             $columnNames = array_keys($this->columnArray);
             
             $mysqlColumns = array();
+            if($linkSheets == true) {
+               $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
+               array_push($mysqlColumns, $primayKey);
+            }
             for($index = 0; $index < count($columnNames); $index++) {
                $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
-               $currMySQLColumn = $currColumn->getMySQLDetails();
+               $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
                array_push($mysqlColumns, $currMySQLColumn);
             }
             
-            if(count($mysqlColumns) == 0 || count($columnNames) != count($mysqlColumns)) {
+            $columnCount = count($columnNames);
+            if($linkSheets) $columnCount++;
+            if(count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns)) {
                $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
                throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
             }
             else {//everything seems to be fine with the data to be pushed to the MySQL database
                try {
                   
-                  $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns);
+                  $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns, $linkSheets);
                   
                } catch (WAException $ex) {
                   $this->lH->log(1, $this->TAG, "Unable to create database table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
@@ -265,8 +272,9 @@ class WASheet {
     * 
     * @throws WAException
     */
-   private function processColumns() {
+   public function processColumns() {
       try {
+         $primaryKeyThere = false;
          $this->switchToThisSheet();
          /*Refer to http://stackoverflow.com/questions/8583915/phpexcel-read-all-values-date-time-numbers-as-strings
           * for an explanation on how to use toArray
@@ -281,6 +289,10 @@ class WASheet {
                $columnIndex = 0;
                while($columnNumber == -1) {//while the number of columns is still unknown
                   $cellValue = trim($activeSheet[$rowIndex][$columnIndex]);
+                  if($primaryKeyThere == false && $cellValue == "primary_key"){
+                     $primaryKeyThere = true;
+                     $this->lH->log(3, $this->TAG, "Sheet '{$this->sheetName}' has a primary_key column");
+                  }
                   if(strlen($cellValue) == 0) {//the cell is empty (Column headings should not be empty unless all other rows for respective column are also empty)
                      $columnNumber = $columnIndex;
                      $this->lH->log(3, $this->TAG, "Sheet '{$this->sheetName}' has $columnNumber columns");
@@ -351,6 +363,7 @@ class WASheet {
                }
             }
          }*/
+         return $primaryKeyThere;
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to process columns in sheet with name = '{$this->sheetName}' for workflow with id = {$this->database->getDatabaseName()}");
          throw new WAException("Unable to process columns in sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
@@ -436,6 +449,30 @@ class WASheet {
       else {
          $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}' because connected to the wrong database");
          throw new Exception("Unable to get data sheets for workflow  because connected to the wrong database", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   public static function getSheetOriginalName($database, $currentName) {
+      include_once 'mod_wa_exception.php';
+      try {
+         $query = "select original_sheet from ".Workflow::$TABLE_META_CHANGES." where current_sheet = '$currentName'";
+         $result = $database->runGenericQuery($query, TRUE);
+         if(is_array($result)) {
+            if(count($result) == 1) {
+               return $result[0]['original_sheet'];
+            }
+            else if(count($result) == 0) {
+               return $currentName;
+            }
+            else {
+               throw new WAException("Multiple records in the database indicating name change for '$currentName'", WAException::$CODE_DB_ZERO_RESULT_ERROR, null);
+            }
+         }
+         else {
+            throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
 }

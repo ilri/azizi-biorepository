@@ -23,6 +23,8 @@ class Workflow {
    public static $TABLE_META_DOCUMENT = "__meta_document";
    public static $TABLE_META_ERRORS = "__meta_errors";
    public static $WORKFLOW_ROOT_DIR = "../odk_workflow/";
+   public static $CHANGE_SHEET = "sheet";
+   public static $CHANGE_COLUMN = "column";
    
    /**
     * Default class contructor
@@ -197,7 +199,11 @@ class Workflow {
                      array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
                      array("name" => "change_time" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "submitted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                     array("name" => "dump_file" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
+                     array("name" => "change_type" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "original_sheet" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "original_column" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "current_sheet" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "current_column" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true , "default"=>null , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -504,7 +510,7 @@ class Workflow {
     * 
     * @todo Save processing status in MySQL
     */
-   public function convertDataFilesToMySQL() {
+   public function convertDataFilesToMySQL($linkSheets) {
       $this->lH->log(3, $this->TAG, "Converting data files to SQL for workflow with id = '{$this->instanceId}'");
       $this->cacheIsProcessing();
       if($this->healthy == true
@@ -530,12 +536,11 @@ class Workflow {
                   $this->lH->log(2, $this->TAG, "Workflow already has ".  count($dataTables)." data tables (before generating schema from Excel file). Dropping this tables");
                }
                for($i = 0; $i < count($dataTables); $i++) {
-                  $this->database->runGenericQuery("drop table ".Database::$QUOTE_SI.$dataTables[$i].Database::$QUOTE_SI);
+                  $this->database->runGenericQuery("drop table ".Database::$QUOTE_SI.$dataTables[$i].Database::$QUOTE_SI." cascade");
                }
                $excelFile = new WAExcelFile($dataFiles[0]);
                try {
-                  //TODO: how to detect if process is OOM killed by kernel
-                  $excelFile->processToMySQL();
+                  $excelFile->processToMySQL($linkSheets);
                   $excelFile->unload();//Unloads from memory. Also deletes temporary files
                } catch (WAException $ex) {
                   $this->lH->log(1, $this->TAG, "Could not process data file for workflow with id = {$this->instanceId} to MySQL");
@@ -838,6 +843,98 @@ class Workflow {
       return $status;
    }
    
+    private function recordSheetNameChange($previousName, $currentName){
+      if($this->database != null
+              && $this->instanceId == $this->database->getDatabaseName()){
+         try {
+            $this->lH->log(3, $this->TAG, "Recording sheet name change from '$previousName' to '$currentName'");
+            $query = "select id from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName'";
+            $result = $this->database->runGenericQuery($query, true);
+            if(is_array($result)) {
+               if(count($result) == 1) {//sheet has already changed name before
+                  $id = $result[0]['id'];
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName', change_time = '{$this->database->getMySQLTime()}', submitted_by = '{$this->currUser}' where id = $id";
+                  $this->database->runGenericQuery($query);
+               }
+               else if(count($result) == 0) {
+                  $columns = array(
+                      "change_time" => "'".$this->database->getMySQLTime()."'",
+                      "submitted_by" => "'".$this->currUser."'",
+                      "change_type" => "'".Workflow::$CHANGE_SHEET."'",
+                      "original_sheet" => "'".$previousName."'",
+                      "current_sheet" => "'".$currentName."'"
+                  );
+                  $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
+               }
+               //update all changed columns in change table to the current sheet name
+               $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
+               $this->database->runGenericQuery($query);
+            }
+            else {
+               array_push($this->errors, new WAException("Unable to check if sheet has changed name before", WAException::$CODE_DB_QUERY_ERROR, null));
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Unable to check if sheet has changed name before in workflow with id = '{$this->instanceId}'");
+            }
+         } catch (WAException $ex) {
+            array_push($this->errors, new WAException("Unable to check if sheet has changed name before", WAException::$CODE_DB_QUERY_ERROR, $ex));
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to check if sheet has changed name before in workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to record sheet name change because workflow wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to record sheet name change because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
+   private function recordColumnNameChange($sheetName, $previousName, $currentName){
+      if($this->database != null
+              && $this->instanceId == $this->database->getDatabaseName()){
+         try {
+            $this->lH->log(3, $this->TAG, "Recording column name change from '$previousName' to '$currentName'");
+            $query = "select id from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName'";
+            $result = $this->database->runGenericQuery($query, true);
+            if(is_array($result)) {
+               if(count($result) == 1) {//sheet has already changed name before
+                  $id = $result[0]['id'];
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_column = '$currentName', change_time = '{$this->database->getMySQLTime()}', submitted_by = '{$this->currUser}' where id = $id";
+                  $this->database->runGenericQuery($query);
+               }
+               else if(count($result) == 0) {
+                  $columns = array(
+                      "change_time" => "'".$this->database->getMySQLTime()."'",
+                      "submitted_by" => "'".$this->currUser."'",
+                      "change_type" => "'".Workflow::$CHANGE_COLUMN."'",
+                      "original_sheet" => "'".$sheetName."'",
+                      "original_column" => "'".$previousName."'",
+                      "current_sheet" => "'".$sheetName."'",
+                      "current_column" => "'".$currentName."'"
+                  );
+                  $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
+               }
+               else {
+                  
+               }
+            }
+            else {
+               array_push($this->errors, new WAException("Unable to check if column has changed name before", WAException::$CODE_DB_QUERY_ERROR, null));
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Unable to check if column has changed name before in workflow with id = '{$this->instanceId}'");
+            }
+         } catch (WAException $ex) {
+            array_push($this->errors, new WAException("Unable to check if column has changed name before", WAException::$CODE_DB_QUERY_ERROR, $ex));
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to check if column has changed name before in workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to record column name change because workflow wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to record column name change because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
+   
    /**
     * This function modifies a sheet column
     * 
@@ -856,6 +953,7 @@ class Workflow {
          try {
             $sheet = new WASheet($this->config, $this->database, null, $sheetName);
             $sheet->alterColumn($columnDetails);
+            if($columnDetails['delete'] == false) $this->recordColumnNameChange($sheetName, $columnDetails['original_name'], $columnDetails['name']);
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
             $this->healthy = false;
@@ -901,6 +999,7 @@ class Workflow {
                else {
                   $this->lH->log(3, $this->TAG, "Going to rename '".$sheetDetails['original_name']."' to '".$sheetDetails['name']."' in the '{$this->instanceId}' workflow");
                   $sheet->rename($sheetDetails['name']);
+                  $this->recordSheetNameChange($sheetDetails['original_name'], $sheetDetails['name']);
                }
             } catch (WAException $ex) {
                array_push($this->errors, new WAException("Unable to modify sheet because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
