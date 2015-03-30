@@ -368,6 +368,10 @@ ul.ui-autocomplete {z-index: 1000!important; }
 .zoom_button {cursor: pointer; position: absolute; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; width: 35px; height: 35px; line-height: 35px; color: #ffffff; border: 1px solid;
                border-radius: 50%; font-size: 25px; font-weight: bolder;  -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
+#animals{ margin-top: 10px; }
+#animals #left_panel { float: left; }
+#animals #right_panel {float: left; }
+
 #mta_box_list_div{
    width: auto;
    height: auto;
