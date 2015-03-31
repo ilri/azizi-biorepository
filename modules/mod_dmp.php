@@ -87,18 +87,20 @@ class DMP extends Repository{
             <li><a href="?page=dmp">Home</a></li>
          </ul>
       </li>
-      <li>Edit
+      <li>Schema
           <ul style='width: 250px;'>
               <li>Rollback
                  <ul id="undo_container" style='color: black; min-width: 300px;'>
                   </ul>
               </li>
               <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
-              <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Project</a></li>
+              <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Schema (and project)</a></li>
           </ul>
       </li>
-      <li>Help
-         
+      <li>Data
+         <ul style='width: 250px;'>
+            <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
+          </ul>
       </li>
   </ul>
 </div>

@@ -16,7 +16,7 @@ class Database {
     */
    public static $QUOTE_SI = '"';//quotes to be used for system identifiers
    public static $TYPE_SERIAL = "serial";//1 to 2147483647
-   public static $TYPE_INT = "integer";
+   public static $TYPE_INT = "numeric";
    public static $TYPE_DOUBLE = "double precision";
    public static $TYPE_VARCHAR = "varchar";
    public static $TYPE_TINYINT = "smallint";
@@ -346,12 +346,12 @@ class Database {
     * 
     * @throws WAException
     */
-   public function runInsertQuery($table, $columns) {
+   public function runInsertQuery($table, $columns, $returnStatement = false) {
       $this->logH->log(4, $this->TAG, "runInsertQuery called");
       $this->logH->log(4, $this->TAG, "columns = ".print_r($columns, true));
       
       $keys = array_keys($columns);
-      $query = "insert into ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." (".implode(",", $keys).") ";
+      $query = "insert into ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." (".Database::$QUOTE_SI.implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $keys).Database::$QUOTE_SI.") ";
       $values ="values(";
       
       for($index = 0; $index < count($keys); $index++) {
@@ -367,7 +367,12 @@ class Database {
       $query .= $values;
       $this->logH->log(4, $this->TAG, "Insert query = ".$query);
       try {
-         $this->runGenericQuery($query);
+         if($returnStatement == true){
+            return $query;
+         }
+         else {
+            $this->runGenericQuery($query);
+         }
       } catch (WAException $ex) {
          throw new WAException("An error occurred while trying to run insert query in '$table'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }

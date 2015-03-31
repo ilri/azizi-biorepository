@@ -457,6 +457,16 @@ class WAFile {
       $location = $workingDir.WAFile::$WORKING_SUB_DIRS[WAFile::$TYPE_BACKUP]."/".$savePoint;
       return $location;
    }
+   
+   /**
+    * This function deletes the php_excel caches
+    */
+   public static function clearCache($workingDir) {
+      //delete raw data caches
+      //check when last the directory was edited before deleting
+      $phpExcelCache = $workingDir.WAFile::$WORKING_SUB_DIRS["raw_data"]."/phpexcel_cache";
+      WAFile::rmDir($phpExcelCache);
+   }
 }
 ?>
 

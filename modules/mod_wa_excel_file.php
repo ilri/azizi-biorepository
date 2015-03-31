@@ -111,22 +111,13 @@ class WAExcelFile {
    public function getSheetData($sheetName) {
       try {
          if($this->excelObject != null) {
-            $sheetNames = $this->excelObject->getSheetNames();
-            $this->lH->log(4, $this->TAG, "Sheet names  = ".print_r($sheetNames, true));
-            $sheetName = WASheet::getSheetOriginalName($this->database, $sheetName);
-            if(array_search($sheetName, $sheetNames) !== false) {
-               try {
-                  $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetName);
-                  $data = $currSheet->getData();
-                  return $data;
-               } catch (WAException $ex) {
-                  $this->lH->log(1, $this->TAG, "Unable to extract data from data file for workflow with id = '{$this->database->getDatabaseName()}'");
-                  throw new WAException("Unable to extract data from data file", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
-               }
-            }
-            else {
-               $this->lH->log(1, $this->TAG, "Unable to locate sheet with name '$sheetName'");
-               throw new WAException("Unable to locate sheet with name '$sheetName'", WAException::$CODE_WF_INSTANCE_ERROR, null);
+            try {
+               $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetName);
+               $data = $currSheet->getData();
+               return $data;
+            } catch (WAException $ex) {
+               $this->lH->log(1, $this->TAG, "Unable to extract data from data file for workflow with id = '{$this->database->getDatabaseName()}'");
+               throw new WAException("Unable to extract data from data file", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
             }
          }
          else {
@@ -136,6 +127,43 @@ class WAExcelFile {
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to get data for sheet '$sheetName' in workflow with id = '{$this->database->getDatabaseName()}'");
          throw new WAException("Unable to get data for sheet '$sheetName'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function dumps data from the excel file into the database
+    */
+   public function dumpData() {
+      try {
+         if($this->excelObject != null) {
+            $sheetNames = WASheet::getAllWASheets($this->config, $this->database->getDatabaseName(), $this->database);
+            $this->lH->log(4, $this->TAG, "Sheet names  = ".print_r($sheetNames, true));
+            //$sheetName = WASheet::getSheetOriginalName($this->database, $sheetName);
+            try {
+               //delete data from the sheets (start from last index)
+               if(count($sheetNames) > 0) {
+                  for($index = count($sheetNames) - 1; $index >= 0; $index--) {
+                     $query = "delete from ".Database::$QUOTE_SI.$sheetNames[$index].Database::$QUOTE_SI." where 1 = 1";
+                     $this->database->runGenericQuery($query);
+                  }
+               }
+               //dump data into database tables (start from first)
+               for($index = 0; $index < count($sheetNames); $index++){
+                  $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
+                  $currSheet->dumpData();
+               }
+            } catch (WAException $ex) {
+               $this->lH->log(1, $this->TAG, "Unable to dump data from data file for workflow with id = '{$this->database->getDatabaseName()}'");
+               throw new WAException("Unable to dump data from data file", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+            }
+         }
+         else {
+            $this->lH->log(1, $this->TAG, "Unable to dump data from the excel file at {$this->waFile->getFSLocation()}");
+            throw new WAException("Unable to dump data from the excel file at {$this->waFile->getFSLocation()}", WAException::$CODE_WF_INSTANCE_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "Unable to dump data from excel file in workflow with id = '{$this->database->getDatabaseName()}'");
+         throw new WAException("Unable to dump data from excel file", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
    

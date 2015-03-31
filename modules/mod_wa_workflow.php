@@ -676,7 +676,7 @@ class Workflow {
     * This function caches errors caught by this object in the META_ERRORS table
     */
    public function cacheErrors() {
-      if($this->database != null
+      /*if($this->database != null
               && $this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
          for($index = 0; $index < count($this->errors); $index++) {
@@ -685,7 +685,7 @@ class Workflow {
                $message = $this->database->quote(Workflow::getErrorMessage($currError));//TODO: not sure this will work
                $this->database->runInsertQuery(Workflow::$TABLE_META_ERRORS, array(
                    "code" => $currError->getCode(),
-                   "message" => "''",//TODO:find a way of nicely caching the error messages without creating an error in the process (of caching in the database)
+                   "message" => "'$message'",//TODO:find a way of nicely caching the error messages without creating an error in the process (of caching in the database)
                    "time_added" => "'".Database::getMySQLTime()."'"
                ));
             } catch (WAException $ex) {
@@ -699,7 +699,7 @@ class Workflow {
          //array_push($this->errors, new WAException("Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
-      }
+      }*/
    }
    
    /**
@@ -1017,6 +1017,58 @@ class Workflow {
          array_push($this->errors, new WAException("Unable to modify sheet because provided sheet details are mulformed", WAException::$CODE_WF_INSTANCE_ERROR, null));
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to modify sheet because provided sheet details are mulformed for workflow with instance id = '{$this->instanceId}'");
+      }
+      
+      $this->setIsProcessing(false);
+      $this->cacheIsProcessing();
+      $this->cacheErrors();
+      $this->cacheHealth();
+      return $savePoint;
+   }
+   
+   /**
+    * This function dumps data from the data files into the database
+    */
+   public function dumpData() {
+      $savePoint = $this->save("Data dump");
+      if($this->files != null
+              && is_array($this->files)
+              && count($this->files) > 0
+              && $this->healthy == true){
+         //get only the data files
+         $dataFiles = array();
+         for($index = 0; $index < count($this->files); $index++) {
+            $currFile = $this->files[$index];
+            if($currFile->getType() == WAFile::$TYPE_RAW) {
+               array_push($dataFiles, $currFile);
+            }
+         }
+         
+         if(count($dataFiles) > 0) {
+            if(count($dataFiles) == 1) {//currently only support one data file
+               //delete any existing data table in the database
+               $excelFile = new WAExcelFile($dataFiles[0]);
+               try {
+                  $excelFile->dumpData();
+               } catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "Could not dump data from the data file for workflow with id = {$this->instanceId} to MySQL");
+                  array_push($this->errors, $ex);
+               }
+            }
+            else {
+               $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' has more than one data file");
+               array_push($this->errors, new WAException("Workflow not linked to more than one data file. Feature currently not supported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
+            }
+         }
+         else {
+            $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' does not have any linked data files");
+            array_push($this->errors, new WAException("Workflow not linked to any data file", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to dump data because the workflow wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to dump data because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
       
       $this->setIsProcessing(false);

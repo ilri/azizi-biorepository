@@ -14,6 +14,7 @@ class WASheet {
    private $columns;//array of WAColumns in this object
    private $sheetName;
    private $columnArray;//this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
+   private $originalName;//what the sheet is called in the data files
    
    /**
     * Default constructor for this class
@@ -35,6 +36,7 @@ class WASheet {
       $this->database = $database;
       $this->excelObject = $excelObject;
       $this->sheetName = $sheetName;
+      $this->originalName = WASheet::getSheetOriginalName($this->database, $sheetName);
       $this->columns = array();
       
       if($this->excelObject == null) {//means data already stored in database
@@ -87,6 +89,96 @@ class WASheet {
       else {
          $this->lH->log(1, $this->TAG, "Could not rename '{$this->sheetName}' because sheet object wasn't initialized correctly");
          throw new WAException("Could not rename '{$this->sheetName}' because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function dumps data from the data file into the sheet's database table
+    */
+   public function dumpData() {
+      $this->getCachedCopy();
+      if($this->sheetName != null
+              && $this->originalName != null
+              && $this->columns != null) {
+         try {
+            $this->lH->log(3, $this->TAG, "Dumping data for '{$this->sheetName}'");
+            //get the list of columns in the database table. Only dump columns that are in the database
+            $this->processColumns();
+            //move what is in columnArray to an sql insert statement
+            $dataColumns = array();
+            for($index = 0; $index < count($this->columns); $index++) {
+               $currColumn = $this->columns[$index];
+               $oColumnName = WAColumn::getOriginalColumnName($this->database, $this->sheetName, $currColumn->getName());
+               $this->lH->log(4, $this->TAG, "Current original column name = ".$oColumnName);
+               $currColumn->setData($this->columnArray[$oColumnName]);
+               $dataColumns[] = $currColumn;
+            }
+            $this->lH->log(4, $this->TAG, "Number of data columns = ".count($dataColumns));
+            if(count($dataColumns) > 0) {
+               $this->lH->log(4, $this->TAG, "First column has this rows = ".  print_r($dataColumns[0]->getData(), true));
+               $rowCount = count($dataColumns[count($dataColumns) - 1]->getData());//use the last column since the first column might be blank
+               $this->lH->log(4, $this->TAG, "Number of data rows = ".$rowCount);
+               $fullQuery = "";
+               for($rIndex = 0; $rIndex < $rowCount; $rIndex++) {
+                  $row = array();
+                  for($cIndex = 0; $cIndex < count($dataColumns); $cIndex++){
+                     if(count($dataColumns[$cIndex]->getData()) > 0){
+                        $cData = $dataColumns[$cIndex]->getData();
+                        $cValue = $cData[$rIndex];
+                        if(WAColumn::isNull($cValue)) {
+                           $cValue = "null";
+                        }
+                        else {
+                           if($dataColumns[$cIndex]->getType() == Database::$TYPE_DATE
+                                    || $dataColumns[$cIndex]->getType() == Database::$TYPE_DATETIME
+                                    || $dataColumns[$cIndex]->getType() == Database::$TYPE_TIME){
+                               $cValue = "'".$cValue."'";
+                            }
+                            else if($dataColumns[$cIndex]->getType() == Database::$TYPE_VARCHAR) {
+                               $cValue = $this->database->quote($cValue);
+                            }
+                            else if($dataColumns[$cIndex]->getType() == Database::$TYPE_BOOLEAN){
+                               if(WAColumn::isTrue($cValue)){
+                                  $cValue = "'t'";
+                               }
+                               else {
+                                  $cValue = "'f'";
+                               }
+                            }
+                        }
+                        $row[$dataColumns[$cIndex]->getName()] = $cValue;
+                     }
+                  }
+                  $this->database->runInsertQuery($this->sheetName, $row);
+                  /*if(strlen($fullQuery) == 0){
+                     $fullQuery = $this->database->runInsertQuery($this->sheetName, $row, true)."; \n";
+                  }
+                  else {
+                     $fullQuery = $fullQuery.$this->database->runInsertQuery($this->sheetName, $row, true)."; \n";
+                  }*/
+               }
+               /*if(strlen($fullQuery) > 0){
+                  $this->database->runGenericQuery($fullQuery);
+               }
+               else {
+                  $this->lH->log(2, $this->TAG, "Constructed insert query for dumping data into '{$this->sheetName}' is empty");
+               }*/
+            }
+            else {
+               $this->lH->log(1, $this->TAG, "Could not determine the columns in '{$this->sheetName}' to dump data for workflow with id = '{$this->database->getDatabaseName()}'");
+               throw new WAException("Could not determine the columns in '{$this->sheetName}' to dump data", WAException::$CODE_WF_PROCESSING_ERROR, null);
+            }
+         } catch (WAException $ex) {
+            $this->lH->log(1, $this->TAG, "An error occurred while trying to dump data into '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
+            throw new WAException("An error occurred while trying to dump data into '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+         }
+      }
+      else {
+         $this->lH->log(1, $this->TAG, "Could not dump data into '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}' because sheet object was not initialized correctly");
+         $this->lH->log(4, $this->TAG, "Sheet name = {$this->sheetName}");
+         $this->lH->log(4, $this->TAG, "Original name = {$this->originalName}");
+         $this->lH->log(4, $this->TAG, "Columns = ".  print_r($this->columns, true));
+         throw new WAException("Could not dump data into '{$this->sheetName}' because the sheet object wasn't initialized correctly", WAException::$CODE_WF_PROCESSING_ERROR, null);
       }
    }
    
@@ -377,12 +469,12 @@ class WASheet {
     */
    private function switchToThisSheet() {
       if($this->excelObject != null
-              && $this->sheetName != null) {
-         $this->excelObject->setActiveSheetIndexByName($this->sheetName);
+              && $this->originalName != null) {
+         $this->excelObject->setActiveSheetIndexByName($this->originalName);
       }
       else {
-         $this->lH->log(1, $this->TAG, "Unable to switch to sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
-         throw new WAException("Unable to switch to sheet with name as '{$this->sheetName}'", WAException::$CODE_WF_CREATE_ERROR, null);
+         $this->lH->log(1, $this->TAG, "Unable to switch to sheet with name = '{$this->originalName}' for workflow with id = '{$this->database->getDatabaseName()}'");
+         throw new WAException("Unable to switch to sheet with name as '{$this->originalName}'", WAException::$CODE_WF_CREATE_ERROR, null);
       }
    }
    
@@ -434,7 +526,12 @@ class WASheet {
                if(count($tables) == 0) {
                   $lH->log(2, "washeet_static", "Workflow with id = '$workflowId' does not have data tables");
                }
-               
+               $mainSheetName = WASheet::getSheetCurrentName($database, "main_sheet");
+               $mainSheetPos = array_search($mainSheetName, $tables);
+               if($mainSheetPos !== false){
+                  unset($tables[$mainSheetPos]);
+                  $tables = array_merge(array($mainSheetName), $tables);
+               }
                return $tables;
             }
             else {
@@ -455,7 +552,7 @@ class WASheet {
    public static function getSheetOriginalName($database, $currentName) {
       include_once 'mod_wa_exception.php';
       try {
-         $query = "select original_sheet from ".Workflow::$TABLE_META_CHANGES." where current_sheet = '$currentName'";
+         $query = "select original_sheet from ".Workflow::$TABLE_META_CHANGES." where current_sheet = '$currentName' and change_type = '".Workflow::$CHANGE_SHEET."'";
          $result = $database->runGenericQuery($query, TRUE);
          if(is_array($result)) {
             if(count($result) == 1) {
@@ -463,6 +560,30 @@ class WASheet {
             }
             else if(count($result) == 0) {
                return $currentName;
+            }
+            else {
+               throw new WAException("Multiple records in the database indicating name change for '$currentName'", WAException::$CODE_DB_ZERO_RESULT_ERROR, null);
+            }
+         }
+         else {
+            throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   public static function getSheetCurrentName($database, $originalName){
+      include_once 'mod_wa_exception.php';
+      try {
+         $query = "select current_sheet from ".Workflow::$TABLE_META_CHANGES." where original_sheet = '$originalName' and change_type = '".Workflow::$CHANGE_SHEET."'";
+         $result = $database->runGenericQuery($query, TRUE);
+         if(is_array($result)) {
+            if(count($result) == 1) {
+               return $result[0]['current_sheet'];
+            }
+            else if(count($result) == 0) {
+               return $originalName;
             }
             else {
                throw new WAException("Multiple records in the database indicating name change for '$currentName'", WAException::$CODE_DB_ZERO_RESULT_ERROR, null);

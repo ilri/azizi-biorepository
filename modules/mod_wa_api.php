@@ -162,6 +162,9 @@ class ODKWorkflowAPI extends Repository {
                      else if (OPTIONS_REQUESTED_SUB_MODULE == "get_sheet_data") {
                         $this->handleGetSheetDataEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "dump_data") {
+                        $this->handleDumpDataEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -635,6 +638,38 @@ class ODKWorkflowAPI extends Repository {
             $status = $workflow->getCurrentStatus();
             $data = array(
                 "data" => $sheetData,
+                "status" => $status
+            );
+            $this->returnResponse($data);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id not set in data provided to get_foreign_keys endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_foreign_keys endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the dump_data endpoint
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    * }
+    */
+   private function handleDumpDataEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->dumpData();
+            $status = $workflow->getCurrentStatus();
+            $data = array(
+                "save_point" => $savePoint,
                 "status" => $status
             );
             $this->returnResponse($data);

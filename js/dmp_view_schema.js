@@ -82,12 +82,64 @@ DMPVSchema.prototype.documentReady = function() {
    $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
    $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
    $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
-   $("#menu_bar").jqxMenu();
+   $("#menu_bar").jqxMenu({autoOpen: false});
    $("#right_click_menu").jqxMenu({mode: "popup", width: "200px", autoOpenPopup: false});
    $("#delete_sheet_btn").click(window.dvs.deleteSheetButtonClicked);
    $("#rename_sheet_btn").click(window.dvs.renameSheetButtonClicked);
    $("#rename_sheet_btn2").click(window.dvs.renameSheetButton2Clicked);
    $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
+   $("#dump_data_btn").click(window.dvs.dumpDataButtonClicked);
+};
+
+DMPVSchema.prototype.dumpDataButtonClicked = function() {
+   if(window.dvs.project != null && window.dvs.project.length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=dump_data",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to dump data");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to dump data");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from dump_data endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  $("#enotification_pp").html("Could dump data");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#inotification_pp").html("Data successfully dumped");
+                  $("#inotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not dump data");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            window.dvs.updateSheetList();
+         }
+      });
+   }
 };
 
 /**
@@ -426,7 +478,9 @@ DMPVSchema.prototype.processProjectSchema = function() {
                if(jsonResult.status.healthy == true) {
                   $("#inotification_pp").html("Done processing project schema");
                   $("#inotification_pp").jqxNotification("open");
-                  window.dvs.updateSheetList();
+                  //window.dvs.updateSheetList();
+                  //don't try to be a genious. reload the page
+                  window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
                }
                else if(jsonResult.status.healthy == false) {
                   $("#enotification_pp").html("Could process project schema");
@@ -1353,7 +1407,7 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
 DMPVSchema.prototype.updateColumnGrid = function(data) {
    console.log("updating column grid");
    //check if each of the columns is in a foreing key
-   if(typeof window.dvs.foreignKeys[data.name] != 'undefined') {//the current sheet has foreign keys
+   if(window.dvs.foreignKeys != null && typeof window.dvs.foreignKeys[data.name] != 'undefined') {//the current sheet has foreign keys
       var foreignKeys = window.dvs.foreignKeys[data.name];
       var allFKeyColumns = [];
       for(var index = 0; index < foreignKeys.length; index++) {

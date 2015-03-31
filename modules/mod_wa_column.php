@@ -67,6 +67,10 @@ class WAColumn {
       return $this->name;
    }
    
+   public function getType() {
+      return $this->type;
+   }
+   
    /**
     * This function updates the column details
     * 
@@ -92,6 +96,14 @@ class WAColumn {
       } catch (WAException $ex) {
          throw new WAException("Unable to alter the column '{$this->name}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
       }
+   }
+   
+   public function setData($data) {
+      $this->data = $data;
+   }
+   
+   public function getData() {
+      return $this->data;
    }
    
    /**
@@ -365,4 +377,35 @@ class WAColumn {
       return false;
    }
    
+   public static function isTrue($string) {
+      if($string === true
+              || preg_match("/true/i", $string) === 1) {
+         return true;
+      }
+      return false;
+   }
+   
+   public static function getOriginalColumnName($database, $sheetName, $currentName) {
+      include_once 'mod_wa_exception.php';
+      try {
+         $query = "select original_column from ".Workflow::$TABLE_META_CHANGES." where current_column = '$currentName' and current_sheet = '$sheetName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
+         $result = $database->runGenericQuery($query, TRUE);
+         if(is_array($result)) {
+            if(count($result) == 1) {
+               return $result[0]['original_column'];
+            }
+            else if(count($result) == 0) {
+               return $currentName;
+            }
+            else {
+               throw new WAException("Multiple records in the database indicating name change for '$currentName'", WAException::$CODE_DB_ZERO_RESULT_ERROR, null);
+            }
+         }
+         else {
+            throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
 }
