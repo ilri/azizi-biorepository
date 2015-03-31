@@ -106,7 +106,10 @@ class ProcODKForm {
          }*/
       }
    }
-   
+   /**
+    * This fuction authenticates the ODK user on Aggregate
+    * @return string
+    */
    private function authUser(){
       if(file_exists($this->authCookies) === FALSE){
          $authURL = Config::$config['odkAuthURL'];
@@ -132,6 +135,11 @@ class ProcODKForm {
       }
    }
    
+   /**
+    * This function fetches the xml form file corresponding to an ODK form
+    * 
+    * @return boolean   TRUE if able to fetch the xml
+    */
    private function getXMLFile(){
       $query = "SELECT instance_id, top_element FROM odk_forms WHERE id = :id";
       $instanceID = $this->Dbase->ExecuteQuery($query, array("id" => $this->formID));
@@ -169,6 +177,9 @@ class ProcODKForm {
       
    }
    
+   /**
+    * This function fetches the list of submissions for the set ODK form on Aggregate
+    */
    private function getSubmissionList(){
       $numSubmissionEntries = 100;
       $listURL = "http://azizi.ilri.cgiar.org/aggregate/view/submissionList?formId=".$this->instanceID."&numEntries=".$numSubmissionEntries;
@@ -219,6 +230,10 @@ class ProcODKForm {
       }
    }
    
+   /**
+    * This function downloads submission data for one item in the ODK Submission list (Refer to getSubmissionList)
+    * @param type $submissionID
+    */
    private function downloadSubmissionData($submissionID){
       $formId = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]";
       $downloadURL = "http://azizi.ilri.cgiar.org/aggregate/view/downloadSubmission?formId=".urlencode($formId);
@@ -253,6 +268,11 @@ class ProcODKForm {
          $this->Dbase->CreateLogEntry(" Unable to get data for submission with id = ".$submissionID." . http status = ".$http_status." & result = ".$curlResult, "fatal");
    }
    
+   /**
+    * This function does the initial cleaning of submissions obtained from Aggregate:
+    *    - preprocessing of geopoints
+    *    - preprocessing of repeats
+    */
    private function processRows(){
       preg_match_all("/<repeat\s+nodeset\s*=\s*[\"'](.*)[\"']/", $this->xmlString, $repeats);
       preg_match_all("/<bind\s+nodeset\s*=\s*[\"']([a-z0-9_\-\.\/]+)[\"'].*type\s*=\s*[\"']geopoint[\"']/i", $this->xmlString, $geopoints);
@@ -297,6 +317,17 @@ class ProcODKForm {
       $this->Dbase->CreateLogEntry(print_r($_SERVER, true), "fatal");
    }
    
+   /**
+    * This function processes the provided row to make it parseable by the ODK Parser
+    * module
+    * 
+    * @param type $row
+    * @param type $parentSheet
+    * @param type $parents
+    * @param type $rowIndex
+    * @param type $parentLink
+    * @param type $parentIndex
+    */
    private function processRow($row, $parentSheet, $parents, $rowIndex = -1, $parentLink = -1, $parentIndex = -1){
       
       $rowKeys = array_keys($row);
@@ -472,6 +503,10 @@ class ProcODKForm {
       }
    }
    
+   /**
+    * This function converts the processed $this->headingRows and $this->csvRows
+    * into $this->csvString
+    */
    private function construcCSVFile(){
       $csvString = "";
       $mainSheetNoColumns = count($this->headingRows["main_sheet"]);
