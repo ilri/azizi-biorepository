@@ -121,7 +121,13 @@ DMPVSchema.prototype.dumpDataButtonClicked = function() {
             console.log("Response from dump_data endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could dump data");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could dump data"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
                else {
@@ -195,7 +201,13 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function () {
             console.log("Response from alter_sheet endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not rename sheet");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not rename sheet"+message);
                   $("#enotification_pp").jqxNotification("open");
                   canContinue = false;
                }
@@ -261,7 +273,13 @@ DMPVSchema.prototype.deleteSheetButtonClicked = function() {
             console.log("Response from alter_sheet endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not delete sheet "+sheet.name);
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not delete sheet "+sheet.name+message);
                   $("#enotification_pp").jqxNotification("open");
                   canContinue = false;
                }
@@ -322,7 +340,13 @@ DMPVSchema.prototype.deleteProjectButtonClicked = function() {
                   window.location.href = "?page=dmp";
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not delete project");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not delete project"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
             }
@@ -425,7 +449,13 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
                   window.dvs.processProjectSchema();
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not create project");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not create project"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
             }
@@ -483,7 +513,13 @@ DMPVSchema.prototype.processProjectSchema = function() {
                   window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could process project schema");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could process project schema"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
             }
@@ -599,7 +635,13 @@ DMPVSchema.prototype.refreshSavePoints = function() {
                   });
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not fetch save points");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not fetch save points"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
             }
@@ -656,7 +698,13 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
                $("#inotification_pp").jqxNotification("open");
             }
             else if(jsonResult.status.healthy == false) {
-               $("#enotification_pp").html("Could not undo changes");
+               var message = "";
+               if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                  if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                     message = "\n "+jsonResult.status.errors[0].message;
+                  }
+               }
+               $("#enotification_pp").html("Could not undo changes"+message);
                $("#enotification_pp").jqxNotification("open");
             }
          }
@@ -731,7 +779,13 @@ DMPVSchema.prototype.updateButtonClicked = function() {
                            isFirstColumn = false;
                         }
                         else if(jsonResult.status.healthy == false) {
-                           $("#enotification_pp").html("Could not update "+details.name);
+                           var message = "";
+                           if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                              if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                                 message = "\n "+jsonResult.status.errors[0].message;
+                              }
+                           }
+                           $("#enotification_pp").html("Could not update "+details.name+message);
                            $("#enotification_pp").jqxNotification("open");
                            canContinue = false;
                         }
@@ -935,7 +989,13 @@ DMPVSchema.prototype.loadSheetData = function(sheetName) {
                   window.dvs.updateDataGrid(window.dvs.sheetData[sheetName]);
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not fetch sheet data");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not fetch sheet data"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
             }
@@ -988,7 +1048,13 @@ DMPVSchema.prototype.refreshForeignKeys = function() {
                   window.dvs.foreignKeys = jsonResult.foreign_keys;
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not fetch foreign keys");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not fetch foreign keys"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
             }
@@ -1295,7 +1361,13 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
                   $("#inotification_pp").jqxNotification("open");
                }
                else if(jsonResult.status.healthy == false) {
-                  $("#enotification_pp").html("Could not fetch foreign keys");
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "\n "+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not fetch foreign keys"+message);
                   $("#enotification_pp").jqxNotification("open");
                }
             }
