@@ -165,6 +165,9 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "dump_data") {
                         $this->handleDumpDataEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "alter_name") {
+                        $this->handleAlterNameEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -398,6 +401,31 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("key", $json['column'])) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $savePoint = $workflow->modifyColumn($json['sheet'], $json['column']);
+            
+            $data = array(
+                "save_point" => $savePoint,
+                "status" => $workflow->getCurrentStatus()
+            );
+            $this->returnResponse($data);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the fields in the data variable not set for the data provided to alter_field endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to alter_field endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   private function handleAlterNameEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+                 && array_key_exists("name", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->modifyName($json['name']);
             
             $data = array(
                 "save_point" => $savePoint,
@@ -684,6 +712,24 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
+   
+   /*private function handleGetDatabaseAccessEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            
+            $data = Workflow::
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id not set in data provided to get_foreign_keys endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_foreign_keys endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }*/
 
    /**
     * This function generates a UUID for the user by combining ith with the server address

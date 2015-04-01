@@ -59,6 +59,11 @@ DMPVSchema.prototype.documentReady = function() {
       x:window.innerWidth/2 - 400/2
    };
    $("#new_foreign_key_wndw").jqxWindow({height: 230, width: 400, position: newForeignKeyWindowPos, theme: ''});
+   var renameProjectWindowPos = {
+      y:window.innerHeight/2 - 150/2 - window.innerHeight*0.1,
+      x:window.innerWidth/2 - 400/2
+   };
+   $("#rename_project_wndw").jqxWindow({height: 150, width: 400, position: renameProjectWindowPos, theme: ''});
    $("#manual_file_upload").jqxFileUpload({
       width:500,
       fileInputName: "data_file",
@@ -89,6 +94,10 @@ DMPVSchema.prototype.documentReady = function() {
    $("#rename_sheet_btn2").click(window.dvs.renameSheetButton2Clicked);
    $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
    $("#dump_data_btn").click(window.dvs.dumpDataButtonClicked);
+   $("#project_title").dblclick(function() {
+      $("#rename_project_wndw").show();
+   });
+   $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
 };
 
 DMPVSchema.prototype.dumpDataButtonClicked = function() {
@@ -143,6 +152,66 @@ DMPVSchema.prototype.dumpDataButtonClicked = function() {
          complete: function() {
             $("#loading_box").hide();
             window.dvs.updateSheetList();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.renameProjectButtonClicked = function() {
+   if(window.dvs.project != null && window.dvs.project.length > 0 && $("#new_project_name").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "name": $("#new_project_name").val()
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=alter_name",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to rename project");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to rename project");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from alter_name endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could rename project"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#inotification_pp").html("Successfully renamed project");
+                  $("#inotification_pp").jqxNotification("open");
+                  $("#project_title").html($("#new_project_name").val());
+                  $("#rename_project_wndw").hide();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not rename project");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
          }
       });
    }

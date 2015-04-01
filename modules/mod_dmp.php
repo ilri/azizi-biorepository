@@ -145,6 +145,16 @@ class DMP extends Repository{
          <button type="button" id="rename_sheet_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
       </div>
    </div>
+   <div id="rename_project_wndw" style="display: none;">
+      <div>Rename project</div>
+      <div>
+         <div style="margin-left: 5%">
+            <label for="new_project_name">New name</label>
+            <input type="text" id="new_project_name" style="height: 25px; width: 300px;" />
+         </div>
+         <button type="button" id="rename_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
+      </div>
+   </div>
    <div id="delete_project_wndw" style="display: none;">
       <div>Delete Project</div>
       <div>

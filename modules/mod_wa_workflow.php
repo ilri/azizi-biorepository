@@ -350,7 +350,7 @@ class Workflow {
       $generated = false;
       while($generated === false) {
          //generate random id
-         $randomID = $this->generateRandomID();
+         $randomID = Workflow::generateRandomID();
          
          //check if random id is unique
          try{
@@ -386,7 +386,7 @@ class Workflow {
     * 
     * @return string The id
     */
-   private function generateRandomID($length = 20){
+   private static function generateRandomID($length = 20){
       //get first random alphabetic character
       $characters = 'abcdefghijklmnopqrstuvwxyz';
       $randomString = $characters[rand(0, strlen($characters))];
@@ -764,7 +764,7 @@ class Workflow {
     */
    public function save($description) {
       $this->lH->log(3, $this->TAG, "Creating a database dump for workflow with id = '{$this->instanceId}'");
-      $filename = date("Y-m-d_H-i-s")."_".$this->generateRandomID(5).".sql";
+      $filename = date("Y-m-d_H-i-s")."_".  Workflow::generateRandomID(5).".sql";
       if($this->healthy == true
               && $this->instanceId != null
               && $this->database->getDatabaseName() == $this->instanceId
@@ -964,6 +964,39 @@ class Workflow {
          array_push($this->errors, new WAException("Unable to modify column because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to modify column because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+      }
+      
+      $this->setIsProcessing(false);
+      $this->cacheIsProcessing();
+      $this->cacheErrors();
+      $this->cacheHealth();
+      return $savePoint;
+   }
+   
+   /**
+    * This function modifies the workflow name
+    * 
+    * @param string $name  The new workflow name
+    */
+   public function modifyName($newName){
+      $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
+      //try saving the workflow instance first
+      $description = "Rename to $newName";
+      $savePoint = $this->save($description);
+      if($this->healthy == true) {
+         try {
+            $query = "update ".Workflow::$TABLE_META_DOCUMENT." set workflow_name = ".$this->database->quote($newName);
+            $this->database->runGenericQuery($query);
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Could not rename workflow with instance id = '{$this->instanceId}' to '$newName'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to rename workflow bacause it wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to rename workflow with id = '{$this->instanceId}' bacause it wasn't successfully backed up");
       }
       
       $this->setIsProcessing(false);
@@ -1281,6 +1314,38 @@ class Workflow {
       );
       return $result;
    }
+   
+   /*public static function getDatabaseAccess($config, $instanceId, $userURI) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      
+      $errors = array();
+      $healthy = true;
+      $credentials = array();//list of formatted save points
+      $lH = new LogHandler("./");
+      $lH->log(3, "waworkflow_static", "Getting save points for workflow with id = '{$instanceId}'");
+      try {
+         $database = new Database($config);
+         $query = "select connection_password from clients where uri = ".$database->quote($userURI);
+         $result = $database->runGenericQuery($query, TRUE);
+         if(is_array($result) && count($result) == 1){
+            $connectionPassword = $result[0]['connection_password'];
+            if($connectionPassword == null || strlen($connectionPassword) == 0) {//user not given a connection password
+               $randomPassword = Workflow::generateRandomID(20);
+               
+            }
+         }
+      } catch (WAException $ex) {
+
+      }
+      
+      $result = array(
+          "credentials" => $credentials,
+          "status" => Workflow::getStatusArray($healthy, $errors)
+      );
+      return $result;
+   }*/
    
    /**
     * This function returns an array containing details of workflows that the
