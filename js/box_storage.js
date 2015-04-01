@@ -1698,13 +1698,7 @@ var BoxStorage = {
       var boxName = $("#box_label").val();
       var boxID = $("#box_id").val();
       
-      if(boxID.length > 0 &&
-              boxName.length > 0 &&
-              tankID.length > 0 &&
-              sectorID.length > 0 &&
-              rackNO.length > 0 &&
-              pos.length > 0) {//make sure that everything is set before redirecting user
-         
+      if(boxID.length > 0) {//make sure that everything is set before redirecting user
          window.location.replace("index.php?page=box_storage&do=remove_box&id="+boxID);
       }
       
