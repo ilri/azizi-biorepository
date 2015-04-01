@@ -13,6 +13,7 @@ class DMP extends Repository{
 ?>
 <script type="text/javascript">
    $(document).ready(function(){
+      $(".user").hide();
       $("#avid_header").hide();
       $("#avid_footer").hide();
       $("#repository").css("border", "0px");
