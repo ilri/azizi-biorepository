@@ -95,6 +95,7 @@ DMPVSchema.prototype.documentReady = function() {
    $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
    $("#dump_data_btn").click(window.dvs.dumpDataButtonClicked);
    $("#project_title").dblclick(function() {
+      $("#new_project_name").val(window.dvs.schema.title);
       $("#rename_project_wndw").show();
    });
    $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
@@ -200,8 +201,7 @@ DMPVSchema.prototype.renameProjectButtonClicked = function() {
                else {
                   $("#inotification_pp").html("Successfully renamed project");
                   $("#inotification_pp").jqxNotification("open");
-                  $("#project_title").html($("#new_project_name").val());
-                  $("#rename_project_wndw").hide();
+                  window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
                }
             }
             else {
