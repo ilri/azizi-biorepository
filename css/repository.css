@@ -368,9 +368,20 @@ ul.ui-autocomplete {z-index: 1000!important; }
 .zoom_button {cursor: pointer; position: absolute; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; width: 35px; height: 35px; line-height: 35px; color: #ffffff; border: 1px solid;
                border-radius: 50%; font-size: 25px; font-weight: bolder;  -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
+/* ============================== Farm animals module ============================================== */
 #animals{ margin-top: 10px; }
 #animals #left_panel { float: left; }
 #animals #right_panel {float: left; }
+#animal_locations { min-height: 330px; }
+#animal_locations #level1_pl, #animal_locations #level2_pl, #animal_locations #animalsOnLocation_pl { float: left; margin: 5px 7.5px; }
+#animal_locations #animalsOnLocation { float: none; margin: 5px 7.5px; }
+#animal_locations .label, #animal_locations .actions { text-align: center; margin: 2px auto; }
+#animalsOnLocation_pl { display: none; }
+#modal_window { display: none; }
+#move_animals { min-height: 400px; }
+#move_animals #actions { width: 180px; float: left; margin: 130px 2px auto 2px; }
+#new_locations, #all_animals { width: 250px; float: left;  margin: 5px 7.5px; }
+/* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{
    width: auto;

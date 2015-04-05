@@ -54,6 +54,12 @@ Animals.prototype.initiateAnimalsGrid = function(){
      }
 };
 
+/**
+ * Confirm whether the entered animal id is unique and not used before
+ * @returns {undefined}
+ *
+ * @todo    Fully implement the functionality
+ */
 Animals.prototype.confirmId = function(){
    // check that this is a unique id
    var animalId = $('#animal_id').val().trim();
@@ -256,6 +262,276 @@ Animals.prototype.saveOwnership = function(sender, value, vars){
       }
    });
 
+};
+
+/**
+ * Create a page for managing the animal locations and the animals being held in those locations
+ */
+Animals.prototype.initiateAnimalLocations = function(action){
+   $("#level1").jqxListBox({width: 200, source: animals.level1Locations, displayMember: 'name', valueMember: 'name', checkboxes: true, height: 150});
+   $("#level1").on('checkChange', function (event) { animals.level1CheckChange(); });
+   // create an empty level2 listbox pending selection of a level1 location
+   $("#level2").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'name', checkboxes: true, height: 250});
+
+   // update the level2 listbox when the user checks or unchecks the level1 locations
+   $("#level1").on('checkChange', function () {
+      var items = $("#level1").jqxListBox('getCheckedItems');
+      var level2Items = [];
+
+      // traverse through all the checked level1 locations and find their respective level2 locations
+      $.each(items, function (index, checkedLevel1) {
+         $.each(animals.level2Locations, function(index1, level1){
+            if(checkedLevel1 === level1){
+               // we have the level2 locations belonging to the current checked level1 location
+               level2Items = level2Items.concat(animals.level2Locations[level1]);
+            }
+         });
+      });
+      $("#level2").source = level2Items;
+   });
+
+   if(action === 'pensWithAnimals'){
+      // initiate an empty listbox pending someone to select a pen with animals
+      $("#animalsOnLocation").jqxListBox({width: 200, filterable: true, source: [], checkboxes: true, height: 250});
+   }
+};
+
+/**
+ * A level1 location has been checked/unchecked
+ *
+ * @param   object   args     An object with the arguments
+ */
+Animals.prototype.level1CheckChange = function(){
+   // lets update the level2 listbox with the pens
+   var items = $("#level1").jqxListBox('getCheckedItems');
+   var level2s = {};
+   $.each(items, function(i, that){
+      // get the level2 locations belonging to this level1 location
+      $.each(animals.level2Locations[that.label], function(j, thist){
+         level2s[Object.keys(level2s).length] = {name: thist.name};
+      });
+   });
+   $('#level2').jqxListBox({ source: level2s });
+};
+
+/**
+ * Actions when level2 buttons are clicked
+ * @param {type} event
+ */
+Animals.prototype.level2BttnClicked = function(event){
+   var clickedButton = event.args.button;
+//   alert("Clicked: " + clickedButton[0].id);
+   if(clickedButton[0].id === 'add') animals.addLevels();
+   else{
+      $('#messageNotification div').html('Functionality not yet implemented!');
+      $('#messageNotification').jqxNotification({
+          width: 250, position: 'top-right', opacity: 0.9,
+          autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'info'
+       });
+       return false;
+   }
+};
+
+/**
+ * Add a new level/sub level
+ * @returns {undefined}
+ */
+Animals.prototype.addLevels = function(){
+   // create a new interface for adding location levels
+   animals.level1Locations[Object.keys(animals.level1Locations).length] = {id: -1, name: 'Add New'};
+   var settings = {name: 'level1', id: 'level1Id', data: animals.level1Locations, initValue: 'Select One', required: 'true'};
+   var level1Combo = Common.generateCombo(settings);
+
+   $('#modal_window').jqxWindow({
+      minHeight: 150, minWidth: 220, height: 160, width: 230,
+      resizable: true, isModal: true, modalOpacity: 0, closeButtonAction: 'hide',
+      initContent: function () {
+         $('#ok').jqxButton({ width: '65px' });
+         $('#cancel').jqxButton({ width: '65px' });
+         $('#level2').focus();
+       }
+   });
+   $('#modal_window').css({'display': 'block'});
+   $('#level1_add').html(level1Combo);
+   // if a new level1 is to be added
+   $('#level1Id').live('change', function(){ animals.newLevel(); });
+
+   // add the event listeners
+   $('#ok, #cancel').on('click', function (event) { animals.animalsBttnClicked(event); } );
+//   $('#modal_window').on('close', function (event) { animals.animalsBttnClicked(event); } );
+};
+
+/**
+ * Actions when animal locations buttons are clicked
+ * @param {type} event
+ */
+Animals.prototype.animalsBttnClicked = function(event){
+   var clickedButton = event.target.id;
+   if(clickedButton === 'cancel'){
+      // nothing to do ... just close
+      $('#modal_window').jqxWindow('close');
+      return;
+   }
+   if(clickedButton === 'ok'){
+      // we have a new level, so lets save it bt first
+      // check that the level1 and level2 are defined
+      var level1 = $('#level1Id').val();
+      var level2 = $('#level2Id').val();
+      if(level1 === '0' || level1 === ''){
+         if(level1 === '0') $('#messageNotification div').html('Please select a level1 location');
+         if(level1 === '') $('#messageNotification div').html('Please enter the name of the level1 location');
+         $('#messageNotification').jqxNotification({
+              width: 250, position: 'top-right', opacity: 0.9,
+              autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
+          });
+         return false;
+      }
+      if(level2 === ''){
+         $('#messageNotification div').html('Please enter the name of the level2 location');
+         $('#messageNotification').jqxNotification({
+              width: 250, position: 'top-right', opacity: 0.9,
+              autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
+          });
+          return false;
+      }
+      // now we are good, so lets send the data to the server
+      var level1name = $('#level1Id option:selected').text();
+       $.ajax({
+         type:"POST", url: "mod_ajax.php?page=farm_animals&do=pens", async: false, dataType:'json', data: {'action': 'save', 'level1': level1, 'level2': level2, 'level1name': level1name },
+         success: function (data) {
+            $('#messageNotification div').html(data.mssg);
+            if(data.error === true){
+               $('#messageNotification').jqxNotification({
+                    width: 250, position: 'top-right', opacity: 0.9,
+                    autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
+               });
+               return false;
+            }
+            else{
+               $('#messageNotification').jqxNotification({
+                    width: 250, position: 'top-right', opacity: 0.9,
+                    autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'success'
+               });
+               $('#modal_window').jqxWindow('close');
+               // refresh the list boxes
+               $('#level2Id').val('');
+               $("#level1").jqxListBox({source: data.data.level1});
+            }
+        }
+      });
+   }
+};
+
+/**
+ * Initiates the interface for moving animals between pens
+ * @returns {undefined}
+ */
+Animals.prototype.initiateAnimalMovement = function(){
+   // initiate the dropdown with the animals by traversing thru level2 object and getting the locations
+   var allLevels = {};
+   $.each(animals.animalLocations.level2, function(level1, that){
+      $.each(that, function(i, sublevel){
+         allLevels[Object.keys(allLevels).length] = {id: sublevel.id, name: level1+ ' >> ' +sublevel.name};
+      });
+   });
+
+   // to filter
+   var settings = {name: 'toCombo', id: 'toComboId', data: allLevels, initValue: 'Select One', required: 'true'};
+   var toCombo = Common.generateCombo(settings);
+   $('#to_filter').html(toCombo);
+
+   // from filter
+   allLevels[Object.keys(allLevels).length] = {id:'floating', name: 'Select unattached'};
+   allLevels[Object.keys(allLevels).length] = {id: 'all', name: 'Select all'};
+   var settings = {name: 'from', id: 'fromId', data: allLevels, initValue: 'Select One', required: 'true'};
+   var fromCombo = Common.generateCombo(settings);
+   $('#from_filter').html(fromCombo);
+
+   // if any dropdown is changed, show the animals
+   $('#fromId, #toComboId').live('change', function(that){ animals.movementFilterAnimals(that); });
+
+   $("#from_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'name', checkboxes: true, height: 350});
+   $("#to_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'name', checkboxes: true, height: 350});
+
+};
+
+/**
+ * Filter the dropdowns based on the selected animal
+ * @returns {undefined}
+ */
+Animals.prototype.movementFilterAnimals = function(sender){
+   // check who initiated me and what he wants
+   var selected = $('#'+sender.target.id).val();
+   var neededAnimals = {};
+   if(selected === 'floating'){
+      neededAnimals = animals.animalLocations.animals.floating;
+   }
+   else if(selected === 'all'){}
+   else{
+      // get the needed animals
+   }
+
+   // now attach them to the respective list box
+   if(sender.target.id === 'fromId'){
+      $("#from_list").jqxListBox({ source: neededAnimals });
+   }
+   else if(sender.target.id === 'toComboId'){
+      $("#to_list").jqxListBox({ source: neededAnimals });
+   }
+};
+
+/**
+ * Move the animals from the selected place to the selected other place .... hehehehehe
+ * @returns {undefined}
+ */
+Animals.prototype.moveAnimals = function(sender){
+   // check that
+   // 3. The selected animals are not in the destination
+   var error = false, mssg = '';
+
+   // 1. Animals have been selected
+   var checkedAnimals = $("#from_list").jqxListBox('getCheckedItems');
+   if(checkedAnimals.length === 0){
+      error = true; mssg = 'Please select an animal to move';
+   }
+
+   // 2. A destination have been selected
+   if($('#toComboId').val() === '0'){
+      error = true; mssg += (mssg === '') ? '': '<br />'; mssg += 'Please select a destination location';
+   }
+
+   // 4. In addition, the source and destination are not the same
+   if($('#toComboId').val() === $('#fromId').val()){
+      error = true; mssg += (mssg === '') ? '': '<br />'; mssg += 'The source and destination cannot be the same';
+   }
+   if(error){
+      // something is a miss... so show the error and return
+      $('#messageNotification div').html(mssg);
+      if($('#messageNotification').jqxNotification('width') === undefined){
+         $('#messageNotification').jqxNotification({
+            width: 350, position: 'top-right', opacity: 0.9,
+            autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
+          });
+      }
+      else{ $('#messageNotification').jqxNotification('open'); }
+      return false;
+   }
+};
+
+/**
+ * We are adding a new level
+ *
+ * @returns {undefined}
+ */
+Animals.prototype.newLevel =  function(){
+   if($('#level1Id').val() === '-1'){
+      $('#level1_add').html("<input type='text' name='level1' id='level1Id' class='input-medium form-control' /><a href='javascript:;' class='cancel'><img src='images/close.png' /></a>");
+      $('#level1_add .cancel').live('click', function(){
+         var settings = {name: 'level1', id: 'level1Id', data: animals.level1Locations, initValue: 'Select One', required: 'true'};
+         var level1Combo = Common.generateCombo(settings);
+         $('#level1_add').html(level1Combo);
+      });
+   }
 };
 
 // add a trim function

@@ -50,8 +50,16 @@ class FarmAnimals{
          if(OPTIONS_REQUESTED_ACTION == '') $this->inventoryHome();
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->inventoryList();
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'pen_animals'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->animalLocations(true);
+      }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'pens'){
-         if(OPTIONS_REQUESTED_ACTION == '') $this->pensHome();
+         if(OPTIONS_REQUESTED_ACTION == '') $this->animalLocations();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalLocations();
+      }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'move_animals'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->moveAnimals();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalMovement();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ownership'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->animalOwnersHome();
@@ -74,7 +82,9 @@ class FarmAnimals{
          <li><a href="?page=farm_animals&do=inventory">Animal inventory</a></li>
          <li><a href="?page=farm_animals&do=add">Add an animal</a></li>
          <li><a href="?page=farm_animals&do=ownership">Animal ownership</a></li>
-         <li><a href="?page=farm_animals&do=pens">Farm pens</a></li>
+         <li><a href="?page=farm_animals&do=pens">Farm pens & animals</a></li>
+         <li><a href="?page=farm_animals&do=pen_animals">Animals in pens</a></li>
+         <li><a href="?page=farm_animals&do=move_animals">Move animals between pens</a></li>
       </ul>
    </div>
 </div>
@@ -152,6 +162,9 @@ class FarmAnimals{
       }
      $Repository->DateTimePickerFiles();
 ?>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxnotification.js"></script>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <div id="add_animals">
    <form class='form-horizontal' id="adding">
@@ -261,19 +274,142 @@ class FarmAnimals{
    /**
     * Creates a page for managing the pens in the farm
     */
-   private function pensHome(){
+   private function animalLocations($withAnimals = false){
+      if($withAnimals){ $animalsLocations = "<div id='animalsOnLocation'><div class='label'>Animals in selected locations</div><div id='level2'></div></div>"; $action = 'pensWithAnimals'; }
+      else{ $animalsLocations = ''; $action = 'pensWithoutAnimals'; }
+
+      $locations = $this->getAnimalLocations($withAnimals);
 ?>
-<div id="pens">
-   <div id="grid"></div>
-   <div id="actions"></div>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttongroup.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxpanel.js"></script>
+<div id="animal_locations">
+   <div id="level1_pl">
+      <div class="label">Level1 Locations</div>
+      <div id="level1"></div>
+   </div>
+   <div id="level2_pl">
+      <div class="label">Level2 Locations</div>
+      <div id="level2"></div>
+      <div class="actions">
+         <button style="padding:4px 16px;" id="add">Add</button>
+         <button style="padding:4px 16px;" id="edit">Edit</button>
+         <button style="padding:4px 16px;" id="delete">Delete</button>
+      </div>
+      <div id="modal_window">
+         <div>Add new location</div>
+         <div>
+            <div id='level1_add'></div>
+            <div id='level2_add'>
+               <input type='text' id='level2Id' value='' />
+               <div style="float: right; margin-top: 15px;">
+                  <input type="button" id="ok" value="OK" style="margin-right: 10px" />
+                  <input type="button" id="cancel" value="Cancel" />
+               </div>
+            </div>
+         </div>
+      </div>
+      <div id='animalsOnLocation_pl'>
+         <div class="label">Animals in selected location</div>
+         <div id='animalsOnLocation'></div>
+         <div class="actions" class="hidden">
+            <button style="padding:4px 16px;" id="add">Add</button>
+            <button style="padding:4px 16px;" id="edit">Edit</button>
+            <button style="padding:4px 16px;" id="delete">Delete</button>
+         </div>
+      </div>
+   </div>
+   <?php echo $animalsLocations; ?>
+   <div id="messageNotification"><div></div></div>
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
-   var animals = new Animals('pens');
+   $("#animalsOnLocation_pl .actions").jqxButtonGroup({ mode: 'default' });
+   $("#level2_pl .actions").jqxButtonGroup({ mode: 'default' });
+
+   var animals = new Animals();
+   animals.level1Locations = <?php echo json_encode($locations['level1']); ?>;
+   animals.level2Locations = <?php echo json_encode($locations['level2']); ?>;
+   animals.initiateAnimalLocations('<?php echo $action; ?>');
+
+   $("#level2_pl .actions").on('buttonclick', animals.level2BttnClicked );
+   $("#animalsOnLocation_pl .actions").on('buttonclick', animals.animalsBttnClicked );
 </script>
 <?php
    }
 
+   /**
+    * Gets the defined locations for the animals
+    *
+    * @return  array    Returns an array with the defined locations
+    */
+   private function getAnimalLocations($withAnimals = false){
+      // get all the level1 locations
+      $query = 'select level1 from farm_animals.farm_locations group by level1 order by level1';
+      $res = $this->Dbase->ExecuteQuery($query);
+      if($res == 1) return false;
+
+      // get all the level2 locations grouped by level1 locations and format level1 locations well
+      $level2Locations = array();
+      $level1Locations = array();
+      $query = 'select id, level2 as `name` from farm_animals.farm_locations where level1 = :level1 group by level2 order by level2';
+      $i = 2;
+      foreach($res as $loc){
+         // loop thru all level1 locations and get level2 locations
+         $res1 = $this->Dbase->ExecuteQuery($query, array('level1' => $loc['level1']));
+         if($res1 == 1) return false;
+         $level2Locations[$loc['level1']] = $res1;
+
+         // get the animals in this locations if need be
+         $animalLocations = array();
+         if($withAnimals){
+            $animalsQuery = 'select * from farm_animals.farm_animal_locations as a where a.location_id = :id and a.end_date is null';
+            foreach($res1 as $index => $subLoc){
+               $colvals = array('id' => $subLoc['id']);
+               $res2 = $this->Dbase->ExecuteQuery($animalsQuery, $colvals);
+               if($res2 == 1) return false;
+               $animalLocations["{$loc['level1']}>{$subLoc['level2']}"] = $res2;
+            }
+
+            // get the unattached animals
+            $unattachedAnimalsQuery = 'select id, animal_id as `name` from farm_animals.farm_animals as a where a.id not in (select animal_id from farm_animals.farm_animal_locations where end_date is null)';
+            $res3 = $this->Dbase->ExecuteQuery($unattachedAnimalsQuery);
+            if($res3 == 1) return false;
+            $animalLocations['floating'] = $res3;
+         }
+         $level1Locations[] = array('id' => $i, 'name' => $loc['level1']);
+         $i++;
+      }
+
+      return array('level1' => $level1Locations, 'level2' => $level2Locations, 'animals' => $animalLocations);
+   }
+
+   /**
+    * Save locations where the animals are kept
+    */
+   private function saveAnimalLocations(){
+      // we have a level2 or a level1 and level2. If level1 is an integer, we have a presaved level1 else save both
+      // whether or not we have a level1 selected, we need to save both of them... flauting the db rules
+      $level1Query = 'insert into farm_animals.farm_locations(level1, level2) values(:level1, :level2)';
+      $vals = array('level2' => $_POST['level2']);
+
+      $vals['level1'] = ($_POST['level1name'] == '') ? $_POST['level1'] : $_POST['level1name'];
+      $res = $this->Dbase->ExecuteQuery($level1Query, $vals);
+      if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+      else{
+         $locations = $this->getAnimalLocations();
+         die(json_encode(array('error' => 'false', 'mssg' => 'The new levels have been successfully saved.', 'data' => $locations)));
+      }
+
+   }
    /**
     * A function to save a new animal to the database
     */
@@ -409,4 +545,57 @@ class FarmAnimals{
       }
       die(json_encode(array('error' => 'false', 'mssg' => 'The new ownwership has been saved successfully.')));
    }
+
+   /**
+    * Move animals between pens
+    */
+   private function moveAnimals(){
+      $animalLocations = $this->getAnimalLocations(true);
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttongroup.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxnotification.js"></script>
+<div id="move_animals">
+   <div id="all_animals">
+      <div id='from_filter'></div>
+      <div id='from_list'></div>
+   </div>
+   <div id="actions">
+      <button style="padding:4px 16px;" id="add">Add ></button>
+      <button style="padding:4px 16px;" id="add_all">Add All >></button>
+      <button style="padding:4px 16px;" id="remove">< Remove</button>
+      <button style="padding:4px 16px;" id="remove_all"><< Remove All</button>
+   </div>
+   <div id="new_locations">
+      <div id='to_filter'></div>
+      <div id='to_list'></div>
+   </div>
+</div>
+<div id="messageNotification"><div></div></div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   $("#add").jqxButton({ width: '150'});
+   $("#add_all").jqxButton({ width: '150'});
+   $("#remove").jqxButton({ width: '150'});
+   $("#remove_all").jqxButton({ width: '150'});
+
+   var animals = new Animals();
+   animals.animalLocations = <?php echo json_encode($animalLocations); ?>;
+   // bind the click functions of the buttons
+   $("#remove_all, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });
+   animals.initiateAnimalMovement();
+</script>
+<?php
+   }
+
+   /**
+    * Saves the movement of animals from one paddock to another
+    */
+   private function saveAnimalMovement(){}
 }
