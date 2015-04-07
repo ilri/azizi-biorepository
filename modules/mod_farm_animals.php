@@ -362,6 +362,7 @@ class FarmAnimals{
       $level1Locations = array();
       $query = 'select id, level2 as `name` from farm_animals.farm_locations where level1 = :level1 group by level2 order by level2';
       $i = 2;
+      $animalLocations = array();
       foreach($res as $loc){
          // loop thru all level1 locations and get level2 locations
          $res1 = $this->Dbase->ExecuteQuery($query, array('level1' => $loc['level1']));
@@ -369,14 +370,13 @@ class FarmAnimals{
          $level2Locations[$loc['level1']] = $res1;
 
          // get the animals in this locations if need be
-         $animalLocations = array();
          if($withAnimals){
-            $animalsQuery = 'select * from farm_animals.farm_animal_locations as a where a.location_id = :id and a.end_date is null';
-            foreach($res1 as $index => $subLoc){
-               $colvals = array('id' => $subLoc['id']);
-               $res2 = $this->Dbase->ExecuteQuery($animalsQuery, $colvals);
+            $animalsQuery = 'select b.id, b.animal_id `name` from farm_animals.farm_animal_locations as a inner join farm_animals.farm_animals as b on a.animal_id = b.id where a.location_id = :id and a.end_date is null';
+            $this->Dbase->CreateLogEntry('Getting the animals per location', 'info');
+            foreach($res1 as $subLoc){
+               $res2 = $this->Dbase->ExecuteQuery($animalsQuery, array('id' => $subLoc['id']));
                if($res2 == 1) return false;
-               $animalLocations["{$loc['level1']}>{$subLoc['level2']}"] = $res2;
+               $animalLocations[$subLoc['id']] = $res2;
             }
 
             // get the unattached animals
@@ -576,6 +576,9 @@ class FarmAnimals{
       <div id='to_filter'></div>
       <div id='to_list'></div>
    </div>
+   <div id="actions">
+      <button style="padding:4px 16px;" id="save">Save</button>
+   </div>
 </div>
 <div id="messageNotification"><div></div></div>
 <script type="text/javascript">
@@ -587,8 +590,11 @@ class FarmAnimals{
 
    var animals = new Animals();
    animals.animalLocations = <?php echo json_encode($animalLocations); ?>;
+
    // bind the click functions of the buttons
    $("#remove_all, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });
+   $("#save").live('click', function(){ animals.saveMovedAnimals(); });
+   animals.movedAnimals = {};
    animals.initiateAnimalMovement();
 </script>
 <?php
@@ -597,5 +603,26 @@ class FarmAnimals{
    /**
     * Saves the movement of animals from one paddock to another
     */
-   private function saveAnimalMovement(){}
+   private function saveAnimalMovement(){
+      // lets save the animal new locations
+      $animals = json_decode($_POST['animals']);
+      $mvmntQuery = 'insert into farm_animals.farm_animal_locations(location_id, animal_id, start_date) values(:location_id, :animal_id, :start_date)';
+      $updateQuery = 'update farm_animals.farm_animal_locations set end_date = :edate where location_id = :location_id and animal_id = :animal_id and end_date is null';
+      $this->Dbase->StartTrans();
+      foreach($animals as $id => $name){
+         // update the from locations
+         if(!in_array($_POST['from'], array('floating', 'all', 0)) ){
+            $upcols = array('edate' => date('Y-m-d'), 'location_id' => $_POST['from'], 'animal_id' => $id);
+            $this->Dbase->CreateLogEntry('updating the locations for ... '. implode(', ', $upcols),  'fatal');
+            $res1 = $this->Dbase->ExecuteQuery($updateQuery, $upcols);
+            if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+         }
+         $colvals = array('location_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'));
+         $res = $this->Dbase->ExecuteQuery($mvmntQuery, $colvals);
+         if($res == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+      }
+      $this->Dbase->CommitTrans();
+      $animalLocations = $this->getAnimalLocations(true);
+      die(json_encode(array('error' => 'false', 'data' => $animalLocations, 'mssg' => 'The movement has been saved successfully')));
+   }
 }

@@ -323,12 +323,8 @@ Animals.prototype.level2BttnClicked = function(event){
 //   alert("Clicked: " + clickedButton[0].id);
    if(clickedButton[0].id === 'add') animals.addLevels();
    else{
-      $('#messageNotification div').html('Functionality not yet implemented!');
-      $('#messageNotification').jqxNotification({
-          width: 250, position: 'top-right', opacity: 0.9,
-          autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'info'
-       });
-       return false;
+      animals.showNotification('Functionality not yet implemented!', 'error');
+      return false;
    }
 };
 
@@ -378,40 +374,27 @@ Animals.prototype.animalsBttnClicked = function(event){
       var level1 = $('#level1Id').val();
       var level2 = $('#level2Id').val();
       if(level1 === '0' || level1 === ''){
-         if(level1 === '0') $('#messageNotification div').html('Please select a level1 location');
-         if(level1 === '') $('#messageNotification div').html('Please enter the name of the level1 location');
-         $('#messageNotification').jqxNotification({
-              width: 250, position: 'top-right', opacity: 0.9,
-              autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
-          });
+         var mssg;
+         if(level1 === '0') mssg = 'Please select a level1 location';
+         if(level1 === '') mssg = 'Please enter the name of the level1 location';
+         animals.showNotification(mssg, 'error');
          return false;
       }
       if(level2 === ''){
-         $('#messageNotification div').html('Please enter the name of the level2 location');
-         $('#messageNotification').jqxNotification({
-              width: 250, position: 'top-right', opacity: 0.9,
-              autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
-          });
-          return false;
+         animals.showNotification('Please enter the name of the level2 location', 'error');
+         return false;
       }
       // now we are good, so lets send the data to the server
       var level1name = $('#level1Id option:selected').text();
        $.ajax({
          type:"POST", url: "mod_ajax.php?page=farm_animals&do=pens", async: false, dataType:'json', data: {'action': 'save', 'level1': level1, 'level2': level2, 'level1name': level1name },
          success: function (data) {
-            $('#messageNotification div').html(data.mssg);
             if(data.error === true){
-               $('#messageNotification').jqxNotification({
-                    width: 250, position: 'top-right', opacity: 0.9,
-                    autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
-               });
+               animals.showNotification(data.mssg, 'error');
                return false;
             }
             else{
-               $('#messageNotification').jqxNotification({
-                    width: 250, position: 'top-right', opacity: 0.9,
-                    autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'success'
-               });
+               animals.showNotification(data.mssg, 'success');
                $('#modal_window').jqxWindow('close');
                // refresh the list boxes
                $('#level2Id').val('');
@@ -450,8 +433,8 @@ Animals.prototype.initiateAnimalMovement = function(){
    // if any dropdown is changed, show the animals
    $('#fromId, #toComboId').live('change', function(that){ animals.movementFilterAnimals(that); });
 
-   $("#from_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'name', checkboxes: true, height: 350});
-   $("#to_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'name', checkboxes: true, height: 350});
+   $("#from_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350});
+   $("#to_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350});
 
 };
 
@@ -466,9 +449,10 @@ Animals.prototype.movementFilterAnimals = function(sender){
    if(selected === 'floating'){
       neededAnimals = animals.animalLocations.animals.floating;
    }
-   else if(selected === 'all'){}
+   else if(selected === 'all'){ animals.showNotification('Functionality not finalized!', 'error'); }
    else{
       // get the needed animals
+      neededAnimals = animals.animalLocations.animals[selected];
    }
 
    // now attach them to the respective list box
@@ -476,6 +460,11 @@ Animals.prototype.movementFilterAnimals = function(sender){
       $("#from_list").jqxListBox({ source: neededAnimals });
    }
    else if(sender.target.id === 'toComboId'){
+      // check for unsaved changes
+      if(animals.movedAnimals.length !== 0){
+         animals.showNotification('There are unsaved changes. Please save them first', 'error');
+         return;
+      }
       $("#to_list").jqxListBox({ source: neededAnimals });
    }
 };
@@ -487,35 +476,113 @@ Animals.prototype.movementFilterAnimals = function(sender){
 Animals.prototype.moveAnimals = function(sender){
    // check that
    // 3. The selected animals are not in the destination
-   var error = false, mssg = '';
+   var error = false, mssg = '', checkedAnimals;
 
-   // 1. Animals have been selected
-   var checkedAnimals = $("#from_list").jqxListBox('getCheckedItems');
-   if(checkedAnimals.length === 0){
+   if(sender.target.id === 'add' || sender.target.id === 'add_all') {
+      // 1. Animals have been selected
+      checkedAnimals = $("#from_list").jqxListBox('getCheckedItems');
+
+      // 2. A destination have been selected
+      if($('#toComboId').val() === '0'){
+         error = true; mssg += (mssg === '') ? '': '<br />'; mssg += 'Please select a destination location';
+      }
+   }
+   else{
+      // 1. Animals have been selected
+      checkedAnimals = $("#to_list").jqxListBox('getCheckedItems');
+
+      // 2. A destination have been selected
+      if($('#fromComboId').val() === '0'){
+         error = true; mssg += (mssg === '') ? '': '<br />'; mssg += 'Please select a destination location';
+      }
+   }
+
+   // we have some animals to move
+   if(checkedAnimals.length === 0 && !(sender.target.id === 'add_all' || sender.target.id === 'remove_all')) {
       error = true; mssg = 'Please select an animal to move';
    }
-
-   // 2. A destination have been selected
-   if($('#toComboId').val() === '0'){
-      error = true; mssg += (mssg === '') ? '': '<br />'; mssg += 'Please select a destination location';
-   }
-
    // 4. In addition, the source and destination are not the same
    if($('#toComboId').val() === $('#fromId').val()){
       error = true; mssg += (mssg === '') ? '': '<br />'; mssg += 'The source and destination cannot be the same';
    }
    if(error){
       // something is a miss... so show the error and return
-      $('#messageNotification div').html(mssg);
-      if($('#messageNotification').jqxNotification('width') === undefined){
-         $('#messageNotification').jqxNotification({
-            width: 350, position: 'top-right', opacity: 0.9,
-            autoOpen: true, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: 'error'
-          });
-      }
-      else{ $('#messageNotification').jqxNotification('open'); }
+      animals.showNotification(mssg, 'error');
       return false;
    }
+
+   // so lets move the animals
+   if(sender.target.id === 'add' || sender.target.id === 'add_all'){
+      var animals2move;
+      if(sender.target.id === 'add'){ animals2move = $("#from_list").jqxListBox('getCheckedItems');  }
+      else if(sender.target.id === 'add_all'){ animals2move =  $("#from_list").jqxListBox('getItems'); }
+
+      $.each(animals2move, function(i, that){
+         $("#from_list").jqxListBox('removeAt', that.index);
+         $("#to_list").jqxListBox('addItem', {label: that.label, value: that.value });
+
+         // add the animal to the list of moved animals
+         animals.movedAnimals[that.value] = that.label;
+      });
+   }
+   // so lets remove the animals
+   if(sender.target.id === 'remove' || sender.target.id === 'remove_all'){
+      var animals2move;
+      if(sender.target.id === 'remove'){ animals2move = $("#to_list").jqxListBox('getCheckedItems');  }
+      else if(sender.target.id === 'remove_all'){ animals2move = $("#to_list").jqxListBox('getItems'); }
+
+      $.each(animals2move, function(i, that){
+         $("#to_list").jqxListBox('removeAt', that.index);
+         $("#from_list").jqxListBox('addItem', {label: that.label, value: that.value });
+
+         // delete the animal from the moved list
+         delete animals.movedAnimals[that.value];
+      });
+   }
+};
+
+/**
+ * Save the animals which are to be moved
+ * @returns {undefined}
+ */
+Animals.prototype.saveMovedAnimals = function (){
+   var toId = $('#toComboId').val();
+   var fromId = $('#fromId').val();
+    $.ajax({
+      type:"POST", url: "mod_ajax.php?page=farm_animals&do=move_animals", async: false, dataType:'json', data: {'action': 'save', 'from': fromId, 'animals': $.toJSON(animals.movedAnimals), 'to': toId },
+      success: function (data) {
+         if(data.error === true){
+            animals.showNotification(data.mssg, 'error');
+            return false;
+         }
+         else{
+            animals.showNotification(data.mssg, 'success');
+            animals.animalLocations = data.data;
+            $("#to_list").jqxListBox('clear');
+            $('#fromComboId').val(0);
+            $("#toComboId").val(0);
+         }
+     }
+   });
+};
+
+/**
+ * Show a notification on the page
+ *
+ * @param   message     The message to be shown
+ * @param   type        The type of message
+ */
+Animals.prototype.showNotification = function(message, type){
+   if(type === undefined) { type = 'error'; }
+
+   $('#messageNotification div').html(message);
+   if($('#messageNotification').jqxNotification('width') === undefined){
+      $('#messageNotification').jqxNotification({
+         width: 350, position: 'top-right', opacity: 0.9,
+         autoOpen: false, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: type
+       });
+   }
+   $('#messageNotification').jqxNotification('open');
 };
 
 /**
