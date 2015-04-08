@@ -1315,10 +1315,11 @@ class Workflow {
       return $result;
    }
    
-   /*public static function getDatabaseAccess($config, $instanceId, $userURI) {
+   public static function getUserDBCredentials($userURI, $config, $instanceId) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
+      include_once 'mod_wa_sheet.php';
       
       $errors = array();
       $healthy = true;
@@ -1327,17 +1328,43 @@ class Workflow {
       $lH->log(3, "waworkflow_static", "Getting save points for workflow with id = '{$instanceId}'");
       try {
          $database = new Database($config);
-         $query = "select connection_password from clients where uri = ".$database->quote($userURI);
+         $query = "select db_username, db_password from clients where uri = ".$database->quote($userURI);
          $result = $database->runGenericQuery($query, TRUE);
          if(is_array($result) && count($result) == 1){
-            $connectionPassword = $result[0]['connection_password'];
-            if($connectionPassword == null || strlen($connectionPassword) == 0) {//user not given a connection password
+            $db2 = new Database($config, $instanceId);
+            $username = $result[0]['db_username'];
+            $password = $result[0]['db_password'];
+            $sheetNames = WASheet::getAllWASheets($config, $instanceId, $db2);
+            //TODO: get all table names
+            if($username == null || strlen($username) == 0 || $password == null || strlen($password) == 0) {//user not given a connection password
+               $randomUsername = Workflow::generateRandomID(10);
                $randomPassword = Workflow::generateRandomID(20);
-               
+               $query = "create user $randomUsername with password ".$database->quote($randomPassword);
+               $database->runGenericQuery($query);
+               $query = "update clients set db_username = ".$database->quote($randomUsername).", db_password = ".$database->quote($randomPassword)." where uri = ".$database->quote($userURI);
+               $database->runGenericQuery($query);
+               $username = $randomUsername;
+               $password = $randomPassword;
+            }
+            $query = "grant connect on database $instanceId to $username";
+            $db2->runGenericQuery($query);
+            $query = "grant usage on schema public to $username";
+            $db2->runGenericQuery($query);
+            $query = "grant select on ".Database::$QUOTE_SI.implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $sheetNames).Database::$QUOTE_SI." to $username";
+            $db2->runGenericQuery($query);
+            $credentials['user'] = $username;
+            $credentials['password'] = $password;
+            if($config['testbed_dbloc'] == "localhost" || $config['testbed_dbloc'] == "127.0.0.1"){
+               $credentials['host'] = $_SERVER['SERVER_ADDR'];
+            }
+            else {
+               $credentials['host'] = $config['testbed_dbloc'];
             }
          }
       } catch (WAException $ex) {
-
+         array_push($errors, $ex);
+         $healthy = false;
+         $lH->log(1, "waworkflow_static", "Unable to get database credentails for user $userURI on workflow '{$instanceId}'");
       }
       
       $result = array(
@@ -1345,7 +1372,7 @@ class Workflow {
           "status" => Workflow::getStatusArray($healthy, $errors)
       );
       return $result;
-   }*/
+   }
    
    /**
     * This function returns an array containing details of workflows that the

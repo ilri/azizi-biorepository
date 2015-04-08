@@ -86,6 +86,7 @@ class DMP extends Repository{
       <li>DMP
          <ul style="width: 250px;">
             <li><a href="?page=dmp">Home</a></li>
+            <li><a style="text-decoration: none; color: black;">Create New Project</a></li>
          </ul>
       </li>
       <li>Schema
@@ -101,6 +102,7 @@ class DMP extends Repository{
       <li>Data
          <ul style='width: 250px;'>
             <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
+            <li><a id="db_credentials_btn" style="text-decoration: none; color: black;">Get Database Credentials</a></li>
           </ul>
       </li>
   </ul>
@@ -132,6 +134,20 @@ class DMP extends Repository{
             <select type="text" id="foreign_key_ref_column" style="height: 25px; width: 300px;"></select>
          </div>
          <button type="button" id="add_foreign_key_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
+      </div>
+   </div>
+   <div id="db_credentials_wndw" style="display: none;">
+      <div>Database Credentials</div>
+      <div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_host"></div>
+         </div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_username"></div>
+         </div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_password"></div>
+         </div>
       </div>
    </div>
    <div id="rename_sheet_wndw" style="display: none;">

@@ -168,6 +168,9 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "alter_name") {
                         $this->handleAlterNameEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_db_credentials") {
+                        $this->handleGetDbCredentialsEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -709,6 +712,24 @@ class ODKWorkflowAPI extends Repository {
       }
       else {
          $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_foreign_keys endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   private function handleGetDbCredentialsEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $data = Workflow::getUserDBCredentials($this->userUUID, $this->config, $json['workflow_id']);
+            $this->returnResponse($data);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id not set in data provided to get_db_credentials endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_db_credentials endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }

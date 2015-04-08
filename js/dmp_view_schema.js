@@ -64,6 +64,11 @@ DMPVSchema.prototype.documentReady = function() {
       x:window.innerWidth/2 - 400/2
    };
    $("#rename_project_wndw").jqxWindow({height: 150, width: 400, position: renameProjectWindowPos, theme: ''});
+   var dbCredentailsWindowPos = {
+      y:window.innerHeight/2 - 100/2 - window.innerHeight*0.1,
+      x:window.innerWidth/2 - 250/2
+   };
+   $("#db_credentials_wndw").jqxWindow({height: 100, width: 250, position: dbCredentailsWindowPos, theme: ''});
    $("#manual_file_upload").jqxFileUpload({
       width:500,
       fileInputName: "data_file",
@@ -99,6 +104,66 @@ DMPVSchema.prototype.documentReady = function() {
       $("#rename_project_wndw").show();
    });
    $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
+   $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
+};
+
+DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
+   if(window.dvs.project != null && window.dvs.project.length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_db_credentials",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to gete database credentails");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed exteral access to the database");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from dump_data endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get database credentials"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#db_cred_host").html("Host: "+jsonResult.credentials.host);
+                  $("#db_cred_username").html("User: "+jsonResult.credentials.user);
+                  $("#db_cred_password").html("Password: "+jsonResult.credentials.password);
+                  $("#db_credentials_wndw").show();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not get database credentails");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            window.dvs.updateSheetList();
+         }
+      });
+   }
 };
 
 DMPVSchema.prototype.dumpDataButtonClicked = function() {

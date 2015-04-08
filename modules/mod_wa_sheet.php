@@ -350,7 +350,7 @@ class WASheet {
     */
    public function getData() {
       try {
-         $this->processColumns();
+         $this->processColumns(true);//process columns but limit the number of rows processed
          return $this->columnArray;
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to extract data from sheet with name = '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
@@ -364,7 +364,7 @@ class WASheet {
     * 
     * @throws WAException
     */
-   public function processColumns() {
+   public function processColumns($limit = false) {
       try {
          $primaryKeyThere = false;
          $this->switchToThisSheet();
@@ -408,6 +408,9 @@ class WASheet {
                }
                else {
                   $this->lH->log(2, $this->TAG, "Sheet with name = '{$this->sheetName}' has no heading columns. Will be ignoring this sheet");
+               }
+               if($limit == true && $rowIndex >= 20) {
+                  break;
                }
             }
          }
