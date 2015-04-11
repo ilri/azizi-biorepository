@@ -21,7 +21,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
       datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'species'}, {name: 'sex'}, {name: 'origin'}, {name: 'dob'},
-         {name: 'sire'}, {name: 'dam'}, {name: 'status'}, {name: 'experiment'}],
+         {name: 'sire'}, {name: 'dam'}, {name: 'owner'}, {name: 'experiment'}],
          id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list'}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
      var animalsAdapter = new $.jqx.dataAdapter(source);
@@ -44,7 +44,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
               { text: 'Birth Date', datafield: 'dob', width: 100 },
               { text: 'Sire', datafield: 'sire', width: 100 },
               { text: 'Dam', datafield: 'dam', width: 100 },
-              { text: 'Status', datafield: 'status', width: 100 },
+              { text: 'Current Owner', datafield: 'owner', width: 100 },
               { text: 'Experiment', datafield: 'experiment', width: 150 }
             ]
         });

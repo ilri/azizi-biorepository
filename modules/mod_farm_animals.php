@@ -131,7 +131,10 @@ class FarmAnimals{
     * Get a list of all the animals currently in the farm
     */
    private function inventoryList(){
-      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob from farm_animals.farm_animals as a inner join farm_animals.farm_species as b on a.species_id=b.id';
+      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, concat(d.surname, " ", d.first_name) as owner '
+              . 'from farm_animals.farm_animals as a inner join farm_animals.farm_species as b on a.species_id=b.id '
+              . 'left join farm_animals.farm_animal_owners as c on a.id=c.animal_id '
+              . 'left join farm_animals.farm_people as d on c.owner_id=d.id where c.end_date is null';
       $res = $this->Dbase->ExecuteQuery($query);
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
