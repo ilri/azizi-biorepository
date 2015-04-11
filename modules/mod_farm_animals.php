@@ -352,7 +352,7 @@ class FarmAnimals{
    /**
     * Gets the defined locations for the animals
     *
-    * @return  array    Returns an array with the defined locations
+    * @return  array[]  Returns an array with the animals grouped by locations. In add
     */
    private function getAnimalLocations($withAnimals = false){
       // get all the level1 locations
@@ -393,6 +393,37 @@ class FarmAnimals{
       }
 
       return array('level1' => $level1Locations, 'level2' => $level2Locations, 'animals' => $animalLocations);
+   }
+
+   private function groupAnimalsByLocations($locations){
+
+   }
+
+   /**
+    * Get the animals grouped by owners
+    *
+    * @param   array          $owners  An array with the owners list
+    * @return  array|string   Returns an array of the animals grouped by owners or a string if an error occurs during query execution
+    */
+   private function groupAnimalsByOwners($owners){
+      $ownerQuery = 'select a.id, a.animal_id as `name`'
+         . 'from farm_animals.farm_animals as a left join farm_animals.farm_animal_owners as b on a.id = b.animal_id '
+         . 'left join farm_animals.farm_people as c on b.owner_id = c.id where b.end_date is null and b.owner_id = :owner_id';
+
+      $animalByOwners = array();
+      foreach($owners as $owner){
+         $res = $this->Dbase->ExecuteQuery($ownerQuery, array('owner_id' => $owner['id']));
+         if($res == 1) return $this->Dbase->lastError;
+         else $animalByOwners[$owner['id']] = $res;
+      }
+
+      // get the animals without owners
+      $ownerlessAnimalsQuery = 'select id, animal_id as `name` from farm_animals.farm_animals where id not in (SELECT animal_id FROM farm_animals.farm_animal_owners where end_date is null)';
+      $res = $this->Dbase->ExecuteQuery($ownerlessAnimalsQuery);
+      if($res == 1) return $this->Dbase->lastError;
+      else $animalByOwners['floating'] = $res;
+
+      return $animalByOwners;
    }
 
    /**
@@ -458,11 +489,10 @@ class FarmAnimals{
     */
    private function animalOwnersHome(){
       global $Repository;
-     $Repository->DateTimePickerFiles();
 ?>
+<div id="messageNotification"><div class="">&nbsp;&nbsp;</div></div>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/styles/jqx.base.css" type="text/css" />
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/mssg_box.css" />
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcore.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdata.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttons.js"></script>
@@ -475,21 +505,22 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.sort.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/customMessageBox.js"></script>
-<div id="main">
-   <div id="ownership"></div>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxnotification.js"></script>
+<div id="ownership">
+   <div id="owners_list">&nbsp;</div>
+   <div id="links" class="center">
+      <button type="button" id="add" class='btn btn-primary'>Add Ownership</button>
+   </div>
 </div>
-<div id="links" class="center">
-   <button type="button" id="add" class='btn btn-primary'>Add Ownership</button>
-</div>
+
 <script type='text/javascript'>
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
    var animals = new Animals('ownership');
+   animals.movedAnimals = {};
 
    $('#add').bind('click', animals.addOwnership);
 </script>
 <?php
-
    }
 
    /**
@@ -499,7 +530,7 @@ class FarmAnimals{
       $toReturn = array();
       if($_POST['field'] == 'grid'){
          $query = 'select a.id, concat(b.surname, " ", b.first_name) as owner, c.animal_id animal, start_date, end_date, a.comments '
-                 . 'from farm_animals.farm_animal_owners as a inner join farm_animals.farm_people as b on a.owner_id=b.id inner join farm_animals.farm_animals as c on a.animal_id=c.id';
+                 . 'from farm_animals.farm_animal_owners as a inner join farm_animals.farm_people as b on a.owner_id=b.id inner join farm_animals.farm_animals as c on a.animal_id=c.id order by a.animal_id';
          $ownership = $this->Dbase->ExecuteQuery($query);
          if($ownership == 1){
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
@@ -510,19 +541,18 @@ class FarmAnimals{
       if(in_array('owners', $_POST['fields'])){
          $query = 'select id, concat(surname, " ", first_name) as name from farm_animals.farm_people order by surname';
          $owners = $this->Dbase->ExecuteQuery($query);
-         if($owners == 1){
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
-         }
+         if($owners == 1){ die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+         // get the animals belonging to these owners
+         $animalsByOwners = $this->groupAnimalsByOwners($owners);
+         if(is_string($animalsByOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByOwners))); }
+
          $toReturn['owners'] = $owners;
+         $toReturn['animalsByOwners'] = $animalsByOwners;
       }
 
       if(in_array('animals', $_POST['fields'])){
-         $query = 'select id, animal_id as name from farm_animals.farm_animals order by animal_id';
-         $animals = $this->Dbase->ExecuteQuery($query);
-         if($animals == 1){
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
-         }
-         $toReturn['animals'] = $animals;
+         $res = $this->getAnimalLocations(true);
+         $toReturn['animals'] = $res;
       }
       die(json_encode($toReturn));
    }
@@ -531,21 +561,26 @@ class FarmAnimals{
     * Saves a new ownership of an animal
     */
    private function saveAnimalOwners(){
-      // check if we have some comments
-      $comments = NULL; $comments_ref = ''; $comments_col = '';
-      if(isset($_POST['commnents']) && $_POST['comments'] != ''){
-         $comments = $_POST['comments']; $comments_ref = ', :comments'; $comments_col = ', comments';
-      }
-      $query = "insert into farm_animals.farm_animal_owners(owner_id, animal_id, start_date, end_date $comments_col) values(:owner_id, :animal_id, :start_date, :end_date $comments_ref)";
+      $animals = json_decode($_POST['animals']);
+      $addQuery = "insert into farm_animals.farm_animal_owners(owner_id, animal_id, start_date) values(:owner_id, :animal_id, :start_date)";
+      $updateQuery = "update farm_animals.farm_animal_owners set end_date = :end_date where owner_id = :owner_id and animal_id = :animal_id and end_date is null";
+      $this->Dbase->StartTrans();
+      foreach($animals as $id => $name){
+         if($_POST['from'] != 'floating'){
+            $res = $this->Dbase->ExecuteQuery($updateQuery, array('owner_id' => $_POST['from'], 'animal_id' => $id, 'end_date' => date('Y-m-d')));
+            if($res == 1){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            }
+         }
 
-      $start_date = DateTime::createFromFormat('d-m-Y', $_POST['start_date']);
-      $end_date = DateTime::createFromFormat('d-m-Y', $_POST['end_date']);
-      $colvals = array('owner_id' => $_POST['owners'], 'animal_id' => $_POST['animals'], 'start_date' => $start_date->format('Y-m-d'), 'end_date' => $end_date->format('Y-m-d'));
-
-      $res = $this->Dbase->ExecuteQuery($query, $colvals);
-      if($res == 1){
-          die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         $res = $this->Dbase->ExecuteQuery($addQuery, array('owner_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d')));
+         if($res == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
       }
+      $this->Dbase->CommitTrans();
       die(json_encode(array('error' => 'false', 'mssg' => 'The new ownwership has been saved successfully.')));
    }
 
@@ -573,7 +608,7 @@ class FarmAnimals{
       <button style="padding:4px 16px;" id="add">Add ></button>
       <button style="padding:4px 16px;" id="add_all">Add All >></button>
       <button style="padding:4px 16px;" id="remove">< Remove</button>
-      <button style="padding:4px 16px;" id="remove_all"><< Remove All</button>
+      <button style="padding:4px 16px;" id="reset">Reset</button>
    </div>
    <div id="new_locations">
       <div id='to_filter'></div>
@@ -589,16 +624,16 @@ class FarmAnimals{
    $("#add").jqxButton({ width: '150'});
    $("#add_all").jqxButton({ width: '150'});
    $("#remove").jqxButton({ width: '150'});
-   $("#remove_all").jqxButton({ width: '150'});
+   $("#reset").jqxButton({ width: '150'});
 
    var animals = new Animals();
    animals.animalLocations = <?php echo json_encode($animalLocations); ?>;
 
    // bind the click functions of the buttons
-   $("#remove_all, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });
-   $("#save").live('click', function(){ animals.saveMovedAnimals(); });
+   $("#reset, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });
+   $("#save").live('click', function(){ animals.saveChanges(); });
    animals.movedAnimals = {};
-   animals.initiateAnimalMovement();
+   animals.initiateAnimalMovement('movement');
 </script>
 <?php
    }
