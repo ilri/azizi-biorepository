@@ -379,9 +379,9 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #animalsOnLocation_pl { display: none; }
 #modal_window { display: none; }
 #move_animals { min-height: 400px; }
-#move_animals #actions, #ownership #actions { width: 180px; float: left; margin: 130px 2px auto 2px; }
+#move_animals #actions, #ownership #actions, #events #actions { width: 180px; float: left; margin: 130px 2px auto 2px; }
 #new_locations, #all_animals { width: 250px; float: left;  margin: 5px 7.5px; }
-#ownership{ height: 400px; }  /** A kludge to force proper display of the listboxes */
+#events, #ownership{ height: 400px; }  /** A kludge to force proper display of the listboxes */
 /* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{

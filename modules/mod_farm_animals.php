@@ -66,6 +66,12 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->animalOwnersList();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalOwners();
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'events'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->animalEvents();
+         else if(OPTIONS_REQUESTED_ACTION == 'list' && $_POST['field'] == 'animal_events') $this->eventsList ();
+         else if(OPTIONS_REQUESTED_ACTION == 'list') $this->newEventsData ();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalEvents ();
+      }
    }
 
    /**
@@ -85,6 +91,7 @@ class FarmAnimals{
          <li><a href="?page=farm_animals&do=pens">Farm pens & animals</a></li>
          <li><a href="?page=farm_animals&do=pen_animals">Animals in pens</a></li>
          <li><a href="?page=farm_animals&do=move_animals">Move animals between pens</a></li>
+         <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
       </ul>
    </div>
 </div>
@@ -350,15 +357,20 @@ class FarmAnimals{
    }
 
    /**
-    * Gets the defined locations for the animals
+    *
     *
     * @return  array[]  Returns an array with the animals grouped by locations. In add
+    */
+   /**
+    * Gets the defined locations for the animals
+    * @param   boolean        $withAnimals   Whether to get the locations with animals
+    * @return  string|array   Returns a string incase of an error, else it returns an array
     */
    private function getAnimalLocations($withAnimals = false){
       // get all the level1 locations
       $query = 'select level1 from farm_animals.farm_locations group by level1 order by level1';
       $res = $this->Dbase->ExecuteQuery($query);
-      if($res == 1) return false;
+      if($res == 1) return $this->Dbase->lastError;
 
       // get all the level2 locations grouped by level1 locations and format level1 locations well
       $level2Locations = array();
@@ -369,7 +381,7 @@ class FarmAnimals{
       foreach($res as $loc){
          // loop thru all level1 locations and get level2 locations
          $res1 = $this->Dbase->ExecuteQuery($query, array('level1' => $loc['level1']));
-         if($res1 == 1) return false;
+         if($res1 == 1) return $this->Dbase->lastError;
          $level2Locations[$loc['level1']] = $res1;
 
          // get the animals in this locations if need be
@@ -378,14 +390,14 @@ class FarmAnimals{
             $this->Dbase->CreateLogEntry('Getting the animals per location', 'info');
             foreach($res1 as $subLoc){
                $res2 = $this->Dbase->ExecuteQuery($animalsQuery, array('id' => $subLoc['id']));
-               if($res2 == 1) return false;
+               if($res2 == 1) return $this->Dbase->lastError;
                $animalLocations[$subLoc['id']] = $res2;
             }
 
             // get the unattached animals
             $unattachedAnimalsQuery = 'select id, animal_id as `name` from farm_animals.farm_animals as a where a.id not in (select animal_id from farm_animals.farm_animal_locations where end_date is null)';
             $res3 = $this->Dbase->ExecuteQuery($unattachedAnimalsQuery);
-            if($res3 == 1) return false;
+            if($res3 == 1) return $this->Dbase->lastError;
             $animalLocations['floating'] = $res3;
          }
          $level1Locations[] = array('id' => $i, 'name' => $loc['level1']);
@@ -405,7 +417,13 @@ class FarmAnimals{
     * @param   array          $owners  An array with the owners list
     * @return  array|string   Returns an array of the animals grouped by owners or a string if an error occurs during query execution
     */
-   private function groupAnimalsByOwners($owners){
+   private function groupAnimalsByOwners($owners = NULL){
+      if($owners == NULL){
+         $query = 'select id, concat(surname, " ", first_name) as name from farm_animals.farm_people order by surname';
+         $owners = $this->Dbase->ExecuteQuery($query);
+         if($owners == 1){ die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+      }
+
       $ownerQuery = 'select a.id, a.animal_id as `name`'
          . 'from farm_animals.farm_animals as a left join farm_animals.farm_animal_owners as b on a.id = b.animal_id '
          . 'left join farm_animals.farm_people as c on b.owner_id = c.id where b.end_date is null and b.owner_id = :owner_id';
@@ -530,7 +548,7 @@ class FarmAnimals{
       $toReturn = array();
       if($_POST['field'] == 'grid'){
          $query = 'select a.id, concat(b.surname, " ", b.first_name) as owner, c.animal_id animal, start_date, end_date, a.comments '
-                 . 'from farm_animals.farm_animal_owners as a inner join farm_animals.farm_people as b on a.owner_id=b.id inner join farm_animals.farm_animals as c on a.animal_id=c.id order by a.animal_id';
+                 . 'from farm_animals.farm_animal_owners as a inner join farm_animals.farm_people as b on a.owner_id=b.id inner join farm_animals.farm_animals as c on a.animal_id=c.id order by a.animal_id, start_date';
          $ownership = $this->Dbase->ExecuteQuery($query);
          if($ownership == 1){
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
@@ -539,11 +557,8 @@ class FarmAnimals{
       }
 
       if(in_array('owners', $_POST['fields'])){
-         $query = 'select id, concat(surname, " ", first_name) as name from farm_animals.farm_people order by surname';
-         $owners = $this->Dbase->ExecuteQuery($query);
-         if($owners == 1){ die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
          // get the animals belonging to these owners
-         $animalsByOwners = $this->groupAnimalsByOwners($owners);
+         $animalsByOwners = $this->groupAnimalsByOwners();
          if(is_string($animalsByOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByOwners))); }
 
          $toReturn['owners'] = $owners;
@@ -627,7 +642,7 @@ class FarmAnimals{
    $("#reset").jqxButton({ width: '150'});
 
    var animals = new Animals();
-   animals.animalLocations = <?php echo json_encode($animalLocations); ?>;
+   animals.byLocations = <?php echo json_encode($animalLocations); ?>;
 
    // bind the click functions of the buttons
    $("#reset, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });
@@ -662,5 +677,71 @@ class FarmAnimals{
       $this->Dbase->CommitTrans();
       $animalLocations = $this->getAnimalLocations(true);
       die(json_encode(array('error' => 'false', 'data' => $animalLocations, 'mssg' => 'The movement has been saved successfully')));
+   }
+
+   /**
+    * Create a new page for animal events
+    */
+   private function animalEvents(){
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxnotification.js"></script>
+<div id="events">
+   <div id="events_grid"></div>
+   <div id="actions">
+      <button style="padding:4px 16px;" id="new">Add Events</button>
+   </div>
+</div>
+<div id="messageNotification"><div></div></div>
+
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   $("#new").jqxButton({ width: '150'});
+   var animals = new Animals();
+   // bind the click functions of the buttons
+   $("#new").live('click', function(){ animals.newEvent(); });
+</script>
+<?php
+   }
+
+   /**
+    * Get a list of all animal events
+    */
+   private function eventsList(){
+      $eventsQuery = 'select * from farm_animals.farm_animal_events';
+      $events = $this->Dbase->ExecuteQuery($eventsQuery);
+      if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+      die(json_encode(array('error' => false, 'data' => $events)));
+   }
+
+   private function newEventsData(){
+      // get a list of all events
+      $eventsQuery = 'select id, event_name as `name` from farm_animals.farm_events order by event_name';
+      $events = $this->Dbase->ExecuteQuery($eventsQuery);
+      if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+
+      // get animal groupings
+      // by owners
+      $animalsByOwners = $this->groupAnimalsByOwners();
+      if(is_string($animalsByOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByOwners))); }
+
+      // by locations
+      $animalsByLocations = $this->getAnimalLocations(true);
+      if(is_string($animalsByLocations)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByLocations))); }
+
+      die(json_encode(array('error' => false, 'data' => array('byLocations' => $animalsByLocations, 'byOwners' => $animalsByOwners, 'events' => $events))));
    }
 }
