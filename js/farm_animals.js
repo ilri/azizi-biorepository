@@ -214,10 +214,14 @@ var mainContent = '\
    $("#reset, #remove, #add, #add_all").on('click', function(sender){ animals.moveAnimals(sender); });
 
    // initiate the list boxes
-   animals.initiateAnimalMovement();
+   animals.initiateFiltersnLists();
    animals.movedAnimals = {};
 };
 
+/**
+ * Re-initializes the ownership module
+ * @returns {void}
+ */
 Animals.prototype.reInitializeOwnership = function(){
    var content = '\n\
 <div id="ownership">\
@@ -378,7 +382,7 @@ Animals.prototype.animalsBttnClicked = function(event){
  *
  * @returns {void}
  */
-Animals.prototype.initiateAnimalMovement = function(){
+Animals.prototype.initiateFiltersnLists = function(){
    // initiate the dropdown with the animals by traversing thru level2 object and getting the locations
    var allLevels = {};
    $.each(animals.byLocations.level2, function(level1, that){
@@ -400,9 +404,7 @@ Animals.prototype.initiateAnimalMovement = function(){
       $('#to_filter').html(toCombo);
    }
    else if(this.sub_module === 'events'){
-      var settings = {name: 'toCombo', id: 'toComboId', data: animals.allEvents, initValue: 'Select One', required: 'true'};
-      var toCombo = Common.generateCombo(settings);
-      $('#to_filter').html(toCombo);
+      animals.initiateEventsToFilter();
    }
 
    // from filter
@@ -433,6 +435,16 @@ Animals.prototype.initiateAnimalMovement = function(){
 };
 
 /**
+ * Initiates the to filter of the events sub_module
+ * @returns    {void}
+ */
+Animals.prototype.initiateEventsToFilter = function(){
+   var settings = {name: 'toCombo', id: 'toComboId', data: animals.allEvents, initValue: 'Select One', required: 'true'};
+   var toCombo = Common.generateCombo(settings);
+   $('#to_filter').html(toCombo);
+};
+
+/**
  * Filter the grids based on the selected item
  *
  * @param   {object}    sender   The drop down which fired the event leading to this function being called
@@ -448,12 +460,16 @@ Animals.prototype.filterAnimals = function(sender){
       else if(this.sub_module === 'ownership'){ neededAnimals = animals.byOwners['floating']; }
       else if(this.sub_module === 'events'){ neededAnimals = animals.byLocations.animals['floating']; }
    }
+   else if(selected === 'new' && this.sub_module === 'events'){ animals.newEventName(); }
    else{
       // get the needed animals
       if(this.sub_module === 'move_animals') {neededAnimals = animals.byLocations.animals[selected]; }
       else if(this.sub_module === 'ownership') {neededAnimals = animals.byOwners[selected]; }
       else if(this.sub_module === 'events') {neededAnimals = animals.byLocations.animals[selected]; }
    }
+
+   // there is no need to the animals attached to this event... because we are not attaching animals to events
+   if(this.sub_module === 'events' && sender.target.id === 'toComboId') { neededAnimals = {}; }
 
    // now attach them to the respective list box
    if(sender.target.id === 'fromId'){
@@ -495,6 +511,7 @@ Animals.prototype.moveAnimals = function(sender){
          mssg += (mssg === '') ? '': '<br />';
          if(this.sub_module === 'move_animals'){ mssg += 'Please select a destination location'; }
          else if(this.sub_module === 'ownership'){ mssg += 'Please select a new owner'; }
+         else if(this.sub_module === 'events'){ mssg += 'Please select an event'; }
       }
    }
    else{
@@ -515,13 +532,16 @@ Animals.prototype.moveAnimals = function(sender){
       error = true;
       if(this.sub_module === 'move_animals'){ mssg = 'Please select an animal to move.'; }
       else if(this.sub_module === 'ownership'){ mssg = 'Please select an animal to assign new ownership.'; }
+      else if(this.sub_module === 'events'){ mssg = 'Please select an animal to add an event to.'; }
    }
    // 4. In addition, the source and destination are not the same
    if($('#toComboId').val() === $('#fromId').val()){
-      error = true;
+      var error1;
       mssg += (mssg === '') ? '': '<br />';
       if(this.sub_module === 'move_animals'){ mssg += 'The source and destination cannot be the same'; }
       else if(this.sub_module === 'ownership'){ mssg += 'The previous and next owner cannot be the same'; }
+      else if(this.sub_module === 'events'){ error1 = (error === true) ? true : false; /* This case doesnt really matter for the events sub_module*/ }
+      error = (error1 === undefined) ? true : error1;
    }
    if(error){
       // something is a miss... so show the error and return
@@ -567,10 +587,12 @@ Animals.prototype.moveAnimals = function(sender){
 
 /**
  * Save the animals which are to be moved
- * @returns {undefined}
+ * @returns    {void}
  */
 Animals.prototype.saveChanges = function (){
-   var toId = $('#toComboId').val();
+   var  toId;
+   if(this.sub_module === 'events' && $('#eventId').length !== 0){ toId = $('#eventId').val(); }
+   else { toId = $('#toComboId').val(); }
    var fromId = $('#fromId').val();
     $.ajax({
       type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', data: {'action': 'save', 'from': fromId, 'animals': $.toJSON(animals.movedAnimals), 'to': toId },
@@ -581,9 +603,8 @@ Animals.prototype.saveChanges = function (){
          }
          else{
             animals.showNotification(data.mssg, 'success');
-            if(animals.sub_module === 'ownership'){
-               animals.reInitializeOwnership();
-            }
+            if(animals.sub_module === 'ownership'){ animals.reInitializeOwnership(); }
+            else if(animals.sub_module === 'events'){ animals.reInitializeEvents(); }
             else if(animals.sub_module === 'move_animals'){
                animals.byLocations = data.data;
                $("#to_list").jqxListBox('clear');
@@ -638,7 +659,7 @@ Animals.prototype.newLevel =  function(){
 Animals.prototype.initiateAnimalsEventsGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'animal'}, {name: 'event'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'done_by'}, {name: 'time_recorded'} ],
+       datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'done_by'}, {name: 'time_recorded'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'animal_events'}, url: 'mod_ajax.php?page=farm_animals&do=events'
      };
      var eventsAdapter = new $.jqx.dataAdapter(source);
@@ -654,11 +675,11 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
             altrows: true,
             enabletooltips: true,
             columns: [
-              { text: 'Animal', datafield: 'animal', width: 100 },
-              { text: 'Event', datafield: 'event', width: 200 },
-              { text: 'Event Date', datafield: 'event_date', width: 150 },
+              { text: 'Animal', datafield: 'animal_id', width: 75 },
+              { text: 'Event', datafield: 'event_name', width: 150 },
+              { text: 'Event Date', datafield: 'event_date', width: 100 },
               { text: 'Recorded By', datafield: 'recorded_by', width: 150 },
-              { text: 'Performed By', datafield: 'performed_by', width: 200 },
+              { text: 'Performed By', datafield: 'performed_by', width: 150 },
               { text: 'Time Recorded', datafield: 'time_recorded', width: 200 }
             ]
          });
@@ -668,24 +689,32 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
      }
 };
 
+/**
+ * Creates an interface for adding new events
+ * @returns    {void}
+ */
 Animals.prototype.newEvent = function(){
    // get animals groupings and all the events
-   $.ajax({
-       type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'list', fields: $.toJSON(['byOwners', 'byLocations'])},
-       success: function (data) {
-          if(data.error === true){
-              animals.showNotification(data.mssg, 'error');
-              $('#animal_id').val('').focus();
-              return;
-          }
-          else{
-              animals.showNotification(data.mssg, 'success');
-             animals.byLocations = data.data.byLocations;
-             animals.allEvents = data.data.events;
-             animals.byOwners = data.data.byOwners;
-          }
-      }
-   });
+   if(animals.byLocations === undefined){
+      $.ajax({
+          type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'list', fields: $.toJSON(['byOwners', 'byLocations'])},
+          success: function (data) {
+             if(data.error === true){
+                 animals.showNotification(data.mssg, 'error');
+                 $('#animal_id').val('').focus();
+                 return;
+             }
+             else{
+                 animals.showNotification(data.mssg, 'success');
+                animals.byLocations = data.data.byLocations;
+                animals.allEvents = data.data.events;
+                animals.byOwners = data.data.byOwners;
+                // add the add new option for the events
+               animals.allEvents[Object.keys(animals.allEvents).length] = {id:'new', name: 'Add new'};
+             }
+         }
+      });
+   }
 
    // change the interface to be able to add new ownership
 var mainContent = '\
@@ -708,7 +737,7 @@ var mainContent = '\
    </div>';
 
    $('#events').html(mainContent);
-   $("#save").live('click', function(){ animals.saveChanges(); });
+   $("#save").on('click', function(){ animals.saveChanges(); });
 
    // now initiate the grids
    $("#add").jqxButton({ width: '150'});
@@ -718,8 +747,31 @@ var mainContent = '\
    $("#reset, #remove, #add, #add_all").on('click', function(sender){ animals.moveAnimals(sender); });
 
    // initiate the list boxes
-   animals.initiateAnimalMovement();
+   animals.initiateFiltersnLists();
    animals.movedAnimals = {};
+};
+
+Animals.prototype.reInitializeEvents = function(){
+   var content = '<div id="events_grid"></div>\
+   <div id="actions">\
+      <button style="padding:4px 16px;" id="new">Add Events</button>\
+   </div>';
+
+   $('#events').html(content);
+   $("#new").jqxButton({ width: '150'});
+   // bind the click functions of the buttons
+   $("#new").live('click', function(){ animals.newEvent(); });
+
+   animals.initiateAnimalsEventsGrid();
+};
+
+/**
+ * Create an inbox for adding a new event name
+ * @returns    {void}
+ */
+Animals.prototype.newEventName = function(){
+   $('#to_filter').html("<input type='text' name='event_name' id='eventId' class='input-medium form-control' /><a href='javascript:;' class='cancel'><img src='images/close.png' /></a>");
+   $('#to_filter .cancel').live('click', function(){ animals.initiateEventsToFilter(); });
 };
 
 // add a trim function

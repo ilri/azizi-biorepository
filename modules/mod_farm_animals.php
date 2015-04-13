@@ -648,7 +648,7 @@ class FarmAnimals{
    $("#reset, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });
    $("#save").live('click', function(){ animals.saveChanges(); });
    animals.movedAnimals = {};
-   animals.initiateAnimalMovement('movement');
+   animals.initiateFiltersnLists('movement');
 </script>
 <?php
    }
@@ -721,12 +721,15 @@ class FarmAnimals{
     * Get a list of all animal events
     */
    private function eventsList(){
-      $eventsQuery = 'select * from farm_animals.farm_animal_events';
+      $eventsQuery = 'select b.animal_id, event_name, event_date, record_date as time_recorded from farm_animals.farm_animal_events as a inner join farm_animals.farm_animals as b on a.animal_id=b.id inner join farm_animals.farm_events as c on a.event_type_id=c.id';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
       die(json_encode(array('error' => false, 'data' => $events)));
    }
 
+   /**
+    * Fetch data that will be used for creating the interface for adding new events
+    */
    private function newEventsData(){
       // get a list of all events
       $eventsQuery = 'select id, event_name as `name` from farm_animals.farm_events order by event_name';
@@ -743,5 +746,44 @@ class FarmAnimals{
       if(is_string($animalsByLocations)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByLocations))); }
 
       die(json_encode(array('error' => false, 'data' => array('byLocations' => $animalsByLocations, 'byOwners' => $animalsByOwners, 'events' => $events))));
+   }
+
+   private function saveAnimalEvents(){
+      $animals = json_decode($_POST['animals']);
+
+      $this->Dbase->StartTrans();
+      if(!is_numeric($_POST['to'])){
+         // we have a new event name, so lets add it
+         $eventId = $this->saveNewEventName($_POST['to']);
+         if(!is_numeric($eventId)){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $eventId)));
+         }
+      }
+      else $eventId = $_POST['to'];
+
+      // so lets save the events
+      $addQuery = 'insert into farm_animals.farm_animal_events(animal_id, event_type_id, event_date) values(:animal_id, :event_type_id, :event_date)';
+      $vals = array('event_type_id' => $eventId, 'event_date' => date('Y-m-d'));
+
+      foreach($animals as $animalId => $animal){
+         $colvals = $vals;
+         $colvals['animal_id'] = $animalId;
+         $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
+         if($res == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
+      }
+      // we are all good, lets return
+      $this->Dbase->CommitTrans();
+      die(json_encode(array('error' => 'false', 'mssg' => 'The event has been saved successfully.')));
+   }
+
+   private function saveNewEventName($event_name){
+      $insertQuery = 'insert into farm_animals.farm_events(event_name) values(:event_name)';
+      $res = $this->Dbase->ExecuteQuery($insertQuery, array('event_name' => $event_name));
+      if($res == 1) return $this->Dbase->lastError;
+      else return $this->Dbase->dbcon->lastInsertId();
    }
 }
