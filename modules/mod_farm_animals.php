@@ -48,6 +48,7 @@ class FarmAnimals{
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'inventory'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->inventoryHome();
+         else if(OPTIONS_REQUESTED_ACTION == 'list' && $_POST['field'] == 'events') $this->animalEventsList();
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->inventoryList();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'pen_animals'){
@@ -127,6 +128,7 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.sort.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.filter.js"></script>
 <div id="main">
    <div id="inventory"></div>
 </div>
@@ -136,7 +138,8 @@ class FarmAnimals{
 </div -->
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
-   var animals = new Animals('inventory');
+   var animals = new Animals();
+   animals.initiateAnimalsGrid();
 </script>
 <?php
    }
@@ -145,11 +148,28 @@ class FarmAnimals{
     * Get a list of all the animals currently in the farm
     */
    private function inventoryList(){
-      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, concat(d.surname, " ", d.first_name) as owner '
+      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, concat(d.surname, " ", d.first_name) as owner, f.exp_name as experiment '
               . 'from farm_animals.farm_animals as a inner join farm_animals.farm_species as b on a.species_id=b.id '
               . 'left join farm_animals.farm_animal_owners as c on a.id=c.animal_id '
-              . 'left join farm_animals.farm_people as d on c.owner_id=d.id where c.end_date is null';
+              . 'left join farm_animals.farm_people as d on c.owner_id=d.id '
+              . 'left join farm_animals.exp_animals as e on a.id=e.animal_id '
+              . 'left join farm_animals.experiments as f on e.exp_id=f.id '
+              . 'where c.end_date is null and e.end_date is null';
       $res = $this->Dbase->ExecuteQuery($query);
+      if($res == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+         die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
+      }
+      die(json_encode($res));
+   }
+
+   /**
+    * Get a list of the events done for this animal
+    */
+   private function animalEventsList(){
+      // get all the events for this animal
+      $query = 'select a.id as event_id, b.event_name, a.event_date, a.record_date, a.comments from farm_animals.farm_animal_events as a inner join farm_animals.farm_events as b on a.event_type_id=b.id where a.animal_id = :animal_id';
+      $res = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
          die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));

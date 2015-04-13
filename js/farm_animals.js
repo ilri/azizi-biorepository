@@ -15,8 +15,7 @@ function Animals(sub_module){
    this.procFormOnServerURL = "mod_ajax.php?page=farm_animals";
 
    // call the respective function
-   if(this.sub_module === 'inventory') this.initiateAnimalsGrid();
-   else if(this.sub_module === 'ownership') this.initiateAnimalsOwnersGrid();
+   if(this.sub_module === 'ownership') this.initiateAnimalsOwnersGrid();
    else if(this.sub_module === 'events') this.initiateAnimalsEventsGrid();
    else if(this.sub_module === 'experiments') this.initiateExperimentsGrid();
 };
@@ -27,7 +26,7 @@ function Animals(sub_module){
 Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
-      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'species'}, {name: 'sex'}, {name: 'origin'}, {name: 'dob'},
+      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'species'}, {name: 'sex'}, {name: 'origin'}, {name: 'dob'},
          {name: 'sire'}, {name: 'dam'}, {name: 'owner'}, {name: 'experiment'}],
          id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list'}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
@@ -40,12 +39,18 @@ Animals.prototype.initiateAnimalsGrid = function(){
             pageable: true,
             autoheight: true,
             sortable: true,
+            showfilterrow: false,
+            autoshowfiltericon: true,
+            filterable: true,
             altrows: true,
+            rowdetails: true,
             enabletooltips: true,
+            initrowdetails: animals.initializeRowDetails,
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 200, rowdetailshidden: true},
             columns: [
-              { datafield: 'system_id', hidden: true },
-              { text: 'Animal ID', datafield: 'animal_id', width: 120 },
-              { text: 'Species', datafield: 'species', width: 75 },
+              { datafield: 'id', hidden: true },
+              { text: 'Animal ID', datafield: 'animal_id', width: 100 },
+              { text: 'Species', datafield: 'species', width: 70 },
               { text: 'Sex', datafield: 'sex', width: 50 },
               { text: 'Origin', datafield: 'origin', width: 100 },
               { text: 'Birth Date', datafield: 'dob', width: 100 },
@@ -59,6 +64,31 @@ Animals.prototype.initiateAnimalsGrid = function(){
      else{
         $("#inventory").jqxGrid({source: animalsAdapter});
      }
+};
+
+/**
+ * Initializes the row details for the expanded row
+ * @returns {void}
+ */
+Animals.prototype.initializeRowDetails = function(index, parentElement, gridElement, datarecord){
+   var grid = $($(parentElement).children()[0]);
+
+   var eventsSource = {
+       datatype: "json", datafields: [ {name: 'event_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'record_date'}, {name: 'comments'} ], type: 'POST',
+       id: 'id', data: {action: 'list', field: 'events',  animal_id: datarecord.id}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
+    };
+
+    if (grid !== null) {
+      grid.jqxGrid({source: eventsSource, theme: '', width: 820, height: 70,
+      columns: [
+         {text: 'EventId', datafield: 'event_id', hidden: true},
+         {text: 'Event Name', datafield: 'event_name', width: 210},
+         {text: 'Event Date', datafield: 'event_date', width: 140},
+         {text: 'Record Date', datafield: 'record_date', width: 140},
+         {text: 'Comments', datafield: 'comments', width: 140}
+      ]
+      });
+   }
 };
 
 /**
