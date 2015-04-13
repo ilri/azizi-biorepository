@@ -441,7 +441,7 @@ class FarmAnimals{
       if($res == 1) return $this->Dbase->lastError;
       else $animalByOwners['floating'] = $res;
 
-      return $animalByOwners;
+      return array('byOwners' => $animalByOwners, 'owners' => $owners);
    }
 
    /**
@@ -546,6 +546,7 @@ class FarmAnimals{
     */
    private function animalOwnersList(){
       $toReturn = array();
+      $fields = json_decode($_POST['fields']);
       if($_POST['field'] == 'grid'){
          $query = 'select a.id, concat(b.surname, " ", b.first_name) as owner, c.animal_id animal, start_date, end_date, a.comments '
                  . 'from farm_animals.farm_animal_owners as a inner join farm_animals.farm_people as b on a.owner_id=b.id inner join farm_animals.farm_animals as c on a.animal_id=c.id order by a.animal_id, start_date';
@@ -556,16 +557,16 @@ class FarmAnimals{
          die(json_encode($ownership));
       }
 
-      if(in_array('owners', $_POST['fields'])){
+      if(in_array('owners', $fields)){
          // get the animals belonging to these owners
-         $animalsByOwners = $this->groupAnimalsByOwners();
-         if(is_string($animalsByOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByOwners))); }
+         $res = $this->groupAnimalsByOwners();
+         if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
 
-         $toReturn['owners'] = $owners;
-         $toReturn['animalsByOwners'] = $animalsByOwners;
+         $toReturn['owners'] = $res['owners'];
+         $toReturn['animalsByOwners'] = $res['byOwners'];
       }
 
-      if(in_array('animals', $_POST['fields'])){
+      if(in_array('animals', $fields)){
          $res = $this->getAnimalLocations(true);
          $toReturn['animals'] = $res;
       }
@@ -738,14 +739,14 @@ class FarmAnimals{
 
       // get animal groupings
       // by owners
-      $animalsByOwners = $this->groupAnimalsByOwners();
-      if(is_string($animalsByOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByOwners))); }
+      $res = $this->groupAnimalsByOwners();
+      if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
 
       // by locations
       $animalsByLocations = $this->getAnimalLocations(true);
       if(is_string($animalsByLocations)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByLocations))); }
 
-      die(json_encode(array('error' => false, 'data' => array('byLocations' => $animalsByLocations, 'byOwners' => $animalsByOwners, 'events' => $events))));
+      die(json_encode(array('error' => false, 'data' => array('byLocations' => $animalsByLocations, 'byOwners' => $res['byOwners'], 'events' => $events))));
    }
 
    private function saveAnimalEvents(){

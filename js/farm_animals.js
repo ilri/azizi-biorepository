@@ -168,7 +168,7 @@ Animals.prototype.addOwnership = function(){
    // get all the animals and all the people who can be owners
    var userData;
    $.ajax({
-       type:"POST", url: "mod_ajax.php?page=farm_animals&do=ownership", async: false, dataType:'json', data: {'action': 'list', 'fields': ['owners','animals']},
+       type:"POST", url: "mod_ajax.php?page=farm_animals&do=ownership", async: false, dataType:'json', data: {'action': 'list', 'fields': $.toJSON(['owners','animals'])},
        success: function (data) {
           if(data.error === true){
               animals.showNotification(data.mssg, 'error');
