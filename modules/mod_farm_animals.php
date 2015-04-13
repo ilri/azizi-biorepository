@@ -285,7 +285,7 @@ class FarmAnimals{
     * Creates a page for managing the pens in the farm
     */
    private function animalLocations($withAnimals = false){
-      if($withAnimals){ $animalsLocations = "<div id='animalsOnLocation'><div class='label'>Animals in selected locations</div><div id='level2'></div></div>"; $action = 'pensWithAnimals'; }
+      if($withAnimals){ $animalsLocations = "<div id='animalsOnLocation'><div class='label'>Animals in selected locations</div><div id='level3'></div></div>"; $action = 'pensWithAnimals'; }
       else{ $animalsLocations = ''; $action = 'pensWithoutAnimals'; }
 
       $locations = $this->getAnimalLocations($withAnimals);
@@ -348,6 +348,7 @@ class FarmAnimals{
    var animals = new Animals();
    animals.level1Locations = <?php echo json_encode($locations['level1']); ?>;
    animals.level2Locations = <?php echo json_encode($locations['level2']); ?>;
+   animals.inLocations = <?php echo json_encode($locations['animals']); ?>;
    animals.initiateAnimalLocations('<?php echo $action; ?>');
 
    $("#level2_pl .actions").on('buttonclick', animals.level2BttnClicked );
@@ -405,10 +406,6 @@ class FarmAnimals{
       }
 
       return array('level1' => $level1Locations, 'level2' => $level2Locations, 'animals' => $animalLocations);
-   }
-
-   private function groupAnimalsByLocations($locations){
-
    }
 
    /**
@@ -749,6 +746,9 @@ class FarmAnimals{
       die(json_encode(array('error' => false, 'data' => array('byLocations' => $animalsByLocations, 'byOwners' => $res['byOwners'], 'events' => $events))));
    }
 
+   /**
+    * Saves new animal events
+    */
    private function saveAnimalEvents(){
       $animals = json_decode($_POST['animals']);
 
@@ -781,6 +781,12 @@ class FarmAnimals{
       die(json_encode(array('error' => 'false', 'mssg' => 'The event has been saved successfully.')));
    }
 
+   /**
+    * Saves a new event name
+    *
+    * @param   string         $event_name    The name of the event to save
+    * @return  string|integer Returns a string incase of error, else it returns the id of the inserted event
+    */
    private function saveNewEventName($event_name){
       $insertQuery = 'insert into farm_animals.farm_events(event_name) values(:event_name)';
       $res = $this->Dbase->ExecuteQuery($insertQuery, array('event_name' => $event_name));

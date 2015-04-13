@@ -238,12 +238,15 @@ Animals.prototype.reInitializeOwnership = function(){
 
 /**
  * Create a page for managing the animal locations and the animals being held in those locations
+ * @param   {string}    action   The action being performed
+ * @returns {void}
  */
 Animals.prototype.initiateAnimalLocations = function(action){
-   $("#level1").jqxListBox({width: 200, source: animals.level1Locations, displayMember: 'name', valueMember: 'name', checkboxes: true, height: 150});
+   $("#level1").jqxListBox({width: 200, source: animals.level1Locations, displayMember: 'name', valueMember: 'id', checkboxes: true, height: 150});
    $("#level1").on('checkChange', function (event) { animals.level1CheckChange(); });
    // create an empty level2 listbox pending selection of a level1 location
-   $("#level2").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'name', checkboxes: true, height: 250});
+   $("#level2").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 250});
+   $("#level2").on('checkChange', function (event) { animals.level2CheckChange(); });
 
    // update the level2 listbox when the user checks or unchecks the level1 locations
    $("#level1").on('checkChange', function () {
@@ -264,14 +267,12 @@ Animals.prototype.initiateAnimalLocations = function(action){
 
    if(action === 'pensWithAnimals'){
       // initiate an empty listbox pending someone to select a pen with animals
-      $("#animalsOnLocation").jqxListBox({width: 200, filterable: true, source: [], checkboxes: true, height: 250});
+      $("#level3").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: false,  height: 250});
    }
 };
 
 /**
  * A level1 location has been checked/unchecked
- *
- * @param   object   args     An object with the arguments
  */
 Animals.prototype.level1CheckChange = function(){
    // lets update the level2 listbox with the pens
@@ -280,10 +281,22 @@ Animals.prototype.level1CheckChange = function(){
    $.each(items, function(i, that){
       // get the level2 locations belonging to this level1 location
       $.each(animals.level2Locations[that.label], function(j, thist){
-         level2s[Object.keys(level2s).length] = {name: thist.name};
+         level2s[Object.keys(level2s).length] = {name: thist.name, id: thist.id};
       });
    });
    $('#level2').jqxListBox({ source: level2s });
+};
+
+Animals.prototype.level2CheckChange = function(){
+   var items = $("#level2").jqxListBox('getCheckedItems');
+   var cur_animals = {};
+   $.each(items, function(i, that){
+//       cur_animals += animals.inLocations[that.value];
+       $.each(animals.inLocations[that.value], function(i, that){
+         cur_animals[Object.keys(cur_animals).length] = {name: that.name, id: that.id};
+       });
+   });
+   $("#level3").jqxListBox({ source: cur_animals });
 };
 
 /**
