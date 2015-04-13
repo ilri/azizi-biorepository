@@ -18,6 +18,7 @@ function Animals(sub_module){
    if(this.sub_module === 'inventory') this.initiateAnimalsGrid();
    else if(this.sub_module === 'ownership') this.initiateAnimalsOwnersGrid();
    else if(this.sub_module === 'events') this.initiateAnimalsEventsGrid();
+   else if(this.sub_module === 'experiments') this.initiateExperimentsGrid();
 };
 
 /**
@@ -62,7 +63,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
 
 /**
  * Confirm whether the entered animal id is unique and not used before
- * @returns {undefined}
+ * @returns {void}
  *
  * @todo    Fully implement the functionality
  */
@@ -315,7 +316,7 @@ Animals.prototype.level2BttnClicked = function(event){
 
 /**
  * Add a new level/sub level
- * @returns {undefined}
+ * @returns {void}
  */
 Animals.prototype.addLevels = function(){
    // create a new interface for adding location levels
@@ -397,12 +398,14 @@ Animals.prototype.animalsBttnClicked = function(event){
  */
 Animals.prototype.initiateFiltersnLists = function(){
    // initiate the dropdown with the animals by traversing thru level2 object and getting the locations
-   var allLevels = {};
-   $.each(animals.byLocations.level2, function(level1, that){
-      $.each(that, function(i, sublevel){
-         allLevels[Object.keys(allLevels).length] = {id: sublevel.id, name: level1+ ' >> ' +sublevel.name};
+   if(animals.byLocations !== undefined){
+      var allLevels = {};
+      $.each(animals.byLocations.level2, function(level1, that){
+         $.each(that, function(i, sublevel){
+            allLevels[Object.keys(allLevels).length] = {id: sublevel.id, name: level1+ ' >> ' +sublevel.name};
+         });
       });
-   });
+   }
 
    // to filter
    if(this.sub_module === 'ownership'){
@@ -419,6 +422,11 @@ Animals.prototype.initiateFiltersnLists = function(){
    else if(this.sub_module === 'events'){
       animals.initiateEventsToFilter();
    }
+   else if(this.sub_module === 'experiments'){
+      var settings = {name: 'toCombo', id: 'toComboId', data: animals.allExperiments, initValue: 'Select One', required: 'true'};
+      var fromCombo = Common.generateCombo(settings);
+      $('#to_filter').html(fromCombo);
+   }
 
    // from filter
    if(this.sub_module === 'move_animals'){
@@ -427,7 +435,7 @@ Animals.prototype.initiateFiltersnLists = function(){
       var fromCombo = Common.generateCombo(settings);
       $('#from_filter').html(fromCombo);
    }
-   else if(this.sub_module === 'ownership'){
+   else if(this.sub_module === 'ownership' || this.sub_module === 'experiments'){
       var owners = animals.owners;
       owners[Object.keys(owners).length] = {id:'floating', name: 'Select unattached'};
       var settings = {name: 'from', id: 'fromId', data: owners, initValue: 'Select One', required: 'true'};
@@ -461,7 +469,6 @@ Animals.prototype.initiateEventsToFilter = function(){
  * Filter the grids based on the selected item
  *
  * @param   {object}    sender   The drop down which fired the event leading to this function being called
- * @param   {string}    module   The module that we are currently in. Might actually be redundant
  * @returns {void}
  */
 Animals.prototype.filterAnimals = function(sender){
@@ -472,6 +479,7 @@ Animals.prototype.filterAnimals = function(sender){
       if(this.sub_module === 'move_animals'){ neededAnimals = animals.byLocations.animals.floating; }
       else if(this.sub_module === 'ownership'){ neededAnimals = animals.byOwners['floating']; }
       else if(this.sub_module === 'events'){ neededAnimals = animals.byLocations.animals['floating']; }
+      else if(this.sub_module === 'experiments'){ neededAnimals = animals.byOwners['floating']; }
    }
    else if(selected === 'new' && this.sub_module === 'events'){ animals.newEventName(); }
    else{
@@ -479,6 +487,10 @@ Animals.prototype.filterAnimals = function(sender){
       if(this.sub_module === 'move_animals') {neededAnimals = animals.byLocations.animals[selected]; }
       else if(this.sub_module === 'ownership') {neededAnimals = animals.byOwners[selected]; }
       else if(this.sub_module === 'events') {neededAnimals = animals.byLocations.animals[selected]; }
+      else if(this.sub_module === 'experiments') {
+         if(sender.target.id === 'fromId'){ neededAnimals = animals.byOwners[selected]; }
+         else if(sender.target.id === 'toComboId'){ neededAnimals = animals.byExperiments[selected]; }
+      }
    }
 
    // there is no need to the animals attached to this event... because we are not attaching animals to events
@@ -500,6 +512,22 @@ Animals.prototype.filterAnimals = function(sender){
       $.each($("#to_list").jqxListBox('getItems'), function(index, that){
          $("#to_list").jqxListBox('disableItem', that.value);
       });
+   }
+   // check if we need to mask out some animals from the from list
+   if(this.sub_module === 'experiments'){
+
+      if($('#fromId').val() === '0' || $('#toComboId').val() === '0'){ return; }
+      else{
+         // if the animal is already in the to list... no need to enable it for selection
+         $.each($("#to_list").jqxListBox('getItems'), function(index, that){
+            $.each($("#from_list").jqxListBox('getItems'), function(jndex, thist){
+               if(that.value === thist.value){
+                  // disable me
+                  $("#from_list").jqxListBox('disableItem', thist.value);
+               }
+            });
+         });
+      }
    }
 };
 
@@ -606,6 +634,7 @@ Animals.prototype.saveChanges = function (){
    var  toId;
    if(this.sub_module === 'events' && $('#eventId').length !== 0){ toId = $('#eventId').val(); }
    else { toId = $('#toComboId').val(); }
+
    var fromId = $('#fromId').val();
     $.ajax({
       type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', data: {'action': 'save', 'from': fromId, 'animals': $.toJSON(animals.movedAnimals), 'to': toId },
@@ -618,6 +647,7 @@ Animals.prototype.saveChanges = function (){
             animals.showNotification(data.mssg, 'success');
             if(animals.sub_module === 'ownership'){ animals.reInitializeOwnership(); }
             else if(animals.sub_module === 'events'){ animals.reInitializeEvents(); }
+            else if(animals.sub_module === 'experiments'){ animals.reInitializeExperiment(); }
             else if(animals.sub_module === 'move_animals'){
                animals.byLocations = data.data;
                $("#to_list").jqxListBox('clear');
@@ -651,7 +681,7 @@ Animals.prototype.showNotification = function(message, type){
 /**
  * We are adding a new level
  *
- * @returns {undefined}
+ * @returns {void}
  */
 Animals.prototype.newLevel =  function(){
    if($('#level1Id').val() === '-1'){
@@ -778,6 +808,226 @@ Animals.prototype.reInitializeEvents = function(){
    animals.initiateAnimalsEventsGrid();
 };
 
+/**
+ * Initialize the experiments grid
+ * @returns    {void}
+ */
+Animals.prototype.initiateExperimentsGrid = function(){
+   // create the source for the grid
+   var source = {
+       datatype: 'json', datafields: [ {name: 'exp_name'}, {name: 'pi_name'}, {name: 'start_date'}, {name: 'end_date'}, {name: 'comments'} ],
+       id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'experiments'}, url: 'mod_ajax.php?page=farm_animals&do=experiments'
+     };
+     var expAdapter = new $.jqx.dataAdapter(source);
+   // initialize jqxGrid
+     if($('#exp_grid :regex(class, jqx\-grid)').length === 0){
+        $("#exp_grid").jqxGrid({
+            width: 910,
+            height: 350,
+            source: source,
+            pageable: true,
+            autoheight: true,
+            sortable: true,
+            altrows: true,
+            enabletooltips: true,
+            columns: [
+              { text: 'Experiment Name', datafield: 'exp_name', width: 100 },
+              { text: 'PI Name', datafield: 'pi_name', width: 150 },
+              { text: 'Start Date', datafield: 'start_date', width: 100 },
+              { text: 'End Date', datafield: 'end_date', width: 100 },
+              { text: 'Comments', datafield: 'comments', width: 200}
+            ]
+         });
+     }
+     else{
+        $("#exp_grid").jqxGrid({source: expAdapter});
+     }
+
+};
+
+/**
+ * Creates a new interface for adding a new experiment
+ * @returns {void}
+ */
+Animals.prototype.newExperiment = function(){
+      // get all the people who can be PIs
+   $.ajax({
+       type:"POST", url: "mod_ajax.php?page=farm_animals&do=experiments", dataType:'json', async: false, data: {'action': 'list', field: 'pis'},
+       success: function (data) {
+          if(data.error === true){
+              animals.showNotification(data.mssg, 'error');
+              $('#animal_id').val('').focus();
+              return;
+          }
+          else{ animals.pis = data.data.owners; }
+      }
+   });
+
+   var content = "\
+<form id='new_experiment' class='form-horizontal' >\
+   <div class='control-group'>\
+      <label class='control-label' for='experiment'>Experiment&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <div id='exp_pl' class='animal_input controls'><input type='text' name='experiment' id='experimentId' placeholder='Experiment Name' class='input-medium form-control' required=true /></div>\n\
+   </div>\n\
+\
+   <div class='control-group'>\
+      <label class='control-label' for='pi'>Exp PI&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <div id='pis_pl' class='animal_input controls'></div>\n\
+   </div>\n\
+\
+   <div class='control-group'>\
+      <label class='control-label' for='start_date'>Start Date&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <div id='start_date_pl' class='animal_input controls'><input type='text' name='start_date' id='start_date' placeholder='Start Date' class='input-medium form-control' required=true /></div>\n\
+   </div>\n\
+\
+   <div class='control-group'>\
+      <label class='control-label' for='end_date'>End Date</label>\n\
+      <div id='end_date_pl' class='animal_input controls'><input type='text' name='end_date' id='end_date' placeholder='End Date' class='input-medium form-control' /></div>\n\
+   </div>\n\
+\
+   <div class='control-group'>\
+      <label class='control-label' for='comments'>Comments</label>\n\
+      <div id='comments_pl' class='animal_input controls'><textarea name='comments' id='comments' class=' form-control'></textarea></div>\n\
+   </div>\n\
+</form>\
+";
+   // create a popup that will add a new ownership of the animal
+   CustomMssgBox.createMessageBox({ okText: 'Save', cancelText: 'Cancel', callBack: animals.saveNewExperiment, cancelButton: true, customTitle: 'New Experiment', message: content, width: '500px' });
+
+   // create the date pickers
+   datePickerController.createDatePicker({ formElements:{'start_date': '%d-%m-%Y'}, fillGrid: true, constraintSelection:false, maxDate: 0 });
+   datePickerController.createDatePicker({ formElements:{'end_date': '%d-%m-%Y'}, fillGrid: true, constraintSelection:false, maxDate: 0 });
+
+   // populate the animal and owner fields with the respective drop downs
+   var settings = {name: 'pis', id: 'pi_id', data: animals.pis, initValue: 'Select One', required: 'true'};
+   var pisCombo = Common.generateCombo(settings);
+   $('#pis_pl').html(pisCombo);
+};
+
+/**
+ * Saves a new experiment
+ * @param   {object}    sender   The object of the opened pop up
+ * @param   {boolean}   value    The value of the button clicked on the popup
+ * @returns {void}
+ */
+Animals.prototype.saveNewExperiment = function(sender, value){
+   if(value === false) {
+      sender.close();
+      return;
+   }
+   // get the data that we want before we close the pop up
+   var formInfo = $('#new_experiment').formToArray(true), missingInfo = false;
+   $.each(formInfo, function(){
+      if((this.required && this.value === '' || this.required && this.value === 0 && this.type === 'select1') === true){
+         // we have a mandatory field with no data...
+         $('[name='+this.name+']').css({'aria-invalid': 'invalid'});
+         missingInfo = true;
+      }
+   });
+   if(missingInfo){
+      animals.showNotification('Please fill in the missing mandatory information.', 'error');
+      return;
+   }
+
+   // ok, so we good, lets save the new experiment
+   var formSerialized = $('#new_experiment').formSerialize();
+   $.ajax({
+       type:"POST", url: "mod_ajax.php?page=farm_animals&do=experiments", dataType:'json', async: true, data: formSerialized + '&action=save_exp',
+       success: function (data) {
+          if(data.error === true){
+              animals.showNotification(data.data, 'error');
+              $('#experimentId').focus();
+              return;
+          }
+          else{
+              sender.close();
+              animals.showNotification('The experiment has been saved successfully', 'success');
+              animals.reInitializeExperiment();
+          }
+      }
+   });
+};
+
+/**
+ * Create a new interface for relating animals with experiments
+ * @returns {void}
+ */
+Animals.prototype.newExperimentAnimals = function(){
+   // get animals groupings and all the events
+   $.ajax({
+       type:"POST", url: "mod_ajax.php?page=farm_animals&do=experiments", async: false, dataType:'json', data: {action: 'list', fields: $.toJSON(['byOwners', 'experiments'])},
+       success: function (data) {
+          if(data.error === true){
+              animals.showNotification(data.mssg, 'error');
+              $('#animal_id').val('').focus();
+              return;
+          }
+          else{
+              animals.showNotification(data.mssg, 'success');
+              animals.allExperiments = data.data.experiments;
+              animals.byExperiments = data.data.byExperiments;
+              animals.owners = data.data.byOwners.owners;
+              animals.byOwners = data.data.byOwners.byOwners;
+          }
+      }
+   });
+
+   // change the interface to be able to add new ownership
+var mainContent = '\
+   <div id="all_animals">\
+      <div id="from_filter"></div>\
+      <div id="from_list"></div>\
+   </div>\n\
+   <div id="actions">\n\
+      <button style="padding:4px 16px;" id="add">Add ></button>\
+      <button style="padding:4px 16px;" id="add_all">Add All >></button>\
+      <button style="padding:4px 16px;" id="remove">< Remove</button>\
+      <button style="padding:4px 16px;" id="reset">Reset</button>\
+   </div>\n\
+   <div id="new_locations">\
+      <div id="to_filter"></div>\
+      <div id="to_list"></div>\
+   </div>\n\
+   <div id="actions">\n\
+      <button style="padding:4px 16px;" id="save">Save</button>\n\
+   </div>';
+
+   $('#experiments').html(mainContent);
+   $("#save").on('click', function(){ animals.saveChanges(); });
+
+   // now initiate the grids
+   $("#add").jqxButton({ width: '150'});
+   $("#add_all").jqxButton({ width: '150'});
+   $("#remove").jqxButton({ width: '150'});
+   $("#reset").jqxButton({ width: '150'});
+   $("#reset, #remove, #add, #add_all").on('click', function(sender){ animals.moveAnimals(sender); });
+   $('#whoisme .back').html('<a href=\'?page=farm_animals&do=experiments\'>Back</a>');       //back link
+
+   // initiate the list boxes
+   animals.initiateFiltersnLists();
+   animals.movedAnimals = {};
+};
+
+/**
+ * Re-initialize the experiments grid to show the newly added experiments
+ * @returns {void}
+ */
+Animals.prototype.reInitializeExperiment = function(){
+   var content = '<div id="exp_grid"></div>\
+   <div id="actions">\
+      <button style="padding:4px 16px;" id="new_exp">Add an Experiment</button>\
+      <button style="padding:4px 16px;" id="new_exp_animals">Manage Exp Animals</button>\
+   </div>';
+
+   $('#experiments').html(content);
+   $("#new_exp").jqxButton({ width: '150'});
+   $("#new_exp_animals").jqxButton({ width: '150'});
+   // bind the click functions of the buttons
+   $("#new_exp").on('click', function(){ animals.newExperiment(); });
+   $("#new_exp_animals").on('click', function(){ animals.newExperimentAnimals(); });
+
+   animals.initiateExperimentsGrid();
+};
 /**
  * Create an inbox for adding a new event name
  * @returns    {void}

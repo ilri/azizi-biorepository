@@ -72,6 +72,12 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->newEventsData ();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalEvents ();
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'experiments'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->experimentsHome();
+         else if(OPTIONS_REQUESTED_ACTION == 'list') $this->experimentsData();
+         else if(OPTIONS_REQUESTED_ACTION == 'save_exp') $this->saveNewExperiment();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveExperimentAnimals();      // An ambigous action name....
+      }
    }
 
    /**
@@ -92,6 +98,7 @@ class FarmAnimals{
          <li><a href="?page=farm_animals&do=pen_animals">Animals in pens</a></li>
          <li><a href="?page=farm_animals&do=move_animals">Move animals between pens</a></li>
          <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
+         <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
       </ul>
    </div>
 </div>
@@ -442,6 +449,28 @@ class FarmAnimals{
    }
 
    /**
+    * Group animals by the current experiment
+    * @param   array          $experiments   The experiments which we are interested in
+    * @return  array|string   Returns a string with an error message if there is one, else returns an array with animals grouped by experiments
+    */
+   private function groupAnimalsByExperiments($experiments = NULL){
+      if($experiments == NULL){
+         $query = 'select id, exp_name as name from farm_animals.experiments order by exp_name';
+         $experiments = $this->Dbase->ExecuteQuery($query);
+         if($experiments == 1) die(json_encode(array('error' => 'true', 'mssg' => $experiments)));
+      }
+
+      $query = 'select b.id, b.animal_id as name from farm_animals.exp_animals as a inner join farm_animals.farm_animals as b on a.animal_id = b.id where a.end_date is null';
+      $animalsByExperiments = array();
+      foreach($experiments as $index => $exp){
+         $res = $this->Dbase->ExecuteQuery($query, array('exp_id' => $exp['id']));
+         if($res == 1) return $this->Dbase->lastError;
+         $animalsByExperiments[$exp['id']] = $res;
+      }
+      return $animalsByExperiments;
+   }
+
+   /**
     * Save locations where the animals are kept
     */
    private function saveAnimalLocations(){
@@ -503,7 +532,6 @@ class FarmAnimals{
     * Create a home page for showing the animal owners
     */
    private function animalOwnersHome(){
-      global $Repository;
 ?>
 <div id="messageNotification"><div class="">&nbsp;&nbsp;</div></div>
 <script type="text/javascript" src="js/farm_animals.js"></script>
@@ -792,5 +820,127 @@ class FarmAnimals{
       $res = $this->Dbase->ExecuteQuery($insertQuery, array('event_name' => $event_name));
       if($res == 1) return $this->Dbase->lastError;
       else return $this->Dbase->dbcon->lastInsertId();
+   }
+
+   /**
+    * Creates a new page for managing experiments
+    */
+   private function experimentsHome(){
+      global $Repository;
+     $Repository->DateTimePickerFiles();
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/mssg_box.css" />
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/customMessageBox.js"></script>
+<div id="experiments">
+   <div id="exp_grid"></div>
+   <div id="actions">
+      <button style="padding:4px 16px;" id="new_exp">Add an Experiment</button>
+      <button style="padding:4px 16px;" id="new_exp_animals">Manage Exp Animals</button>
+   </div>
+</div>
+<div id="messageNotification"><div></div></div>
+
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   $("#new_exp").jqxButton({ width: '150'});
+   $("#new_exp_animals").jqxButton({ width: '200'});
+   var animals = new Animals();
+   // bind the click functions of the buttons
+   $("#new_exp").on('click', function(){ animals.newExperiment(); });
+   $("#new_exp_animals").on('click', function(){ animals.newExperimentAnimals(); });
+</script>
+<?php
+   }
+
+   /**
+    * Get the data to be used for creating a new experiment
+    */
+   private function experimentsData(){
+      $fields = json_decode($_POST['fields']);
+      if($_POST['field'] == 'experiments'){
+         $res = $this->experimentsList();
+         if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $res)));
+         die(json_encode(array('error' => 'false', 'data' => $res)));
+      }
+      else if($_POST['field'] == 'pis'){
+         // get the list of owners
+         $res = $this->groupAnimalsByOwners();
+         if(is_string($res)) die(json_encode(array('error' => 'true', 'mssg' => $res)));
+         die(json_encode(array('error' => 'false', 'data' => $res)));
+      }
+      else if(in_array('byOwners', $fields)){
+         $query = 'select id, exp_name as name from farm_animals.experiments order by exp_name';
+         $res = $this->Dbase->ExecuteQuery($query);
+         if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $res)));
+
+         $res1 = $this->groupAnimalsByOwners();
+         if(is_string($res1)) die(json_encode(array('error' => 'true', 'mssg' => $res1)));
+
+         $res2 = $this->groupAnimalsByExperiments();
+         if(is_string($res1)) die(json_encode(array('error' => 'true', 'mssg' => $res1)));
+
+         die(json_encode(array('error' => 'false', 'data' => array('byOwners' => $res1, 'experiments' => $res, 'byExperiments' => $res2))));
+      }
+   }
+
+   /**
+    * Get a list of all the experiments
+    * @return  boolean|array  Returns a string in case there is an error, else returns an array with the defined experiments
+    */
+   private function experimentsList(){
+      $query = 'select a.exp_name, a.start_date, a.end_date, concat(b.surname, " ", b.first_name) as pi_name from farm_animals.experiments as a inner join farm_animals.farm_people as b on a.pi_id=b.id';
+      $res = $this->Dbase->ExecuteQuery($query);
+      if($res == 1) return $this->Dbase->lastError;
+      else return $res;
+   }
+
+   /**
+    * Saves a new experiment
+    */
+   private function saveNewExperiment(){
+      $addQuery = 'insert into farm_animals.experiments(exp_name, pi_id, start_date) values(:exp_name, :pi_id, :start_date)';
+      $start_date = DateTime::createFromFormat('d-m-Y', $_POST['start_date']);
+      $res = $this->Dbase->ExecuteQuery($addQuery, array('exp_name' => $_POST['experiment'], 'pi_id' => $_POST['pis'], 'start_date' => $start_date));
+      if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+      die(json_encode(array('error' => true, 'mssg' => 'The experiment have been saved successfully!')));
+   }
+
+   /**
+    * Saves new animal and experiments association
+    */
+   private function saveExperimentAnimals(){
+      $animals = json_decode($_POST['animals']);
+      $addQuery = 'insert into farm_animals.exp_animals(animal_id, exp_id, start_date) values(:animal_id, :exp_id, :start_date)';
+      $vals = array('exp_id' => $_POST['to'], 'start_date' => date('Y-m-d'));
+      // start the transacation
+      $this->Dbase->StartTrans();
+      foreach($animals as $animalId => $animal){
+         $colvals = $vals;
+         $colvals['animal_id'] = $animalId;
+         $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
+         if($res == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
+      }
+
+      //we good so commit trans..
+      $this->Dbase->CommitTrans();
+      die(json_encode(array('error' => 'false', 'mssg' => 'The animals have been succesfully saved.')));
    }
 }
