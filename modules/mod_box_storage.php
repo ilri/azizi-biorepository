@@ -572,6 +572,10 @@ class BoxStorage extends Repository{
             <div class="radio-inline" style="width: 70px;"><label><input type="radio" name="box_size" id="size_81" value="81">9x9</label></div>
             <div class="radio-inline" style="width: 70px;"><label><input type="radio" name="box_size" id="size_100" value="100">10x10</label></div>
          </div>
+         <div class="left-align" style="width: 100px;">
+            <label for="no_samples">No. Samples</label>
+            <input type="number" name="no_samples" id="no_samples" style="width: 80px; height: 25px;"/>
+         </div>
          <div class='left-align' style="width: 180px;">
             <label for="owner">Sample Keeper</label>
             <select name="owner" id="owner" class='form-control'>
@@ -712,11 +716,11 @@ class BoxStorage extends Repository{
          if($('#status').val() === "temporary"){
             //if user sets position to temporary set owner to biorepository manager
             $("#owner").prop('disabled', 'disabled');
-            $("#project").prop('disabled', false);
+            /*$("#project").prop('disabled', false);*/
          }
          else{
             $("#owner").prop('disabled', false);
-            $("#project").prop('disabled', 'disabled');
+            /*$("#project").prop('disabled', 'disabled');*/
          }
       });
    });

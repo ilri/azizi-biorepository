@@ -31,7 +31,8 @@ class UploadODK extends Repository{
 
       $this->sessionID = session_id();
       if($this->sessionID == NULL || $this->sessionID == "") {
-         $this->sessionID = round(microtime(true) * 1000);
+         $this->Dbase->CreateLogEntry("Unable to get the session id. Rolling back to using time to distinguish session folder", "fatal");
+         $this->sessionID = microtime(true);
       }
 
       if(!file_exists($this->ROOT.'tmp')){
@@ -41,8 +42,10 @@ class UploadODK extends Repository{
       $this->tmpDir = $this->ROOT.'tmp/'.$this->sessionID;
       $this->Dbase->CreateLogEntry("tmp dir =".$this->tmpDir, "fatal");
 
+      //make the temporary directory for this session
       if(!file_exists($this->tmpDir)){
          mkdir($this->tmpDir,0777,true);
+         mkdir($this->tmpDir."/media", 07770,true);//makes the temporary directory for teh media files linked to the currect form
       }
 
       $this->authCookies = $this->tmpDir."/"."AUTH".mt_rand();
@@ -80,24 +83,31 @@ class UploadODK extends Repository{
 <form id="odk_upload_form" class="form-horizontal odk_uploader" method="POST" enctype="multipart/form-data" action="index.php?page=odk_uploader&do=do_upload&action=upload" onsubmit="return window.uploader.validateInput();">
    <div id="odk_instructions">
       <p>
-         <p class='center'>This is a system for uploading of ODK surveys in Microsoft Excel formats to the ODK Aggregate server maintained by the <a href='/' target='_blank'>Azizi Biorepository</a> team.</p>
-         <p>Refer to this <a href="http://opendatakit.org/help/form-design/xlsform/" target="_blank"><u>page</u></a> for guideline in creating an ODK survey using Microsoft Excel. If you need further assistance in creating the ODK forms please contact us.<br />
-         Once you have created the form in Excel, upload it here. The system will validate it for errors, and in case of any errors, they will be displayed at the top of this page. Review the errors and then re-upload it again. if the form has no errors, it will be automatically uploaded to the server and you should receive an email notification of the same.<br />
-         After this, go to ODK collect on your mobile device and download the form using the credentials in the email and enjoy using the form.</p>
-         <p>Please note that this system is still under development and in case of any bugs, please contact us through the email <a target="_top" href="mailto:azizibiorepository@cgiar.org">Azizi Biorepository</a></p>
+         <p class='center'>Upload your ODK forms to the Azizi Biorepository's ODK Aggregate Server.</p>
+         <p>Refer to this <a href="http://opendatakit.org/help/form-design/xlsform/" target="_blank"><u>page</u></a> for guideline on creating ODK XLS forms. If you need help, feel free to contact us. Once you have created the form in Excel, upload it 
+            here. The system will check for errors in form, and in case any are found, they will be displayed at the top of this page. If your form has no errors, it will be uploaded to the Aggregate Server. You should also receive an email with further instructions.<br />
+         <p>Please note that this system is still under development. If you however experience any problem, send any of System Developers an email.</p>
       </p>
    </div>
    <hr />
    <div class="form-group">
-      <div class="odk_uploader_field_divs"><label for="excel_file" class="control-label">Excel Form</label></div>
-      <div class="odk_uploader_field_divs"><input type="file" class="form-control" id="excel_file" name="excel_file" placeholder="Excel Form"></div>
+      <div class="odk_uploader_field_divs"><label for="excel_file" class="control-label" style="width: 200px;">* Excel Form</label></div>
+      <div class="odk_uploader_field_divs"><input type="file" class="form-control" id="excel_file" name="excel_file" placeholder="Excel Form" accept=".xls"></div><!-- Only accept .xls files. xlsx files are not parsed well with the ODK parsing python script -->
    </div>
    <div class="form-group">
-      <div class="odk_uploader_field_divs"><label for="email" class="control-label">Email Address</label></div>
+      <div class="odk_uploader_field_divs"><label for="media_files" class="control-label" style="width: 200px;">Media Files</label></div>
+      <div class="odk_uploader_field_divs"><input type="file" class="form-control" id="media_files" name="media_files[]" placeholder="Media Files" multiple></div><!-- Allow for uploading of multiple files -->
+   </div>
+   <div class="form-group">
+      <div class="odk_uploader_field_divs"><label for="email" class="control-label" style="width: 200px;">* Email Address</label></div>
       <div class="odk_uploader_field_divs"><input type="text" class="form-control" id="email" name="email" value="<?php if($emailAddress !== 0) echo $emailAddress;?>" /></div>
    </div>
    <div class="form-group">
-      <div class="odk_uploader_field_divs"><label for="upload_type" class="control-label">Type of Upload</label></div>
+      <div class="odk_uploader_field_divs"><label for="collaborators" class="control-label" style="width: 200px;">Allowed Users</label></div>
+      <div class="odk_uploader_field_divs"><input type="text" class="form-control" id="collaborators" name="collaborators" placeholder="Seperate using semicolons"></div><!-- Allow for uploading of multiple files -->
+   </div>
+   <div class="form-group">
+      <div class="odk_uploader_field_divs"><label for="upload_type" class="control-label" style="width: 200px;">* Type of Upload</label></div>
       <div class="odk_uploader_field_divs">
          <select class="form-control" name="upload_type" id="upload_type" >
             <option value=""></option>
@@ -126,13 +136,80 @@ class UploadODK extends Repository{
             $this->Dbase->CreateLogEntry("File error thrown while tying to download file from client. Error is ".$_FILES['excel_file']['error'], "fatal");
          }
          else{
+            //download the xls form
             $this->excelFileLoc = $this->tmpDir."/".$_FILES['excel_file']['name'];
             $realName = explode(".", $_FILES['excel_file']['name']);
             $this->xmlFileLoc = $this->tmpDir."/".$realName[0].".xml";
             move_uploaded_file($_FILES['excel_file']['tmp_name'], $this->excelFileLoc);
             $this->Dbase->CreateLogEntry("moved file from client to ".$this->excelFileLoc, "debug");
+            
+            //download the media files
+            $this->emptyMediaDir();//make sure the media dir is empty first
+            /*
+             structure of $_FILES['media_files'] that contains 2 files is 
+             (
+                  [name] => Array
+                      (
+                          [0] => ILRI logo.png
+                          [1] => CGIAR-green-logo-912x1081.jpg
+                      )
 
-            $result = exec("python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
+                  [type] => Array
+                      (
+                          [0] => image/png
+                          [1] => image/jpeg
+                      )
+
+                  [tmp_name] => Array
+                     (
+                        [0] => /tmp/phpF0IjKJ
+                        [1] => /tmp/phpebDgFu
+                     )
+
+                  [error] => Array
+                    (
+                        [0] => 0
+                        [1] => 0
+                    )
+                  [size] => Array
+                     (
+                         [0] => 25313
+                         [1] => 128767
+                     )
+             )
+             */
+            
+            /*when checking if user is uploading media files, check if the name of the first media file has at least one character.
+             * Seems like PHP inserts a 'phantom' media file if none is uploaded by the user. I'm assuming this phantom file has blank fields tied to it
+             */
+            if(count($_FILES['media_files']['name']) > 0 && strlen($_FILES['media_files']['name'][0]) > 0){//user wants to upload more than one media file
+               $this->Dbase->CreateLogEntry("The current form has " . count($_FILES['media_files']['name']) . " media files", "debug");
+               //for each of the files, try to download them to the tmp media dir
+               for($mCount = 0; $mCount < count($_FILES['media_files']['name']); $mCount++){
+                  if(empty($_FILES['media_files']['tmp_name'][$mCount]) || $_FILES['media_files']['error'][$mCount] > 0){
+                     $this->Dbase->CreateLogEntry("An error occurred while trying to read one of the media files from POST","fatal");
+                     return "One of the media files failed to upload. Please try to resubmit the form";
+                  }
+                  else {
+                     $moveRes = move_uploaded_file($_FILES['media_files']['tmp_name'][$mCount], $this->tmpDir."/media/".$_FILES['media_files']['name'][$mCount]);//move POST file to session's tmp directory and rename it to its original name
+                     if($moveRes === FALSE){
+                        $this->Dbase->CreateLogEntry("An error occurred while trying to move a media file from POST to ".$this->tmpDir."/media/".$_FILES['media_files']['name'][$mCount], "fatal");
+                        return "An error occurred while trying to upload one of the media files. Please try again";
+                     }
+                  }
+               }
+            }
+            
+            //extract external_itemsets from the excel file
+            $itemsetsRes = $this->extractExternalItemsets($this->excelFileLoc, $this->tmpDir."/media");
+            if($itemsetsRes == 1){
+               return "An error occurred while trying to determine if the provided form has an external itemset tied to it";
+            }
+            else if ($itemsetsRes == 2){
+               return "Your form's external_choices sheet and the itemsets.csv file contain similar data. You can use either but not both.";
+            }
+            
+            $result = exec("/usr/bin/python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
             $errorOutput = join("\n", $execOutput);
 $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
             if(file_exists($this->xmlFileLoc) && strlen(file_get_contents($this->xmlFileLoc)) > 1){//no error
@@ -146,8 +223,8 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                   if(isset($instanceIDs[1]) && count($instanceIDs[1]) === 1 && isset($instanceIDs[2]) && count($instanceIDs[2]) === 1){
                      $preID = $instanceIDs[1][0];
                      $instanceID = $instanceIDs[2][0];
-                     $random = round(microtime(true) * 1000);
-                     $newInstanceID = $instanceID . $random;
+                     $random = microtime(true);
+                     $newInstanceID = $instanceID.$random;
                      $xmlString = preg_replace("/<instance>[\s\n]*<".$preID."\s+id=[\"']".$instanceID."[\"']>/", "<instance>\n<".$preID." id=\"".$newInstanceID."\">", $xmlString);
                      
                      /*preg_match_all("/<h:title>(.*)<\/h:title>/i", $xmlString, $possibleTitle);
@@ -225,8 +302,38 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                   }
                }
 
+               /**
+                * Package the data and push to briefcase API's formUpload.
+                * Refer to https://code.google.com/p/opendatakit/wiki/BriefcaseAggregateAPI 
+                */
                $fullXMLFilePath = realpath($this->xmlFileLoc);
-               $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
+               $fullMediaFilePath = realpath($this->tmpDir."/media");
+               $mediaFileNames = scandir($this->tmpDir."/media");
+               /*
+                * scandir() generates an array that looks like this:
+                  Array
+                  (
+                     [0] => .
+                     [1] => ..
+                     [2] => filename1
+                     ..
+                     [n+2] => filenameN
+                 )
+                 make sure you ignore the first two elements in the generated array
+                */
+               
+               if($mediaFileNames !== FALSE && count($mediaFileNames) > 2) { //media directory has at least one file in it
+                  $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
+                  for($mediaCount = 0; $mediaCount < count($mediaFileNames) - 2; $mediaCount++){
+                     //, 'datafile'=>'@'.$fullMediaFilePath
+                     $postFields["datafile[".$mediaCount."]"] = "@".$fullMediaFilePath."/".$mediaFileNames[$mediaCount + 2];
+                  }
+                  
+               }
+               else {//user uploading form without media files
+                  $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
+               }
+               $this->Dbase->CreateLogEntry("POST to formUpload API looks like this ".print_r($postFields, true), "debug");
 
                $ch = curl_init($formUploadURL);
                curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
@@ -305,6 +412,23 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                         $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "user" => $username));
                      }
                      
+                     //give other users access
+                     if(strlen($_POST['collaborators']) > 0){
+                        $this->Dbase->CreateLogEntry("User has specified collaborators for this form","fatal");
+                        $collaborators = explode(";", $_POST['collaborators']);
+                        for($cIndex = 0; $cIndex < count($collaborators); $cIndex++){
+                           $currCollab = trim($collaborators[$cIndex]);
+                           if(strlen($currCollab) > 0){
+                              $query = "SELECT id FROM odk_access WHERE user = :user AND form_id = :form_id";
+                              $result = $this->Dbase->ExecuteQuery($query, array("form_id"=> $formID, "user" => $currCollab));
+                              if(is_array($result) && count($result) == 0){//user does not have access to form
+                                 $query = "INSERT INTO odk_access(form_id, `user`) VALUES(:form_id, :user)";
+                                 $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "user" => $currCollab));
+                              }
+                           }
+                        }
+                     }
+                     
                      //schedule testing form for a delete
                      if($_POST['upload_type'] == 'testing'){
                         $tenMinLater = date('Y-m-d H:i:s', time()+600);
@@ -341,22 +465,82 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
          $this->Dbase->CreateLogEntry("The excel file container is empty", "fatal");
       }
    }
+   
+   /**
+    * This function checks whether the provided excel file has the external_choices
+    * sheet and generates a itemset.csv file from this that will be uploaded alongside
+    * the xml file to Aggregate
+    * 
+    * @param string $excelFileLoc   The location of the excel file
+    * @param string $mediaDirLoc    Directory to save the itemsets.csv file in
+    * 
+    * @return Integer Returns -1 if excel file does not have an external choices, 0 if able to extract the data, 1 if an error occurred and 2 if itemsets.csv already exists in the media directory
+    */
+   private function extractExternalItemsets($excelFileLoc, $mediaDirLoc){
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel/IOFactory.php';
+      
+      try {
+         //load the excel file
+         $excelFileType = PHPExcel_IOFactory::identify($excelFileLoc);
+         $objReader = PHPExcel_IOFactory::createReader($excelFileType);
+         $excelFileObj = $objReader->load($excelFileLoc);
+         
+         //check if excel file has external_choices sheet
+         $sheetNames = $excelFileObj->getSheetnames();//returns an array of sheet names with the indexes usable in $excelObject->getSheet($index)
+         $ecSheetIndex = array_search("external_choices", $sheetNames);
+         if($ecSheetIndex === FALSE){//please make sure you also check data type of $ecSheetIndex
+            //means external_choices sheet wasn't found
+            $this->Dbase->CreateLogEntry("Form's excel file doens not have the external_choices sheet","info");
+            return -1;
+         }
+         else {//external_choices sheet in excel file
+            //check if media directory has itemsets.csv file
+            if(!file_exists($mediaDirLoc."/itemsets.csv")){//itemsets.csv does not exist in media directory
+               //save the external_choices sheet as itemsets.csv. Refer to https://phpexcel.codeplex.com/discussions/257118
+               $objWriter = PHPExcel_IOFactory::createWriter($excelFileObj, "CSV");
+               $objWriter->setSheetIndex($ecSheetIndex);
+               $objWriter->save($mediaDirLoc."/itemsets.csv");
+               return 0;//fils saved successfully, everything is fine.
+            }
+            else {
+               $this->Dbase->CreateLogEntry("User provided both itemsets.csv and an excel file with external_choices sheet. Sending back error message", "fatal");
+               return 2;
+            }
+         }
+         
+      } 
+      catch (Exception $ex) {
+         $this->Dbase->CreateLogEntry("An error occurred while loading ".$excelFileLoc." into a PHPExcel file. \n".$ex->getMessage(), "fatal");
+      }
+      
+      return 1;//fuction returns error by default. Return 0 when you are sure you are done and everything is fine
+   }
+   
+   private function emptyMediaDir(){
+      $mediaFiles = glob($this->tmpDir."/media/*");
+      foreach($mediaFiles as $file){
+         if(is_file($file)){
+            unlink($file);
+         }
+      }
+   }
 
    private function sendInstructionEmail($formName, $instanceID,  $address) {
       $emailSubject = "Upload of ".$formName." Form on Azizi's ODK Server";
       $timeLimit = "";
       if($_POST['upload_type'] === "testing") $timeLimit = " However you have ".  $this->maxTestingTime . " minutes to download it from ODK Collect after which it will be deleted automatically.";
 
-$message = "Hi {$_SESSION['onames']},\n\n";
-$message .= "        A $formName (with an insance_id '$instanceID') has been successfully uploaded onto the Azizi ODK Server.\n\n";
-$message .= "        You can now download the form using ODK Collect on you mobile device. $timeLimit.";
-$message .= "        If you do not have ODK Collect download on your mobile device, download it from http://goo.gl/cGVSxc. Once installed, edit the following general settings from the ODK Collect:\n\n";
-$message .= "             URL : http://azizi.ilri.cgiar.org/aggregate\n";
-$message .= "             Username  : collector\n";
-$message .= "             Password  : collector_2013\n\n";
-$message .= "        Should you have any problems, please reply to this email and we shall get back to you as soon as possible.\n\n";
-$message .= "With Regards\n";
-$message .= "The Biorepository team\n";
+      $message = "Hi {$_SESSION['onames']},\n\n";
+      $message .= "$formName (with an insance_id '$instanceID') has been successfully uploaded to the Azizi ODK Server.\n\n";
+      $message .= "You can now download the form in ODK Collect on your Android device. $timeLimit.";
+      $message .= "If you do not have ODK Collect installed on your device, download it from http://goo.gl/cGVSxc. Once installed, edit the following platform settings in ODK Collect:\n\n";
+      $message .= "             URL : http://azizi.ilri.cgiar.org/aggregate\n";
+      $message .= "             Username  : collector\n";
+      $message .= "             Password  : collector_2013\n\n";
+      $message .= "Should you need any assistance, feel free to contact anybody from the Biorepository's technical team.\n\n";
+      $message .= "Regards\n";
+      $message .= "The Biorepository team\n";
 
       //$headers = "From: noreply@cgiar.org";
       //mail($_POST['email'], $emailSubject, $message, $headers);
