@@ -69,7 +69,8 @@ class FarmAnimals{
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'events'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->animalEvents();
-         else if(OPTIONS_REQUESTED_ACTION == 'list' && $_POST['field'] == 'animal_events') $this->eventsList ();
+         else if(OPTIONS_REQUESTED_ACTION == 'list' && $_POST['field'] == 'animal_events') $this->eventsList();
+         else if(OPTIONS_REQUESTED_ACTION == 'list' && $_POST['field'] == 'sub_events') $this->eventsSubList();
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->newEventsData ();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalEvents ();
       }
@@ -759,6 +760,7 @@ class FarmAnimals{
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
    $("#new").jqxButton({ width: '150'});
    var animals = new Animals();
+   animals.initiateAnimalsEventsGrid();
    // bind the click functions of the buttons
    $("#new").live('click', function(){ animals.newEvent(); });
 </script>
@@ -769,10 +771,28 @@ class FarmAnimals{
     * Get a list of all animal events
     */
    private function eventsList(){
-      $eventsQuery = 'select b.animal_id, event_name, event_date, record_date as time_recorded from farm_animals.farm_animal_events as a inner join farm_animals.farm_animals as b on a.animal_id=b.id inner join farm_animals.farm_events as c on a.event_type_id=c.id';
+      $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, count(*) as no_animals '
+          . 'from farm_animals.farm_animal_events as a inner join farm_animals.farm_animals as b on a.animal_id=b.id '
+          . 'inner join farm_animals.farm_events as c on a.event_type_id=c.id '
+          . 'group by a.event_type_id, a.event_date';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
       die(json_encode(array('error' => false, 'data' => $events)));
+   }
+
+   /**
+    * Gets the sub list of a particular group
+    */
+   private function eventsSubList(){
+      $eventsQuery = 'select b.animal_id, b.sex, record_date as time_recorded, concat(d.surname, " ", d.first_name) as owner '
+          . 'from farm_animals.farm_animal_events as a inner join farm_animals.farm_animals as b on a.animal_id=b.id '
+          . 'left join farm_animals.farm_people as d on b.current_owner=d.id '
+          . 'left join farm_animals.experiments as e on b.current_exp=e.id '
+          . 'where a.event_type_id = :event_type_id and a.event_date = :event_date';
+      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date']));
+      if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+      die(json_encode(array('error' => false, 'data' => $events)));
+
    }
 
    /**

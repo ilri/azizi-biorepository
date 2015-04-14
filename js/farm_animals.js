@@ -16,7 +16,6 @@ function Animals(sub_module){
 
    // call the respective function
    if(this.sub_module === 'ownership') this.initiateAnimalsOwnersGrid();
-   else if(this.sub_module === 'events') this.initiateAnimalsEventsGrid();
    else if(this.sub_module === 'experiments') this.initiateExperimentsGrid();
 };
 
@@ -44,8 +43,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
             filterable: true,
             altrows: true,
             rowdetails: true,
-            enabletooltips: true,
-            initrowdetails: animals.initializeRowDetails,
+            initrowdetails: animals.initializeInventoryRowDetails,
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'id', hidden: true },
@@ -70,7 +68,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
  * Initializes the row details for the expanded row
  * @returns {void}
  */
-Animals.prototype.initializeRowDetails = function(index, parentElement, gridElement, datarecord){
+Animals.prototype.initializeInventoryRowDetails = function(index, parentElement, gridElement, datarecord){
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
@@ -176,7 +174,7 @@ Animals.prototype.initiateAnimalsOwnersGrid = function(){
             autoheight: true,
             sortable: true,
             altrows: true,
-            enabletooltips: true,
+            enabletooltips: false,
             columns: [
               { datafield: 'system_id', hidden: true },
               { text: 'Animal', datafield: 'animal', width: 100 },
@@ -732,7 +730,7 @@ Animals.prototype.newLevel =  function(){
 Animals.prototype.initiateAnimalsEventsGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'done_by'}, {name: 'time_recorded'} ],
+       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'done_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'animal_events'}, url: 'mod_ajax.php?page=farm_animals&do=events'
      };
      var eventsAdapter = new $.jqx.dataAdapter(source);
@@ -746,13 +744,16 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
             autoheight: true,
             sortable: true,
             altrows: true,
-            enabletooltips: true,
+            rowdetails: true,
+            initrowdetails: animals.initializeEventRowDetails,
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
-              { text: 'Animal', datafield: 'animal_id', width: 75 },
+              { datafield: 'event_type_id', hidden: true },
               { text: 'Event', datafield: 'event_name', width: 150 },
               { text: 'Event Date', datafield: 'event_date', width: 100 },
               { text: 'Recorded By', datafield: 'recorded_by', width: 150 },
               { text: 'Performed By', datafield: 'performed_by', width: 150 },
+              { text: 'Animals Count', datafield: 'no_animals', width: 100 },
               { text: 'Time Recorded', datafield: 'time_recorded', width: 200 }
             ]
          });
@@ -760,6 +761,30 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
      else{
         $("#events_grid").jqxGrid({source: eventsAdapter});
      }
+};
+
+/**
+ * Initializes the row details for the expanded row
+ * @returns {void}
+ */
+Animals.prototype.initializeEventRowDetails = function(index, parentElement, gridElement, datarecord){
+   var grid = $($(parentElement).children()[0]);
+
+   var eventsSource = {
+       datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'time_recorded'}, {name: 'owner'} ], type: 'POST',
+       id: 'id', data: {action: 'list', field: 'sub_events',  event_type_id: datarecord.event_type_id, event_date: datarecord.event_date}, url: 'mod_ajax.php?page=farm_animals&do=events'
+    };
+
+    if (grid !== null) {
+      grid.jqxGrid({source: eventsSource, theme: '', width: 620, height: 140,
+      columns: [
+         {text: 'Animal ID', datafield: 'animal_id', hidden: false, width: 150},
+         {text: 'Sex', datafield: 'sex', width: 100},
+         {text: 'Time Recorded', datafield: 'time_recorded', width: 140},
+         {text: 'Owner', datafield: 'owner', width: 150}
+      ]
+      });
+   }
 };
 
 /**
@@ -859,7 +884,7 @@ Animals.prototype.initiateExperimentsGrid = function(){
             autoheight: true,
             sortable: true,
             altrows: true,
-            enabletooltips: true,
+            enabletooltips: false,
             columns: [
               { text: 'Experiment Name', datafield: 'exp_name', width: 250 },
               { text: 'PI Name', datafield: 'pi_name', width: 150 },
@@ -872,7 +897,6 @@ Animals.prototype.initiateExperimentsGrid = function(){
      else{
         $("#exp_grid").jqxGrid({source: expAdapter});
      }
-
 };
 
 /**
