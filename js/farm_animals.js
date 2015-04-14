@@ -26,7 +26,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
       datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'species'}, {name: 'sex'}, {name: 'origin'}, {name: 'dob'},
-         {name: 'sire'}, {name: 'dam'}, {name: 'owner'}, {name: 'experiment'}],
+         {name: 'sire'}, {name: 'dam'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}],
          id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list'}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
      var animalsAdapter = new $.jqx.dataAdapter(source);
@@ -47,15 +47,16 @@ Animals.prototype.initiateAnimalsGrid = function(){
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'id', hidden: true },
-              { text: 'Animal ID', datafield: 'animal_id', width: 100 },
+              { text: 'Animal ID', datafield: 'animal_id', width: 70 },
               { text: 'Species', datafield: 'species', width: 70 },
               { text: 'Sex', datafield: 'sex', width: 50 },
-              { text: 'Origin', datafield: 'origin', width: 100 },
-              { text: 'Birth Date', datafield: 'dob', width: 100 },
-              { text: 'Sire', datafield: 'sire', width: 100 },
-              { text: 'Dam', datafield: 'dam', width: 100 },
+              { text: 'Origin', datafield: 'origin', width: 70 },
+              { text: 'Birth Date', datafield: 'dob', width: 70 },
+              { text: 'Sire', datafield: 'sire', width: 70 },
+              { text: 'Dam', datafield: 'dam', width: 70 },
               { text: 'Current Owner', datafield: 'owner', width: 100 },
-              { text: 'Experiment', datafield: 'experiment', width: 150 }
+              { text: 'Experiment', datafield: 'experiment', width: 150 },
+              { text: 'Location', datafield: 'location', width: 150 }
             ]
         });
      }

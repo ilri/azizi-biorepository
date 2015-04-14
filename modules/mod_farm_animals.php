@@ -149,13 +149,11 @@ class FarmAnimals{
     * Get a list of all the animals currently in the farm
     */
    private function inventoryList(){
-      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, concat(d.surname, " ", d.first_name) as owner, f.exp_name as experiment '
+      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, concat(c.surname, " ", c.first_name) as owner, d.exp_name as experiment, concat(e.level1, " >> ", e.level2) as location '
               . 'from farm_animals.farm_animals as a inner join farm_animals.farm_species as b on a.species_id=b.id '
-              . 'left join farm_animals.farm_animal_owners as c on a.id=c.animal_id '
-              . 'left join farm_animals.farm_people as d on c.owner_id=d.id '
-              . 'left join farm_animals.exp_animals as e on a.id=e.animal_id '
-              . 'left join farm_animals.experiments as f on e.exp_id=f.id '
-              . 'where c.end_date is null and e.end_date is null';
+              . 'left join farm_animals.farm_people as c on a.current_owner=c.id '
+              . 'left join farm_animals.experiments as d on a.current_exp=d.id '
+              . 'left join farm_animals.farm_locations as e on a.current_location=e.id';
       $res = $this->Dbase->ExecuteQuery($query);
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
@@ -628,6 +626,7 @@ class FarmAnimals{
       $animals = json_decode($_POST['animals']);
       $addQuery = "insert into farm_animals.farm_animal_owners(owner_id, animal_id, start_date) values(:owner_id, :animal_id, :start_date)";
       $updateQuery = "update farm_animals.farm_animal_owners set end_date = :end_date where owner_id = :owner_id and animal_id = :animal_id and end_date is null";
+      $updateOwnerQuery = "update farm_animals.farm_animals set current_owner = :current_owner where id = :animal_id";
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          if($_POST['from'] != 'floating'){
@@ -639,6 +638,13 @@ class FarmAnimals{
          }
 
          $res = $this->Dbase->ExecuteQuery($addQuery, array('owner_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d')));
+         if($res == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
+
+         // update the redudant current owner in animals table
+         $res = $this->Dbase->ExecuteQuery($updateOwnerQuery, array('current_owner' => $_POST['to'], 'animal_id' => $id));
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
@@ -710,6 +716,7 @@ class FarmAnimals{
       $animals = json_decode($_POST['animals']);
       $mvmntQuery = 'insert into farm_animals.farm_animal_locations(location_id, animal_id, start_date) values(:location_id, :animal_id, :start_date)';
       $updateQuery = 'update farm_animals.farm_animal_locations set end_date = :edate where location_id = :location_id and animal_id = :animal_id and end_date is null';
+      $updateAnimalLocation = 'update farm_animals.farm_animals set current_location = : current_loc where id = :animal_id';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          // update the from locations
@@ -721,7 +728,18 @@ class FarmAnimals{
          }
          $colvals = array('location_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'));
          $res = $this->Dbase->ExecuteQuery($mvmntQuery, $colvals);
-         if($res == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+         if($res == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
+
+         // update the redundant current animal location
+         $colvals = array('current_loc' => $_POST['to'], 'animal_id' => $id);
+         $res = $this->Dbase->ExecuteQuery($updateAnimalLocation, $colvals);
+         if($res == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
       }
       $this->Dbase->CommitTrans();
       $animalLocations = $this->getAnimalLocations(true);
@@ -968,6 +986,7 @@ class FarmAnimals{
    private function saveExperimentAnimals(){
       $animals = json_decode($_POST['animals']);
       $addQuery = 'insert into farm_animals.exp_animals(animal_id, exp_id, start_date) values(:animal_id, :exp_id, :start_date)';
+      $updateExpQuery = 'update farm_animals.farm_animals set current_exp = :current_exp where animal_id = :animal_id';
       $vals = array('exp_id' => $_POST['to'], 'start_date' => date('Y-m-d'));
       // start the transacation
       $this->Dbase->StartTrans();
@@ -975,6 +994,14 @@ class FarmAnimals{
          $colvals = $vals;
          $colvals['animal_id'] = $animalId;
          $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
+         if($res == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
+
+         // update the redundant current animal experiment
+         $colvals = array('current_exp' => $_POST['to'], 'animal_id' => $animalId);
+         $res = $this->Dbase->ExecuteQuery($updateExpQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
