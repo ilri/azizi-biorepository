@@ -480,7 +480,7 @@ Animals.prototype.initiateFiltersnLists = function(){
    // if any dropdown is changed, show the animals
    $('#fromId, #toComboId').live('change', function(that){ animals.filterAnimals(that); });
 
-   $("#from_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350});
+   $("#from_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, filterable: true});
    $("#to_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, hasThreeStates: true});
 };
 

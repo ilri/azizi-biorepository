@@ -716,7 +716,7 @@ class FarmAnimals{
       $animals = json_decode($_POST['animals']);
       $mvmntQuery = 'insert into farm_animals.farm_animal_locations(location_id, animal_id, start_date) values(:location_id, :animal_id, :start_date)';
       $updateQuery = 'update farm_animals.farm_animal_locations set end_date = :edate where location_id = :location_id and animal_id = :animal_id and end_date is null';
-      $updateAnimalLocation = 'update farm_animals.farm_animals set current_location = : current_loc where id = :animal_id';
+      $updateAnimalLocation = 'update farm_animals.farm_animals set current_location = :current_loc where id = :animal_id';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          // update the from locations
