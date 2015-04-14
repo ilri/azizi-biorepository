@@ -46,7 +46,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
             rowdetails: true,
             enabletooltips: true,
             initrowdetails: animals.initializeRowDetails,
-            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 200, rowdetailshidden: true},
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'id', hidden: true },
               { text: 'Animal ID', datafield: 'animal_id', width: 100 },
@@ -79,7 +79,7 @@ Animals.prototype.initializeRowDetails = function(index, parentElement, gridElem
     };
 
     if (grid !== null) {
-      grid.jqxGrid({source: eventsSource, theme: '', width: 820, height: 70,
+      grid.jqxGrid({source: eventsSource, theme: '', width: 820, height: 140,
       columns: [
          {text: 'EventId', datafield: 'event_id', hidden: true},
          {text: 'Event Name', datafield: 'event_name', width: 210},
@@ -861,10 +861,10 @@ Animals.prototype.initiateExperimentsGrid = function(){
             altrows: true,
             enabletooltips: true,
             columns: [
-              { text: 'Experiment Name', datafield: 'exp_name', width: 100 },
+              { text: 'Experiment Name', datafield: 'exp_name', width: 250 },
               { text: 'PI Name', datafield: 'pi_name', width: 150 },
-              { text: 'Start Date', datafield: 'start_date', width: 100 },
-              { text: 'End Date', datafield: 'end_date', width: 100 },
+              { text: 'Start Date', datafield: 'start_date', width: 120 },
+              { text: 'End Date', datafield: 'end_date', width: 120 },
               { text: 'Comments', datafield: 'comments', width: 200}
             ]
          });

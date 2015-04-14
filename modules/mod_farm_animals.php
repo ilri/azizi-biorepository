@@ -168,7 +168,9 @@ class FarmAnimals{
     */
    private function animalEventsList(){
       // get all the events for this animal
-      $query = 'select a.id as event_id, b.event_name, a.event_date, a.record_date, a.comments from farm_animals.farm_animal_events as a inner join farm_animals.farm_events as b on a.event_type_id=b.id where a.animal_id = :animal_id';
+      $query = 'select a.id as event_id, b.event_name, a.event_date, a.record_date, a.comments '
+              . 'from farm_animals.farm_animal_events as a inner join farm_animals.farm_events as b on a.event_type_id=b.id '
+              . 'where a.animal_id = :animal_id order by a.event_date, a.record_date';
       $res = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
