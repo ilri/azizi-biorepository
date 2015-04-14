@@ -150,10 +150,10 @@ class FarmAnimals{
     */
    private function inventoryList(){
       $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, concat(c.surname, " ", c.first_name) as owner, d.exp_name as experiment, concat(e.level1, " >> ", e.level2) as location '
-              . 'from farm_animals.farm_animals as a inner join farm_animals.farm_species as b on a.species_id=b.id '
-              . 'left join farm_animals.farm_people as c on a.current_owner=c.id '
-              . 'left join farm_animals.experiments as d on a.current_exp=d.id '
-              . 'left join farm_animals.farm_locations as e on a.current_location=e.id';
+              . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
+              . 'left join '. Config::$farm_db .'.farm_people as c on a.current_owner=c.id '
+              . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
+              . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id';
       $res = $this->Dbase->ExecuteQuery($query);
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
@@ -168,7 +168,7 @@ class FarmAnimals{
    private function animalEventsList(){
       // get all the events for this animal
       $query = 'select a.id as event_id, b.event_name, a.event_date, a.record_date, a.comments '
-              . 'from farm_animals.farm_animal_events as a inner join farm_animals.farm_events as b on a.event_type_id=b.id '
+              . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id '
               . 'where a.animal_id = :animal_id order by a.event_date, a.record_date';
       $res = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
       if($res == 1){
@@ -184,7 +184,7 @@ class FarmAnimals{
    private function addHome(){
       global $Repository;
       // get the animal types in the farm
-      $query = 'select id, name from farm_animals.farm_species order by name';
+      $query = 'select id, name from '. Config::$farm_db .'.farm_species order by name';
       $farmAnimals = $this->Dbase->ExecuteQuery($query);
       if($farmAnimals == 1){
          $this->homePage($this->Dbase->lastError);
@@ -192,7 +192,7 @@ class FarmAnimals{
       }
 
       // get the breeds
-      $query = 'select id, breed_name as name from farm_animals.breeds order by breed_name';
+      $query = 'select id, breed_name as name from '. Config::$farm_db .'.breeds order by breed_name';
       $breeds = $this->Dbase->ExecuteQuery($query);
       if($breeds == 1){
          $this->homePage($this->Dbase->lastError);
@@ -397,14 +397,14 @@ class FarmAnimals{
     */
    private function getAnimalLocations($withAnimals = false){
       // get all the level1 locations
-      $query = 'select level1 from farm_animals.farm_locations group by level1 order by level1';
+      $query = 'select level1 from '. Config::$farm_db .'.farm_locations group by level1 order by level1';
       $res = $this->Dbase->ExecuteQuery($query);
       if($res == 1) return $this->Dbase->lastError;
 
       // get all the level2 locations grouped by level1 locations and format level1 locations well
       $level2Locations = array();
       $level1Locations = array();
-      $query = 'select id, level2 as `name` from farm_animals.farm_locations where level1 = :level1 group by level2 order by level2';
+      $query = 'select id, level2 as `name` from '. Config::$farm_db .'.farm_locations where level1 = :level1 group by level2 order by level2';
       $i = 2;
       $animalLocations = array();
       foreach($res as $loc){
@@ -415,7 +415,7 @@ class FarmAnimals{
 
          // get the animals in this locations if need be
          if($withAnimals){
-            $animalsQuery = 'select b.id, b.animal_id `name` from farm_animals.farm_animal_locations as a inner join farm_animals.farm_animals as b on a.animal_id = b.id where a.location_id = :id and a.end_date is null';
+            $animalsQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.location_id = :id and a.end_date is null';
             $this->Dbase->CreateLogEntry('Getting the animals per location', 'info');
             foreach($res1 as $subLoc){
                $res2 = $this->Dbase->ExecuteQuery($animalsQuery, array('id' => $subLoc['id']));
@@ -424,7 +424,7 @@ class FarmAnimals{
             }
 
             // get the unattached animals
-            $unattachedAnimalsQuery = 'select id, animal_id as `name` from farm_animals.farm_animals as a where a.id not in (select animal_id from farm_animals.farm_animal_locations where end_date is null)';
+            $unattachedAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals as a where a.id not in (select animal_id from '. Config::$farm_db .'.farm_animal_locations where end_date is null)';
             $res3 = $this->Dbase->ExecuteQuery($unattachedAnimalsQuery);
             if($res3 == 1) return $this->Dbase->lastError;
             $animalLocations['floating'] = $res3;
@@ -444,14 +444,14 @@ class FarmAnimals{
     */
    private function groupAnimalsByOwners($owners = NULL){
       if($owners == NULL){
-         $query = 'select id, concat(surname, " ", first_name) as name from farm_animals.farm_people order by surname';
+         $query = 'select id, concat(surname, " ", first_name) as name from '. Config::$farm_db .'.farm_people order by surname';
          $owners = $this->Dbase->ExecuteQuery($query);
          if($owners == 1){ die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
       }
 
       $ownerQuery = 'select a.id, a.animal_id as `name`'
-         . 'from farm_animals.farm_animals as a left join farm_animals.farm_animal_owners as b on a.id = b.animal_id '
-         . 'left join farm_animals.farm_people as c on b.owner_id = c.id where b.end_date is null and b.owner_id = :owner_id';
+         . 'from '. Config::$farm_db .'.farm_animals as a left join '. Config::$farm_db .'.farm_animal_owners as b on a.id = b.animal_id '
+         . 'left join '. Config::$farm_db .'.farm_people as c on b.owner_id = c.id where b.end_date is null and b.owner_id = :owner_id';
 
       $animalByOwners = array();
       foreach($owners as $owner){
@@ -461,7 +461,7 @@ class FarmAnimals{
       }
 
       // get the animals without owners
-      $ownerlessAnimalsQuery = 'select id, animal_id as `name` from farm_animals.farm_animals where id not in (SELECT animal_id FROM farm_animals.farm_animal_owners where end_date is null)';
+      $ownerlessAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals where id not in (SELECT animal_id FROM '. Config::$farm_db .'.farm_animal_owners where end_date is null)';
       $res = $this->Dbase->ExecuteQuery($ownerlessAnimalsQuery);
       if($res == 1) return $this->Dbase->lastError;
       else $animalByOwners['floating'] = $res;
@@ -476,12 +476,12 @@ class FarmAnimals{
     */
    private function groupAnimalsByExperiments($experiments = NULL){
       if($experiments == NULL){
-         $query = 'select id, exp_name as name from farm_animals.experiments order by exp_name';
+         $query = 'select id, exp_name as name from '. Config::$farm_db .'.experiments order by exp_name';
          $experiments = $this->Dbase->ExecuteQuery($query);
          if($experiments == 1) die(json_encode(array('error' => 'true', 'mssg' => $experiments)));
       }
 
-      $query = 'select b.id, b.animal_id as name from farm_animals.exp_animals as a inner join farm_animals.farm_animals as b on a.animal_id = b.id where a.end_date is null';
+      $query = 'select b.id, b.animal_id as name from '. Config::$farm_db .'.exp_animals as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.end_date is null';
       $animalsByExperiments = array();
       foreach($experiments as $index => $exp){
          $res = $this->Dbase->ExecuteQuery($query, array('exp_id' => $exp['id']));
@@ -497,7 +497,7 @@ class FarmAnimals{
    private function saveAnimalLocations(){
       // we have a level2 or a level1 and level2. If level1 is an integer, we have a presaved level1 else save both
       // whether or not we have a level1 selected, we need to save both of them... flauting the db rules
-      $level1Query = 'insert into farm_animals.farm_locations(level1, level2) values(:level1, :level2)';
+      $level1Query = 'insert into '. Config::$farm_db .'.farm_locations(level1, level2) values(:level1, :level2)';
       $vals = array('level2' => $_POST['level2']);
 
       $vals['level1'] = ($_POST['level1name'] == '') ? $_POST['level1'] : $_POST['level1name'];
@@ -526,7 +526,7 @@ class FarmAnimals{
       if($_POST['sire'] != '') { $cols .= ', sire';  $colrefs .= ', :sire'; $colvals['sire'] = $_POST['sire']; }
 
       $this->Dbase->StartTrans();
-      $query = "insert into farm_animals.farm_animals($cols) values($colrefs)";
+      $query = "insert into '. Config::$farm_db .'.farm_animals($cols) values($colrefs)";
       $res = $this->Dbase->ExecuteQuery($query, $colvals);
       if($res == 1){
          $this->Dbase->RollBackTrans();
@@ -535,7 +535,7 @@ class FarmAnimals{
       $animalId = $this->Dbase->dbcon->lastInsertId();
 
       // now lets add the breeds if any
-      $breedQuery = 'insert into farm_animals.animal_breeds(animal_id, breed_id) values(:animal_id, :breed_id)';
+      $breedQuery = 'insert into '. Config::$farm_db .'.animal_breeds(animal_id, breed_id) values(:animal_id, :breed_id)';
       if($_POST['breed'] !== '') {
          $cols .= ', ';  $colrefs .= ', :'; $colvals[''] = $_POST['sire'];
          $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $animalId, 'breed_id' => $_POST['breed']));
@@ -595,7 +595,7 @@ class FarmAnimals{
       $fields = json_decode($_POST['fields']);
       if($_POST['field'] == 'grid'){
          $query = 'select a.id, concat(b.surname, " ", b.first_name) as owner, c.animal_id animal, start_date, end_date, a.comments '
-                 . 'from farm_animals.farm_animal_owners as a inner join farm_animals.farm_people as b on a.owner_id=b.id inner join farm_animals.farm_animals as c on a.animal_id=c.id order by a.animal_id, start_date';
+                 . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_people as b on a.owner_id=b.id inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id order by a.animal_id, start_date';
          $ownership = $this->Dbase->ExecuteQuery($query);
          if($ownership == 1){
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
@@ -624,9 +624,9 @@ class FarmAnimals{
     */
    private function saveAnimalOwners(){
       $animals = json_decode($_POST['animals']);
-      $addQuery = "insert into farm_animals.farm_animal_owners(owner_id, animal_id, start_date) values(:owner_id, :animal_id, :start_date)";
-      $updateQuery = "update farm_animals.farm_animal_owners set end_date = :end_date where owner_id = :owner_id and animal_id = :animal_id and end_date is null";
-      $updateOwnerQuery = "update farm_animals.farm_animals set current_owner = :current_owner where id = :animal_id";
+      $addQuery = "insert into '. Config::$farm_db .'.farm_animal_owners(owner_id, animal_id, start_date) values(:owner_id, :animal_id, :start_date)";
+      $updateQuery = "update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date where owner_id = :owner_id and animal_id = :animal_id and end_date is null";
+      $updateOwnerQuery = "update '. Config::$farm_db .'.farm_animals set current_owner = :current_owner where id = :animal_id";
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          if($_POST['from'] != 'floating'){
@@ -714,9 +714,9 @@ class FarmAnimals{
    private function saveAnimalMovement(){
       // lets save the animal new locations
       $animals = json_decode($_POST['animals']);
-      $mvmntQuery = 'insert into farm_animals.farm_animal_locations(location_id, animal_id, start_date) values(:location_id, :animal_id, :start_date)';
-      $updateQuery = 'update farm_animals.farm_animal_locations set end_date = :edate where location_id = :location_id and animal_id = :animal_id and end_date is null';
-      $updateAnimalLocation = 'update farm_animals.farm_animals set current_location = :current_loc where id = :animal_id';
+      $mvmntQuery = 'insert into '. Config::$farm_db .'.farm_animal_locations(location_id, animal_id, start_date) values(:location_id, :animal_id, :start_date)';
+      $updateQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate where location_id = :location_id and animal_id = :animal_id and end_date is null';
+      $updateAnimalLocation = 'update '. Config::$farm_db .'.farm_animals set current_location = :current_loc where id = :animal_id';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          // update the from locations
@@ -790,8 +790,8 @@ class FarmAnimals{
     */
    private function eventsList(){
       $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, count(*) as no_animals '
-          . 'from farm_animals.farm_animal_events as a inner join farm_animals.farm_animals as b on a.animal_id=b.id '
-          . 'inner join farm_animals.farm_events as c on a.event_type_id=c.id '
+          . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+          . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
           . 'group by a.event_type_id, a.event_date';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
@@ -803,9 +803,9 @@ class FarmAnimals{
     */
    private function eventsSubList(){
       $eventsQuery = 'select b.animal_id, b.sex, record_date as time_recorded, concat(d.surname, " ", d.first_name) as owner '
-          . 'from farm_animals.farm_animal_events as a inner join farm_animals.farm_animals as b on a.animal_id=b.id '
-          . 'left join farm_animals.farm_people as d on b.current_owner=d.id '
-          . 'left join farm_animals.experiments as e on b.current_exp=e.id '
+          . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+          . 'left join '. Config::$farm_db .'.farm_people as d on b.current_owner=d.id '
+          . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
           . 'where a.event_type_id = :event_type_id and a.event_date = :event_date';
       $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date']));
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
@@ -818,7 +818,7 @@ class FarmAnimals{
     */
    private function newEventsData(){
       // get a list of all events
-      $eventsQuery = 'select id, event_name as `name` from farm_animals.farm_events order by event_name';
+      $eventsQuery = 'select id, event_name as `name` from '. Config::$farm_db .'.farm_events order by event_name';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
 
@@ -852,7 +852,7 @@ class FarmAnimals{
       else $eventId = $_POST['to'];
 
       // so lets save the events
-      $addQuery = 'insert into farm_animals.farm_animal_events(animal_id, event_type_id, event_date) values(:animal_id, :event_type_id, :event_date)';
+      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date) values(:animal_id, :event_type_id, :event_date)';
       $vals = array('event_type_id' => $eventId, 'event_date' => date('Y-m-d'));
 
       foreach($animals as $animalId => $animal){
@@ -876,7 +876,7 @@ class FarmAnimals{
     * @return  string|integer Returns a string incase of error, else it returns the id of the inserted event
     */
    private function saveNewEventName($event_name){
-      $insertQuery = 'insert into farm_animals.farm_events(event_name) values(:event_name)';
+      $insertQuery = 'insert into '. Config::$farm_db .'.farm_events(event_name) values(:event_name)';
       $res = $this->Dbase->ExecuteQuery($insertQuery, array('event_name' => $event_name));
       if($res == 1) return $this->Dbase->lastError;
       else return $this->Dbase->dbcon->lastInsertId();
@@ -944,7 +944,7 @@ class FarmAnimals{
          die(json_encode(array('error' => 'false', 'data' => $res)));
       }
       else if(in_array('byOwners', $fields)){
-         $query = 'select id, exp_name as name from farm_animals.experiments order by exp_name';
+         $query = 'select id, exp_name as name from '. Config::$farm_db .'.experiments order by exp_name';
          $res = $this->Dbase->ExecuteQuery($query);
          if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $res)));
 
@@ -963,7 +963,7 @@ class FarmAnimals{
     * @return  boolean|array  Returns a string in case there is an error, else returns an array with the defined experiments
     */
    private function experimentsList(){
-      $query = 'select a.exp_name, a.start_date, a.end_date, concat(b.surname, " ", b.first_name) as pi_name from farm_animals.experiments as a inner join farm_animals.farm_people as b on a.pi_id=b.id';
+      $query = 'select a.exp_name, a.start_date, a.end_date, concat(b.surname, " ", b.first_name) as pi_name from '. Config::$farm_db .'.experiments as a inner join '. Config::$farm_db .'.farm_people as b on a.pi_id=b.id';
       $res = $this->Dbase->ExecuteQuery($query);
       if($res == 1) return $this->Dbase->lastError;
       else return $res;
@@ -973,7 +973,7 @@ class FarmAnimals{
     * Saves a new experiment
     */
    private function saveNewExperiment(){
-      $addQuery = 'insert into farm_animals.experiments(exp_name, pi_id, start_date) values(:exp_name, :pi_id, :start_date)';
+      $addQuery = 'insert into '. Config::$farm_db .'.experiments(exp_name, pi_id, start_date) values(:exp_name, :pi_id, :start_date)';
       $start_date = DateTime::createFromFormat('d-m-Y', $_POST['start_date']);
       $res = $this->Dbase->ExecuteQuery($addQuery, array('exp_name' => $_POST['experiment'], 'pi_id' => $_POST['pis'], 'start_date' => $start_date));
       if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
@@ -985,8 +985,8 @@ class FarmAnimals{
     */
    private function saveExperimentAnimals(){
       $animals = json_decode($_POST['animals']);
-      $addQuery = 'insert into farm_animals.exp_animals(animal_id, exp_id, start_date) values(:animal_id, :exp_id, :start_date)';
-      $updateExpQuery = 'update farm_animals.farm_animals set current_exp = :current_exp where animal_id = :animal_id';
+      $addQuery = 'insert into '. Config::$farm_db .'.exp_animals(animal_id, exp_id, start_date) values(:animal_id, :exp_id, :start_date)';
+      $updateExpQuery = 'update '. Config::$farm_db .'.farm_animals set current_exp = :current_exp where animal_id = :animal_id';
       $vals = array('exp_id' => $_POST['to'], 'start_date' => date('Y-m-d'));
       // start the transacation
       $this->Dbase->StartTrans();
