@@ -25,7 +25,7 @@ function Animals(sub_module){
 Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
-      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'species'}, {name: 'sex'}, {name: 'origin'}, {name: 'dob'},
+      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'origin'}, {name: 'dob'},
          {name: 'sire'}, {name: 'dam'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}],
          id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list'}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
@@ -42,21 +42,24 @@ Animals.prototype.initiateAnimalsGrid = function(){
             autoshowfiltericon: true,
             filterable: true,
             altrows: true,
+            pagesize: 20,
+            pagesizeoptions: ['20', '50', '100'],
             rowdetails: true,
             initrowdetails: animals.initializeInventoryRowDetails,
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'id', hidden: true },
               { text: 'Animal ID', datafield: 'animal_id', width: 70 },
-              { text: 'Species', datafield: 'species', width: 70 },
+              { text: 'Species', datafield: 'species', width: 60 },
               { text: 'Sex', datafield: 'sex', width: 50 },
+              { text: 'Breed', datafield: 'breed', width: 70 },
               { text: 'Origin', datafield: 'origin', width: 70 },
               { text: 'Birth Date', datafield: 'dob', width: 70 },
               { text: 'Sire', datafield: 'sire', width: 70 },
               { text: 'Dam', datafield: 'dam', width: 70 },
-              { text: 'Current Owner', datafield: 'owner', width: 100 },
-              { text: 'Experiment', datafield: 'experiment', width: 150 },
-              { text: 'Location', datafield: 'location', width: 150 }
+              { text: 'Current Owner', datafield: 'owner', width: 90 },
+              { text: 'Experiment', datafield: 'experiment', width: 130 },
+              { text: 'Location', datafield: 'location', width: 120 }
             ]
         });
      }
