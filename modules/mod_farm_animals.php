@@ -96,8 +96,8 @@ class FarmAnimals{
          <li><a href="?page=farm_animals&do=inventory">Animal inventory</a></li>
          <li><a href="?page=farm_animals&do=add">Add an animal</a></li>
          <li><a href="?page=farm_animals&do=ownership">Animal ownership</a></li>
-         <li><a href="?page=farm_animals&do=pens">Farm pens & animals</a></li>
-         <li><a href="?page=farm_animals&do=pen_animals">Animals in pens</a></li>
+         <li><a href="?page=farm_animals&do=pens">Farm location & animals</a></li>
+         <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
          <li><a href="?page=farm_animals&do=move_animals">Move animals between pens</a></li>
          <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
          <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
@@ -971,7 +971,7 @@ class FarmAnimals{
       }
       else if($_POST['field'] == 'pis'){
          // get the list of owners
-         $res = $this->groupAnimalsByOwners();
+         $res = $this->getAllOwners();
          if(is_string($res)) die(json_encode(array('error' => 'true', 'mssg' => $res)));
          die(json_encode(array('error' => 'false', 'data' => $res)));
       }
@@ -995,10 +995,16 @@ class FarmAnimals{
     * @return  boolean|array  Returns a string in case there is an error, else returns an array with the defined experiments
     */
    private function experimentsList(){
-      $query = 'select a.exp_name, a.start_date, a.end_date, concat(b.surname, " ", b.first_name) as pi_name from '. Config::$farm_db .'.experiments as a inner join '. Config::$farm_db .'.farm_people as b on a.pi_id=b.id';
-      $res = $this->Dbase->ExecuteQuery($query);
-      if($res == 1) return $this->Dbase->lastError;
-      else return $res;
+      $query = 'select a.exp_name, a.start_date, a.end_date, a.pi_id from '. Config::$farm_db .'.experiments as a';
+      $exps = $this->Dbase->ExecuteQuery($query);
+      if($exps == 1) return $this->Dbase->lastError;
+      // get the list of owners
+      $res1 = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      if(is_string($res1))  return  $res1;
+      foreach ($exps as $id => $exp){
+         $exps[$id]['pi_name'] = $res1[$exp['pi_id']];
+      }
+      return $exps;
    }
 
    /**
@@ -1006,8 +1012,8 @@ class FarmAnimals{
     */
    private function saveNewExperiment(){
       $addQuery = 'insert into '. Config::$farm_db .'.experiments(exp_name, pi_id, start_date) values(:exp_name, :pi_id, :start_date)';
-      $start_date = DateTime::createFromFormat('d-m-Y', $_POST['start_date']);
-      $res = $this->Dbase->ExecuteQuery($addQuery, array('exp_name' => $_POST['experiment'], 'pi_id' => $_POST['pis'], 'start_date' => $start_date));
+      $start_date = date_create_from_format('d-m-Y', $_POST['start_date']);
+      $res = $this->Dbase->ExecuteQuery($addQuery, array('exp_name' => $_POST['experiment'], 'pi_id' => $_POST['pis'], 'start_date' => date_format($start_date, 'Y-m-d')));
       if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
       die(json_encode(array('error' => true, 'mssg' => 'The experiment have been saved successfully!')));
    }

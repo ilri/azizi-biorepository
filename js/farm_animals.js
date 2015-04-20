@@ -961,7 +961,7 @@ Animals.prototype.newExperiment = function(){
               $('#animal_id').val('').focus();
               return;
           }
-          else{ animals.pis = data.data.owners; }
+          else{ animals.pis = data.data; }
       }
    });
 
