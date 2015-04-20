@@ -330,7 +330,7 @@ body {
 #search_div .search_criteria select{width: 150px;}
 #purpose_div select, #purpose_div input {width: 120px; margin: 5px 2px;}
 #box_location .left-align{margin: 5px 2px;}
-#box_location .loc_divs{width: 250px;} 
+#box_location .loc_divs{width: 250px;}
 #box_details select{width: 180px; margin: 5px 2px;}
 .left-align .radio-inline{width: 50px; float: left; margin: 0px;}
 .jqx-grid-column-header, #statusbarspace_recharge_table, #statusbarln2_recharge_table, #statusbarlabels_recharge_table, #statusbarinventory_recharge_table{z-index:0!important;}
@@ -367,6 +367,25 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #add_box_mta_btn {cursor: pointer; position: absolute; left:0px; top:10px; width: 100px; height: 45px; line-height: 45px; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; color: #ffffff; border: 1px solid; border-radius: 25px;font-family: 'Roboto', sans-serif;}
 .zoom_button {cursor: pointer; position: absolute; background-color: #333333; display: table-cell; text-align: center; vertical-align: middle; width: 35px; height: 35px; line-height: 35px; color: #ffffff; border: 1px solid;
                border-radius: 50%; font-size: 25px; font-weight: bolder;  -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+
+/* ============================== Farm animals module ============================================== */
+#animals{ margin-top: 10px; }
+#animals #left_panel { float: left; }
+#animals #right_panel {float: left; }
+#animal_locations { min-height: 330px; }
+#animal_locations #level1_pl, #animal_locations #level2_pl, #animal_locations #animalsOnLocation_pl { float: left; margin: 5px 7.5px; }
+#animal_locations #animalsOnLocation { float: none; margin: 5px 7.5px; }
+#animal_locations .label, #animal_locations .actions { text-align: center; margin: 2px auto; }
+#animalsOnLocation_pl { display: none; }
+#modal_window { display: none; }
+#move_animals { min-height: 400px; }
+#move_animals #actions, #ownership #actions, #events #actions, #experiments #actions { width: 180px; float: left; margin: 130px 2px auto 2px; text-align: center; }
+#event_actions { float: left; margin: auto; min-height: 400px; width: 250px; padding: 5px 2px 2px 5px; }
+#event_actions .save{ text-align: center; }
+#experiments #actions{ width: 100%; text-align: center; }
+#new_locations, #all_animals { width: 220px; float: left;  margin: 5px 7.5px; }
+#events, #ownership, #experiments{ height: 400px; }  /** A kludge to force proper display of the listboxes */
+/* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{
    width: auto;
@@ -940,4 +959,16 @@ ul.ui-autocomplete {z-index: 1000!important; }
    margin-left: 1rem;
    border-radius: 5px;
    border: 0;
+}
+
+#animals .left{
+   float: left !important;
+   margin: 0px;
+   margin: 0px;
+   width: 450px;
+}
+
+#animals .right{
+   float: left !important;
+   width: 450px;
 }

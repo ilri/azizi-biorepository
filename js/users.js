@@ -4,24 +4,24 @@
  */
 function Users(context, pwSettingsS, publicKey){
    window.users = this;
-   
+
    //reset action post variable
    jQuery("#action").val("");
-   
+
    //init variables
    window.users.context = context;
-   
-   window.users.createUserBtn = jQuery("#create_user_btn");   
+
+   window.users.createUserBtn = jQuery("#create_user_btn");
    window.users.createUserBtn.bind("click", window.users.validateInput);
 
    window.users.groupList = jQuery("#group_list");
-   
+
    window.users.groupIDs = new Array();
    window.users.addToGroupBtn = jQuery("#add_group_btn");
    window.users.addToGroupBtn.click(function(){
       window.users.addGroup();
    });
-   
+
    window.users.pass1 = jQuery("#pass_1");
    window.users.pass2 = jQuery("#pass_2");
    window.users.email = jQuery("#email");
@@ -30,15 +30,15 @@ function Users(context, pwSettingsS, publicKey){
       console.log("value of ldap = "+window.users.ldap.val());
       window.users.togglePasswords();
    });
-   
+
    window.users.userData = null;
-   
+
    window.users.eUsers = new Array();//array of existing users
    window.users.getUsers();
-   
+
    window.users.pwSettings = jQuery.parseJSON(pwSettingsS);
    window.users.publicKey = publicKey;
-   
+
    //init things specific to edit_user context
    if(window.users.context == "edit_user"){
       window.users.exisitingUsers  = jQuery("#existing_users");
@@ -50,7 +50,7 @@ function Users(context, pwSettingsS, publicKey){
          }
       });
    }
-   
+
    //check if user using ldap or not and disable password fields accordingly
    window.users.togglePasswords();
 }
@@ -60,35 +60,35 @@ function Users(context, pwSettingsS, publicKey){
  * Things that are checked include:
  *    - uniqueness of the username
  *    - strength of the password
- *    - 
+ *    -
  * @returns {boolean} True if everything is fine
  */
 Users.prototype.validateInput = function() {
-   
+
    if($("#sname").val().length === 0){
       Notification.show({create:true, hide:true, updateText:false, text:'Please enter a surname', error:true});
       $("#sname").focus();
       return false;
    }
-   
+
    if($("#onames").val().length === 0){
       Notification.show({create:true, hide:true, updateText:false, text:'Please provide a name for the user', error:true});
       $("#onames").focus();
       return false;
    }
-   
+
    if($("#sname").val().length === 0){
       Notification.show({create:true, hide:true, updateText:false, text:'Please enter a surname', error:true});
       $("#sname").focus();
       return false;
    }
-   
+
    if($("#project").find(":selected").text().length === 0){
       Notification.show({create:true, hide:true, updateText:false, text:'Please select a project', error:true});
       $("#project").focus();
       return false;
    }
-   
+
    if($("#username").val().length === 0){
       Notification.show({create:true, hide:true, updateText:false, text:'Please enter a username', error:true});
       $("#username").focus();
@@ -107,82 +107,36 @@ Users.prototype.validateInput = function() {
       }
    }
    var emailRegex = /.+@.+\.[a-z0-9]+/i;
-   
-   if($("#email").val().length == 0){
-      Notification.show({create:true, hide:true, updateText:false, text:'Please specify an email address', error:true});
-      $("#email").focus();
-      return false;
-   }
-   else if($("#email").val().match(emailRegex) == null){
-      Notification.show({create:true, hide:true, updateText:false, text:'Incorrect email address', error:true});
-      $("#email").focus();
-      return false;
-   }
-   /*if($("#ldap").val() == 0){//only check the correctness of the passowrd if user not going to use ldap auth
-      if(window.users.userData == null || (window.users.userData != null && $("#pass_1").val().length > 0)){//if creating a new user or modifying password for an existing user
-         if($("#pass_1").val().length === 0){
-            Notification.show({create:true, hide:true, updateText:false, text:'Please enter a password', error:true});
-            $("#pass_1").focus();
-            return false;
-         }
-         else if($("#pass_1").val() !== $("#pass_2").val()){
-            Notification.show({create:true, hide:true, updateText:false, text:'Passwords do not match', error:true});
-            $("#pass_1").focus();
-            return false;
-         }
-         else{//check the strength of the password
-            if($("#pass_1").val().length < window.users.pwSettings.minLength){
-               Notification.show({create:true, hide:true, updateText:false, text:'The password you entered is too short', error:true});
-               $("#pass_1").focus();
-               return false;
-            }
 
-            if(window.users.pwSettings.alphaChars == true){
-               if($("#pass_1").val().match(/[a-zA-Z]/g) == null){
-                  Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
-                  $("#pass_1").focus();
-                  return false;
-               }
-            }
-
-            if(window.users.pwSettings.numericChars == true){
-               if($("#pass_1").val().match(/[0-9]/g) == null){
-                  Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
-                  $("#pass_1").focus();
-                  return false;
-               }
-            }
-
-            if(window.users.pwSettings.specialChars == true){
-               if($("#pass_1").val().match(/[^a-z0-9]/ig) == null){//regex for non alphanumeric characters
-                  Notification.show({create:true, hide:true, updateText:false, text:'The password you entered does not meet the minimum requirments', error:true});
-                  $("#pass_1").focus();
-                  return false;
-               }
-            }
-         }
+   if(window.sub_module === 'create_account'){
+      // since we are creating an account we must have an email specified
+      if($("#email").val().length === 0){
+         Notification.show({create:true, hide:true, updateText:false, text:'Please specify an email address', error:true});
+         $("#email").focus();
+         return false;
+      }
+      else if($("#email").val().match(emailRegex) == null){
+         Notification.show({create:true, hide:true, updateText:false, text:'Incorrect email address', error:true});
+         $("#email").focus();
+         return false;
       }
    }
-   else {//user going to use ldap auth, reset passwords to blank
-      $("#pass_1").val("");
-      $("#pass_2").val("");
-   }*/
-   
+
    //if you have reached here, then everything is fine
    //set the action post variable
    jQuery("#action").val(window.users.context);
-   
+
    if(window.users.userData != null){
       $("#user_id").val(window.users.userData.id);
    }
-   
+
    //add user's groups to the hidden input
    jQuery("#user_groups").val(window.users.groupIDs.join(","));
-   
+
    //encrypt the password
    if($('#pass_1').val().length > 0){//only encrypt if password is set. Password might not be set if we are updating
       var encrypt = new JSEncrypt();
-   
+
       encrypt.setPublicKey(window.users.publicKey);
       var cipherText = encrypt.encrypt($('#pass_1').val());
       $('#pass_1').val(cipherText);
@@ -192,7 +146,7 @@ Users.prototype.validateInput = function() {
       $('#pass_1').val("");
       $('#pass_2').val("");
    }
-   
+
    return true;
 };
 
@@ -231,13 +185,13 @@ Users.prototype.getUserData = function(id){
             $("#project option[value="+userData[0].project+"]").attr('selected', 'selected');
             $("#ldap").val(userData[0].ldap);
             $("#allowed").val(userData[0].allowed);
-            
+
             window.users.togglePasswords();
-            
+
             //clear out group list
             window.users.groupList.empty();
             window.users.groupIDs = new Array();
-            
+
             for(var gIndex = 0; gIndex < userData[0].groups.length; gIndex++){
                window.users.addGroup(userData[0].groups[gIndex]);
             }
@@ -252,7 +206,7 @@ Users.prototype.getUserData = function(id){
 Users.prototype.addGroup = function(data) {
    if(typeof data === 'undefined') var selectedGroup = $("#group").find(":selected")[0];
    else var selectedGroup = data;
-   
+
    if(selectedGroup.text.length > 0){
       if(jQuery.inArray(selectedGroup.id, window.users.groupIDs) == -1){//if group not already in list
          var html = "<div id='group_"+selectedGroup.id+"' style='cursor:pointer;float:left;width:100%;height:10px;text-align:center;line-height:10px;'>"+selectedGroup.text+"</div>";
@@ -262,7 +216,7 @@ Users.prototype.addGroup = function(data) {
          $("#group_"+selectedGroup.id).click({"id":selectedGroup.id}, function(e){
             var groupID = e.data.id;
             $(this).remove();
-            
+
             window.users.groupIDs.splice(jQuery.inArray(groupID, window.users.groupIDs), 1);
          });
       }
@@ -271,7 +225,7 @@ Users.prototype.addGroup = function(data) {
 
 /**
  * This function disables/enables the password fields based on ldap auth
- * 
+ *
  * @returns {undefined}
  */
 Users.prototype.togglePasswords = function(){

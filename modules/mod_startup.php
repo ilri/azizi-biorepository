@@ -51,7 +51,7 @@ session_save_path(Config::$config['dbase']);
 session_name('repository');
 $Repository->Dbase->SessionStart();
 
-//$Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
+$Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
 
 if(Config::$downloadFile) $Repository->TrafficController();
 
