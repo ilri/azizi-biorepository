@@ -1,18 +1,18 @@
 <?php
 
-/* 
+/*
  * This module is responsible for managing users and user groups
  */
 class Users {
    private $Dbase;
    private $security;
-   
+
    public function __construct($Dbase) {
       $this->Dbase = $Dbase;
-      
+
       $this->security = new Security($this->Dbase);
    }
-   
+
    public function trafficController(){
       if(OPTIONS_REQUESTED_SUB_MODULE == "create_account"){
          $this->createUserPage();
@@ -41,7 +41,7 @@ class Users {
          $this->home();
       }
    }
-   
+
    private function home($addinfo = ''){
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
@@ -58,37 +58,37 @@ class Users {
 </script>
 <?php
    }
-   
+
    /**
     * This function renders the Create User page in this module
-    * 
+    *
     * @param type $addinfo Alert you want displayed to the user
     */
    private function createUserPage($addinfo = ''){
       if(OPTIONS_REQUESTED_ACTION == 'add_user'){
          $addinfo = $this->addUser();
       }
-      
+
       $query = "SELECT name, id"
               . " FROM groups";
       $groups = $this->Dbase->ExecuteQuery($query);
-      
+
       if($groups == 1){
          if(strlen($addinfo) == 0) $addinfo = "Problem occurred while trying to fetch groups";
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch groups", "fatal");
          $groups = array();
       }
-      
+
       $query = "SELECT val_id AS id, value AS name"
               . " FROM ".Config::$config['azizi_db'].".modules_custom_values";
       $projects = $this->Dbase->ExecuteQuery($query);
-      
+
       if($projects == 1){
          if(strlen($addinfo) == 0) $addinfo = "Problem occurred while trying to fetch projects";
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch projects", "fatal");
          $projects = array();
       }
-      
+
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
 <script type="text/javascript" src="js/users.js"></script>
@@ -137,10 +137,10 @@ class Users {
 </script>
 <?php
    }
-   
+
    /**
     * This function renders the Create User page in this module
-    * 
+    *
     * @param type $addinfo Alert you want displayed to the user
     */
    private function manageUserPage($addinfo = ''){
@@ -153,29 +153,29 @@ class Users {
             $addinfo = "A problem occurred while modifying the account";
          }
       }
-      
+
       $query = "SELECT name, id"
               . " FROM groups";
       $groups = $this->Dbase->ExecuteQuery($query);
-      
+
       if($groups == 1){
          if(strlen($addinfo) == 0) $addinfo = "Problem occurred while trying to fetch groups";
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch groups", "fatal");
          $groups = array();
       }
-      
+
       $query = "SELECT val_id AS id, value AS name"
               . " FROM ".Config::$config['azizi_db'].".modules_custom_values";
       $projects = $this->Dbase->ExecuteQuery($query);
-      
+
       if($projects == 1){
          if(strlen($addinfo) == 0) $addinfo = "Problem occurred while trying to fetch projects";
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch projects", "fatal");
          $projects = array();
       }
-      
+
       $users = $this->getExistingUsers(false);//get date for exisiting users but don't encode as json
-      
+
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
 <script type="text/javascript" src="js/users.js"></script>
@@ -241,15 +241,15 @@ class Users {
 </script>
 <?php
    }
-   
+
    /**
     * This function renders the create group page
     */
    private function createGroupPage($addinfo = ""){
-      
+
       if(OPTIONS_REQUESTED_ACTION == 'add_group'){
          $result = $this->addGroup();
-         
+
          if($result == 0){
             $addinfo = "Successfully added group";
          }
@@ -257,7 +257,7 @@ class Users {
             $addinfo = "An error occurred while trying to add group";
          }
       }
-      
+
       //get all sub module actions
       $query = "SELECT b.id, concat(d.uri, '-', c.uri, '-', b.uri) AS name"
               . " FROM sm_actions AS b"
@@ -269,17 +269,17 @@ class Users {
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch sub module actions");
          $actions = array();
       }
-      
+
       $query = "SELECT id,name"
               . " FROM groups";
-      
+
       $existingGroups = $this->Dbase->ExecuteQuery($query);
-      
+
       if($existingGroups == 1){
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch sub module actions");
          $actions = array();
       }
-      
+
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
 <script type="text/javascript" src="js/groups.js"></script>
@@ -294,7 +294,7 @@ class Users {
 <?php
    foreach($actions AS $currAction){
       if(substr($currAction['name'], -1) == "-") $currAction['name'] .= "All Actions";
-      
+
       echo "<option id='".$currAction['id']."'>".$currAction['name']."</option>";
    }
 ?>
@@ -311,15 +311,15 @@ class Users {
 </script>
 <?php
    }
-   
+
    /**
     * This function renders the modify group page
     */
    private function modifyGroupPage($addinfo = ""){
-      
+
       if(OPTIONS_REQUESTED_ACTION == 'edit_group'){
          $result = $this->editGroup();
-         
+
          if($result == 0){
             $addinfo = "Successfully updated group";
          }
@@ -327,7 +327,7 @@ class Users {
             $addinfo = "An error occurred while trying to add group";
          }
       }
-      
+
       //get all sub module actions
       $query = "SELECT b.id, concat(d.uri, '-', c.uri, '-', b.uri) AS name"
               . " FROM sm_actions AS b"
@@ -339,12 +339,12 @@ class Users {
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch sub module actions");
          $actions = array();
       }
-      
+
       $query = "SELECT id,name"
               . " FROM groups";
-      
+
       $existingGroups = $this->Dbase->ExecuteQuery($query);
-      
+
       if($existingGroups == 1){
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch sub module actions");
          $actions = array();
@@ -373,7 +373,7 @@ class Users {
 <?php
    foreach($actions AS $currAction){
       if(substr($currAction['name'], -1) == "-") $currAction['name'] .= "All Actions";
-      
+
       echo "<option id='".$currAction['id']."'>".$currAction['name']."</option>";
    }
 ?>
@@ -391,32 +391,32 @@ class Users {
 </script>
 <?php
    }
-   
+
    /**
     * This function adds a user into the database
     */
    private function addUser(){
       $groupIDs = explode(",",$_POST['user_groups']);
-      
+
       $email = $_POST['email'];
-      
+
       $result = $this->security->createUser($_POST['username'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap']);
-      
+
       if($result == null || (!is_numeric($result) && strlen($result) > 1)){//probably means the password returned therefore successfully created user
          $this->sendUserPassword($_POST['onames'], $email, $_POST['username'], $result, $_POST['ldap']);
-         return "User successfully added. Email dispatched to user";
+         return "The user '{$_POST['username']}' has been successfully added and email with an autogenerated password sent to '$email'";
       }
       else {
          return "Something went wrong while trying to add user";
       }
    }
-   
+
    private function sendUserPassword($oNames, $email, $username, $password, $ldap){
       $firstName = explode(" ", $oNames);
       $firstName = $firstName[0];
       $emailSubject = "Access to ILRI's Biorepository Portal";
       $emailBody = "Hi ".$firstName.",\nYou have been granted access to ILRI's Biorepository portal.\n";
-      
+
       if($ldap == 0){//user logs in using local auth
          $emailBody .= "Your credentials are as follows:\n\n";
          $emailBody .= "   Username: ".$username."\n";
@@ -429,31 +429,31 @@ class Users {
       $emailBody .= "The system can be accessed by going to http://azizi.ilri.cgiar.org/repository.\n\n"
               . "Regards,\n"
               . "Azizi Biorepository";
-      
+
       shell_exec('echo "'.$emailBody.'"|'.Config::$config['mutt_bin'].' -F '.Config::$config['mutt_config'].' -s "'.$emailSubject.'" -- '.$email);
    }
-   
+
    private function editUser(){
       $groupIDs = explode(",",$_POST['user_groups']);
-      
+
       return $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap'], $_POST['allowed']);
    }
-   
+
    private function editOwnAccount(){
-      
+
    }
-   
+
    private function getExistingUsers($encode = true){
       $query = "SELECT id, login, sname, onames, project, allowed, ldap_authentication"
               . " FROM users"
               . " ORDER BY login";
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("An error occurred when obtaining all users","fatal");
          $result = array();
       }
-      
+
       if($encode == true){
          echo json_encode($result);
       }
@@ -461,24 +461,24 @@ class Users {
          return $result;
       }
    }
-   
+
    /**
     * This function creates a group passed from the add group page
-    * 
+    *
     * @return int 0 if everyting goes well and 1 otherwise
     */
    private function addGroup(){
       $groupActions = explode(",", $_POST['group_actions']);
-      
+
       return $this->security->createUserGroup($_POST['group_name'], $groupActions);
    }
-   
+
    private function editGroup(){
       $groupActions = explode(",", $_POST['group_actions']);
-      
+
       return $this->security->editUserGroup($_POST['group_id'], $_POST['group_name'], $groupActions);
    }
-   
+
    /**
     * This function gets data corresponding to a user from the database
     */
@@ -486,32 +486,32 @@ class Users {
       $query = "SELECT id, login, sname, onames, project, allowed, ldap_authentication as ldap"
               . " FROM users"
               . " WHERE id = :id";
-      
+
       $result = $this->Dbase->ExecuteQuery($query, array("id" => $_GET['id']));
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("An error occurred while trying to get user data", "fatal");
          $result = array();
       }
-      
+
       if(count($result) == 1){
          $query = "SELECT b.name AS text, b.id"
                  . " FROM user_groups AS a"
                  . " INNER JOIN groups AS b on a.group_id = b.id"
                  . " WHERE a.user_id = :userID";
          $groups = $this->Dbase->ExecuteQuery($query, array("userID" => $result[0]['id']));
-         
+
          if($groups == 1){
             $this->Dbase->CreateLogEntry("An error occurred while trying to get user groups", "fatal");
             $groups = array();
          }
-         
+
          $result[0]['groups'] = $groups;
       }
-      
+
       echo json_encode($result);
    }
-   
+
    private function getGroupData(){
       $groupID = $_GET['id'];
       $query = "SELECT b.id, concat(d.uri, '-', c.uri, '-', b.uri) AS text"
@@ -521,14 +521,14 @@ class Users {
               . " INNER JOIN modules AS d on c.module_id = d.id"
               . " WHERE a.group_id = :groupID"
               . " ORDER BY d.uri, c.uri, b.uri";
-      
+
       $result = $this->Dbase->ExecuteQuery($query, array("groupID" => $groupID));
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("An error occurred while trying to fetch submodule actions for group with the id ".$groupID, "fatal");
          $result = array();
       }
-      
+
       echo json_encode($result);
    }
 }
