@@ -625,9 +625,9 @@ class FarmAnimals{
     */
    private function saveAnimalOwners(){
       $animals = json_decode($_POST['animals']);
-      $addQuery = "insert into '. Config::$farm_db .'.farm_animal_owners(owner_id, animal_id, start_date) values(:owner_id, :animal_id, :start_date)";
-      $updateQuery = "update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date where owner_id = :owner_id and animal_id = :animal_id and end_date is null";
-      $updateOwnerQuery = "update '. Config::$farm_db .'.farm_animals set current_owner = :current_owner where id = :animal_id";
+      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_owners(owner_id, animal_id, start_date) values(:owner_id, :animal_id, :start_date)';
+      $updateQuery = 'update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date where owner_id = :owner_id and animal_id = :animal_id and end_date is null';
+      $updateOwnerQuery = 'update '. Config::$farm_db .'.farm_animals set current_owner = :current_owner where id = :animal_id';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          if($_POST['from'] != 'floating'){
