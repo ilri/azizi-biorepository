@@ -767,6 +767,9 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.selection.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdatetimeinput.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcalendar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/globalization/globalize.js"></script>
 <div id="events">
    <div id="events_grid"></div>
    <div id="actions">
@@ -790,12 +793,19 @@ class FarmAnimals{
     * Get a list of all animal events
     */
    private function eventsList(){
-      $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, count(*) as no_animals '
+      $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, recorded_by, performed_by, count(*) as no_animals '
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
           . 'group by a.event_type_id, a.event_date';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
-      if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+      if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
+      $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      if(is_string($owners)) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
+
+      foreach($events as $id => $ev){
+         $events[$id]['performed_by'] = $owners[$ev['performed_by']];
+         $events[$id]['recorded_by'] = $owners[$ev['recorded_by']];
+      }
       die(json_encode(array('error' => false, 'data' => $events)));
    }
 
@@ -818,21 +828,39 @@ class FarmAnimals{
     * Fetch data that will be used for creating the interface for adding new events
     */
    private function newEventsData(){
+      $fields = json_decode($_POST['fields'], true);
       // get a list of all events
       $eventsQuery = 'select id, event_name as `name` from '. Config::$farm_db .'.farm_events order by event_name';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+      $toReturn = array();
+      $toReturn['events'] = $events;
+
+      // return the minimum days allowed for adding events
+      $toReturn['eventMinDays'] = Config::$min_days_for_events;
 
       // get animal groupings
       // by owners
-      $res = $this->groupAnimalsByOwners();
-      if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
+      if(in_array('byOwners', $fields)){
+         $res = $this->groupAnimalsByOwners();
+         if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
+         $toReturn['byOwners'] = $res['byOwners'];
+      }
 
       // by locations
-      $animalsByLocations = $this->getAnimalLocations(true);
-      if(is_string($animalsByLocations)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByLocations))); }
+      if(in_array('byLocations', $fields)){
+         $animalsByLocations = $this->getAnimalLocations(true);
+         if(is_string($animalsByLocations)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByLocations))); }
+         $toReturn['byLocations'] = $animalsByLocations;
+      }
 
-      die(json_encode(array('error' => false, 'data' => array('byLocations' => $animalsByLocations, 'byOwners' => $res['byOwners'], 'events' => $events))));
+      if(in_array('allOwners', $fields)){
+         $allOwners = $this->getAllOwners();
+         if(is_string($allOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $allOwners))); }
+         $toReturn['allOwners'] = $allOwners;
+      }
+
+      die(json_encode(array('error' => false, 'data' => $toReturn)));
    }
 
    /**
@@ -840,7 +868,7 @@ class FarmAnimals{
     */
    private function saveAnimalEvents(){
       $animals = json_decode($_POST['animals']);
-
+      $extras = json_decode($_POST['extras'], true);
       $this->Dbase->StartTrans();
       if(!is_numeric($_POST['to'])){
          // we have a new event name, so lets add it
@@ -853,8 +881,11 @@ class FarmAnimals{
       else $eventId = $_POST['to'];
 
       // so lets save the events
-      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date) values(:animal_id, :event_type_id, :event_date)';
-      $vals = array('event_type_id' => $eventId, 'event_date' => date('Y-m-d'));
+      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, performed_by, recorded_by, comments) '
+            . 'values(:animal_id, :event_type_id, :event_date, :performed_by, :recorded_by, :comments)';
+
+      $date = date_create_from_format('d/m/Y', $extras['eventDate']);
+      $vals = array('event_type_id' => $eventId, 'event_date' => date_format($date, 'Y-m-d'), 'performed_by' => $extras['performedBy'], 'recorded_by' => $_SESSION['user_id'], 'comments' => $extras['comments']);
 
       foreach($animals as $animalId => $animal){
          $colvals = $vals;
@@ -1012,5 +1043,22 @@ class FarmAnimals{
       //we good so commit trans..
       $this->Dbase->CommitTrans();
       die(json_encode(array('error' => 'false', 'mssg' => 'The animals have been succesfully saved.')));
+   }
+
+   /**
+    * Gets all the farm users as defined in the system
+    *
+    * @return  string|array   Returns a string with the error in case of an error, else it returns an array with the defined farm users
+    */
+   private function getAllOwners($fetchAs = PDO::FETCH_ASSOC){
+      $allUsersQuery = 'SELECT a.id, concat(sname, " ", onames) as `name` '
+            . 'FROM '. Config::$lims_extension .'.users as a inner join '. Config::$lims_extension .'.user_groups as b on a.id=b.user_id '
+            . 'inner join '. Config::$lims_extension .'.groups as c on b.group_id=c.id '
+            . 'where c.name in (:farm_module_admin, :farm_module_users)';
+      $vals = array('farm_module_admin' => Config::$farm_module_admin, 'farm_module_users' => Config::$farm_module_users);
+
+      $res = $this->Dbase->ExecuteQuery($allUsersQuery, $vals, $fetchAs);
+      if($res == 1) return $this->Dbase->lastError;
+      else return $res;
    }
 }
