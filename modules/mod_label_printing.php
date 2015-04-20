@@ -119,7 +119,7 @@ class LabelPrinter extends Repository{
   <?php
   echo $addinfo;
   ?>
-  <form enctype="multipart/form-data" name="upload" action="index.php?page=labels&do=generate" method="POST" onSubmit="LabelPrinter.generateLabels()">
+  <form enctype="multipart/form-data" name="upload" action="index.php?page=labels&do=generate" method="POST" onSubmit="return LabelPrinter.generateLabels();">
      <div id='generate'>
          <div id='general'>
             <legend>General</legend>
