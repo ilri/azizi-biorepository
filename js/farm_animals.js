@@ -33,7 +33,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
    // initialize jqxGrid
      if($('#inventory :regex(class, jqx\-grid)').length === 0){
         $("#inventory").jqxGrid({
-            width: 910,
+            width: 917,
             source: source,
             pageable: true,
             autoheight: true,
@@ -57,7 +57,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
               { text: 'Birth Date', datafield: 'dob', width: 70 },
               { text: 'Sire', datafield: 'sire', width: 70 },
               { text: 'Dam', datafield: 'dam', width: 70 },
-              { text: 'Current Owner', datafield: 'owner', width: 90 },
+              { text: 'Current Owner', datafield: 'owner', width: 106 },
               { text: 'Experiment', datafield: 'experiment', width: 130 },
               { text: 'Location', datafield: 'location', width: 120 }
             ]
@@ -179,6 +179,8 @@ Animals.prototype.initiateAnimalsOwnersGrid = function(){
             sortable: true,
             altrows: true,
             enabletooltips: false,
+            pagesize: 20,
+            pagesizeoptions: ['20', '50', '100'],
             columns: [
               { datafield: 'system_id', hidden: true },
               { text: 'Animal', datafield: 'animal', width: 100 },
@@ -199,7 +201,6 @@ Animals.prototype.initiateAnimalsOwnersGrid = function(){
  */
 Animals.prototype.addOwnership = function(){
    // get all the animals and all the people who can be owners
-   var userData;
    $.ajax({
        type:"POST", url: "mod_ajax.php?page=farm_animals&do=ownership", async: false, dataType:'json', data: {'action': 'list', 'fields': $.toJSON(['owners','animals'])},
        success: function (data) {
@@ -236,7 +237,8 @@ var mainContent = '\
       <button style="padding:4px 16px;" id="save">Save</button>\n\
    </div>';
 
-   $('#ownership').html(mainContent);
+   $('#owners_list').html(mainContent);
+   $('#links').remove();
    $("#save").live('click', function(){ animals.saveChanges(); });
 
    // now initiate the grids
@@ -257,12 +259,10 @@ var mainContent = '\
  */
 Animals.prototype.reInitializeOwnership = function(){
    var content = '\n\
-<div id="ownership">\
    <div id="owners_list">&nbsp;</div>\
    <div id="links" class="center">\
       <button type="button" id="add" class="btn btn-primary">Add Ownership</button>\
-   </div>\
-</div>';
+   </div>';
 
    $('#ownership').html(content);
    $('#add').bind('click', animals.addOwnership);

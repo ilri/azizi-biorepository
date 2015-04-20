@@ -384,7 +384,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #event_actions .save{ text-align: center; }
 #experiments #actions{ width: 100%; text-align: center; }
 #new_locations, #all_animals { width: 220px; float: left;  margin: 5px 7.5px; }
-#events, #ownership, #experiments{ height: 400px; }  /** A kludge to force proper display of the listboxes */
+#events, #experiments{ height: 400px; }  /** A kludge to force proper display of the listboxes */
 /* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{

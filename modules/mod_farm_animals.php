@@ -149,9 +149,8 @@ class FarmAnimals{
     * Get a list of all the animals currently in the farm
     */
    private function inventoryList(){
-      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, concat(c.surname, " ", c.first_name) as owner, d.exp_name as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed '
+      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.exp_name as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed '
               . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
-              . 'left join '. Config::$farm_db .'.farm_people as c on a.current_owner=c.id '
               . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
               . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
               . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id group by a.animal_id) as f on a.id=f.animal_id';
@@ -159,6 +158,12 @@ class FarmAnimals{
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
          die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
+      }
+      $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      if(is_string($owners)) die(json_encode(array('error' => true, 'message' => $owners)));
+
+      foreach($res as $id => $animal){
+         $res[$id]['owner'] = $owners[$animal['current_owner']];
       }
       die(json_encode($res));
    }
@@ -445,9 +450,8 @@ class FarmAnimals{
     */
    private function groupAnimalsByOwners($owners = NULL){
       if($owners == NULL){
-         $query = 'select id, concat(surname, " ", first_name) as name from '. Config::$farm_db .'.farm_people order by surname';
-         $owners = $this->Dbase->ExecuteQuery($query);
-         if($owners == 1){ die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+         $owners = $this->getAllOwners();
+         if(is_string($owners)){ die(json_encode(array('error' => 'true', 'mssg' => $owners))); }
       }
 
       $ownerQuery = 'select a.id, a.animal_id as `name`'
@@ -595,11 +599,17 @@ class FarmAnimals{
       $toReturn = array();
       $fields = json_decode($_POST['fields']);
       if($_POST['field'] == 'grid'){
-         $query = 'select a.id, concat(b.surname, " ", b.first_name) as owner, c.animal_id animal, start_date, end_date, a.comments '
-                 . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_people as b on a.owner_id=b.id inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id order by a.animal_id, start_date';
+         $query = 'select a.id, a.owner_id, c.animal_id animal, start_date, end_date, a.comments '
+             . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id '
+             . 'order by a.animal_id, start_date';
          $ownership = $this->Dbase->ExecuteQuery($query);
-         if($ownership == 1){
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         if($ownership == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+
+         // get all the owners
+         $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+         if(is_string($owners)) die(json_encode(array('error' => 'true', 'mssg' => $owners)));
+         foreach($ownership as $id => $owner){
+            $ownership[$id]['owner'] = $owners[$owner['owner_id']];
          }
          die(json_encode($ownership));
       }
@@ -609,7 +619,10 @@ class FarmAnimals{
          $res = $this->groupAnimalsByOwners();
          if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
 
-         $toReturn['owners'] = $res['owners'];
+         $owners = $this->getAllOwners();
+         if(is_string($owners)) { die(json_encode(array('error' => 'true', 'mssg' => $owners))); }
+
+         $toReturn['owners'] = $owners;
          $toReturn['animalsByOwners'] = $res['byOwners'];
       }
 
