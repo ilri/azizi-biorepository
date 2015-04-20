@@ -227,6 +227,7 @@ Users.prototype.getUserData = function(id){
             $("#sname").val(userData[0].sname);
             $("#onames").val(userData[0].onames);
             $("#username").val(userData[0].login);
+            $("#email").val(userData[0].email);
             $("#project option[value="+userData[0].project+"]").attr('selected', 'selected');
             $("#ldap").val(userData[0].ldap);
             $("#allowed").val(userData[0].allowed);
