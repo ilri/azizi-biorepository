@@ -483,8 +483,8 @@ Animals.prototype.initiateFiltersnLists = function(){
    // if any dropdown is changed, show the animals
    $('#fromId, #toComboId').live('change', function(that){ animals.filterAnimals(that); });
 
-   $("#from_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, filterable: true});
-   $("#to_list").jqxListBox({width: 200, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, hasThreeStates: true});
+   $("#from_list").jqxListBox({width: 215, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, filterable: true});
+   $("#to_list").jqxListBox({width: 215, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, hasThreeStates: true});
 };
 
 /**
@@ -495,6 +495,7 @@ Animals.prototype.initiateEventsToFilter = function(){
    var settings = {name: 'toCombo', id: 'toComboId', data: animals.allEvents, initValue: 'Select One', required: 'true'};
    var toCombo = Common.generateCombo(settings);
    $('#to_filter').html(toCombo);
+   $('#toComboId').on('change', animals.addEventDetails);
 };
 
 /**
@@ -659,17 +660,58 @@ Animals.prototype.moveAnimals = function(sender){
 };
 
 /**
- * Save the animals which are to be moved
+ * Confirm that the additional extras while adding events have been set
+ *
+ * @returns {Boolean}   Returns false when there are no errors, else it returns true
+ */
+Animals.prototype.confirmEventsExtras = function(){
+   var intendedAction = $('#toComboId option:selected').text();
+   var isError = false, errorMsg = '', err;
+
+   // get the date, person who performed it and the comments
+   var performedBy = $('#performedBy_id').val(), eventDate = $("#event_date_pl").jqxDateTimeInput('value');
+   if(performedBy === '0'){
+      isError = true;
+      err = 'Please select the person who performed the event';
+      errorMsg = (errorMsg === '') ? err : err +'<br />'+ errorMsg;
+   }
+   if(eventDate === null){
+      isError = true;
+      err = 'Please specify the date when the event was performed';
+      errorMsg = (errorMsg === '') ? err : err +'<br />'+ errorMsg;
+   }
+   animals.extraData = {eventDate: $("#event_date_pl").jqxDateTimeInput('getText'), performedBy: performedBy, comments: $('#event_comments').val() };
+
+   switch(intendedAction){
+      case 'Vaccination':
+
+      break;
+   }
+
+   if(isError === true){ animals.showNotification(errorMsg, 'error'); }
+   return isError;
+};
+
+/**
+ * A generic function used to save changes which have been performed by the user
  * @returns    {void}
  */
 Animals.prototype.saveChanges = function (){
    var  toId;
+   if(this.sub_module === 'events'){
+      if(Object.keys(animals.movedAnimals).length === 0){
+         animals.showNotification('Please add animals involved in this event.', 'error');
+         return;
+      }
+      var error = animals.confirmEventsExtras();
+      if(error === true){ return; }
+   }
    if(this.sub_module === 'events' && $('#eventId').length !== 0){ toId = $('#eventId').val(); }
    else { toId = $('#toComboId').val(); }
 
    var fromId = $('#fromId').val();
     $.ajax({
-      type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', data: {'action': 'save', 'from': fromId, 'animals': $.toJSON(animals.movedAnimals), 'to': toId },
+      type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', data: {action: 'save', from: fromId, animals: $.toJSON(animals.movedAnimals), to: toId, extras: $.toJSON(animals.extraData) },
       success: function (data) {
          if(data.error === true){
             animals.showNotification(data.mssg, 'error');
@@ -734,7 +776,7 @@ Animals.prototype.newLevel =  function(){
 Animals.prototype.initiateAnimalsEventsGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'done_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
+       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'performed_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'animal_events'}, url: 'mod_ajax.php?page=farm_animals&do=events'
      };
      var eventsAdapter = new $.jqx.dataAdapter(source);
@@ -799,7 +841,7 @@ Animals.prototype.newEvent = function(){
    // get animals groupings and all the events
    if(animals.byLocations === undefined){
       $.ajax({
-          type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'list', fields: $.toJSON(['byOwners', 'byLocations'])},
+          type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'list', fields: $.toJSON(['byOwners', 'byLocations', 'allOwners'])},
           success: function (data) {
              if(data.error === true){
                  animals.showNotification(data.mssg, 'error');
@@ -811,6 +853,8 @@ Animals.prototype.newEvent = function(){
                 animals.byLocations = data.data.byLocations;
                 animals.allEvents = data.data.events;
                 animals.byOwners = data.data.byOwners;
+                animals.allOwners = data.data.allOwners;
+                animals.eventMinDays = data.data.eventMinDays;
                 // add the add new option for the events
                animals.allEvents[Object.keys(animals.allEvents).length] = {id:'new', name: 'Add new'};
              }
@@ -834,8 +878,8 @@ var mainContent = '\
       <div id="to_filter"></div>\
       <div id="to_list"></div>\
    </div>\n\
-   <div id="actions">\n\
-      <button style="padding:4px 16px;" id="save">Save</button>\n\
+   <div id="event_actions">\n\
+      <div class="save"><button style="padding:4px 16px;" id="save">Save</button></div>\n\
    </div>';
 
    $('#events').html(mainContent);
@@ -1086,6 +1130,7 @@ Animals.prototype.reInitializeExperiment = function(){
 
    animals.initiateExperimentsGrid();
 };
+
 /**
  * Create an inbox for adding a new event name
  * @returns    {void}
@@ -1093,6 +1138,52 @@ Animals.prototype.reInitializeExperiment = function(){
 Animals.prototype.newEventName = function(){
    $('#to_filter').html("<input type='text' name='event_name' id='eventId' class='input-medium form-control' /><a href='javascript:;' class='cancel'><img src='images/close.png' /></a>");
    $('#to_filter .cancel').live('click', function(){ animals.initiateEventsToFilter(); });
+};
+
+/**
+ * Adds a space for adding details to the selected event
+ * @returns {void}
+ */
+Animals.prototype.addEventDetails = function(sender){
+   // get the selected option...
+   // 'this' used here is a reference for the target which called the event, the drop down in this case
+   var eventName = $('#'+ this.id +' option:selected').text(), content2add;
+
+   switch(eventName){
+      case 'Vaccination':
+
+      break;
+   };
+
+   content2add = "<div class='addons'>\n\
+   <div class='control-group'>\
+      <label class='control-label' for='performed'>Performed By&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <div id='performedBy_pl' class='animal_input controls'></div>\n\
+   </div>\n\
+   <div class='control-group'>\
+      <label class='control-label' for='event_date'>Event Date&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <div id='event_date_pl' class='animal_input controls'></div>\n\
+   </div>\n\
+   <div class='control-group'>\
+      <label class='control-label' for='comments'>Event Comments/Values</label>\n\
+   <div id='comments_pl' class='animal_input controls'><textarea id='event_comments' rows='3' cols='7'></textarea></div>\n\
+   </div>";
+
+   // now add the new functionality to the page
+   $('#event_actions .save').before(content2add);
+   var todays = new Date(), minDate = new Date();
+   minDate.setDate(minDate.getDate() - animals.eventMinDays);
+   $("#event_date_pl").jqxDateTimeInput({
+      width: '150px', height: '25px', readonly: true,
+      min: new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()),
+      max: new Date(todays.getFullYear(), todays.getMonth(), todays.getDate())
+   });
+
+   // populate the performed by field with the respective drop down
+   var settings = {name: 'performed_by', id: 'performedBy_id', data: animals.allOwners, initValue: 'Select One', required: 'true'};
+   var ownersCombo = Common.generateCombo(settings);
+   $('#performedBy_pl').html(ownersCombo);
+
 };
 
 // add a trim function
