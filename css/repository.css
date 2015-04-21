@@ -382,9 +382,10 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #move_animals #actions, #ownership #actions, #events #actions, #experiments #actions { width: 180px; float: left; margin: 130px 2px auto 2px; text-align: center; }
 #event_actions { float: left; margin: auto; min-height: 400px; width: 250px; padding: 5px 2px 2px 5px; }
 #event_actions .save{ text-align: center; }
-#experiments #actions{ width: 100%; text-align: center; }
+#exp_grid{ min-height: 400px; }
+#experiments #grid_actions{ width: 100%; text-align: center; margin: 4px; }
 #new_locations, #all_animals { width: 220px; float: left;  margin: 5px 7.5px; }
-#events, #experiments{ height: 400px; }  /** A kludge to force proper display of the listboxes */
+#events{ height: 400px; }  /** A kludge to force proper display of the listboxes */
 /* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{

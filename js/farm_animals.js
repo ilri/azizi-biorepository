@@ -1094,7 +1094,8 @@ var mainContent = '\
       <button style="padding:4px 16px;" id="save">Save</button>\n\
    </div>';
 
-   $('#experiments').html(mainContent);
+   $('#exp_grid').html(mainContent);
+   $('#grid_actions').remove();
    $("#save").on('click', function(){ animals.saveChanges(); });
 
    // now initiate the grids
@@ -1116,7 +1117,7 @@ var mainContent = '\
  */
 Animals.prototype.reInitializeExperiment = function(){
    var content = '<div id="exp_grid"></div>\
-   <div id="actions">\
+   <div id="grid_actions">\
       <button style="padding:4px 16px;" id="new_exp">Add an Experiment</button>\
       <button style="padding:4px 16px;" id="new_exp_animals">Manage Exp Animals</button>\
    </div>';

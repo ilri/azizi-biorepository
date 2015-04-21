@@ -953,7 +953,7 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/customMessageBox.js"></script>
 <div id="experiments">
    <div id="exp_grid"></div>
-   <div id="actions">
+   <div id="grid_actions">
       <button style="padding:4px 16px;" id="new_exp">Add an Experiment</button>
       <button style="padding:4px 16px;" id="new_exp_animals">Manage Exp Animals</button>
    </div>
@@ -1042,17 +1042,17 @@ class FarmAnimals{
       // start the transacation
       $this->Dbase->StartTrans();
       foreach($animals as $animalId => $animal){
-         $colvals = $vals;
-         $colvals['animal_id'] = $animalId;
-         $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
+         // update the redundant current animal experiment
+         $updatevals = array('current_exp' => $vals['exp_id'], 'animal_id' => $animalId);
+         $res = $this->Dbase->ExecuteQuery($updateExpQuery, $updatevals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
          }
 
-         // update the redundant current animal experiment
-         $colvals = array('current_exp' => $_POST['to'], 'animal_id' => $animalId);
-         $res = $this->Dbase->ExecuteQuery($updateExpQuery, $colvals);
+         $colvals = $vals;
+         $colvals['animal_id'] = $animalId;
+         $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
