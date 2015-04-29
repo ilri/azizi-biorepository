@@ -320,6 +320,10 @@ Animals.prototype.level1CheckChange = function(){
    $('#level2').jqxListBox({ source: level2s });
 };
 
+/**
+ * An animal in the destination list box has been selected/deselected
+ * @returns {void}
+ */
 Animals.prototype.level2CheckChange = function(){
    var items = $("#level2").jqxListBox('getCheckedItems');
    var cur_animals = {};
@@ -1149,6 +1153,12 @@ Animals.prototype.addEventDetails = function(sender){
    // get the selected option...
    // 'this' used here is a reference for the target which called the event, the drop down in this case
    var eventName = $('#'+ this.id +' option:selected').text(), content2add;
+   if($('.addons').length === 1 && eventName === 'Select One'){
+      // we have the add on window open, but we dont want to add an event
+      $('.addons').remove();
+      return;
+   }
+   if($('.addons').length === 1) { return; }
 
    switch(eventName){
       case 'Vaccination':
