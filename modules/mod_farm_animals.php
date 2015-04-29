@@ -98,7 +98,7 @@ class FarmAnimals{
          <li><a href="?page=farm_animals&do=ownership">Animal ownership</a></li>
          <li><a href="?page=farm_animals&do=pens">Farm location & animals</a></li>
          <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
-         <li><a href="?page=farm_animals&do=move_animals">Move animals between pens</a></li>
+         <li><a href="?page=farm_animals&do=move_animals">Move animals between locations</a></li>
          <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
          <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
       </ul>
@@ -1037,12 +1037,13 @@ class FarmAnimals{
    private function saveExperimentAnimals(){
       $animals = json_decode($_POST['animals']);
       $addQuery = 'insert into '. Config::$farm_db .'.exp_animals(animal_id, exp_id, start_date) values(:animal_id, :exp_id, :start_date)';
-      $updateExpQuery = 'update '. Config::$farm_db .'.farm_animals set current_exp = :current_exp where animal_id = :animal_id';
+      $updateExpQuery = 'update '. Config::$farm_db .'.farm_animals set current_exp = :current_exp where id = :animal_id';
       $vals = array('exp_id' => $_POST['to'], 'start_date' => date('Y-m-d'));
       // start the transacation
       $this->Dbase->StartTrans();
       foreach($animals as $animalId => $animal){
          // update the redundant current animal experiment
+         $this->Dbase->CreateLogEntry("$animalId --> ". print_r($animal, true), 'debug');
          $updatevals = array('current_exp' => $vals['exp_id'], 'animal_id' => $animalId);
          $res = $this->Dbase->ExecuteQuery($updateExpQuery, $updatevals);
          if($res == 1){
