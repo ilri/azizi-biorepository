@@ -211,6 +211,7 @@ Animals.prototype.addOwnership = function(){
           }
           else{
              animals.byLocations = data.animals;
+             animals.locationOrganiser();
              animals.owners = data.owners;
              animals.byOwners = data.animalsByOwners;
           }
@@ -433,16 +434,6 @@ Animals.prototype.animalsBttnClicked = function(event){
  * @returns {void}
  */
 Animals.prototype.initiateFiltersnLists = function(){
-   // initiate the dropdown with the animals by traversing thru level2 object and getting the locations
-   if(animals.byLocations !== undefined){
-      var allLevels = {};
-      $.each(animals.byLocations.level2, function(level1, that){
-         $.each(that, function(i, sublevel){
-            allLevels[Object.keys(allLevels).length] = {id: sublevel.id, name: level1+ ' >> ' +sublevel.name};
-         });
-      });
-   }
-
    // to filter
    if(this.sub_module === 'ownership'){
       var settings = {name: 'toCombo', id: 'toComboId', data: animals.owners, initValue: 'Select One', required: 'true'};
@@ -451,7 +442,7 @@ Animals.prototype.initiateFiltersnLists = function(){
 
    }
    else if(this.sub_module === 'move_animals'){
-      var settings = {name: 'toCombo', id: 'toComboId', data: allLevels, initValue: 'Select One', required: 'true'};
+      var settings = {name: 'toCombo', id: 'toComboId', data: animals.allLevels, initValue: 'Select One', required: 'true'};
       var toCombo = Common.generateCombo(settings);
       $('#to_filter').html(toCombo);
    }
@@ -467,7 +458,7 @@ Animals.prototype.initiateFiltersnLists = function(){
    // from filter
    if(this.sub_module === 'move_animals'){
       allLevels[Object.keys(allLevels).length] = {id:'floating', name: 'Select unattached'};
-      var settings = {name: 'from', id: 'fromId', data: allLevels, initValue: 'Select One', required: 'true'};
+      var settings = {name: 'from', id: 'fromId', data: animals.allLevels, initValue: 'Select One', required: 'true'};
       var fromCombo = Common.generateCombo(settings);
       $('#from_filter').html(fromCombo);
    }
@@ -479,7 +470,7 @@ Animals.prototype.initiateFiltersnLists = function(){
       $('#from_filter').html(fromCombo);
    }
    else if(this.sub_module === 'events'){
-      var settings = {name: 'from', id: 'fromId', data: allLevels, initValue: 'Select One', required: 'true'};
+      var settings = {name: 'from', id: 'fromId', data: animals.desiredGroupings, initValue: 'Select One', required: 'true'};
       var fromCombo = Common.generateCombo(settings);
       $('#from_filter').html(fromCombo);
    }
@@ -487,7 +478,8 @@ Animals.prototype.initiateFiltersnLists = function(){
    // if any dropdown is changed, show the animals
    $('#fromId, #toComboId').live('change', function(that){ animals.filterAnimals(that); });
 
-   $("#from_list").jqxListBox({width: 215, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, filterable: true});
+   var fromHeight = (this.sub_module === 'events') ? 320 : 350;
+   $("#from_list").jqxListBox({width: 215, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: fromHeight, filterable: true});
    $("#to_list").jqxListBox({width: 215, source: [], displayMember: 'name', valueMember: 'id', checkboxes: true, height: 350, hasThreeStates: true});
 };
 
@@ -523,7 +515,25 @@ Animals.prototype.filterAnimals = function(sender){
       // get the needed animals
       if(this.sub_module === 'move_animals') {neededAnimals = animals.byLocations.animals[selected]; }
       else if(this.sub_module === 'ownership') {neededAnimals = animals.byOwners[selected]; }
-      else if(this.sub_module === 'events') {neededAnimals = animals.byLocations.animals[selected]; }
+      else if(this.sub_module === 'events') {
+         // need to decompose the key to find out which animals are needed
+         var type = selected.substring(0,3);
+         var index = selected.substring(selected.indexOf('_')+1);
+         switch (type){
+            case 'exp':
+               neededAnimals = animals.byExperiments[index];
+            break;
+
+            case 'own':
+               neededAnimals = animals.byOwners[index];
+            break;
+
+            case 'loc':
+               neededAnimals = animals.byLocations.animals[index];
+            break;
+         };
+
+      }
       else if(this.sub_module === 'experiments') {
          if(sender.target.id === 'fromId'){ neededAnimals = animals.byOwners[selected]; }
          else if(sender.target.id === 'toComboId'){ neededAnimals = animals.byExperiments[selected]; }
@@ -551,8 +561,7 @@ Animals.prototype.filterAnimals = function(sender){
       });
    }
    // check if we need to mask out some animals from the from list
-   if(this.sub_module === 'experiments'){
-
+   if(this.sub_module === 'experiments' || this.sub_module === 'events'){
       if($('#fromId').val() === '0' || $('#toComboId').val() === '0'){ return; }
       else{
          // if the animal is already in the to list... no need to enable it for selection
@@ -566,6 +575,44 @@ Animals.prototype.filterAnimals = function(sender){
          });
       }
    }
+};
+
+/**
+ * Populate the events filter while adding new events
+ * @returns {void}
+ */
+Animals.prototype.populateEventsFilter = function(){
+   var selected = $('#from_top_filter').jqxDropDownList('getCheckedItems');
+   var desiredGroupings = {};
+
+   // loop through the selected items and get the items to populate the from dropdown filter
+   $.each(selected, function (i, that) {
+      switch (that.value) {
+         case 'exp':
+            $.each(animals.allExperiments, function () {
+               desiredGroupings[Object.keys(desiredGroupings).length] = {id: 'exp_' + this.id, name: this.name};
+            });
+            break;
+
+         case 'location':
+            $.each(animals.allLevels, function () {
+               desiredGroupings[Object.keys(desiredGroupings).length] = {id: 'loc_' + this.id, name: this.name};
+            });
+            break;
+
+         case 'pis':
+            $.each(animals.allOwners, function () {
+               desiredGroupings[Object.keys(desiredGroupings).length] = {id: 'own_' + this.id, name: this.name};
+            });
+            break;
+      }
+      ;
+   });
+
+   animals.desiredGroupings = desiredGroupings;
+   var settings = {name: 'from', id: 'fromId', data: animals.desiredGroupings, initValue: 'Select One', required: 'true'};
+   var fromCombo = Common.generateCombo(settings);
+   $('#from_filter').html(fromCombo);
 };
 
 /**
@@ -728,6 +775,7 @@ Animals.prototype.saveChanges = function (){
             else if(animals.sub_module === 'experiments'){ animals.reInitializeExperiment(); }
             else if(animals.sub_module === 'move_animals'){
                animals.byLocations = data.data;
+               animals.locationOrganiser();
                $("#to_list").jqxListBox('clear');
                $('#fromComboId').val(0);
                $("#toComboId").val(0);
@@ -845,21 +893,24 @@ Animals.prototype.newEvent = function(){
    // get animals groupings and all the events
    if(animals.byLocations === undefined){
       $.ajax({
-          type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'list', fields: $.toJSON(['byOwners', 'byLocations', 'allOwners'])},
+          type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'list', fields: $.toJSON(['byOwners', 'byLocations', 'allOwners', 'byExperiments'])},
           success: function (data) {
              if(data.error === true){
-                 animals.showNotification(data.mssg, 'error');
-                 $('#animal_id').val('').focus();
-                 return;
+               animals.showNotification(data.mssg, 'error');
+               $('#animal_id').val('').focus();
+               return;
              }
              else{
-                 animals.showNotification(data.mssg, 'success');
-                animals.byLocations = data.data.byLocations;
-                animals.allEvents = data.data.events;
-                animals.byOwners = data.data.byOwners;
-                animals.allOwners = data.data.allOwners;
-                animals.eventMinDays = data.data.eventMinDays;
-                // add the add new option for the events
+               animals.showNotification(data.mssg, 'success');
+               animals.byLocations = data.data.byLocations;
+               animals.locationOrganiser();
+               animals.allEvents = data.data.events;
+               animals.byOwners = data.data.byOwners;
+               animals.byExperiments = data.data.byExperiments;
+               animals.allExperiments = data.data.allExperiments;
+               animals.allOwners = data.data.allOwners;
+               animals.eventMinDays = data.data.eventMinDays;
+               // add the add new option for the events
                animals.allEvents[Object.keys(animals.allEvents).length] = {id:'new', name: 'Add new'};
              }
          }
@@ -869,6 +920,7 @@ Animals.prototype.newEvent = function(){
    // change the interface to be able to add new ownership
 var mainContent = '\
    <div id="all_animals">\
+      <div id="from_top_filter"></div>\
       <div id="from_filter"></div>\
       <div id="from_list"></div>\
    </div>\n\
@@ -895,6 +947,12 @@ var mainContent = '\
    $("#remove").jqxButton({ width: '150'});
    $("#reset").jqxButton({ width: '150'});
    $("#reset, #remove, #add, #add_all").on('click', function(sender){ animals.moveAnimals(sender); });
+
+   // grouping options
+   var groups = [{id: 'pis', name: 'By PI'}, {id: 'exp', name: 'By Experiment'}, {id: 'location', name: 'By Location'}];
+//   var groups = ['By PI', 'By Experiment', 'By Location', 'All groupings'];
+   $('#from_top_filter').jqxDropDownList({source: groups, dropDownHeight: 100, checkboxes: true, displayMember: 'name', valueMember: 'id'});
+   $('#from_top_filter').on('checkChange', function(){ animals.populateEventsFilter(); });
 
    // initiate the list boxes
    animals.initiateFiltersnLists();
@@ -1195,6 +1253,21 @@ Animals.prototype.addEventDetails = function(sender){
    var ownersCombo = Common.generateCombo(settings);
    $('#performedBy_pl').html(ownersCombo);
 
+};
+
+/**
+ * Organises the locations where the animals are kept for easier manipulation
+ * @returns {void}
+ */
+Animals.prototype.locationOrganiser = function(){
+   // organise the animal locations by traversing thru level2 object and getting the locations
+   var allLevels = {};
+   $.each(animals.byLocations.level2, function(level1, that){
+      $.each(that, function(i, sublevel){
+         allLevels[Object.keys(allLevels).length] = {id: sublevel.id, name: level1+ ' >> ' +sublevel.name};
+      });
+   });
+   animals.allLevels = allLevels;
 };
 
 // add a trim function

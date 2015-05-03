@@ -454,9 +454,7 @@ class FarmAnimals{
          if(is_string($owners)){ die(json_encode(array('error' => 'true', 'mssg' => $owners))); }
       }
 
-      $ownerQuery = 'select a.id, a.animal_id as `name`'
-         . 'from '. Config::$farm_db .'.farm_animals as a left join '. Config::$farm_db .'.farm_animal_owners as b on a.id = b.animal_id '
-         . 'left join '. Config::$farm_db .'.farm_people as c on b.owner_id = c.id where b.end_date is null and b.owner_id = :owner_id';
+      $ownerQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals where current_owner = :owner_id';
 
       $animalByOwners = array();
       foreach($owners as $owner){
@@ -481,12 +479,11 @@ class FarmAnimals{
     */
    private function groupAnimalsByExperiments($experiments = NULL){
       if($experiments == NULL){
-         $query = 'select id, exp_name as name from '. Config::$farm_db .'.experiments order by exp_name';
-         $experiments = $this->Dbase->ExecuteQuery($query);
-         if($experiments == 1) die(json_encode(array('error' => 'true', 'mssg' => $experiments)));
+         $experiments = $this->getAllExperiments();
+         if(is_string($experiments)) { die(json_encode(array('error' => 'true', 'mssg' => $experiments))); }
       }
 
-      $query = 'select b.id, b.animal_id as name from '. Config::$farm_db .'.exp_animals as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.end_date is null';
+      $query = 'select id, animal_id as name from '. Config::$farm_db .'.farm_animals where current_exp = :exp_id';
       $animalsByExperiments = array();
       foreach($experiments as $index => $exp){
          $res = $this->Dbase->ExecuteQuery($query, array('exp_id' => $exp['id']));
@@ -858,6 +855,7 @@ class FarmAnimals{
          $res = $this->groupAnimalsByOwners();
          if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
          $toReturn['byOwners'] = $res['byOwners'];
+         $toReturn['allOwners'] = $res['owners'];
       }
 
       // by locations
@@ -867,10 +865,22 @@ class FarmAnimals{
          $toReturn['byLocations'] = $animalsByLocations;
       }
 
+      // get all owners
       if(in_array('allOwners', $fields)){
          $allOwners = $this->getAllOwners();
          if(is_string($allOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $allOwners))); }
          $toReturn['allOwners'] = $allOwners;
+      }
+
+      // get animals by experiments
+      if(in_array('byExperiments', $fields)){
+         $experiments = $this->getAllExperiments();
+         if(is_string($experiments)) { die(json_encode(array('error' => 'true', 'mssg' => $experiments))); }
+
+         $exp = $this->groupAnimalsByExperiments($experiments);
+         if(is_string($exp)) { die(json_encode(array('error' => 'true', 'mssg' => $exp))); }
+         $toReturn['byExperiments'] = $exp;
+         $toReturn['allExperiments'] = $experiments;
       }
 
       die(json_encode(array('error' => false, 'data' => $toReturn)));
@@ -1080,5 +1090,18 @@ class FarmAnimals{
       $res = $this->Dbase->ExecuteQuery($allUsersQuery, $vals, $fetchAs);
       if($res == 1) return $this->Dbase->lastError;
       else return $res;
+   }
+
+   /**
+    * Gets a list of all experiments as saved in the database
+    *
+    * @param   integer  $fetchAs    Whether to fetch the data as a proper object or just as an array
+    * @return  string|array|object  Returns a string with the error message in case an error occurs, else it returns an array or an object, depending on what was requested
+    */
+   private function getAllExperiments($fetchAs = PDO::FETCH_ASSOC){
+      $query = 'select id, exp_name as name from '. Config::$farm_db .'.experiments order by exp_name';
+      $experiments = $this->Dbase->ExecuteQuery($query);
+      if($experiments == 1) return $this->Dbase->lastError;
+      else return $experiments;
    }
 }
