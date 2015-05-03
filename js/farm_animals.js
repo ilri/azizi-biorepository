@@ -25,8 +25,7 @@ function Animals(sub_module){
 Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
-      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'origin'}, {name: 'dob'},
-         {name: 'sire'}, {name: 'dam'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}],
+      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}],
          id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list'}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
      var animalsAdapter = new $.jqx.dataAdapter(source);
@@ -52,14 +51,10 @@ Animals.prototype.initiateAnimalsGrid = function(){
               { text: 'Animal ID', datafield: 'animal_id', width: 70 },
               { text: 'Species', datafield: 'species', width: 60 },
               { text: 'Sex', datafield: 'sex', width: 50 },
-              { text: 'Breed', datafield: 'breed', width: 70 },
-              { text: 'Origin', datafield: 'origin', width: 70 },
-              { text: 'Birth Date', datafield: 'dob', width: 70 },
-              { text: 'Sire', datafield: 'sire', width: 70 },
-              { text: 'Dam', datafield: 'dam', width: 70 },
-              { text: 'Current Owner', datafield: 'owner', width: 106 },
-              { text: 'Experiment', datafield: 'experiment', width: 130 },
-              { text: 'Location', datafield: 'location', width: 120 }
+              { text: 'Breed', datafield: 'breed', width: 150 },
+              { text: 'Current Owner', datafield: 'owner', width: 140 },
+              { text: 'Experiment', datafield: 'experiment', width: 190 },
+              { text: 'Location', datafield: 'location', width: 220 }
             ]
         });
      }
@@ -1276,6 +1271,63 @@ Animals.prototype.locationOrganiser = function(){
    });
    animals.allLevels = allLevels;
 };
+
+Animals.prototype.showAnimalDetails = function(that){
+   // get the animal details for this animal
+   if(animals.info[that.target.id] === undefined){
+      $.ajax({
+          type:"POST", url: "mod_ajax.php?page=farm_animals&do=inventory", async: false, dataType:'json', data: {action: 'info', animal_id: that.target.id},
+          success: function (data) {
+             if(data.error === true){
+               animals.showNotification(data.mssg, 'error');
+               return;
+             }
+             else{
+               animals.info[that.target.id] = data.data;
+             }
+         }
+      });
+   }
+
+   var curAnimal = animals.info[that.target.id];
+   var infoContent = '<div data-key="0" role="row" id="row0dataTable">\n\
+		<div style="width: 100%; height: 100%;">\n\
+			<div style="float: left; width: 50%;">\n\
+				<div style="margin: 10px;"><b>Animal ID:</b>'+ curAnimal.animal_id +'</div>\n\
+				<div style="margin: 10px;"><b>Breed:</b> '+ curAnimal.breed +'</div>\n\
+				<div style="margin: 10px;"><b>Sex:</b> '+ curAnimal.sex +'</div>\n\
+				<div style="margin: 10px;"><b>Origin:</b> '+ curAnimal.origin +'</div>\n\
+				<div style="margin: 10px;"><b>Dob:</b> '+ curAnimal.dob +'</div>\n\
+			</div>\
+			<div style="float: left; width: 50%;">\n\
+				<div style="margin: 10px;"><b>Sire:</b> '+ curAnimal.sire +'</div>\n\
+				<div style="margin: 10px;"><b>Dam:</b> '+ curAnimal.dam +'</div>\n\
+				<div style="margin: 10px;"><b>Status:</b> '+ curAnimal.status +'</div>\n\
+				<div style="margin: 10px;"><b>Experiment:</b> '+ curAnimal.experiment +'</div>\n\
+				<div style="margin: 10px;"><b>Location:</b> '+ curAnimal.location +'</div>\n\
+			</div>\
+		</div>\
+</div>';
+
+   // now lets show the animal details
+   $('#animal_info').jqxWindow({
+      showCollapseButton: true, maxHeight: 400, maxWidth: 700, minHeight: 200, minWidth: 200, height: 300, width: 500,
+      initContent: function () {
+         $('#tab .info').html(infoContent);
+         $('#tab .others').html('Not defined yet');
+         $('#tab .pic').html('Not set yet');
+         $('#tab').jqxTabs({ height: '100%', width:  '100%' });
+         $('#animal_info').jqxWindow('focus');
+         $('#animal_info').jqxWindow('open');
+      }
+   });
+};
+
+Animals.prototype.linkrenderer = function (row, column, value) {
+   var html = "<a href='javascript:;' id='"+ value +"' class='anim_id_href'>"+ value +"</a>";;
+   return html;
+};
+
 
 // add a trim function
 if (typeof(String.prototype.trim) === "undefined") {

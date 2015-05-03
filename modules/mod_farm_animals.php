@@ -50,6 +50,7 @@ class FarmAnimals{
          if(OPTIONS_REQUESTED_ACTION == '') $this->inventoryHome();
          else if(OPTIONS_REQUESTED_ACTION == 'list' && $_POST['field'] == 'events') $this->animalEventsList();
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->inventoryList();
+         else if(OPTIONS_REQUESTED_ACTION == 'info') $this->getAnimalInfo();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'pen_animals'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->animalLocations(true);
@@ -130,8 +131,24 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.selection.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.filter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxtabs.js"></script>
+
 <div id="main">
    <div id="inventory"></div>
+   <div id="animal_info">
+      <div id="windowHeader"><span>Animal Information</span></div>
+       <div style="overflow: hidden;" id="windowContent">
+         <div id="tab">
+            <ul style="margin-left: 30px;">
+               <li>Info</li><li>Others</li><li>Picture</li>
+            </ul>
+            <div class="info"></div>
+            <div class="others"></div>
+            <div class="pic"></div>
+         </div>
+      </div>
+   </div>
 </div>
 <!-- div id="links" class="center">
    <button type="button" id="save" class='btn btn-primary'>Save</button>
@@ -141,6 +158,8 @@ class FarmAnimals{
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
    var animals = new Animals();
    animals.initiateAnimalsGrid();
+   $('.anim_id_href').live('click', function(that){ animals.showAnimalDetails(that); } );
+   animals.info = {};   // an object for holding the animal information
 </script>
 <?php
    }
@@ -164,6 +183,7 @@ class FarmAnimals{
 
       foreach($res as $id => $animal){
          $res[$id]['owner'] = $owners[$animal['current_owner']];
+         $res[$id]['animal_id'] = "<a href='javascript:;' id='{$animal['animal_id']}' class='anim_id_href'>{$animal['animal_id']}</a>";
       }
       die(json_encode($res));
    }
@@ -1103,5 +1123,20 @@ class FarmAnimals{
       $experiments = $this->Dbase->ExecuteQuery($query);
       if($experiments == 1) return $this->Dbase->lastError;
       else return $experiments;
+   }
+
+   /**
+    * Fetch all information for a particular animal
+    */
+   private function getAnimalInfo(){
+      $fetchQuery = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.exp_name as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed '
+              . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
+              . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
+              . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
+              . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id group by a.animal_id) as f on a.id=f.animal_id '
+              . 'where a.animal_id = :animal_id';
+      $res = $this->Dbase->ExecuteQuery($fetchQuery, array('animal_id' => $_POST['animal_id']));
+      if($res == 1) die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
+      die(json_encode(array('error' => 'false', 'data' => $res[0])));
    }
 }
