@@ -803,10 +803,10 @@ class FarmAnimals{
     * Get a list of all animal events
     */
    private function eventsList(){
-      $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, recorded_by, performed_by, count(*) as no_animals '
+      $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, recorded_by, performed_by as performed_by_id, performed_by, count(*) as no_animals '
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
-          . 'group by a.event_type_id, a.event_date';
+          . 'group by a.event_type_id, a.event_date, performed_by';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
@@ -827,8 +827,8 @@ class FarmAnimals{
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'left join '. Config::$farm_db .'.farm_people as d on b.current_owner=d.id '
           . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
-          . 'where a.event_type_id = :event_type_id and a.event_date = :event_date';
-      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date']));
+          . 'where a.event_type_id = :event_type_id and a.event_date = :event_date and performed_by = :performed_by';
+      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date'], 'performed_by' => $_POST['performed_by']));
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
       die(json_encode(array('error' => false, 'data' => $events)));
 

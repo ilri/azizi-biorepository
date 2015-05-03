@@ -828,7 +828,7 @@ Animals.prototype.newLevel =  function(){
 Animals.prototype.initiateAnimalsEventsGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'performed_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
+       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'performed_by_id'}, {name: 'performed_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'animal_events'}, url: 'mod_ajax.php?page=farm_animals&do=events'
      };
      var eventsAdapter = new $.jqx.dataAdapter(source);
@@ -847,6 +847,7 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'event_type_id', hidden: true },
+              { datafield: 'performed_by_id', hidden: true },
               { text: 'Event', datafield: 'event_name', width: 150 },
               { text: 'Event Date', datafield: 'event_date', width: 100 },
               { text: 'Recorded By', datafield: 'recorded_by', width: 150 },
@@ -870,7 +871,7 @@ Animals.prototype.initializeEventRowDetails = function(index, parentElement, gri
 
    var eventsSource = {
        datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'time_recorded'}, {name: 'owner'} ], type: 'POST',
-       id: 'id', data: {action: 'list', field: 'sub_events',  event_type_id: datarecord.event_type_id, event_date: datarecord.event_date}, url: 'mod_ajax.php?page=farm_animals&do=events'
+       id: 'id', data: {action: 'list', field: 'sub_events',  performed_by: datarecord.performed_by_id, event_type_id: datarecord.event_type_id, event_date: datarecord.event_date}, url: 'mod_ajax.php?page=farm_animals&do=events'
     };
 
     if (grid !== null) {
