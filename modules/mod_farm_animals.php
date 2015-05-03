@@ -1018,7 +1018,7 @@ class FarmAnimals{
     * @return  boolean|array  Returns a string in case there is an error, else returns an array with the defined experiments
     */
    private function experimentsList(){
-      $query = 'select a.exp_name, a.start_date, a.end_date, a.pi_id from '. Config::$farm_db .'.experiments as a';
+      $query = 'select a.exp_name, a.start_date, a.end_date, a.pi_id, iacuc, a.comments from '. Config::$farm_db .'.experiments as a';
       $exps = $this->Dbase->ExecuteQuery($query);
       if($exps == 1) return $this->Dbase->lastError;
       // get the list of owners
@@ -1034,11 +1034,11 @@ class FarmAnimals{
     * Saves a new experiment
     */
    private function saveNewExperiment(){
-      $addQuery = 'insert into '. Config::$farm_db .'.experiments(exp_name, pi_id, start_date) values(:exp_name, :pi_id, :start_date)';
+      $addQuery = 'insert into '. Config::$farm_db .'.experiments(exp_name, iacuc, pi_id, start_date) values(:exp_name, :iacuc, :pi_id, :start_date)';
       $start_date = date_create_from_format('d-m-Y', $_POST['start_date']);
-      $res = $this->Dbase->ExecuteQuery($addQuery, array('exp_name' => $_POST['experiment'], 'pi_id' => $_POST['pis'], 'start_date' => date_format($start_date, 'Y-m-d')));
-      if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
-      die(json_encode(array('error' => true, 'mssg' => 'The experiment have been saved successfully!')));
+      $res = $this->Dbase->ExecuteQuery($addQuery, array('exp_name' => $_POST['experiment'], 'iacuc' => $_POST['iacuc'], 'pi_id' => $_POST['pis'], 'start_date' => date_format($start_date, 'Y-m-d')));
+      if($res == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+      die(json_encode(array('error' => false, 'mssg' => 'The experiment have been saved successfully!')));
    }
 
    /**

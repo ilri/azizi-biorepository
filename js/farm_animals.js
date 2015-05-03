@@ -981,7 +981,7 @@ Animals.prototype.reInitializeEvents = function(){
 Animals.prototype.initiateExperimentsGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'exp_name'}, {name: 'pi_name'}, {name: 'start_date'}, {name: 'end_date'}, {name: 'comments'} ],
+       datatype: 'json', datafields: [ {name: 'exp_name'}, {name: 'iacuc'}, {name: 'pi_name'}, {name: 'start_date'}, {name: 'end_date'}, {name: 'comments'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'experiments'}, url: 'mod_ajax.php?page=farm_animals&do=experiments'
      };
      var expAdapter = new $.jqx.dataAdapter(source);
@@ -997,11 +997,12 @@ Animals.prototype.initiateExperimentsGrid = function(){
             altrows: true,
             enabletooltips: false,
             columns: [
-              { text: 'Experiment Name', datafield: 'exp_name', width: 250 },
-              { text: 'PI Name', datafield: 'pi_name', width: 150 },
-              { text: 'Start Date', datafield: 'start_date', width: 120 },
-              { text: 'End Date', datafield: 'end_date', width: 120 },
-              { text: 'Comments', datafield: 'comments', width: 200}
+              { text: 'Experiment Name', datafield: 'exp_name', width: 350 },
+              { text: 'IACUC No', datafield: 'iacuc', width: 80 },
+              { text: 'PI Name', datafield: 'pi_name', width: 100 },
+              { text: 'Start Date', datafield: 'start_date', width: 80 },
+              { text: 'End Date', datafield: 'end_date', width: 80 },
+              { text: 'Comments', datafield: 'comments', width: 220}
             ]
          });
      }
@@ -1031,8 +1032,13 @@ Animals.prototype.newExperiment = function(){
    var content = "\
 <form id='new_experiment' class='form-horizontal' >\
    <div class='control-group'>\
-      <label class='control-label' for='experiment'>Experiment&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <label class='control-label' for='experiment'>Experiment Name&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
       <div id='exp_pl' class='animal_input controls'><input type='text' name='experiment' id='experimentId' placeholder='Experiment Name' class='input-medium form-control' required=true /></div>\n\
+   </div>\n\
+\
+   <div class='control-group'>\
+      <label class='control-label' for='iacuc'>IACUC No&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <div id='exp_pl' class='animal_input controls'><input type='text' name='iacuc' id='iacucId' placeholder='IACUC' class='input-medium form-control' required=true /></div>\n\
    </div>\n\
 \
    <div class='control-group'>\
