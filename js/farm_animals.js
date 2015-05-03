@@ -1310,17 +1310,27 @@ Animals.prototype.showAnimalDetails = function(that){
 </div>';
 
    // now lets show the animal details
-   $('#animal_info').jqxWindow({
-      showCollapseButton: true, maxHeight: 400, maxWidth: 700, minHeight: 200, minWidth: 200, height: 300, width: 500,
-      initContent: function () {
-         $('#tab .info').html(infoContent);
-         $('#tab .others').html('Not defined yet');
-         $('#tab .pic').html('Not set yet');
-         $('#tab').jqxTabs({ height: '100%', width:  '100%' });
-         $('#animal_info').jqxWindow('focus');
-         $('#animal_info').jqxWindow('open');
-      }
-   });
+   if($('#animal_info').jqxWindow('isOpen') === undefined){
+      $('#animal_info').jqxWindow({
+         showCollapseButton: true, maxHeight: 400, maxWidth: 700, minHeight: 200, minWidth: 200, height: 300, width: 500,
+         initContent: function () {
+            $('#tab .info').html(infoContent);
+            $('#tab .others').html('Not defined yet');
+            $('#tab .pic').html('Not set yet');
+            $('#tab').jqxTabs({ height: '100%', width:  '100%' });
+            $('#animal_info').jqxWindow('open');
+            $('#animal_info').jqxWindow('focus');
+         }
+      });
+   }
+   else{
+      $('#tab .info').html(infoContent);
+      $('#tab .others').html('Not defined yet');
+      $('#tab .pic').html('Not set yet');
+      $('#animal_info').jqxWindow('open');
+      $('#animal_info').jqxWindow('focus');
+   }
+   $('#animal_info').jqxWindow('setTitle', curAnimal.animal_id +' information');
 };
 
 Animals.prototype.linkrenderer = function (row, column, value) {
