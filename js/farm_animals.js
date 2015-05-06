@@ -39,6 +39,8 @@ Animals.prototype.initiateAnimalsGrid = function(){
             sortable: true,
             showfilterrow: false,
             autoshowfiltericon: true,
+            showstatusbar: true,
+            renderstatusbar: animals.animalGridStatusBar,
             filterable: true,
             altrows: true,
             pagesize: 20,
@@ -48,7 +50,10 @@ Animals.prototype.initiateAnimalsGrid = function(){
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'id', hidden: true },
-              { text: 'Animal ID', datafield: 'animal_id', width: 70 },
+              { text: 'Animal ID', datafield: 'animal_id', width: 70, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                    return '<a href="javascript:;" id="'+ rowdata.id +'" class="anim_id_href">'+ value +'</a>';
+                 }
+              },
               { text: 'Species', datafield: 'species', width: 60 },
               { text: 'Sex', datafield: 'sex', width: 50 },
               { text: 'Breed', datafield: 'breed', width: 150 },
@@ -61,6 +66,23 @@ Animals.prototype.initiateAnimalsGrid = function(){
      else{
         $("#inventory").jqxGrid({source: animalsAdapter});
      }
+};
+
+/**
+ * Initiate the rendering of the status bar in the animal grid
+ * @returns {undefined}
+ */
+Animals.prototype.animalGridStatusBar = function(statusbar){
+   var container = $("<div style='overflow: hidden; position: relative; margin: 5px;'></div>");
+   var excelButton = $("<div style='float: left; margin-left: 5px;'><img style='position: relative; margin-top: 2px;' src='images/excel.png'/><span style='margin-left: 4px; position: relative; top: -3px;'>Export</span></div>");
+   container.append(excelButton);
+   excelButton.jqxButton({  width: 60, height: 20 });
+   statusbar.append(container);
+
+   excelButton.click(function (event) {
+       $("#inventory").jqxGrid('exportdata', 'xls', 'jqxGrid', false);
+   });
+
 };
 
 /**
@@ -1299,22 +1321,22 @@ Animals.prototype.locationOrganiser = function(){
 
 Animals.prototype.showAnimalDetails = function(that){
    // get the animal details for this animal
-   if(animals.info[that.target.id] === undefined){
+   if(animals.info[that.currentTarget.id] === undefined){
       $.ajax({
-          type:"POST", url: "mod_ajax.php?page=farm_animals&do=inventory", async: false, dataType:'json', data: {action: 'info', animal_id: that.target.id},
+          type:"POST", url: "mod_ajax.php?page=farm_animals&do=inventory", async: false, dataType:'json', data: {action: 'info', animal_id: that.currentTarget.id},
           success: function (data) {
              if(data.error === true){
                animals.showNotification(data.mssg, 'error');
                return;
              }
              else{
-               animals.info[that.target.id] = data.data;
+               animals.info[that.currentTarget.id] = data.data;
              }
          }
       });
    }
 
-   var curAnimal = animals.info[that.target.id];
+   var curAnimal = animals.info[that.currentTarget.id];
    var infoContent = '<div data-key="0" role="row" id="row0dataTable">\n\
 		<div style="width: 100%; height: 100%;">\n\
 			<div style="float: left; width: 50%;">\n\
