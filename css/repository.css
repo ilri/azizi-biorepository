@@ -387,6 +387,8 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #new_locations, #all_animals { width: 220px; float: left;  margin: 5px 7.5px; }
 #events{ height: 400px; }  /** A kludge to force proper display of the listboxes */
 #animal_info{ display: none; }
+.status_bar_div{ float: left; margin-left: 5px; padding: 4px 0px 0px 4px; }
+.status_bar_span{ margin: 0px 1px 0px 3px; position: relative; top: 2px; }
 /* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{

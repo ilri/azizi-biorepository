@@ -14,6 +14,9 @@ function Animals(sub_module){
    this.serverURL = "./modules/mod_farm_animals.php";
    this.procFormOnServerURL = "mod_ajax.php?page=farm_animals";
 
+   // don't show all the animals. skip the exited ones
+   this.showAll = false;
+
    // call the respective function
    if(this.sub_module === 'ownership') this.initiateAnimalsOwnersGrid();
    else if(this.sub_module === 'experiments') this.initiateExperimentsGrid();
@@ -26,7 +29,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
       datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}],
-         id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list'}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
+         id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', showAll: this.showAll}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
      var animalsAdapter = new $.jqx.dataAdapter(source);
    // initialize jqxGrid
@@ -74,15 +77,22 @@ Animals.prototype.initiateAnimalsGrid = function(){
  */
 Animals.prototype.animalGridStatusBar = function(statusbar){
    var container = $("<div style='overflow: hidden; position: relative; margin: 5px;'></div>");
-   var excelButton = $("<div style='float: left; margin-left: 5px;'><img style='position: relative; margin-top: 2px;' src='images/excel.png'/><span style='margin-left: 4px; position: relative; top: -3px;'>Export</span></div>");
+   var excelButton = $("<div class='status_bar_div'><img style='position: relative; margin-top: 2px;' src='images/excel.png'/><span class='status_bar_span'>Export</span></div>");
+   var showAllCheck = $("<div class='status_bar_div'><input type='checkbox' id='showAllId' name='showAll' /><span class='status_bar_span'>Show All</span></div>");
    container.append(excelButton);
-   excelButton.jqxButton({  width: 60, height: 20 });
+   container.append(showAllCheck);
+   excelButton.jqxButton({  width: 80, height: 20 });
+   showAllCheck.jqxButton({  width: 80, height: 20 });
    statusbar.append(container);
 
    excelButton.click(function (event) {
        $("#inventory").jqxGrid('exportdata', 'xls', 'jqxGrid', false);
    });
 
+   $('#showAllId').on('change', function(){
+      animals.showAll = $('#showAllId')[0].checked;
+      animals.initiateAnimalsGrid();
+   });
 };
 
 /**
@@ -101,10 +111,10 @@ Animals.prototype.initializeInventoryRowDetails = function(index, parentElement,
       grid.jqxGrid({source: eventsSource, theme: '', width: 820, height: 140,
       columns: [
          {text: 'EventId', datafield: 'event_id', hidden: true},
-         {text: 'Event Name', datafield: 'event_name', width: 210},
+         {text: 'Event Name', datafield: 'event_name', width: 150},
          {text: 'Event Date', datafield: 'event_date', width: 140},
          {text: 'Record Date', datafield: 'record_date', width: 140},
-         {text: 'Comments', datafield: 'comments', width: 140}
+         {text: 'Comments', datafield: 'comments', width: 340}
       ]
       });
    }

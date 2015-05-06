@@ -170,11 +170,13 @@ class FarmAnimals{
     * Get a list of all the animals currently in the farm
     */
    private function inventoryList(){
+      $showAll = ($_POST['showAll'] == 'true') ? '' : 'where a.status not like "%exit%" ';
       $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.exp_name as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed '
-              . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
-              . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
-              . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
-              . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id group by a.animal_id) as f on a.id=f.animal_id';
+         . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
+         . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
+         . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
+         . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id '
+         . 'group by a.animal_id) as f on a.id=f.animal_id '. $showAll;
       $res = $this->Dbase->ExecuteQuery($query);
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
