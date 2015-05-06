@@ -114,7 +114,7 @@ Animals.prototype.initializeInventoryRowDetails = function(index, parentElement,
          {text: 'Event Name', datafield: 'event_name', width: 150},
          {text: 'Event Date', datafield: 'event_date', width: 140},
          {text: 'Record Date', datafield: 'record_date', width: 140},
-         {text: 'Comments', datafield: 'comments', width: 340}
+         {text: 'Comments', datafield: 'comments', width: 340, cellsrenderer: function(r,c,v,d,cp,rd){ return v.replace("\n", "<br />"); }}
       ]
       });
    }
