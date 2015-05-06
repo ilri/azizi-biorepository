@@ -82,6 +82,7 @@ class Repository extends DBase{
       $this->Dbase->CreateLogEntry("Open access = ".$openAccess, "info");
 
       if($openAccess == 0){//the requested module is under open access
+         $this->logAccess();
          if(OPTIONS_REQUESTED_MODULE == 'samples_vis'){
             require_once 'mod_visualize_samples.php';
             $visSamples = new VisualizeSamples($this->Dbase);
@@ -115,14 +116,22 @@ class Repository extends DBase{
       //Set the default footer links
       $this->footerLinks = "";
       if(OPTIONS_REQUESTED_MODULE == '') $this->LoginPage();
-      elseif(OPTIONS_REQUESTED_MODULE == 'logout') $this->LogOutCurrentUser();
-      elseif(OPTIONS_REQUESTED_MODULE == 'login') $this->ValidateUser();
-      elseif(OPTIONS_REQUESTED_MODULE == 'home') $this->RepositoryHomePage();
+      elseif(OPTIONS_REQUESTED_MODULE == 'logout') {
+         $this->LogOutCurrentUser();
+      }
+      elseif(OPTIONS_REQUESTED_MODULE == 'login') {
+         $this->ValidateUser();
+      }
+      elseif(OPTIONS_REQUESTED_MODULE == 'home') {
+         $this->logAccess();
+         $this->RepositoryHomePage();
+      }
       else{//other modules require permission
          //check if user has access to the context
          $access = $this->security->isUserAllowed(OPTIONS_REQUESTED_MODULE, OPTIONS_REQUESTED_SUB_MODULE, OPTIONS_REQUESTED_ACTION);
 
          if($access == 0){//user has access
+            $this->logAccess();
             if(OPTIONS_REQUESTED_MODULE == 'ln2_requests'){
                require_once 'mod_ln2_requests.php';
                $Ln2 = new Ln2Requests($this->Dbase);
@@ -278,6 +287,18 @@ class Repository extends DBase{
 <?php
       }
    }
+   
+   /**
+    * This function logs the session ditails for purposes of analytics
+    */
+   private function logAccess() {
+      $ldap = 0;
+      if($_SESSION['auth_type'] != "local") {
+         $ldap = 1;
+      }
+      $this->Dbase->InsertData("user_access",array("user", "using_ldap", "module", "sub_module", "access_type", "ip_address"),
+              array($_SESSION['username'], $ldap, OPTIONS_REQUESTED_MODULE, OPTIONS_REQUESTED_SUB_MODULE, OPTIONS_REQUEST_TYPE, $_SERVER['REMOTE_ADDR']));
+   }
 
    /**
     * Validates the user credentials as received from the client
@@ -299,6 +320,7 @@ class Repository extends DBase{
        */
       $this->Dbase->CreateLogEntry("Auth results = ".$authRes, "info");
       if($authRes == 0){
+         $this->logAccess();
          $this->WhoIsMe();
          $this->RepositoryHomePage();
          return;
