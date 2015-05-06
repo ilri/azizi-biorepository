@@ -814,6 +814,7 @@ class FarmAnimals{
    var animals = new Animals();
    animals.initiateAnimalsEventsGrid();
    // bind the click functions of the buttons
+   animals.exitVariable = '<?php echo Config::$farm_exit_name; ?>';
    $("#new").live('click', function(){ animals.newEvent(); });
 </script>
 <?php
@@ -823,10 +824,11 @@ class FarmAnimals{
     * Get a list of all animal events
     */
    private function eventsList(){
-      $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, recorded_by, performed_by as performed_by_id, performed_by, count(*) as no_animals '
+      $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, a.event_date, record_date as time_recorded, recorded_by, performed_by as performed_by_id, performed_by, count(*) as no_animals '
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
-          . 'group by a.event_type_id, a.event_date, performed_by';
+          . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id '
+          . 'group by a.event_type_id, a.sub_event_type_id, a.event_date, performed_by';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
@@ -847,8 +849,11 @@ class FarmAnimals{
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'left join '. Config::$farm_db .'.farm_people as d on b.current_owner=d.id '
           . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
-          . 'where a.event_type_id = :event_type_id and a.event_date = :event_date and performed_by = :performed_by';
-      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date'], 'performed_by' => $_POST['performed_by']));
+          . 'where a.event_type_id = :event_type_id and a.sub_event_type_id = :sub_event_type_id and a.event_date = :event_date and performed_by = :performed_by';
+
+      $subEvent = (is_numeric($_POST['sub_event_type_id'])) ? $_POST['sub_event_type_id'] : NULL;
+      $vars = array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date'], 'performed_by' => $_POST['performed_by'], 'sub_event_type_id' => $subEvent);
+      $events = $this->Dbase->ExecuteQuery($eventsQuery, $vars);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
       die(json_encode(array('error' => false, 'data' => $events)));
 
@@ -865,6 +870,12 @@ class FarmAnimals{
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
       $toReturn = array();
       $toReturn['events'] = $events;
+
+      // get the list of sub-events
+      $subEventsQuery = 'SELECT id, sub_event_name as name FROM '. Config::$farm_db .'.farm_sub_events';
+      $subEvents = $this->Dbase->ExecuteQuery($subEventsQuery);
+      if($subEvents == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+      $toReturn['sub_events'] = $subEvents;
 
       // return the minimum days allowed for adding events
       $toReturn['eventMinDays'] = Config::$min_days_for_events;
@@ -923,20 +934,44 @@ class FarmAnimals{
       }
       else $eventId = $_POST['to'];
 
+      $exitVariableQuery = 'select id from '. Config::$farm_db .'.farm_events where event_name = :event_name';
+      $exitVariable = $this->Dbase->ExecuteQuery($exitVariableQuery, array('event_name' => Config::$farm_exit_name));
+      if($exitVariable == 1) {
+         $this->Dbase->RollBackTrans();
+         die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+      }
+
       // so lets save the events
-      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, performed_by, recorded_by, comments) '
-            . 'values(:animal_id, :event_type_id, :event_date, :performed_by, :recorded_by, :comments)';
+      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, performed_by, recorded_by, comments, sub_event_type_id) '
+         . 'values(:animal_id, :event_type_id, :event_date, :performed_by, :recorded_by, :comments, :sub_event_type_id)';
 
       $date = date_create_from_format('d/m/Y', $extras['eventDate']);
       $vals = array('event_type_id' => $eventId, 'event_date' => date_format($date, 'Y-m-d'), 'performed_by' => $extras['performedBy'], 'recorded_by' => $_SESSION['user_id'], 'comments' => $extras['comments']);
+      $vals['sub_event_type_id'] = (is_numeric($extras['exitType'])) ? $extras['exitType'] : NULL;
+
+      $updateAnimalStatus = 'update '. Config::$farm_db .'.farm_animals '
+         . 'set status = (SELECT concat(event_name, " >> ", sub_event_name) FROM '. Config::$farm_db .'.farm_events as a inner join '. Config::$farm_db .'.farm_sub_events as b on a.id=b.event_id where b.id = :sub_event_id) '
+         . 'where id = :id';
+
 
       foreach($animals as $animalId => $animal){
          $colvals = $vals;
          $colvals['animal_id'] = $animalId;
+
          $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
+
+         // if its an exit event, there is need to update the status of the animal....
+         if($eventId == $exitVariable[0]['id']){
+            $updateVals = array('sub_event_id' => $extras['exitType'], 'id' => $animalId);
+            $res1 = $this->Dbase->ExecuteQuery($updateAnimalStatus, $updateVals);
+            if($res1 == 1){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            }
          }
       }
       // we are all good, lets return

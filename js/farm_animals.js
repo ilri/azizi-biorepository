@@ -67,12 +67,12 @@ Animals.prototype.initiateAnimalsGrid = function(){
  * Initializes the row details for the expanded row
  * @returns {void}
  */
-Animals.prototype.initializeInventoryRowDetails = function(index, parentElement, gridElement, datarecord){
+Animals.prototype.initializeInventoryRowDetails = function(index, parentElement, gridElement, dr){
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
        datatype: "json", datafields: [ {name: 'event_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'record_date'}, {name: 'comments'} ], type: 'POST',
-       id: 'id', data: {action: 'list', field: 'events',  animal_id: datarecord.id}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
+       id: 'id', data: {action: 'list', field: 'events',  animal_id: dr.id}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
     };
 
     if (grid !== null) {
@@ -715,7 +715,7 @@ Animals.prototype.confirmEventsExtras = function(){
    var isError = false, errorMsg = '', err;
 
    // get the date, person who performed it and the comments
-   var performedBy = $('#performedBy_id').val(), eventDate = $("#event_date_pl").jqxDateTimeInput('value');
+   var performedBy = $('#performedBy_id').val(), eventDate = $("#event_date_pl").jqxDateTimeInput('value'), exitType = $('#sub_events_id').val();
    if(performedBy === '0'){
       isError = true;
       err = 'Please select the person who performed the event';
@@ -726,7 +726,12 @@ Animals.prototype.confirmEventsExtras = function(){
       err = 'Please specify the date when the event was performed';
       errorMsg = (errorMsg === '') ? err : err +'<br />'+ errorMsg;
    }
-   animals.extraData = {eventDate: $("#event_date_pl").jqxDateTimeInput('getText'), performedBy: performedBy, comments: $('#event_comments').val() };
+   if(intendedAction === animals.exitVariable && exitType === '0'){
+      isError = true;
+      err = 'Please select the type of exit for the selected animal(s)';
+      errorMsg = (errorMsg === '') ? err : err +'<br />'+ errorMsg;
+   }
+   animals.extraData = {eventDate: $("#event_date_pl").jqxDateTimeInput('getText'), performedBy: performedBy, comments: $('#event_comments').val(), exitType: exitType };
 
    switch(intendedAction){
       case 'Vaccination':
@@ -823,7 +828,7 @@ Animals.prototype.newLevel =  function(){
 Animals.prototype.initiateAnimalsEventsGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'performed_by_id'}, {name: 'performed_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
+       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'sub_event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'performed_by_id'}, {name: 'performed_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'animal_events'}, url: 'mod_ajax.php?page=farm_animals&do=events'
      };
      var eventsAdapter = new $.jqx.dataAdapter(source);
@@ -842,6 +847,7 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'event_type_id', hidden: true },
+              { datafield: 'sub_event_type_id', hidden: true },
               { datafield: 'performed_by_id', hidden: true },
               { text: 'Event', datafield: 'event_name', width: 150 },
               { text: 'Event Date', datafield: 'event_date', width: 100 },
@@ -861,12 +867,13 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
  * Initializes the row details for the expanded row
  * @returns {void}
  */
-Animals.prototype.initializeEventRowDetails = function(index, parentElement, gridElement, datarecord){
+Animals.prototype.initializeEventRowDetails = function(index, parentElement, gridElement, dr){
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
        datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'time_recorded'}, {name: 'owner'} ], type: 'POST',
-       id: 'id', data: {action: 'list', field: 'sub_events',  performed_by: datarecord.performed_by_id, event_type_id: datarecord.event_type_id, event_date: datarecord.event_date}, url: 'mod_ajax.php?page=farm_animals&do=events'
+       id: 'id', data: {action: 'list', field: 'sub_events',  performed_by: dr.performed_by_id, event_type_id: dr.event_type_id, sub_event_type_id: dr.sub_event_type_id, event_date: dr.event_date},
+       url: 'mod_ajax.php?page=farm_animals&do=events'
     };
 
     if (grid !== null) {
@@ -897,10 +904,11 @@ Animals.prototype.newEvent = function(){
                return;
              }
              else{
-               animals.showNotification(data.mssg, 'success');
+               animals.showNotification('The data has been successfully fetched.', 'success');
                animals.byLocations = data.data.byLocations;
                animals.locationOrganiser();
                animals.allEvents = data.data.events;
+               animals.allSubEvents = data.data.sub_events;
                animals.byOwners = data.data.byOwners;
                animals.byExperiments = data.data.byExperiments;
                animals.allExperiments = data.data.allExperiments;
@@ -1218,7 +1226,13 @@ Animals.prototype.addEventDetails = function(sender){
       $('.addons').remove();
       return;
    }
-   if($('.addons').length === 1) { return; }
+   // if the additional details for an event are added
+   if($('.addons').length === 1) {
+      // if the type of exit field is active and the selected event is not exit, remove it, else just exit
+      if($('#exitTypeId')[0].style.display === 'block' && eventName !== animals.exitVariable){ $('#exitTypeId').css({'display': 'none'}); }
+      if($('#exitTypeId')[0].style.display === 'none' && eventName === animals.exitVariable){ $('#exitTypeId').css({'display': 'block'}); }
+      return;
+   }
 
    switch(eventName){
       case 'Vaccination':
@@ -1227,6 +1241,10 @@ Animals.prototype.addEventDetails = function(sender){
    };
 
    content2add = "<div class='addons'>\n\
+   <div id='exitTypeId' class='control-group' display='none'>\
+      <label class='control-label' for='exitType'>Type of Exit&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+      <div id='exit_type_pl' class='animal_input controls'></div>\n\
+   </div>\n\
    <div class='control-group'>\
       <label class='control-label' for='performed'>Performed By&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
       <div id='performedBy_pl' class='animal_input controls'></div>\n\
@@ -1255,6 +1273,13 @@ Animals.prototype.addEventDetails = function(sender){
    var ownersCombo = Common.generateCombo(settings);
    $('#performedBy_pl').html(ownersCombo);
 
+   // if we are having an exit type, specify the type of exit
+   if(eventName === animals.exitVariable){
+      var settings = {name: 'sub_events_by', id: 'sub_events_id', data: animals.allSubEvents, initValue: 'Select One', required: 'true'};
+      var subEventsCombo = Common.generateCombo(settings);
+      $('#exit_type_pl').html(subEventsCombo);
+      $('#exitTypeId').css({'display': 'block'});
+   }
 };
 
 /**
