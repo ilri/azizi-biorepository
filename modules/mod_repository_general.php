@@ -115,14 +115,23 @@ class Repository extends DBase{
       //Set the default footer links
       $this->footerLinks = "";
       if(OPTIONS_REQUESTED_MODULE == '') $this->LoginPage();
-      elseif(OPTIONS_REQUESTED_MODULE == 'logout') $this->LogOutCurrentUser();
-      elseif(OPTIONS_REQUESTED_MODULE == 'login') $this->ValidateUser();
-      elseif(OPTIONS_REQUESTED_MODULE == 'home') $this->RepositoryHomePage();
+      elseif(OPTIONS_REQUESTED_MODULE == 'logout') {
+         $this->updateAccessLog();
+         $this->LogOutCurrentUser();
+      }
+      elseif(OPTIONS_REQUESTED_MODULE == 'login') {
+         $this->ValidateUser();
+      }
+      elseif(OPTIONS_REQUESTED_MODULE == 'home') {
+         $this->updateAccessLog();
+         $this->RepositoryHomePage();
+      }
       else{//other modules require permission
          //check if user has access to the context
          $access = $this->security->isUserAllowed(OPTIONS_REQUESTED_MODULE, OPTIONS_REQUESTED_SUB_MODULE, OPTIONS_REQUESTED_ACTION);
 
          if($access == 0){//user has access
+            $this->updateAccessLog();
             if(OPTIONS_REQUESTED_MODULE == 'ln2_requests'){
                require_once 'mod_ln2_requests.php';
                $Ln2 = new Ln2Requests($this->Dbase);
@@ -278,6 +287,33 @@ class Repository extends DBase{
 <?php
       }
    }
+   
+   /**
+    * This function logs the session ditails for purposes of analytics
+    */
+   private function logAccess() {
+      $ldap = 1;
+      if($_SESSION['auth_type'] == "local") {
+         $ldap = 0;
+      }
+      $this->Dbase->InsertData("user_access",array("user", "using_ldap"), array("user" => $_SESSION['username'], "ldap" => $ldap));
+      $query = "select id from user_access where user = :user and end_time is null order by id desc limit 1";
+      $result = $this->Dbase->ExecuteQuery($query, array("user" => $_SESSION['username']));
+      if(count($result) == 1) {
+         $_SESSION['user_access_id'] = $result[0]['id'];
+      }
+   }
+   
+   private function updateAccessLog() {
+      $this->Dbase->CreateLogEntry("user_access_id = ".$_SESSION['user_access_id'],"debug");
+      if(isset($_SESSION['user_access_id']) && $_SESSION['user_access_id'] != 0) {
+         $query = "update user_access set end_time = NOW() where id = :id";
+         $this->Dbase->ExecuteQuery($query, array("id" => $_SESSION['user_access_id']));
+      }
+      else {
+         $this->Dbase->CreateLogEntry("Could not update the end time in the user_access table because the database's log id is unknown", "warnings");
+      }
+   }
 
    /**
     * Validates the user credentials as received from the client
@@ -299,6 +335,7 @@ class Repository extends DBase{
        */
       $this->Dbase->CreateLogEntry("Auth results = ".$authRes, "info");
       if($authRes == 0){
+         $this->logAccess();
          $this->WhoIsMe();
          $this->RepositoryHomePage();
          return;
