@@ -120,6 +120,7 @@ class FarmAnimals{
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/styles/jqx.base.css" type="text/css" />
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxcore.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxdata.export.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxbuttons.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxscrollbar.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxmenu.js"></script>
@@ -133,6 +134,7 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.filter.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxwindow.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxtabs.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets371/jqxgrid.export.js"></script>
 
 <div id="main">
    <div id="inventory"></div>
@@ -168,11 +170,13 @@ class FarmAnimals{
     * Get a list of all the animals currently in the farm
     */
    private function inventoryList(){
+      $showAll = ($_POST['showAll'] == 'true') ? '' : 'where a.status not like "%exit%" ';
       $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.exp_name as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed '
-              . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
-              . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
-              . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
-              . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id group by a.animal_id) as f on a.id=f.animal_id';
+         . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
+         . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
+         . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
+         . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id '
+         . 'group by a.animal_id) as f on a.id=f.animal_id '. $showAll .' order by a.animal_id';
       $res = $this->Dbase->ExecuteQuery($query);
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
@@ -183,7 +187,7 @@ class FarmAnimals{
 
       foreach($res as $id => $animal){
          $res[$id]['owner'] = $owners[$animal['current_owner']];
-         $res[$id]['animal_id'] = "<a href='javascript:;' id='{$animal['animal_id']}' class='anim_id_href'>{$animal['animal_id']}</a>";
+//         $res[$id]['animal_id'] = "<a href='javascript:;' id='{$animal['animal_id']}' class='anim_id_href'>{$animal['animal_id']}</a>";
       }
       die(json_encode($res));
    }
@@ -441,7 +445,7 @@ class FarmAnimals{
 
          // get the animals in this locations if need be
          if($withAnimals){
-            $animalsQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.location_id = :id and a.end_date is null';
+            $animalsQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.location_id = :id and a.end_date is null order by b.animal_id';
             $this->Dbase->CreateLogEntry('Getting the animals per location', 'info');
             foreach($res1 as $subLoc){
                $res2 = $this->Dbase->ExecuteQuery($animalsQuery, array('id' => $subLoc['id']));
@@ -450,7 +454,7 @@ class FarmAnimals{
             }
 
             // get the unattached animals
-            $unattachedAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals as a where a.id not in (select animal_id from '. Config::$farm_db .'.farm_animal_locations where end_date is null)';
+            $unattachedAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals as a where a.id not in (select animal_id from '. Config::$farm_db .'.farm_animal_locations where end_date is null) order by animal_id';
             $res3 = $this->Dbase->ExecuteQuery($unattachedAnimalsQuery);
             if($res3 == 1) return $this->Dbase->lastError;
             $animalLocations['floating'] = $res3;
@@ -474,7 +478,7 @@ class FarmAnimals{
          if(is_string($owners)){ die(json_encode(array('error' => 'true', 'mssg' => $owners))); }
       }
 
-      $ownerQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals where current_owner = :owner_id';
+      $ownerQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals where current_owner = :owner_id order by animal_id';
 
       $animalByOwners = array();
       foreach($owners as $owner){
@@ -484,7 +488,7 @@ class FarmAnimals{
       }
 
       // get the animals without owners
-      $ownerlessAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals where id not in (SELECT animal_id FROM '. Config::$farm_db .'.farm_animal_owners where end_date is null)';
+      $ownerlessAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals where id not in (SELECT animal_id FROM '. Config::$farm_db .'.farm_animal_owners where end_date is null) order by animal_id';
       $res = $this->Dbase->ExecuteQuery($ownerlessAnimalsQuery);
       if($res == 1) return $this->Dbase->lastError;
       else $animalByOwners['floating'] = $res;
@@ -503,7 +507,7 @@ class FarmAnimals{
          if(is_string($experiments)) { die(json_encode(array('error' => 'true', 'mssg' => $experiments))); }
       }
 
-      $query = 'select id, animal_id as name from '. Config::$farm_db .'.farm_animals where current_exp = :exp_id';
+      $query = 'select id, animal_id as name from '. Config::$farm_db .'.farm_animals where current_exp = :exp_id order by animal_id';
       $animalsByExperiments = array();
       foreach($experiments as $index => $exp){
          $res = $this->Dbase->ExecuteQuery($query, array('exp_id' => $exp['id']));
@@ -814,6 +818,7 @@ class FarmAnimals{
    var animals = new Animals();
    animals.initiateAnimalsEventsGrid();
    // bind the click functions of the buttons
+   animals.exitVariable = '<?php echo Config::$farm_exit_name; ?>';
    $("#new").live('click', function(){ animals.newEvent(); });
 </script>
 <?php
@@ -823,10 +828,11 @@ class FarmAnimals{
     * Get a list of all animal events
     */
    private function eventsList(){
-      $eventsQuery = 'select a.event_type_id, c.event_name, a.event_date, record_date as time_recorded, recorded_by, performed_by as performed_by_id, performed_by, count(*) as no_animals '
+      $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, a.event_date, record_date as time_recorded, recorded_by, performed_by as performed_by_id, performed_by, count(*) as no_animals '
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
-          . 'group by a.event_type_id, a.event_date, performed_by';
+          . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id '
+          . 'group by a.event_type_id, a.sub_event_type_id, a.event_date, performed_by';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
@@ -847,8 +853,11 @@ class FarmAnimals{
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'left join '. Config::$farm_db .'.farm_people as d on b.current_owner=d.id '
           . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
-          . 'where a.event_type_id = :event_type_id and a.event_date = :event_date and performed_by = :performed_by';
-      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date'], 'performed_by' => $_POST['performed_by']));
+          . 'where a.event_type_id = :event_type_id and a.sub_event_type_id = :sub_event_type_id and a.event_date = :event_date and performed_by = :performed_by';
+
+      $subEvent = (is_numeric($_POST['sub_event_type_id'])) ? $_POST['sub_event_type_id'] : NULL;
+      $vars = array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date'], 'performed_by' => $_POST['performed_by'], 'sub_event_type_id' => $subEvent);
+      $events = $this->Dbase->ExecuteQuery($eventsQuery, $vars);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
       die(json_encode(array('error' => false, 'data' => $events)));
 
@@ -865,6 +874,12 @@ class FarmAnimals{
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
       $toReturn = array();
       $toReturn['events'] = $events;
+
+      // get the list of sub-events
+      $subEventsQuery = 'SELECT id, sub_event_name as name FROM '. Config::$farm_db .'.farm_sub_events';
+      $subEvents = $this->Dbase->ExecuteQuery($subEventsQuery);
+      if($subEvents == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+      $toReturn['sub_events'] = $subEvents;
 
       // return the minimum days allowed for adding events
       $toReturn['eventMinDays'] = Config::$min_days_for_events;
@@ -923,20 +938,44 @@ class FarmAnimals{
       }
       else $eventId = $_POST['to'];
 
+      $exitVariableQuery = 'select id from '. Config::$farm_db .'.farm_events where event_name = :event_name';
+      $exitVariable = $this->Dbase->ExecuteQuery($exitVariableQuery, array('event_name' => Config::$farm_exit_name));
+      if($exitVariable == 1) {
+         $this->Dbase->RollBackTrans();
+         die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+      }
+
       // so lets save the events
-      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, performed_by, recorded_by, comments) '
-            . 'values(:animal_id, :event_type_id, :event_date, :performed_by, :recorded_by, :comments)';
+      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, performed_by, recorded_by, comments, sub_event_type_id) '
+         . 'values(:animal_id, :event_type_id, :event_date, :performed_by, :recorded_by, :comments, :sub_event_type_id)';
 
       $date = date_create_from_format('d/m/Y', $extras['eventDate']);
       $vals = array('event_type_id' => $eventId, 'event_date' => date_format($date, 'Y-m-d'), 'performed_by' => $extras['performedBy'], 'recorded_by' => $_SESSION['user_id'], 'comments' => $extras['comments']);
+      $vals['sub_event_type_id'] = (is_numeric($extras['exitType'])) ? $extras['exitType'] : NULL;
+
+      $updateAnimalStatus = 'update '. Config::$farm_db .'.farm_animals '
+         . 'set status = (SELECT concat(event_name, " >> ", sub_event_name) FROM '. Config::$farm_db .'.farm_events as a inner join '. Config::$farm_db .'.farm_sub_events as b on a.id=b.event_id where b.id = :sub_event_id) '
+         . 'where id = :id';
+
 
       foreach($animals as $animalId => $animal){
          $colvals = $vals;
          $colvals['animal_id'] = $animalId;
+
          $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         }
+
+         // if its an exit event, there is need to update the status of the animal....
+         if($eventId == $exitVariable[0]['id']){
+            $updateVals = array('sub_event_id' => $extras['exitType'], 'id' => $animalId);
+            $res1 = $this->Dbase->ExecuteQuery($updateAnimalStatus, $updateVals);
+            if($res1 == 1){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            }
          }
       }
       // we are all good, lets return
@@ -1134,7 +1173,7 @@ class FarmAnimals{
               . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
               . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
               . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id group by a.animal_id) as f on a.id=f.animal_id '
-              . 'where a.animal_id = :animal_id';
+              . 'where a.id = :animal_id';
       $res = $this->Dbase->ExecuteQuery($fetchQuery, array('animal_id' => $_POST['animal_id']));
       if($res == 1) die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
       die(json_encode(array('error' => 'false', 'data' => $res[0])));
