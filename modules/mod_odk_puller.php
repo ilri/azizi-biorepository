@@ -1,13 +1,14 @@
 <?php
 
 class ODKPuller {
-   private $isDir; //directory where the itemsets are defined
-   private $rootItems;
    private $database;
 
    public function __construct($dBase) {
       $this->database = $dBase;
-      $request = $_GET['req'];
+   }
+   
+   public function trafficController() {
+      $request = OPTIONS_REQUESTED_SUB_MODULE;
       if($request === "get_list"){//user wants a list of all forms that have external data
          $forms = array();
          $query = "select b.form_name from odk_preloads as a"

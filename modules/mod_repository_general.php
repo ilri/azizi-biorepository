@@ -98,6 +98,11 @@ class Repository extends DBase{
             $mta = new MTA($this->Dbase);
             $mta->trafficController();
          }
+         else if(OPTIONS_REQUESTED_MODULE == 'odk_puller') {
+            require_once 'mod_odk_puller.php';
+            $odkPuller = new ODKPuller($this->Dbase);
+            $odkPuller->trafficController();
+         }
          return;//do not show the user any more links
       }
       else if($openAccess == 1){//an error occurred
