@@ -1360,8 +1360,15 @@ Animals.prototype.showAnimalDetails = function(that){
 				<div style="margin: 10px;"><b>Sire:</b> '+ curAnimal.sire +'</div>\n\
 				<div style="margin: 10px;"><b>Dam:</b> '+ curAnimal.dam +'</div>\n\
 				<div style="margin: 10px;"><b>Status:</b> '+ curAnimal.status +'</div>\n\
-				<div style="margin: 10px;"><b>Experiment:</b> '+ curAnimal.experiment +'</div>\n\
 				<div style="margin: 10px;"><b>Location:</b> '+ curAnimal.location +'</div>\n\
+			</div><br /><br />\
+			<div style="float:none; margin: 2px auto; width: 99%;">\n\
+				<div style="margin: 10px;"><b>Experiment Details:</b></div>\n\
+				<div style="margin: 10px;"><b>Experiment Name:</b> '+ curAnimal.exp_name +'</div>\n\
+				<div style="margin: 10px;"><b>IACUC No:</b> '+ curAnimal.iacuc +'</div>\n\
+				<div style="margin: 10px;"><b>Start Date:</b> '+ curAnimal.exp_startdate +'</div>\n\
+				<div style="margin: 10px;"><b>End Date:</b> '+ curAnimal.exp_enddate +'</div>\n\
+				<div style="margin: 10px;"><b>Experiment Comments:</b> '+ curAnimal.exp_comments +'</div>\n\
 			</div>\
 		</div>\
 </div>';
@@ -1369,7 +1376,7 @@ Animals.prototype.showAnimalDetails = function(that){
    // now lets show the animal details
    if($('#animal_info').jqxWindow('isOpen') === undefined){
       $('#animal_info').jqxWindow({
-         showCollapseButton: true, maxHeight: 400, maxWidth: 700, minHeight: 200, minWidth: 200, height: 300, width: 500,
+         showCollapseButton: true, maxHeight: 400, maxWidth: 700, minHeight: 200, minWidth: 200, height: 350, width: 500,
          initContent: function () {
             $('#tab .info').html(infoContent);
             $('#tab .others').html('Not defined yet');
