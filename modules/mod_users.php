@@ -201,6 +201,7 @@ class Users {
    </div>
    <div class="form-group"><label for="sname" class="control-label">Surname: </label><input id="sname" name="sname" type="text" class="form-control" /></div>
    <div class="form-group"><label for="onames" class="control-label">Other Names: </label><input id="onames" name="onames" type="text" class="form-control" /></div>
+   <div class="form-group"><label for="email" class="control-label">Email: </label><input id="email" name="email" type="email" class="form-control" /></div>
    <div class="form-group"><label for="project" class="control-label">Project: </label><select id="project" name="project" class="form-control">
          <option value=""></option>
 <?php
@@ -400,7 +401,7 @@ class Users {
       
       $email = $_POST['email'];
       
-      $result = $this->security->createUser($_POST['username'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap']);
+      $result = $this->security->createUser($_POST['username'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap'], $email);
       
       if($result == null || (!is_numeric($result) && strlen($result) > 1)){//probably means the password returned therefore successfully created user
          $this->sendUserPassword($_POST['onames'], $email, $_POST['username'], $result, $_POST['ldap']);
@@ -436,7 +437,7 @@ class Users {
    private function editUser(){
       $groupIDs = explode(",",$_POST['user_groups']);
       
-      return $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap'], $_POST['allowed']);
+      return $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $_POST['email'], $groupIDs, $_POST['ldap'], $_POST['allowed']);
    }
    
    private function editOwnAccount(){
@@ -483,7 +484,7 @@ class Users {
     * This function gets data corresponding to a user from the database
     */
    private function getUserData(){
-      $query = "SELECT id, login, sname, onames, project, allowed, ldap_authentication as ldap"
+      $query = "SELECT id, login, sname, onames, email, project, allowed, ldap_authentication as ldap"
               . " FROM users"
               . " WHERE id = :id";
       
