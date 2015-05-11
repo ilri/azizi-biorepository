@@ -737,6 +737,7 @@ class FarmAnimals{
 
    var animals = new Animals();
    animals.byLocations = <?php echo json_encode($animalLocations); ?>;
+   animals.locationOrganiser();
 
    // bind the click functions of the buttons
    $("#reset, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });

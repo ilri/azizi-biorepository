@@ -484,7 +484,7 @@ Animals.prototype.initiateFiltersnLists = function(){
 
    // from filter
    if(this.sub_module === 'move_animals'){
-      allLevels[Object.keys(allLevels).length] = {id:'floating', name: 'Select unattached'};
+      animals.allLevels[Object.keys(animals.allLevels).length] = {id:'floating', name: 'Select unattached'};
       var settings = {name: 'from', id: 'fromId', data: animals.allLevels, initValue: 'Select One', required: 'true'};
       var fromCombo = Common.generateCombo(settings);
       $('#from_filter').html(fromCombo);
