@@ -46,6 +46,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
             renderstatusbar: animals.animalGridStatusBar,
             filterable: true,
             altrows: true,
+            touchmode: true,
             pagesize: 20,
             pagesizeoptions: ['20', '50', '100'],
             rowdetails: true,
