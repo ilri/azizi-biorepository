@@ -287,17 +287,19 @@ class Repository extends DBase{
 <?php
       }
    }
-   
+
    /**
     * This function logs the session ditails for purposes of analytics
     */
    private function logAccess() {
       $ldap = 0;
-      if($_SESSION['auth_type'] != "local") {
-         $ldap = 1;
-      }
-      $this->Dbase->InsertData("user_access",array("user", "using_ldap", "module", "sub_module", "access_type", "ip_address"),
+      if($_SESSION['auth_type'] != "local")  $ldap = 1;
+      $res = $this->Dbase->InsertData("user_access", array("user", "using_ldap", "module", "sub_module", "access_type", "ip_address"),
               array($_SESSION['username'], $ldap, OPTIONS_REQUESTED_MODULE, OPTIONS_REQUESTED_SUB_MODULE, OPTIONS_REQUEST_TYPE, $_SERVER['REMOTE_ADDR']));
+      if($res == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError ,'fatal');
+         $this->Dbase->CreateLogEntry('Error while logging the session information for analytics.' ,'debug');
+      }
    }
 
    /**

@@ -95,13 +95,17 @@ class FarmAnimals{
    <div class="user_options">
       <ul>
          <li><a href="?page=farm_animals&do=inventory">Animal inventory</a></li>
-         <li><a href="?page=farm_animals&do=add">Add an animal</a></li>
-         <li><a href="?page=farm_animals&do=ownership">Animal ownership</a></li>
-         <li><a href="?page=farm_animals&do=pens">Farm location & animals</a></li>
-         <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
-         <li><a href="?page=farm_animals&do=move_animals">Move animals between locations</a></li>
-         <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
-         <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
+<?php
+         if(in_array(Config::$farm_module_admin, $_SESSION['user_type'])){
+            echo '<li><a href="?page=farm_animals&do=add">Add an animal</a></li>
+               <li><a href="?page=farm_animals&do=ownership">Animal ownership</a></li>
+               <li><a href="?page=farm_animals&do=pens">Farm location & animals</a></li>
+               <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
+               <li><a href="?page=farm_animals&do=move_animals">Move animals between locations</a></li>
+               <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
+               <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>';
+         }
+?>
       </ul>
    </div>
 </div>
