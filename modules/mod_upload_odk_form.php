@@ -401,6 +401,20 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                            $query = "INSERT INTO odk_uploads(odk_form, uploaded_by, email_address, upload_type) VALUES(:form_id, :uploaded_by, :email, :type)";
 
                            $result = $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "uploaded_by" => $username, "email" => $_POST['email'], "type" => $_POST['upload_type']));
+                           //check if there exists .sql files in the media dir
+                           $allMediaFiles = scandir($this->tmpDir."/media/");
+                           if(is_array($allMediaFiles)){
+                              foreach($allMediaFiles as $currMediaFile) {
+                                 if(strpos($currMediaFile, ".sql") !== false) {//check if file contains the .sql suffix
+                                    $this->Dbase->CreateLogEntry("$currMediaFile is an ODK puller file","debug");
+                                    $preloadName = str_replace(".sql", "", $currMediaFile);
+                                    $csvString = file_get_contents($this->tmpDir."/media/".$currMediaFile);
+                                    $this->savePullerData($formID, $preloadName, $csvString);
+                                    unlink($this->tmpDir."/media/".$currMediaFile);
+                                 }
+                                 else $this->Dbase->CreateLogEntry("$currMediaFile is NOT an ODK puller file","debug");
+                              }
+                           }
                         }
                      }
                      
@@ -523,6 +537,31 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
          if(is_file($file)){
             unlink($file);
          }
+      }
+   }
+
+   /**
+   * This function saves the provided ODK Puller data into the database
+   * @param String   $formId        The id for the Form
+   * @param String   $preloadName   The name of the preload file as seen by ODK Collect
+   * @param String   $preloadText   String with queries for getting the preload data.
+   *                                Queries seperated by end of line character
+   */
+   private function savePullerData($formId, $preloadName, $preloadText) {
+      $query = "insert into odk_preloads(form_id, name) values(:formId, :name)";
+      $this->Dbase->ExecuteQuery($query, array("formId" => $formId, "name" => $preloadName));
+      $query = "select id from odk_preloads where name = :name and form_id = :formId";
+      $result = $this->Dbase->ExecuteQuery($query, array("formId" => $formId, "name" => $preloadName));
+      if(is_array($result) and count($result) == 1) {
+         $preloadId = $result[0]['id'];
+         $queries = explode("\n", $preloadText);
+         foreach($queries as $currQuery){
+            $query = "insert into preload_queries(query, preload_id) values(:query, :preloadId)";
+            $this->Dbase->ExecuteQuery($query, array("query" => $currQuery, "preloadId" => $preloadId));
+         } 
+      }
+      else {
+         $this->Dbase->CreateLogEntry("Could not record preload with name $preloadName with odk form with id = $formId because we couldn't get the preload id from the database","fatal");
       }
    }
 
