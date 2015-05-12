@@ -31,7 +31,7 @@ class DMP extends Repository{
          if(OPTIONS_REQUESTED_ACTION == "upload_data_file") $this->uploadDataFile();
       }
    }
-   
+
    /**
     * This function renders the home page
     */
@@ -50,14 +50,14 @@ class DMP extends Repository{
 <div id="inotification_pp"></div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
-   //var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>");
-   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>");
+   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>");
+//   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>");
 </script>
 <?php
    }
-   
+
    /**
-    * 
+    *
     */
    public function viewSchemaPage() {
       $this->jqGridFiles();//import vital jqx files
@@ -190,12 +190,11 @@ class DMP extends Repository{
    <div id="inotification_pp"></div>
 </div>
 <script type="text/javascript">
-   //var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
-   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
+   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
 </script>
 <?php
    }
-   
+
    /**
     * This function returns the session ID corresponding to the current user
     * @return string
@@ -203,12 +202,9 @@ class DMP extends Repository{
    private function getAPISessionID() {
       include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
       $security = new Security($this->Dbase);
-      /*$cypherSecret = $_SESSION['password'];
+      $cypherSecret = $_SESSION['password'];
       $username = $_SESSION['username'];
-      $authType = $_SESSION['auth_type'];*/
-      $cypherSecret = "Ncb/vu6jAFsPHBqEoP+IhJEQF1Co63LYQdH9MTD4AGERAzlwYc004Dm1Dcg4iTX0GrWfLMv16s1fNeKCLiJTFQ7YUE6UF5b2xHDZYPllBtlMcmSN0EIM+TDlUXRyfh2DRqEb8OlASmW+8DSs7j+Ex+dLnZiej52LCdh55/OPiWw=";
-      $username = "jrogena2";
-      $authType = "local";
+      $authType = $_SESSION['auth_type'];
       $this->Dbase->CreateLogEntry("session = ".print_r($_SESSION, true), "debug");
       $this->Dbase->CreateLogEntry("server = ".print_r($_SERVER, true), "debug");
       $tokenString = json_encode(array(
@@ -237,7 +233,7 @@ class DMP extends Repository{
       }
       return null;
    }
-   
+
    /**
     * This function uploads files from javascript into the server
     */
