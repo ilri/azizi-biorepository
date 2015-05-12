@@ -1,0 +1,830 @@
+<?php
+
+/**
+ * This calss implements the Database class for the Workflow API.
+ * Should only be used in the Workflow class and its child fields.
+ * 
+ * Not using the repository's Dbase object because that points to ILRI's main
+ * MySQL Database. This object should be able to create a MySQL database in the 
+ * MySQL testbed, add tables to that database etc.
+ */
+class Database {
+   
+   /**
+    * Default constructor for this class. Initializes a PDO object to be used
+    * in this class
+    */
+   public static $QUOTE_SI = '"';//quotes to be used for system identifiers
+   public static $TYPE_SERIAL = "serial";//1 to 2147483647
+   public static $TYPE_INT = "numeric";
+   public static $TYPE_DOUBLE = "double precision";
+   public static $TYPE_VARCHAR = "varchar";
+   public static $TYPE_TINYINT = "smallint";
+   public static $TYPE_TIME = "time without time zone";
+   public static $TYPE_DATE = "date";
+   public static $TYPE_DATETIME = "timestamp without time zone";
+   public static $TYPE_BOOLEAN = "boolean";
+   
+   public static $BOOL_TRUE = 't';
+   public static $BOOL_FALSE = 'f';
+   
+   public static $KEY_PRIMARY = "primary";
+   public static $KEY_UNIQUE = "unique";
+   public static $KEY_NONE = null;
+   
+   private $TAG = "database";
+   private $logH;//logging class
+   private $config;//the repository_config object
+   private $pdoObject;
+   private $connectedDb;
+   private $wInstanceId;//the workflow instance ID. Should correspond to the database name linked to that instance
+   
+   private $DEFAULT_DATABASE = "__dp_meta_root";//default database
+   
+   /**
+    * Default constructor for this class.
+    * 
+    * @param type $config        The repository_config object
+    * @param type $wInstanceId   The instance Id for the workflow. Should correspond
+    *                            to the database specified in the PDO connection string.
+    *                            Provide null if instance ID is still unknown
+    * 
+    * @throws WAException
+    */
+   public function __construct($config, $wInstanceId = null) {
+      include_once 'mod_log.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_wa_file.php';
+      //include_once $config['common_folder_path'].'dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
+      
+      $this->config = $config;
+      
+      $this->logH = new LogHandler("./");//TODO: not sure if the default root dir specified in LogHandler is correct
+      
+      //initialize the PDO connection
+      try {
+         $this->connectedDb = $wInstanceId;
+         if($this->connectedDb === NULL) $this->connectedDb = $this->DEFAULT_DATABASE;
+         
+         $this->logH->log(4, $this->TAG, "Trying to initialize database connection to {$this->connectedDb}");
+         
+         $this->pdoObject = new PDO("pgsql:dbname={$this->connectedDb};host={$config['testbed_dbloc']}", $config['testbed_user'], $config['testbed_pass']);
+         $this->pdoObject->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+      } catch (PDOException $ex) {
+         $this->logH->log(1, $this->TAG, "An error occurred while trying to initialize database connection");
+         
+         throw new WAException("Unable to initialize connection to testbed database", WAException::$CODE_DB_CONNECT_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function returns the name of the database that has been bound to the
+    * PDO object
+    */
+   public function getDatabaseName() {
+      return $this->connectedDb;
+   }
+   
+   /**
+    * This function runs a generic SQL query
+    * 
+    * @param string  $query         The query to be executed
+    * @param boolean $fetchResult   Set to true if expecting result
+    * 
+    * @return Multi Returns an associative array from the query or false if unable to execute query
+    * @throws WAException
+    */
+   public function runGenericQuery($query, $fetchResults = false) {
+      if($this->pdoObject !== null) {
+         try {
+            //run a prepared statement (PDO will handle escaping)
+            $this->logH->log(4, $this->TAG, "About to run the following statement '$query'");
+            $stmt = $this->pdoObject->prepare($query);
+
+            $result = $stmt->execute();
+            if($result === true) {
+               $this->logH->log(4, $this->TAG, "Successfully run the statement '{$query}'");
+               if($fetchResults === TRUE){
+                  return $stmt->fetchAll(PDO::FETCH_ASSOC);
+               }
+            }
+            else {
+               $this->logH->log(1, $this->TAG, "An error occurred while trying to execute the SQL query '$query'");
+               throw new WAException("Unable to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, null);
+            }
+
+         } catch (PDOException $ex) {
+            $this->logH->log(2, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
+            throw new WAException("PDOException thrown while trying to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         $this->logH->log(1, $this->TAG, "Unable to run statement because PDO object is null for database object connected to '{$this->connectedDb}'");
+         throw new WAException("Unable to run statement because PDO object is null", WAException::$CODE_DB_QUERY_ERROR, null);
+      }
+      
+      /*try {
+         $dbase = new DBase("pgsql");
+         $config = $this->config;
+         $config['dbase'] = $this->getDatabaseName();
+         $config['dbloc'] = $config['testbed_dbloc'];
+         $config['user'] = $config['testbed_user'];
+         $config['pass'] = $config['testbed_pass'];
+         $dbase->InitializeConnection($config);
+         $this->logH->log(4, $this->TAG, "About to run query '$query'");
+         $result = $dbase->ExecuteQuery($query, NULL, PDO::FETCH_ASSOC, $fetchResults);
+         if($fetchResults) return $result;
+      } catch (PDOException $pdoException) {//thrown while trying to create dbase object
+         $this->logH->log(1, $this->TAG, "PDO Exception {$pdoException->getMessage()} thrown while trying to initialize Dbase object");
+         throw new WAException("PDO Exception {$pdoException->getMessage()} thrown while trying to initialize Dbase object", WAException::$CODE_DB_CONNECT_ERROR, $pdoException);
+      }
+      catch (Exception $genericException) {//thrown while trying to execute the actual query
+         $this->logH->log(1, $this->TAG, "Exception {$genericException->getMessage()} thrown while trying to execute this SQL query '$query'");
+         throw new WAException("Exception {$genericException->getMessage()} thrown while trying to execute this SQL query '$query'", WAException::$CODE_DB_QUERY_ERROR, $genericException);
+      }*/
+   }
+   
+   /**
+    * This function quotes strings and escapes special characters
+    */
+   public function quote($string) {
+      return $this->pdoObject->quote($string);
+   }
+   
+   /**
+    * This function closes the database connection held by this object
+    * 
+    * @throws WAException
+    */
+   public function close() {
+      if($this->pdoObject !== null){
+         $this->pdoObject = null;//Setting object to null should release connection. Refer to http://php.net/manual/en/pdo.connections.php
+      }
+      else {
+         $this->logH->log(2, $this->TAG, "Was unable to release the connection to the PDO object");
+         throw new WAException("The PDO connection is inactive or null", WAException::$CODE_DB_INACTIVE_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function tries to create the database for the workflow instance
+    * 
+    * @param string $name Name of the database to be created
+    * @throws WAException
+    */
+   public function runCreatDatabaseQuery($name) {
+      if($name !== null) {
+         //check if the database exists
+         try {
+            $result = $this->getDatabaseNames();
+            
+            if(in_array($name, $result) === false) {//no database with said name exists
+               $query = "create database {$name} with owner = ".$this->config['testbed_user'];
+               try {
+                  $this->runGenericQuery($query);
+               } 
+               catch (WAException $ex) {
+                  throw new WAException("Unable to create the {$name} database", WAException::$CODE_DB_CREATE_ERROR, $ex);
+               }
+            }
+            else {
+               $this->logH->log(2, $this->TAG, "Database '$name' already exists. Not creating it");
+            }
+         } catch (WAException $ex) {
+            //die(print_r($ex->getPrevious()->getPrevious()->getTrace(), true));
+            throw new WAException("Unable to check if {$name} database exists", WAException::$CODE_DB_CREATE_ERROR, $ex);
+         }
+      }
+      else {
+         throw new WAException("Database name is null. Cannot create database", WAException::$CODE_DB_CREATE_ERROR, null);
+      }
+   }
+   
+   public function runDropDatabaseQuery($name) {
+      if($name != null && $this->getDatabaseName() != $name) {
+         try {
+            $db2 = new Database($this->config, $name);
+            $db2->dropAllOtherConnections();
+            $db2->close();
+            $query = "drop database ".$name;
+            $this->runGenericQuery($query);
+         } catch (WAException $ex) {
+            throw new WAException("Unable to drop database '$name'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         throw new WAException("Unable to drop database because object is currently connected to it", WAException::$CODE_DB_CLOSE_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function returns time is an string that is insertable in MySQL
+    * 
+    * @return string Current time, insertable in MySQL as a DATETIME
+    */
+   public static function getMySQLTime() {
+      return date('Y-m-d H:i:s');//current time in format MySQL understands
+   }
+   
+   /**
+    * This function returns a list of all database names from the server
+    * 
+    * @return Array
+    * @throws WAException
+    */
+   public function getDatabaseNames() {
+      //$query = "show databases";
+      $query = "SELECT datname FROM pg_database WHERE datistemplate = false";
+      try {
+         $result = $this->runGenericQuery($query, true);
+         $this->logH->log(4, $this->TAG, "Result from '$query' = ".print_r($result, TRUE));
+         $names = array();
+         for($index = 0; $index < count($result); $index++) {
+            array_push($names, $result[$index]['datname']);
+         }
+         
+         $this->logH->log(4, $this->TAG, "Database names = ".print_r($names, TRUE));
+         
+         return $names;
+      } catch (WAException $ex) {
+         $this->logH->log(1, $this->TAG, "Unable to get database names from the server");
+         throw new WAException("Unable to get database names from the server", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This funciton returns a list of all table names in the specified database
+    * 
+    * @param type $databaseName  The database to check for tables in
+    * 
+    * @return Array
+    * @throw WAException
+    */
+   public function getTableNames($databaseName) {
+      $this->logH->log(4, $this->TAG, "Getting table names for database with name = '$databaseName'");
+      $query = "SELECT table_name FROM information_schema.tables where table_catalog = '{$databaseName}' and table_schema = 'public'";//only fetch tables that are in the public schema
+      try {
+         $result = $this->runGenericQuery($query, true);
+         $tables = array();
+         for($index = 0; $index < count($result); $index++) {
+            array_push($tables, $result[$index]['table_name']);
+         }
+         
+         return $tables;
+      } catch (WAException $ex) {
+         $this->logH->log(1, $this->TAG, "Unable to get names of tables in '{$databaseName}'");
+         throw new WAException("Unable to get table names from database server", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function returns column details for the specified table
+    * 
+    * @param string $tableName Name of the table
+    * @return Array Indexed array with column details for the specified table
+    * @throws WAException
+    */
+   public function getTableDetails($database, $tableName) {
+      //refer to http://www.postgresql.org/docs/9.4/static/infoschema-columns.html
+      
+      $query = "select column_name, data_type, character_maximum_length, is_nullable, column_default"
+              . " from information_schema.columns"
+              . " where table_name = '$tableName' and table_catalog = '$database'";
+      //TODO: determine if column is serial and a key
+      try {
+         $pKeys = $this->getTablePrimaryKeys($tableName);
+         $uKeys = $this->getTableUniqueKeys($tableName);
+         $result = $this->runGenericQuery($query, true);
+         $columns = array();
+         
+         if(count($result) == 0){
+            $this->logH->log(2, $this->TAG, "'$tableName' appears not to have any columns");
+         }
+         
+         for($index = 0; $index < count($result); $index++) {
+            $type = strtolower($result[$index]['data_type']);
+            
+            if($type == "character varying") $type = Database::$TYPE_VARCHAR;
+
+            $nullable = false;
+            if($result[$index]['is_nullable'] == "YES") {
+               $nullable = true;
+            }
+            
+            $default = $result[$index]['column_default'];
+            if($default == "NULL") $default = null;//TODO: not sure if this will work with PostgreSQL
+
+            $default = $result[$index]['Default'];
+            if($default == "NULL") $default = null;//TODO: not sure if this will work with PostgreSQL
+            $key = Database::$KEY_NONE;
+            if(in_array($result[$index]['column_name'], $pKeys)) $key = Database::$KEY_PRIMARY;
+            else if(in_array($result[$index]['column_name'], $uKeys)) $key = Database::$KEY_UNIQUE;
+            $currColumn = array(
+                "name" => $result[$index]['column_name'],
+                "type" => $type,
+                "length" => $result[$index]['character_maximum_length'],
+                "nullable" => $nullable,
+                "default" => $default,
+                "key" => $key
+            );
+            
+            array_push($columns, $currColumn);
+         }
+         
+         return $columns;
+      } catch (WAException $ex) {
+         $this->logH->log(1, $this->TAG, "Unable to get column details for table '$tableName' in '$database'");
+         throw new WAException("Unable to get column details for table '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function runs an insert query
+    * 
+    * @param string $table       The table where the query should be run
+    * @param array $columns      An associative array with keys as column names and values as insert values
+    * 
+    * @throws WAException
+    */
+   public function runInsertQuery($table, $columns, $returnStatement = false) {
+      $this->logH->log(4, $this->TAG, "runInsertQuery called");
+      $this->logH->log(4, $this->TAG, "columns = ".print_r($columns, true));
+      
+      $keys = array_keys($columns);
+      $query = "insert into ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." (".Database::$QUOTE_SI.implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $keys).Database::$QUOTE_SI.") ";
+      $values ="values(";
+      
+      for($index = 0; $index < count($keys); $index++) {
+         $values .= $columns[$keys[$index]];
+         if($index == count($keys) - 1) {//last element
+            $values .= ")";
+         }
+         else {
+            $values .=", ";
+         }
+      }
+      
+      $query .= $values;
+      $this->logH->log(4, $this->TAG, "Insert query = ".$query);
+      try {
+         if($returnStatement == true){
+            return $query;
+         }
+         else {
+            $this->runGenericQuery($query);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("An error occurred while trying to run insert query in '$table'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function gets the primary keys corresponding to a table
+    * @param type $tableName  Name of the table to get the keys
+    */
+   public function getTablePrimaryKeys($tableName) {
+      $query = "SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type
+         FROM pg_index i
+         JOIN pg_attribute a ON a.attrelid = i.indrelid
+         AND a.attnum = ANY(i.indkey)
+         WHERE i.indrelid = (SELECT oid FROM pg_class WHERE relname = '$tableName')
+         AND i.indisprimary";
+      try {
+         $result = $this->runGenericQuery($query, true);
+         $pkeys = array();
+         if(is_array($result)) {
+            if(count($result) == 0) {
+               $this->logH->log(2, $this->TAG, "'$tableName' does not have a primary key in the database '{$this->getDatabaseName()}'");
+            }
+            for($index = 0; $index < count($result); $index++) {
+               array_push($pkeys, $result[$index]['attname']);
+            }
+            return $pkeys;
+         }
+         else {
+            throw new WAException("Unable to retrieve primary keys for '$tableName' because of an error in the query", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to retrieve primary keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   public function getTableForeignKeys($tableName) {
+      $query = "SELECT tc.constraint_name, array_agg(kcu.column_name::text) columns, 
+         max(ccu.table_name::text) AS foreign_table_name,
+         array_agg(ccu.column_name::text) AS foreign_column_name 
+         FROM information_schema.table_constraints AS tc 
+         JOIN information_schema.key_column_usage AS kcu
+         ON tc.constraint_name = kcu.constraint_name
+         JOIN information_schema.constraint_column_usage AS ccu
+         ON ccu.constraint_name = tc.constraint_name
+         WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name='$tableName' group by tc.constraint_name";
+      try {
+         $result = $this->runGenericQuery($query, true);
+         if(is_array($result)) {
+            $foreignKeys = array();
+            for($index = 0; $index < count($result); $index++) {
+               $this->logH->log(3, $this->TAG, "foreign key = ".$result[$index]['columns']);
+               $this->logH->log(3, $this->TAG, "First character in foreign key = ".substr($result[$index]['columns'], 0, 1));
+               if(substr($result[$index]['columns'], 0, 2) == '{"') {
+                  $columns = array_values(array_unique(explode('","', substr($result[$index]['columns'], 2, -2))));
+               }
+               else {
+                  $columns = array_values(array_unique(explode(',', substr($result[$index]['columns'], 1, -1))));
+               }
+               if(substr($result[$index]['foreign_column_name'], 0, 2) == '{"') {
+                  $refColumns = array_values(array_unique(explode('","', substr($result[$index]['foreign_column_name'], 2, -2))));
+               }
+               else {
+                  $refColumns = array_values(array_unique(explode(',', substr($result[$index]['foreign_column_name'], 1, -1))));
+               }
+               $foreignKeys[$result[$index]['constraint_name']] = array(
+                   "columns" => $columns,
+                   "ref_table" => $result[$index]['foreign_table_name'],
+                   "ref_columns" => $refColumns
+               );
+            }
+            return $foreignKeys;
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to get foreign keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   public function getTableUniqueKeys($tableName) {
+      $query = "SELECT kcu.column_name
+         FROM information_schema.table_constraints AS tc 
+         JOIN information_schema.key_column_usage AS kcu
+         ON tc.constraint_name = kcu.constraint_name
+         JOIN information_schema.constraint_column_usage AS ccu
+         ON ccu.constraint_name = tc.constraint_name
+         WHERE constraint_type = 'UNIQUE' AND tc.table_name='$tableName'";
+      try {
+         $result = $this->runGenericQuery($query, true);
+         if(is_array($result)) {
+            $keys = array();
+            for($index = 0; $index < count($result); $index++) {
+               array_push($keys, $result[$index]['column_name']);
+            }
+            return $keys;
+         }
+         else {
+            throw new WAException("Unable to retrieve unique keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to retrieve unique keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function dumps the currently connected database to an SQL file
+    * 
+    * @param type $workingDir    The workflow's working directory
+    * @param type $filename      Name to be given to the backup file
+    */
+   public function backup($workingDir, $filename, $user, $description) {
+      try {
+         $this->logH->log(3, $this->TAG, "Backing up '".$this->getDatabaseName()."'");
+         //($config, $workflowID, $database, $workingDir, $type, $filename = null)
+         $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
+         $subDirPath = $dumpFile->createWorkingSubdir();
+         $path = $subDirPath . "/" . $filename;
+         $command = "export PGPASSWORD=".$this->config['testbed_pass'].";pg_dump --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} > $path";
+         $this->logH->log(4, $this->TAG, "Backup command is '$command'");
+         shell_exec($command);
+         if(file_exists($path)) {
+            $columns = array(
+               "location" => "'$filename'",
+               "added_by" => "'$user'",
+               "time_added" => "'{$this->getMySQLTime()}'",
+               "last_modified" => "'{$this->getMySQLTime()}'",
+               "workflow_type" => "'".WAFile::$TYPE_BACKUP."'",
+               "comment" => "'$description'"
+            );
+            $this->runInsertQuery(WAFile::$TABLE_META_FILES, $columns);
+         }
+         else {
+            $this->logH->log(1, $this->TAG, "Backup command yielded no output file for database '".$this->getDatabaseName()."'");
+            throw new WAException("Backup command yielded no output file", WAException::$CODE_DB_BACKUP_ERROR, null);
+         }
+      } catch (WAException $ex) {
+            $this->logH->log(1, $this->TAG, "An error occurred while trying to create backup file for database '".$this->getDatabaseName()."'");
+            throw new WAException("An error occurred while trying to create backup file for database", WAException::$CODE_DB_BACKUP_ERROR, $ex);
+      }
+   }
+   
+   public function restore($databaseName, $restoreFile) {
+      if(file_exists($restoreFile)) {
+         try {
+            $this->logH->log(3, $this->TAG, "Restoring '$databaseName' to state defined in '$restoreFile'");
+            /*$query = "drop database $databaseName";
+            $this->runGenericQuery($query);*/
+            /*$command = "export PGPASSWORD=".$this->config['testbed_pass'].";dropdb -U ".$this->config['testbed_user']." {$databaseName}";
+            shell_exec($command);*/
+            //drop all the tables
+            $db2 = new Database($this->config, $databaseName);
+            $db2->dropAllOtherConnections();
+            $db2->runGenericQuery("drop schema public cascade");
+            $db2->runGenericQuery("create schema public");
+            $db2->close();
+            $this->runDropDatabaseQuery($databaseName);
+            $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
+            $command = "export PGPASSWORD=".$this->config['testbed_pass'].";psql -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile";
+            $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);
+            $output = shell_exec($command);
+            $this->logH->log(4, $this->TAG, "Message from pg_restore is ".$output);
+         } catch (WAException $ex) {
+            $this->logH->log(1, $this->TAG, "Could not restore database '$databaseName' because a database error occurred");
+            throw new WAException("Could not restore database because a database (SQL) error occurred", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         $this->logH->log(1, $this->TAG, "Could not restore database '$databaseName' because backup file '$restoreFile' does not exist");
+         throw new WAException("Could not restore database because backup file does not exist", WAException::$CODE_DB_BACKUP_ERROR, null);
+      }
+   }
+   
+   public function dropAllOtherConnections() {
+      $query = "SELECT pg_terminate_backend(pg_stat_activity.procpid)
+               FROM pg_stat_activity
+               WHERE datname = current_database()
+               AND procpid <> pg_backend_pid()";
+      //change procpid to pid when updating to PostgreSQL 9.2 and above
+      try {
+         $this->runGenericQuery($query);
+      } catch (WAException $ex) {
+         throw new WAException("Could not drop all other exisiting connections to database", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function alters a table column
+    * 
+    * @param type $tableName
+    * @param type $currName
+    * @param type $newName
+    * @param type $type
+    * @param type $length
+    * @param type $nullable
+    * @param type $default
+    * @param type $key
+    */
+   public function runAlterColumnQuery($tableName, $currName, $newName, $type, $length, $nullable, $default, $key) {
+      //instead of altering the current column, add new column after existing then drop existing
+      try {
+         //if column was previously part of the primary key, the primary key will be deleted
+         //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
+         $tmpName = $currName."_odk_w_delete";
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+         $this->runGenericQuery($query);
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
+         $query .= $this->getColumnExpression($newName, $type, $length, $key, $default, $nullable);
+         $this->runGenericQuery($query);
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+         $this->runGenericQuery($query);
+         if($key == Database::$KEY_PRIMARY){
+            $this->addColumnsToPrimaryKey($tableName, array($newName));
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to get an update column expression for $'currName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function adds the specified columns to the table's primary key
+    * 
+    * @param type $tableName
+    * @param type $primaryKeyColumns
+    */
+   public function addColumnsToPrimaryKey($tableName, $primaryKeyColumns) {
+      try {
+         $existingKey = $this->getTablePrimaryKeys($tableName);
+         if(count($existingKey) > 0) {//drop existing primary key
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop constraint ".Database::$QUOTE_SI.$tableName."_pkey".Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+         }
+         //make sure only unique columns exist in $primaryKeyColumns
+         for($index = 0; $index < count($existingKey); $index++) {
+            if(!in_array($existingKey[$index], $primaryKeyColumns)) {
+               array_push($primaryKeyColumns, $existingKey[$index]);
+            }
+         }
+         
+         //try creating the new primary key
+         $pKey = Database::$QUOTE_SI . implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $primaryKeyColumns) . Database::$QUOTE_SI;
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add primary key($pKey)";
+         $this->runGenericQuery($query);
+         
+      } catch (WAException $ex) {
+         throw new WAException("Unable to update the primary key for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function adds a foreign key to the specified table
+    * 
+    * @param type $table         The table to add the foreign key
+    * @param type $columns       The columns in the foreign key
+    * @param type $refTable      The reference table
+    * @param type $refColumns    The reference Columns
+    */
+   public function addForeignKey($table, $columns, $refTable, $refColumns) {
+      if(count($columns) == count($refColumns)) {
+         try {
+            $this->logH->log(3, $this->TAG, "Creating a foreign key in '$table'");
+            $foreignKeys = $this->getTableForeignKeys($table);
+            $fKeys = array_keys($foreignKeys);
+            //check if a foreign key joins table with refTable
+            for($index = 0; $index < count($fKeys); $index++) {
+               if($foreignKeys[$fKeys[$index]]['ref_table'] == $refTable) {
+                  $query = "alter table ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." drop constraint ".Database::$QUOTE_SI.$fKeys[$index].Database::$QUOTE_SI;
+                  $this->logH->log(2, $this->TAG, "About to drop '$table' foreign key ".  print_r($foreignKeys[$fKeys[$index]], true));
+                  $this->runGenericQuery($query);
+               }
+            }
+            //add foreign key
+            $columns = Database::$QUOTE_SI.implode(Database::$QUOTE_SI.','.Database::$QUOTE_SI, $columns).Database::$QUOTE_SI;
+            $rColumns = Database::$QUOTE_SI.implode(Database::$QUOTE_SI.','.Database::$QUOTE_SI, $refColumns).Database::$QUOTE_SI;
+            $query = "alter table ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." add foreign key($columns) references ".Database::$QUOTE_SI.$refTable.Database::$QUOTE_SI."($rColumns)";
+            $this->runGenericQuery($query);
+         } catch (WAException $ex) {
+            throw new WAException("Could not create foreign key from '$table' referencing '$refTable'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         throw new WAException("Could not create foreign key from '$table' referencing '$refTable' because of a column count missmatch", WAException::$CODE_DB_QUERY_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function alters a table
+    * 
+    * @param string $currName    Current table name
+    * @param string $newName     New table name
+    * 
+    * @throws WAException
+    */
+   public function runAlterTableQuery($currName, $newName) {
+      $query = "alter table ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." rename to ".Database::$QUOTE_SI.$newName.Database::$QUOTE_SI;
+      try {
+         $this->runGenericQuery($query);
+      } catch (WAException $ex) {
+         throw new WAException("Unable to rename '$currName' to '$newName'", WAException::$CODE_DB_QUERY_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function creates an InnoDB table in the default database
+    * 
+    * @param string $name     The name of the table
+    * @param array $columns   An array with the column details. Each array element
+    *                         is an associative array and should contain the following
+    *                         keys
+    *                            - name      : Name of the column
+    *                            - type      : Column datatype. Only variables $KEY_* allowed as values
+    *                            - length    : Length of the column
+    *                            - nullable  : Can either be true or false
+    *                                          Nullable not supported when defining either primapr or unique key
+    *                            - default   : Default column value. If value is null/NULL, literal sence is assumed
+    *                                          Default value not supported when defining either primary or unique key
+    *                                          NULL defult value not supported if nullable is false
+    *                            - key       : Can either be $KEY_PRIMARY, $KEY_UNIQUE or $KEY_NONE.
+    *                            - auto_incr : Can either be true or false. Only applies to $TYPE_INT type and non nullable fields
+    * 
+    * @throws WAException
+    */
+   public function runCreateTableQuery($name, $columns, $linkTables = false) {
+      
+      try {//check if table already exists
+         $result = $this->getTableNames($this->getDatabaseName());
+         if(in_array($name, $result) === false) {//the table does not exist
+            //create table
+            $pKey = array();
+            $createString = "create table ".Database::$QUOTE_SI.$name.Database::$QUOTE_SI." ";
+            $columnNames = array();
+            for($cIndex = 0; $cIndex < count($columns); $cIndex++) {
+               if($cIndex == 0){
+                  $createString .= "(";
+               }
+
+               $currColumn = $columns[$cIndex];
+               //check if all the fields are there
+               $defKeys = array_keys($currColumn);
+               if(array_search("name", $defKeys) !== false
+                       && array_search("type", $defKeys) !== false
+                       && array_search("length", $defKeys) !== false
+                       && array_search("nullable", $defKeys) !== false
+                       && array_search("default", $defKeys) !== false
+                       && array_search("key", $defKeys) !== false) {
+                  try {
+                     array_push($columnNames, $currColumn['name']);
+                     $currColumnExpression = $this->getColumnExpression($currColumn['name'], $currColumn['type'], $currColumn['length'], $currColumn['key'], $currColumn['default'], $currColumn['nullable']);
+                     if($currColumn['key'] == Database::$KEY_PRIMARY) array_push ($pKey, $currColumn['name']);
+                     $createString .= $currColumnExpression;
+                  } catch (WAException $ex) {
+                     throw new WAException("Unable to create database column expression", WAException::$CODE_DB_CREATE_ERROR, $ex);
+                  }
+                  
+                  if($cIndex == (count($columns) - 1)) {//last element
+                     $createString .= ") ";
+                  }
+                  else {
+                      $createString .=", ";
+                  }
+               }
+               else {
+                  throw new WAException("Defination fields missing for defining column with the difination '".print_r($currColumn, true)."'", WAException::$CODE_DB_CREATE_ERROR, null);
+               }
+            }
+
+            //$createString .= "ENGINE = InnoDB";
+            $this->logH->log(4, $this->TAG, "About to run the following query ".$createString);
+            try {
+               $this->runGenericQuery($createString);
+               if(count($pKey) > 0) $this->addColumnsToPrimaryKey($name, $pKey);
+               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false) {
+                  $this->addForeignKey($name, array("secondary_key"), "main_sheet", array("primary_key"));
+               }
+            } catch (WAException $ex) {
+               $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");
+               throw new WAException("Unable to run the create stament for the table '{$name}'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+            }
+         }
+         else {
+            $this->logH->log(2, $this->TAG, "Table '$name' already exists. Not creating it");
+         }
+      } catch (WAException $ex) {
+         $this->logH->log(1, $this->TAG, "An error occurred while trying to check wheter the table '$name' exists");
+         throw new WAException("Unable to check whether the table '$name' already exists", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function returns a column expression string that defines the characteristics
+    * of a column to be used in insert and update statements
+    * 
+    * @throws WAException
+    */
+   private function getColumnExpression($name, $type, $length, $key, $default, $isNullable) {
+      $createString = Database::$QUOTE_SI."$name".Database::$QUOTE_SI." ";
+      if($type == Database::$TYPE_VARCHAR) {
+         if($length != null) {
+            $createString .= "{$type}({$length}) ";
+         }
+         else {
+            $this->logH->log(1, $this->TAG, "Column '{$name}' is defined as type ".Database::$TYPE_VARCHAR." but length not defined for table with name as '$name' in database '{$this->getDatabaseName()}'");
+            throw new WAException("Column '{$name}' is defined as type ".Database::$TYPE_VARCHAR." but length not defined for table with name as '$name'", WAException::$CODE_DB_CREATE_ERROR, null);
+         }
+      }
+      else {
+         $createString .= "{$type} ";
+      }
+
+      if($key == Database::$KEY_NONE
+              || $key == Database::$KEY_UNIQUE) {//for columns that are not the primary key
+
+         if($key == Database::$KEY_UNIQUE) {
+            $this->logH->log(3, $this->TAG, "'$name' has a unique key");
+            $createString .= "UNIQUE ";
+         }
+
+         //add default value
+         if($nullable === "null" 
+                 && ($default == null || $default == "NULL" || $default == "null")) {
+            //column is nullable and default value is null
+            $createString .= "default null ";
+         }
+         else if($nullable === "not null"
+                 && ($default == null || $default == "NULL" || $default == "null")) {
+            //column doesn't have a default value
+         }
+         else {
+            //default value is definately not null column however can be either nullable or not
+            if($default !== null) {
+               $createString .= "default {$default} ";
+            }
+            else {
+               $createString .= "default null ";
+            }
+         }
+
+         //add nullable
+         $nullable = "not null";
+         if($isNullable === true) $nullable = "null";
+         $createString .= "{$nullable} ";
+      }
+      /*else if($key == Database::$KEY_PRIMARY){
+         $createString .= "PRIMARY KEY ";
+
+         //check if is nullable
+         if($isNullable === true) {
+            $this->logH->log(1, $this->TAG, "Column with name '{$name}' defined as the primary key but nullable in database '{$this->getDatabaseName()}'");
+            throw new WAException("Column with name '{$name}' defined as the primary key but nullable", WAException::$CODE_DB_CREATE_ERROR, null);
+         }
+      }*/
+      
+      return $createString;
+   }
+      
+}
+?>

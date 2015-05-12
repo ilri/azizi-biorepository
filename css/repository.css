@@ -975,4 +975,10 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #animals .right{
    float: left !important;
    width: 450px;
+   .drag_drop_area {
+   border: 2px #aaa dashed;
+}
+
+.drag_drop_area:hover {
+   border: 2px #3d3d3d dashed;
 }

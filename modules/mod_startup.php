@@ -49,7 +49,8 @@ $Repository = new Repository();
 
 session_save_path(Config::$config['dbase']);
 session_name('repository');
-$Repository->Dbase->SessionStart();
+//$Repository->Dbase->SessionStart();
+$Repository->sessionStart();
 
 $Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
 

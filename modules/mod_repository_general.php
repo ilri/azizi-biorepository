@@ -59,6 +59,10 @@ class Repository extends DBase{
       $this->security = new Security($this->Dbase);
    }
 
+   public function sessionStart() {
+      $this->Dbase->SessionStart();
+   }
+
    /**
     * Controls the program execution
     */
@@ -102,6 +106,12 @@ class Repository extends DBase{
             require_once 'mod_odk_puller.php';
             $odkPuller = new ODKPuller($this->Dbase);
             $odkPuller->trafficController();
+         }
+         else if (OPTIONS_REQUESTED_MODULE == 'odk_workflow') {
+            $this->Dbase->CreateLogEntry("Calling the workflow API", 'debug');
+            require_once 'mod_wa_api.php';
+            $odkWorkflowAPI = new ODKWorkflowAPI($this->Dbase);
+            $odkWorkflowAPI->trafficController();
          }
          return;//do not show the user any more links
       }
@@ -196,6 +206,11 @@ class Repository extends DBase{
                require_once 'mod_farm_animals.php';
                $farmAnimals = new FarmAnimals($this->Dbase);
                $farmAnimals->trafficController();
+            }
+            else if(OPTIONS_REQUESTED_MODULE == 'dmp'){
+               require_once 'mod_dmp.php';
+               $dmp = new DMP($this->Dbase);
+               $dmp->trafficController();
             }
             else{
                $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');

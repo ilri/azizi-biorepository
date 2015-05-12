@@ -7,7 +7,10 @@ class LogHandler {
 	private $logs;
 	private $timeZone;
 	
-	public function __construct() {
+	public function __construct($rootDir = null) {
+      if($rootDir !== null) {
+         $this->ROOT = $rootDir;
+      }
 		$this->settingsDir = $this->ROOT."config/main.ini";
 		$this->getSettings();
 	}
