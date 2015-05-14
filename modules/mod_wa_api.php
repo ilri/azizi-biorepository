@@ -716,6 +716,14 @@ class ODKWorkflowAPI extends Repository {
       }
    }
    
+   /**
+    * This function handles the get_db_credentials endpoint
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    * }
+    */
    private function handleGetDbCredentialsEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
@@ -787,6 +795,15 @@ class ODKWorkflowAPI extends Repository {
       echo json_encode($data);
    }
    
+   /**
+    * This function registers a client
+    * 
+    * @param String $uri         The client/user UUID
+    * @param String $authMode    The authentication mode. Can either be 'local' or 'ldap'
+    * @param String $cyperSecret Encrypted secret to be used when authenticating
+    * @return boolean   TRUE if user created successfully
+    * @throws WAException
+    */
    private function addClient($uri, $authMode, $cyperSecret) {
       $security = new Security($this->Dbase);
       $decryptedCypher = $security->decryptCypherText($cyperSecret);
@@ -931,6 +948,14 @@ class ODKWorkflowAPI extends Repository {
       return null;
    }
    
+   /**
+    * This function determines whether the provided session is valid
+    * 
+    * @param String $uri         The client/user UUID
+    * @param String $sessionId   The session id
+    * @return boolean   TRUE if session is valid
+    * @throws WAException
+    */
    private function isSessionValid($uri, $sessionId) {
       try {
          $database = new Database($this->config);
