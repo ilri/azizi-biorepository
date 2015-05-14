@@ -772,7 +772,6 @@ class Parser {
     */
    private function insertCSVCell($cellString, $rowIndex, $columnHeading, $parentSheetName){
        $sheetNames = array_keys($this->sheets);
-
         if (!in_array($parentSheetName, $sheetNames)) {
             $this->sheets[$parentSheetName] = array();
             $this->logHandler->log(4, $this->TAG, "First time encountering " . $parentSheetName);
@@ -1327,14 +1326,14 @@ class Parser {
             //remove the double quotes still remaining in the first and last elements of the columns array
            $columns[0] = str_replace("\"","",$columns[0]);
            $columns[$columnCount - 1] = str_replace("\"", "", $columns[$columnCount - 1]);
-
+           $columns[$columnCount - 1] = trim($columns[$columnCount - 1], "\n\r");//remove new lines from last column
+           
            if($index===0){
                array_unshift($columns,"primary_key");
            }
            else{
                array_unshift($columns,$this->odkInstance."_".$index);
            }
-
            $this->cells[$index] = $columns;
            $index++;
        }
