@@ -165,6 +165,8 @@ class Parser {
    private $authURL;
 
    private $selectNodesOptions;
+   
+   private $primaryKeys;
 
    /**
     * Get all the options in the select options available in the xml
@@ -233,6 +235,7 @@ class Parser {
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
       $this->nextRowName = array();
+      $this->primaryKeys = array();
       $this->sessionID = session_id();
       if($this->sessionID == NULL || $this->sessionID == "") {
          $this->sessionID = round(microtime(true) * 1000);
@@ -313,46 +316,12 @@ class Parser {
           $this->setExcelMetaData();
 
           //replace all : in headings with -
-          //$cellsLength = count($this->cells[0]);
           $multiSelectQuestions = array_keys($this->selectNodesOptions);//includes those in main_sheet and other sheets
           $this->logHandler->log(4, $this->TAG, "headings before = ".  print_r($this->cells[0], true));
           for($i=0; $i < count($this->cells[0]); $i++){
              $this->cells[0][$i] = str_replace(":", "-", $this->cells[0][$i]);
-             //check if current cell is a multi select question
-             /*if(array_search($this->cells[0][$i], $multiSelectQuestions) !== false){//current cell contains the heading of a multi select question
-                //get the options in multiselect question
-                $toBeInserted = array();//array containing new columns for all the csv rows
-                $options = $this->selectNodesOptions[$this->cells[0][$i]]['options'];
-                $countOptions = count($options);
-                $blankArray = array();
-                $noRows = count($this->cells);
-                for($index = 0; $index < $countOptions; $index++) {
-                   //append the question name as the prefix for each of the options
-                   $rawValue = $options[$index];
-                   $options[$index] = $this->cells[0][$i]."-".$options[$index];
-                   
-                   if(!isset($toBeInserted[0])) $toBeInserted[0] = array();
-                   $toBeInserted[0][$index] = $options[$index];
-                   for($rowIndex = 1; $rowIndex < $noRows; $rowIndex++) {
-                      if(!isset($toBeInserted[$rowIndex])) $toBeInserted[$rowIndex] = array();
-                      $stringValue = $this->cells[$rowIndex][$i];
-                      $this->logHandler->log(4, $this->TAG, "Combined value = ".$stringValue." vs curr option = ".$rawValue);
-                      if(strpos($stringValue, $rawValue) !== false) {//for current row, choice was not selected
-                         $toBeInserted[$rowIndex][$index] = 1;
-                         $this->logHandler->log(4, $this->TAG, $rawValue." in ".$stringValue);
-                      }
-                      else {
-                         $this->logHandler->log(4, $this->TAG, $rawValue." not in ".$stringValue);
-                         $toBeInserted[$rowIndex][$index] = 0;
-                      }
-                   }
-                }
-                $toBeInserted[0] = $options;
-                $this->cells = $this->addColumnsToRows($this->cells, $i+1, $toBeInserted);
-             }*/
           }
-          //$this->logHandler->log(4, $this->TAG, "headings after = ".  print_r($this->cells[0], true));
-//          $this->logHandler->log(3, $this->TAG, 'Dumping the csv headers: '. print_r($this->cells[0], true));
+          
           $this->cells = $this->expandMultiSelectQuestions($this->cells);
           
           $rowIndex = 0;
@@ -362,8 +331,6 @@ class Parser {
                   $rowLength = sizeof($this->cells[$rowIndex]);
 
                   $readableRIndex = $rowIndex+1;
-//                  $this->logHandler->log(3, $this->TAG, 'At '.$readableRIndex." of ". $cellsLength);
-//                  $this->logHandler->log(3, $this->TAG, 'Current CSV row has '. $rowLength ." columns");
                   $columnIndex = 0;
 
                   while($columnIndex < $rowLength){
@@ -815,7 +782,7 @@ class Parser {
             $this->sheetIndexes[$parentSheetName] = sizeof($sheetNames);
 
             $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentSheetName]);
-            $this->phpExcel->getActiveSheet()->setTitle($parentSheetName);
+            $this->phpExcel->getActiveSheet()->setTitle($this->shortenSheetName($parentSheetName));
         } else {
             $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$parentSheetName]);
         }
@@ -831,8 +798,8 @@ class Parser {
         $cellID = $this->getColumnName(NULL, NULL, $columnIndex) . $rowID;
         if (filter_var($cellString, FILTER_VALIDATE_URL) && $this->isImage($cellString) === FALSE) {
             // is non-image url. Expecting a table with data... parse the HTML table
-            $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $columnHeading . " sheet");
-            $this->parseHTMLTable($cellString, $columnHeading, $rowIndex);
+            $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $this->shortenSheetName($columnHeading) . " sheet");
+            $this->parseHTMLTable($cellString, $columnHeading, $rowIndex, $this->shortenSheetName($parentSheetName));
         }
         else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $this->isImage($cellString) ===TRUE && $this->dwnldImages === "yes"){
             //is an image
@@ -944,6 +911,24 @@ class Parser {
             }
         }
     }
+    
+    /**
+     * This function trys to shorten the provided sheet name if it's more than
+     * 30 characters long
+     * 
+     * @param String $sheetName  The current sheet name
+     * @return String   The shortened sheet name
+     */
+    private function shortenSheetName($sheetName) {
+       if(strlen($sheetName) > 30){
+          $sheetName = substr($sheetName, -30);//get the last 30 characters of the name
+          if(strstr($sheetName, "-") !== false){//there is at least one '-' in the shortened sheet name
+             return strstr($sheetName, "-");//return the portion of the heading starting with the first occurrance of -
+          }
+          else return $sheetName;
+       }
+       return $sheetName;
+    }
 
     /**
      * This function gets the string (question text) corresponding to each column heading code.
@@ -1021,7 +1006,7 @@ class Parser {
      * @param  type  $sheetName     Name of the excel sheet where the data from the html file will be dumpd
      * @param  type  $secondaryKey  Key that will associate the data in the html page to the parent data in the main_sheet
      */
-    private function parseHTMLTable($url, $sheetName, $secondaryKey) {
+    private function parseHTMLTable($url, $sheetName, $secondaryKey, $parentSheetName) {
       //"http://azizi.ilri.cgiar.org/ODKAggregate/local_login.html?redirect="
       //http://azizi.ilri.cgiar.org/ODKAggregate/view/formMultipleValue?formId=LamuChickens-v01%5B%40version%3Dnull+and+%40uiVersion%3Dnull%5D%2Fchicken%5B%40key%3Duuid%3Ae3983629-8faa-4531-b61a-34d756bbcbd9%5D%2Fsamples
       //$splitURL = preg_split("/\/view\//i", $url);
@@ -1032,6 +1017,10 @@ class Parser {
       $sheetNames = array_keys($this->nextRowName);
       if (!in_array($sheetName, $sheetNames)) {
          $this->nextRowName[$sheetName] = 0;
+      }
+      
+      if(!isset($this->primaryKeys[$sheetName])){
+         $this->primaryKeys[$sheetName] = 1;
       }
 
       if (file_exists($this->authCookies) === FALSE) {
@@ -1084,11 +1073,12 @@ class Parser {
                }
             }
             $headings = $th; //table headings gotten
+            array_unshift($headings, "primary_key");
             array_unshift($headings, "secondary_key");
             $cleanCSVRows = array();
             $cleanCSVRows[0] = array();
             for ($i = 0; $i < sizeof($headings); $i++) {
-               if ($i != 0) {//current heading is not secondary_key
+               if ($i > 1) {//current heading is not primary_key or secondary_key
                   $headings[$i] = $sheetName . "-" . $headings[$i];
                }
                $cleanCSVRows[0][$i] = $headings[$i];
@@ -1107,7 +1097,11 @@ class Parser {
                      $rows[$rowIndex] = str_replace("<tr>", "", $rows[$rowIndex]);
                      $rowColumns = explode("</td>", $rows[$rowIndex]);
 
-                     array_unshift($rowColumns, $this->odkInstance . "_" . $secondaryKey);
+                     //array_unshift($rowColumns, $this->odkInstance . "_" . $secondaryKey);
+                     array_unshift($rowColumns, $sheetName . "_" . $this->primaryKeys[$sheetName]);//insert primary key
+                     $this->primaryKeys[$sheetName] = $this->primaryKeys[$sheetName] + 1;
+                     if($parentSheetName == "main_sheet") $parentSheetName = $this->odkInstance;
+                     array_unshift($rowColumns, $parentSheetName . "_" . $secondaryKey);//insert secondary key
 
                      if ((sizeof($headings) + 1) === sizeof($rowColumns)) {
                         for ($columnIndex = 0; $columnIndex < sizeof($rowColumns); $columnIndex++) {
