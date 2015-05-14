@@ -422,6 +422,16 @@ class ODKWorkflowAPI extends Repository {
       }
    }
    
+   /**
+    * This function handles the alter_name endpoint of the API.
+    * The alter_name endpoint renames the workflow field.
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "Instance id for the workflow"
+    *    name        :  "New name for the workflow"
+    * }
+    */
    private function handleAlterNameEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
