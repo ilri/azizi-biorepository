@@ -171,8 +171,8 @@ Animals.prototype.saveAnimal = function(){
    $.ajax({
        type:"POST", url: "mod_ajax.php?page=farm_animals&do=add", async: false, dataType:'json', data: formSerialized + '&action=save',
        success: function (data) {
+          animals.showNotification(data.mssg, data.error);
           if(data.error === true){
-              alert(data.mssg);
               $('#animal_id').val('').focus();
               return;
           }

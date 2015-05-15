@@ -318,6 +318,7 @@ class FarmAnimals{
          </div>
       </fieldset>
    </form>
+   <div id="messageNotification"><div></div></div>
 </div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
@@ -547,7 +548,8 @@ class FarmAnimals{
       $cols = 'animal_id, species_id, sex';
       $colrefs = ':animal_id, :species_id, :sex';
       $colvals = array('animal_id' => $_POST['animal_id'], 'species_id' => $_POST['species'], 'sex' => $_POST['sex']);
-      if($_POST['dob'] !== '') { $cols .= ', dob';  $colrefs .= ', :dob'; $colvals[''] = $_POST['dob']; }
+      $dob = date_create_from_format('d-m-Y', $_POST['dob']);
+      if($_POST['dob'] !== '') { $cols .= ', dob';  $colrefs .= ', :dob'; $colvals['dob'] = date_format($dob, 'Y-m-d'); }
       if($_POST['other_id'] != '') { $cols .= ', other_id';  $colrefs .= ', :other_id'; $colvals[''] = $_POST['other_id']; }
       if($_POST['origin'] != '') { $cols .= ', origin';  $colrefs .= ', :origin'; $colvals[''] = $_POST['origin']; }
       if($_POST['experiment'] != '') { $cols .= ', experiment';  $colrefs .= ', :experiment'; $colvals[''] = $_POST['experiment']; }
@@ -556,7 +558,7 @@ class FarmAnimals{
       if($_POST['sire'] != '') { $cols .= ', sire';  $colrefs .= ', :sire'; $colvals['sire'] = $_POST['sire']; }
 
       $this->Dbase->StartTrans();
-      $query = "insert into '. Config::$farm_db .'.farm_animals($cols) values($colrefs)";
+      $query = 'insert into '. Config::$farm_db .".farm_animals($cols) values($colrefs)";
       $res = $this->Dbase->ExecuteQuery($query, $colvals);
       if($res == 1){
          $this->Dbase->RollBackTrans();
