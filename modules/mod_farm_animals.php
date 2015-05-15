@@ -857,16 +857,34 @@ class FarmAnimals{
     * Gets the sub list of a particular group
     */
    private function eventsSubList(){
-      $eventsQuery = 'select b.animal_id, b.sex, record_date as time_recorded, concat(d.surname, " ", d.first_name) as owner '
-          . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
-          . 'left join '. Config::$farm_db .'.farm_people as d on b.current_owner=d.id '
-          . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
-          . 'where a.event_type_id = :event_type_id and a.sub_event_type_id = :sub_event_type_id and a.event_date = :event_date and performed_by = :performed_by';
-
+      // prepare for the query
       $subEvent = (is_numeric($_POST['sub_event_type_id'])) ? $_POST['sub_event_type_id'] : NULL;
-      $vars = array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date'], 'performed_by' => $_POST['performed_by'], 'sub_event_type_id' => $subEvent);
+      $vars = array('event_type_id' => $_POST['event_type_id'], 'event_date' => $_POST['event_date'], 'performed_by' => $_POST['performed_by']);
+
+      if(is_numeric($_POST['sub_event_type_id'])){
+         $vars['sub_event_type_id'] = $_POST['sub_event_type_id'];
+         $addQuery = ' and a.sub_event_type_id = :sub_event_type_id ';
+         $subEvent = $_POST['sub_event_type_id'];
+      }
+      else{
+         $subEvent = NULL;
+      }
+
+      $eventsQuery = 'select b.animal_id, b.sex, event_value, record_date as time_recorded, performed_by, recorded_by '
+          . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+          . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
+          . "where a.event_type_id = :event_type_id $addQuery and a.event_date = :event_date and performed_by = :performed_by";
+
       $events = $this->Dbase->ExecuteQuery($eventsQuery, $vars);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
+
+      $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      if(is_string($owners)) { die(json_encode(array('error' => true, 'mssg' => $owners))); }
+      foreach($events as $key => $event){
+         $events[$key]['performed_by'] = $owners[$event['performed_by']];
+         $events[$key]['recorded_by'] = $owners[$event['recorded_by']];
+      }
+
       die(json_encode(array('error' => false, 'data' => $events)));
 
    }

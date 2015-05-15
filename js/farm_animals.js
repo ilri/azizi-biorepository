@@ -908,18 +908,19 @@ Animals.prototype.initializeEventRowDetails = function(index, parentElement, gri
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
-       datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'time_recorded'}, {name: 'owner'} ], type: 'POST',
+       datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'performed_by'}, {name: 'recorded_by'}, {name: 'event_value'} ], type: 'POST',
        id: 'id', data: {action: 'list', field: 'sub_events',  performed_by: dr.performed_by_id, event_type_id: dr.event_type_id, sub_event_type_id: dr.sub_event_type_id, event_date: dr.event_date},
        url: 'mod_ajax.php?page=farm_animals&do=events'
     };
 
     if (grid !== null) {
-      grid.jqxGrid({source: eventsSource, theme: '', width: 620, height: 140,
+      grid.jqxGrid({source: eventsSource, theme: '', width: 640, height: 140,
       columns: [
          {text: 'Animal ID', datafield: 'animal_id', hidden: false, width: 150},
          {text: 'Sex', datafield: 'sex', width: 100},
-         {text: 'Time Recorded', datafield: 'time_recorded', width: 140},
-         {text: 'Owner', datafield: 'owner', width: 150}
+         {text: 'Value', datafield: 'event_value', width: 70},
+         {text: 'Perfomed By', datafield: 'performed_by', width: 140},
+         {text: 'Recorded By', datafield: 'recorded_by', width: 150}
       ]
       });
    }
