@@ -389,6 +389,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #animal_info{ display: none; }
 .status_bar_div{ float: left; margin-left: 5px; padding: 4px 0px 0px 4px; }
 .status_bar_span{ margin: 0px 1px 0px 3px; position: relative; top: 2px; }
+#exitTypeId, #eventValuePlaceId{ display: none; }
 /* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{
@@ -975,8 +976,6 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #animals .right{
    float: left !important;
    width: 450px;
-   .drag_drop_area {
-   border: 2px #aaa dashed;
 }
 
 .drag_drop_area:hover {

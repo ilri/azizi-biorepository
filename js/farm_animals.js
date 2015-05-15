@@ -745,6 +745,7 @@ Animals.prototype.moveAnimals = function(sender){
  */
 Animals.prototype.confirmEventsExtras = function(){
    var intendedAction = $('#toComboId option:selected').text();
+   var eventValue = $('#eventValueId').val();
    var isError = false, errorMsg = '', err;
 
    // get the date, person who performed it and the comments
@@ -764,13 +765,16 @@ Animals.prototype.confirmEventsExtras = function(){
       err = 'Please select the type of exit for the selected animal(s)';
       errorMsg = (errorMsg === '') ? err : err +'<br />'+ errorMsg;
    }
-   animals.extraData = {eventDate: $("#event_date_pl").jqxDateTimeInput('getText'), performedBy: performedBy, comments: $('#event_comments').val(), exitType: exitType };
-
-   switch(intendedAction){
-      case 'Vaccination':
-
-      break;
+   else{
+      exitType = undefined;
    }
+   if(animals.valueEvents.indexOf(intendedAction) !== -1 && eventValue === ''){
+      isError = true;
+      err = 'Please enter the event value for the selected animal';
+      errorMsg = (errorMsg === '') ? err : err +'<br />'+ errorMsg;
+   }
+   animals.extraData = {eventDate: $("#event_date_pl").jqxDateTimeInput('getText'), performedBy: performedBy, comments: $('#event_comments').val(), exitType: exitType, eventValue: eventValue };
+
 
    if(isError === true){ animals.showNotification(errorMsg, 'error'); }
    return isError;
@@ -1262,33 +1266,35 @@ Animals.prototype.addEventDetails = function(sender){
    // if the additional details for an event are added
    if($('.addons').length === 1) {
       // if the type of exit field is active and the selected event is not exit, remove it, else just exit
+      if($('#eventValuePlaceId')[0].style.display === 'block' && animals.valueEvents.indexOf(eventName) === -1){ $('#eventValuePlaceId').css({'display': 'none'}); }
+      else if($('#eventValuePlaceId')[0].style.display === 'none' && animals.valueEvents.indexOf(eventName) !== -1){ $('#eventValuePlaceId').css({'display': 'block'}); }
       if($('#exitTypeId')[0].style.display === 'block' && eventName !== animals.exitVariable){ $('#exitTypeId').css({'display': 'none'}); }
-      if($('#exitTypeId')[0].style.display === 'none' && eventName === animals.exitVariable){ $('#exitTypeId').css({'display': 'block'}); }
+      else if($('#exitTypeId')[0].style.display === 'none' && eventName === animals.exitVariable){ $('#exitTypeId').css({'display': 'block'}); }
       return;
    }
 
-   switch(eventName){
-      case 'Vaccination':
-
-      break;
-   };
-
    content2add = "<div class='addons'>\n\
-   <div id='exitTypeId' class='control-group' display='none'>\
-      <label class='control-label' for='exitType'>Type of Exit&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
-      <div id='exit_type_pl' class='animal_input controls'></div>\n\
-   </div>\n\
-   <div class='control-group'>\
-      <label class='control-label' for='performed'>Performed By&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
-      <div id='performedBy_pl' class='animal_input controls'></div>\n\
-   </div>\n\
-   <div class='control-group'>\
-      <label class='control-label' for='event_date'>Event Date&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
-      <div id='event_date_pl' class='animal_input controls'></div>\n\
-   </div>\n\
-   <div class='control-group'>\
-      <label class='control-label' for='comments'>Event Comments/Values</label>\n\
-   <div id='comments_pl' class='animal_input controls'><textarea id='event_comments' rows='3' cols='7'></textarea></div>\n\
+      <div id='exitTypeId' class='control-group'>\
+         <label class='control-label' for='exitType'>Type of Exit&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+         <div id='exit_type_pl' class='animal_input controls'></div>\n\
+      </div>\n\
+      <div id='eventValuePlaceId' class='control-group'>\
+         <label class='control-label' for='eventValue'>Event Value&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+         <div id='event_value_pl' class='animal_input controls'>\n\
+            <input type='text' value='' id='eventValueId' />\n\
+         </div>\n\
+      </div>\n\
+      <div class='control-group'>\
+         <label class='control-label' for='performed'>Performed By&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+         <div id='performedBy_pl' class='animal_input controls'></div>\n\
+      </div>\n\
+      <div class='control-group'>\
+         <label class='control-label' for='event_date'>Event Date&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+         <div id='event_date_pl' class='animal_input controls'></div>\n\
+      </div>\n\
+      <div class='control-group'>\
+         <label class='control-label' for='comments'>Event Comments/Values</label>\n\
+      <div id='comments_pl' class='animal_input controls'><textarea id='event_comments' rows='3' cols='7'></textarea></div>\n\
    </div>";
 
    // now add the new functionality to the page
@@ -1306,12 +1312,21 @@ Animals.prototype.addEventDetails = function(sender){
    var ownersCombo = Common.generateCombo(settings);
    $('#performedBy_pl').html(ownersCombo);
 
+   // populate the exit types
+   var settings = {name: 'sub_events_by', id: 'sub_events_id', data: animals.allSubEvents, initValue: 'Select One', required: 'true'};
+   var subEventsCombo = Common.generateCombo(settings);
+   $('#exit_type_pl').html(subEventsCombo);
+
+   // hide all the sub types.... this is kind of a hack to ensure the divs are displayed well on selecting an event
+   $('#exitTypeId').css({'display': 'none'});
+   $('#eventValuePlaceId').css({'display': 'none'});
+
    // if we are having an exit type, specify the type of exit
    if(eventName === animals.exitVariable){
-      var settings = {name: 'sub_events_by', id: 'sub_events_id', data: animals.allSubEvents, initValue: 'Select One', required: 'true'};
-      var subEventsCombo = Common.generateCombo(settings);
-      $('#exit_type_pl').html(subEventsCombo);
       $('#exitTypeId').css({'display': 'block'});
+   }
+   else if(animals.valueEvents.indexOf(eventName) !== -1){
+      $('#eventValuePlaceId').css({'display': 'block'});
    }
 };
 
