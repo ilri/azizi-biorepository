@@ -764,14 +764,17 @@ class ODKWorkflowAPI extends Repository {
     * {
     *    workflow_id    :  "Instance id for the main workflow"
     *    workflow_id_2  :  "Instance id for the workflow you are comparing main workflow with"
+    *    type           :  "Can either be 'all', 'trivial' or 'non_trivial' "
     * }
     */
    private function handleGetSchemaDiffEndpoint(){
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
-               && array_key_exists("workflow_id_2", $json)) {
-            $diff = Workflow::getSchemaDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2']);
+               && array_key_exists("workflow_id_2", $json)
+               && array_key_exists("type", $json)
+               && ($json['type'] == 'all' || $json['type'] == 'trivial' || $json['type'] == 'non_trivial')) {
+            $diff = Workflow::getSchemaDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type']);
             $this->returnResponse($diff);
          }
          else {

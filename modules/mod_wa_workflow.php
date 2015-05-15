@@ -1315,7 +1315,7 @@ class Workflow {
       return $result;
    }
    
-   public static function getSchemaDifference($userUUID, $config, $workflowID1, $workflowID2) {
+   public static function getSchemaDifference($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all") {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
@@ -1356,12 +1356,14 @@ class Workflow {
             for($index = 0; $index < $noNames; $index++){
                if(in_array($schema1SheetNames[$index], $schema2SheetNames) == false){
                   $lH->log(4, "waworkflow_static", "Sheet {$schema1SheetNames[$index]} not in $workflowID2");
-                  $diff[] = array(
-                     "level" => "sheet",
-                     "type" => "missing",
-                     $workflowID1 => $schema1['sheets'][$sheet1Indexes[$schema1SheetNames[$index]]],
-                     $workflowID2 => ""
-                  );
+                  if($diffType == "all" || $diffType == "trivial"){
+                     $diff[] = array(
+                        "level" => "sheet",
+                        "type" => "missing",
+                        $workflowID1 => $schema1['sheets'][$sheet1Indexes[$schema1SheetNames[$index]]],
+                        $workflowID2 => ""
+                     );
+                  }
                }
                else {
                   $commonSheetNames[] = $schema1SheetNames[$index];
@@ -1369,16 +1371,18 @@ class Workflow {
             }
             $lH->log(4, "waworkflow_static", "Common sheet names = ".print_r($commonSheetNames, true));
             //check which sheets are in workflow2 and not in workflow1
-            $noNames = count($schema2SheetNames);
-            for($index = 0; $index < $noNames; $index++){
-               if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false){
-                  $lH->log(4, "waworkflow_static", "Sheet {$schema2SheetNames[$index]} not in $workflowID1");
-                  $diff[] = array(
-                     "level" => "sheet",
-                     "type" => "missing",
-                     $workflowID1 => "",
-                     $workflowID2 => $schema2['sheets'][$sheet2Indexes[$schema2SheetNames[$index]]]
-                  );
+            if($diffType == "all" || $diffType == "trivial"){
+               $noNames = count($schema2SheetNames);
+               for($index = 0; $index < $noNames; $index++){
+                  if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false){
+                     $lH->log(4, "waworkflow_static", "Sheet {$schema2SheetNames[$index]} not in $workflowID1");
+                     $diff[] = array(
+                        "level" => "sheet",
+                        "type" => "missing",
+                        $workflowID1 => "",
+                        $workflowID2 => $schema2['sheets'][$sheet2Indexes[$schema2SheetNames[$index]]]
+                     );
+                  }
                }
             }
             
@@ -1412,13 +1416,15 @@ class Workflow {
                for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                   if(in_array($col1Names[$colIndex], $col2Names) == false){
                      $lH->log(4, "waworkflow_static", "{$col1Names[$colIndex]} not in $workflowID2");
-                     $diff[] = array(
-                        "level" => "column",
-                        "type" => "missing",
-                        "sheet" => $currSheetName,
-                        $workflowID1 => $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]],
-                        $workflowID2 => ""
-                     );
+                     if($diffType == "all" || $diffType == "trivial"){
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "missing",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]],
+                           $workflowID2 => ""
+                        );
+                     }
                   }
                   else {
                      $commonColumnNames[] = $col1Names[$colIndex];
@@ -1427,38 +1433,71 @@ class Workflow {
                $lH->log(4, "waworkflow_static", "Common column names = ".  print_r($commonColumnNames, TRUE));
                $colSize = count($col2Names);
                //check which columns are in workflow2 and not workflow1
-               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
-                  if(in_array($col2Names[$colIndex], $col1Names) == false){
-                     $lH->log(4, "waworkflow_static", "{$col2Names[$colIndex]} not in $workflowID1");
-                     $diff[] = array(
-                        "level" => "column",
-                        "type" => "missing",
-                        "sheet" => $currSheetName,
-                        $workflowID1 => "",
-                        $workflowID2 => $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]
-                     );
+               if($diffType == "all" || $diffType == "trivial"){
+                  for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                     if(in_array($col2Names[$colIndex], $col1Names) == false){
+                        $lH->log(4, "waworkflow_static", "{$col2Names[$colIndex]} not in $workflowID1");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "missing",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => "",
+                           $workflowID2 => $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]
+                        );
+                     }
                   }
                }
                
                //for each of the common columns, check which ones are different
+               
                $colSize = count($commonColumnNames);
                for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                   $currCol1 = $currSheetIn1['columns'][$col1Indexes[$commonColumnNames[$colIndex]]];
                   $lH->log(4, "waworkflow_static", "Current column1 = ".print_r($currCol1,true));
                   $currCol2 = $currSheetIn2['columns'][$col2Indexes[$commonColumnNames[$colIndex]]];
                   $lH->log(4, "waworkflow_static", "Current column2 = ".print_r($currCol2,true));
-                  if($currCol1['type'] != $currCol2['type']
-                        || $currCol1['length'] != $currCol2['length']
-                        || $currCol1['nullable'] != $currCol2['nullable']
+                  if($diffType == "trivial"){//Trivial cases. Only when length or nullable differ
+                     if($currCol1['type'] == $currCol2['type']
+                        && $currCol1['default'] == $currCol2['default']
+                        && ($currCol1['length'] != $currCol2['length']
+                        || $currCol1['nullable'] != $currCol2['nullable'])) {//TODO: not catered for key and present
+                        $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "conflict",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currCol1,
+                           $workflowID2 => $currCol2
+                        );
+                     }
+                  }
+                  else if($diffType == "non_trivial"){//When type or default value differ
+                     if($currCol1['type'] != $currCol2['type']
                         || $currCol1['default'] != $currCol2['default']) {//TODO: not catered for key and present
-                     $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
-                     $diff[] = array(
-                        "level" => "column",
-                        "type" => "conflict",
-                        "sheet" => $currSheetName,
-                        $workflowID1 => $currCol1,
-                        $workflowID2 => $currCol2
-                     );
+                        $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "conflict",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currCol1,
+                           $workflowID2 => $currCol2
+                        );
+                     }
+                  }
+                  else {//all cases
+                     if($currCol1['length'] != $currCol2['length']
+                        || $currCol1['nullable'] != $currCol2['nullable']
+                        || $currCol1['type'] != $currCol2['type']
+                        || $currCol1['default'] != $currCol2['default']) {//TODO: not catered for key and present
+                        $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "conflict",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currCol1,
+                           $workflowID2 => $currCol2
+                        );
+                     }
                   }
                }
             }
