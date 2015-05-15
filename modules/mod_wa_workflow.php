@@ -1315,6 +1315,182 @@ class Workflow {
       return $result;
    }
    
+   public static function getSchemaDifference($userUUID, $config, $workflowID1, $workflowID2) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      
+      $errors = array();
+      $healthy = true;
+      $diff = array();
+      $lH = new LogHandler("./");
+      $lH->log(3, "waworkflow_static", "Determining schema difference between '{$workflowID1}' and '{$workflowID2}'");
+      try {
+         $workflow1 = new Workflow($config, null, $userUUID, $workflowID1);
+         $schema1 = $workflow1->getSchema();
+         $lH->log(4, "waworkflow_static", "Schema1 = ".print_r($schema1, true));
+         $workflow2 = new Workflow($config, null, $userUUID, $workflowID2);
+         $schema2 = $workflow2->getSchema();
+         $lH->log(4, "waworkflow_static", "Schema2 = ".print_r($schema2, true));
+         $status1 = $workflow1->getCurrentStatus();
+         $status2 = $workflow2->getCurrentStatus();
+         if($status1['healthy'] == true && $status2['healthy'] == true){
+            $sheet1Indexes = array();//an array containing indexes of all the sheets in workflow 1
+            $sheet2Indexes = array();//an array containing indexes of all the sheets in workflow 2
+            $noSheets = count($schema1['sheets']);
+            for($index = 0; $index < $noSheets; $index++){
+               $sheet1Indexes[$schema1['sheets'][$index]['name']] = $index;
+            }
+            $lH->log(4, "waworkflow_static", "Sheet 1 indexes = ".print_r($sheet1Indexes, true));
+            $noSheets = count($schema2['sheets']);
+            for($index = 0; $index < $noSheets; $index++){
+               $sheet2Indexes[$schema2['sheets'][$index]['name']] = $index;
+            }
+            $lH->log(4, "waworkflow_static", "Sheet 2 indexes = ".print_r($sheet2Indexes, true));
+            
+            $schema1SheetNames = array_keys($sheet1Indexes);
+            $schema2SheetNames = array_keys($sheet2Indexes);
+            $commonSheetNames = array();
+            //check which sheets are in workflow1 and not in workflow2
+            $noNames = count($schema1SheetNames);
+            for($index = 0; $index < $noNames; $index++){
+               if(in_array($schema1SheetNames[$index], $schema2SheetNames) == false){
+                  $lH->log(4, "waworkflow_static", "Sheet {$schema1SheetNames[$index]} not in $workflowID2");
+                  $diff[] = array(
+                     "level" => "sheet",
+                     "type" => "missing",
+                     $workflowID1 => $schema1['sheets'][$sheet1Indexes[$schema1SheetNames[$index]]],
+                     $workflowID2 => ""
+                  );
+               }
+               else {
+                  $commonSheetNames[] = $schema1SheetNames[$index];
+               }
+            }
+            $lH->log(4, "waworkflow_static", "Common sheet names = ".print_r($commonSheetNames, true));
+            //check which sheets are in workflow2 and not in workflow1
+            $noNames = count($schema2SheetNames);
+            for($index = 0; $index < $noNames; $index++){
+               if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false){
+                  $lH->log(4, "waworkflow_static", "Sheet {$schema2SheetNames[$index]} not in $workflowID1");
+                  $diff[] = array(
+                     "level" => "sheet",
+                     "type" => "missing",
+                     $workflowID1 => "",
+                     $workflowID2 => $schema2['sheets'][$sheet2Indexes[$schema2SheetNames[$index]]]
+                  );
+               }
+            }
+            
+            //for each of the common sheets
+            $noCommonSheets = count($commonSheetNames);
+            for($index = 0; $index < $noCommonSheets; $index++){
+               $currSheetName = $commonSheetNames[$index];
+               $lH->log(4, "waworkflow_static", "Comparing columns in $currSheetName");
+               $currSheetIn1 = $schema1['sheets'][$sheet1Indexes[$currSheetName]];
+               $currSheetIn2 = $schema2['sheets'][$sheet2Indexes[$currSheetName]];
+               
+               //get the column indexes
+               $col1Indexes = array();
+               $col2Indexes = array();
+               $colSize = count($currSheetIn1['columns']);
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  $col1Indexes[$currSheetIn1['columns'][$colIndex]['name']] = $colIndex;
+               }
+               $lH->log(4, "waworkflow_static", "Column1Indexes = ".  print_r($col1Indexes, TRUE));
+               $colSize = count($currSheetIn2['columns']);
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  $col2Indexes[$currSheetIn2['columns'][$colIndex]['name']] = $colIndex;
+               }
+               $lH->log(4, "waworkflow_static", "Column2Indexes = ".  print_r($col2Indexes, TRUE));
+               
+               $col1Names = array_keys($col1Indexes);
+               $col2Names = array_keys($col2Indexes);
+               $commonColumnNames = array();
+               $colSize = count($col1Names);
+               //check which columns are in workflow1 and not workflow2
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  if(in_array($col1Names[$colIndex], $col2Names) == false){
+                     $lH->log(4, "waworkflow_static", "{$col1Names[$colIndex]} not in $workflowID2");
+                     $diff[] = array(
+                        "level" => "column",
+                        "type" => "missing",
+                        "sheet" => $currSheetName,
+                        $workflowID1 => $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]],
+                        $workflowID2 => ""
+                     );
+                  }
+                  else {
+                     $commonColumnNames[] = $col1Names[$colIndex];
+                  }
+               }
+               $lH->log(4, "waworkflow_static", "Common column names = ".  print_r($commonColumnNames, TRUE));
+               $colSize = count($col2Names);
+               //check which columns are in workflow2 and not workflow1
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  if(in_array($col2Names[$colIndex], $col1Names) == false){
+                     $lH->log(4, "waworkflow_static", "{$col2Names[$colIndex]} not in $workflowID1");
+                     $diff[] = array(
+                        "level" => "column",
+                        "type" => "missing",
+                        "sheet" => $currSheetName,
+                        $workflowID1 => "",
+                        $workflowID2 => $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]
+                     );
+                  }
+               }
+               
+               //for each of the common columns, check which ones are different
+               $colSize = count($commonColumnNames);
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  $currCol1 = $currSheetIn1['columns'][$col1Indexes[$commonColumnNames[$colIndex]]];
+                  $lH->log(4, "waworkflow_static", "Current column1 = ".print_r($currCol1,true));
+                  $currCol2 = $currSheetIn2['columns'][$col2Indexes[$commonColumnNames[$colIndex]]];
+                  $lH->log(4, "waworkflow_static", "Current column2 = ".print_r($currCol2,true));
+                  if($currCol1['type'] != $currCol2['type']
+                        || $currCol1['length'] != $currCol2['length']
+                        || $currCol1['nullable'] != $currCol2['nullable']
+                        || $currCol1['default'] != $currCol2['default']) {//TODO: not catered for key and present
+                     $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
+                     $diff[] = array(
+                        "level" => "column",
+                        "type" => "conflict",
+                        "sheet" => $currSheetName,
+                        $workflowID1 => $currCol1,
+                        $workflowID2 => $currCol2
+                     );
+                  }
+               }
+            }
+         }
+         else {
+            if($status1['healthy'] == false && $status2['healthy'] == false){
+               $error = new WAException("Both workflows are not healthy. Cannot get schema difference", WAException::$CODE_WF_INSTANCE_ERROR);
+               $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}' because both workflows are not healthy");
+            }
+            else if($status1['healthy'] == false){
+               $error = new WAException("Workflow with instance id = '$workflowID1' is not healthy. Cannot get schema difference with '$workflowID2'", WAException::$CODE_WF_INSTANCE_ERROR);
+               $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}' because '{$workflow1}' is not healthy");
+            }
+            else if($status2['healthy'] == false){
+               $error = new WAException("Workflow with instance id = '$workflowID2' is not healthy. Cannot get schema difference with '$workflowID1'", WAException::$CODE_WF_INSTANCE_ERROR);
+               $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}' because '{$workflow2}' is not healthy");
+            }
+            $healthy = false;
+            array_push($errors, $error);
+         }
+      } catch (WAException $ex) {
+         array_push($errors, $ex);
+         $healthy = false;
+         $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}'");
+      }
+      $result = array(
+         "diff" => $diff,
+         "status" => Workflow::getStatusArray($healthy, $errors)
+      );
+      return $result;
+   }
+   
    public static function getUserDBCredentials($userURI, $config, $instanceId) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';

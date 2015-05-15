@@ -171,6 +171,9 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "get_db_credentials") {
                         $this->handleGetDbCredentialsEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_schema_diff") {
+                        $this->handleGetSchemaDiffEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -748,6 +751,36 @@ class ODKWorkflowAPI extends Repository {
       }
       else {
          $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_db_credentials endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the diff_schema endpoint
+    * The diff_schema endpoint checkes for the differences in schema structure for
+    * the specified workflows
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id    :  "Instance id for the main workflow"
+    *    workflow_id_2  :  "Instance id for the workflow you are comparing main workflow with"
+    * }
+    */
+   private function handleGetSchemaDiffEndpoint(){
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("workflow_id_2", $json)) {
+            $diff = Workflow::getSchemaDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2']);
+            $this->returnResponse($diff);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id or workflow_id_2 not set in data provided to diff_schema endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to diff_schema endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
