@@ -201,7 +201,7 @@ class FarmAnimals{
     */
    private function animalEventsList(){
       // get all the events for this animal
-      $query = 'select a.id as event_id, b.event_name, a.event_date, a.record_date, a.comments '
+      $query = 'select a.id as event_id, b.event_name, a.event_value, a.event_date, a.record_date, a.comments '
               . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id '
               . 'where a.animal_id = :animal_id order by a.event_date, a.record_date';
       $res = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
@@ -828,7 +828,8 @@ class FarmAnimals{
    animals.exitVariable = '<?php echo Config::$farm_exit_name; ?>';
    animals.tempVariable = '<?php echo Config::$farm_temperature_name; ?>';
    animals.weightVariable = '<?php echo Config::$farm_weighing_name; ?>';
-   animals.valueEvents = [animals.tempVariable, animals.weightVariable];
+   animals.seenVariable = '<?php echo Config::$farm_seen_name; ?>';
+   animals.valueEvents = [animals.tempVariable, animals.weightVariable, animals.seenVariable];
    $("#new").live('click', function(){ animals.newEvent(); });
 </script>
 <?php
@@ -842,7 +843,7 @@ class FarmAnimals{
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
           . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id '
-          . 'group by a.event_type_id, a.sub_event_type_id, a.event_date, performed_by';
+          . 'group by a.event_type_id, a.sub_event_type_id, a.event_date, performed_by order by event_date desc';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
@@ -872,7 +873,7 @@ class FarmAnimals{
          $subEvent = NULL;
       }
 
-      $eventsQuery = 'select b.animal_id, b.sex, event_value, record_date as time_recorded, performed_by, recorded_by '
+      $eventsQuery = 'select b.animal_id, b.sex, event_value, record_date as time_recorded, performed_by, recorded_by, a.comments '
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
           . "where a.event_type_id = :event_type_id $addQuery and a.event_date = :event_date and performed_by = :performed_by";

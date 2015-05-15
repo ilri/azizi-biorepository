@@ -54,8 +54,8 @@ Animals.prototype.initiateAnimalsGrid = function(){
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'id', hidden: true },
-              { text: 'Animal ID', datafield: 'animal_id', width: 70, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
-                    return '<a href="javascript:;" id="'+ rowdata.id +'" class="anim_id_href">'+ value +'</a>';
+              { text: 'Animal ID', datafield: 'animal_id', width: 95, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                    return '<a href="javascript:;" id="'+ rowdata.id +'" class="anim_id_href">&nbsp;'+ value +'</a>';
                  }
               },
               { text: 'Species', datafield: 'species', width: 60 },
@@ -63,7 +63,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
               { text: 'Breed', datafield: 'breed', width: 150 },
               { text: 'Current Owner', datafield: 'owner', width: 140 },
               { text: 'Experiment', datafield: 'experiment', width: 190 },
-              { text: 'Location', datafield: 'location', width: 220 }
+              { text: 'Location', datafield: 'location', width: 200 }
             ]
         });
      }
@@ -104,7 +104,7 @@ Animals.prototype.initializeInventoryRowDetails = function(index, parentElement,
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
-       datatype: "json", datafields: [ {name: 'event_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'record_date'}, {name: 'comments'} ], type: 'POST',
+       datatype: "json", datafields: [ {name: 'event_id'}, {name: 'event_value'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'record_date'}, {name: 'comments'} ], type: 'POST',
        id: 'id', data: {action: 'list', field: 'events',  animal_id: dr.id}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
     };
 
@@ -112,8 +112,9 @@ Animals.prototype.initializeInventoryRowDetails = function(index, parentElement,
       grid.jqxGrid({source: eventsSource, theme: '', width: 820, height: 140,
       columns: [
          {text: 'EventId', datafield: 'event_id', hidden: true},
-         {text: 'Event Name', datafield: 'event_name', width: 150},
-         {text: 'Event Date', datafield: 'event_date', width: 140},
+         {text: 'Event Name', datafield: 'event_name', width: 110},
+         {text: 'Event Value', datafield: 'event_value', width: 100},
+         {text: 'Event Date', datafield: 'event_date', width: 90},
          {text: 'Record Date', datafield: 'record_date', width: 140},
          {text: 'Comments', datafield: 'comments', width: 340, cellsrenderer: function(r,c,v,d,cp,rd){ return v.replace("\n", "<br />"); }}
       ]
@@ -908,19 +909,19 @@ Animals.prototype.initializeEventRowDetails = function(index, parentElement, gri
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
-       datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'performed_by'}, {name: 'recorded_by'}, {name: 'event_value'} ], type: 'POST',
+       datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'performed_by'}, {name: 'comments'}, {name: 'event_value'} ], type: 'POST',
        id: 'id', data: {action: 'list', field: 'sub_events',  performed_by: dr.performed_by_id, event_type_id: dr.event_type_id, sub_event_type_id: dr.sub_event_type_id, event_date: dr.event_date},
        url: 'mod_ajax.php?page=farm_animals&do=events'
     };
 
     if (grid !== null) {
-      grid.jqxGrid({source: eventsSource, theme: '', width: 640, height: 140,
+      grid.jqxGrid({source: eventsSource, theme: '', width: 840, height: 140,
       columns: [
          {text: 'Animal ID', datafield: 'animal_id', hidden: false, width: 150},
          {text: 'Sex', datafield: 'sex', width: 100},
          {text: 'Value', datafield: 'event_value', width: 70},
-         {text: 'Perfomed By', datafield: 'performed_by', width: 140},
-         {text: 'Recorded By', datafield: 'recorded_by', width: 150}
+         {text: 'Performed By', datafield: 'performed_by', width: 150},
+         {text: 'Comments', datafield: 'comments', width: 350}
       ]
       });
    }
