@@ -1525,6 +1525,8 @@ class Workflow {
       }
       $result = array(
          "diff" => $diff,
+         "workflow_1" => $workflowID1,
+         "workflow_2" => $workflowID2,
          "status" => Workflow::getStatusArray($healthy, $errors)
       );
       return $result;
