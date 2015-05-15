@@ -545,9 +545,9 @@ class FarmAnimals{
     */
    private function saveAnimal(){
       // saving a new animal. Mandatory fields are animal_id, species, sex, breed
-      $cols = 'animal_id, species_id, sex';
-      $colrefs = ':animal_id, :species_id, :sex';
-      $colvals = array('animal_id' => $_POST['animal_id'], 'species_id' => $_POST['species'], 'sex' => $_POST['sex']);
+      $cols = 'animal_id, species_id, sex, status';
+      $colrefs = ':animal_id, :species_id, :sex, :status';
+      $colvals = array('animal_id' => $_POST['animal_id'], 'species_id' => $_POST['species'], 'sex' => $_POST['sex'], 'Alive');
       $dob = date_create_from_format('d-m-Y', $_POST['dob']);
       if($_POST['dob'] !== '') { $cols .= ', dob';  $colrefs .= ', :dob'; $colvals['dob'] = date_format($dob, 'Y-m-d'); }
       if($_POST['other_id'] != '') { $cols .= ', other_id';  $colrefs .= ', :other_id'; $colvals[''] = $_POST['other_id']; }
