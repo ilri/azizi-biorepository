@@ -569,12 +569,12 @@ class Database {
     * @param type $default
     * @param type $key
     */
-   public function runAlterColumnQuery($tableName, $currName, $newName, $type, $length, $nullable, $default, $key) {
+   public function runAlterColumnQuery($tableName, $currName, $newName = null, $type = null, $length = null, $nullable = null, $default = null, $key = null) {
       //instead of altering the current column, add new column after existing then drop existing
       try {
          //if column was previously part of the primary key, the primary key will be deleted
          //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
-         $tmpName = $currName."_odk_w_delete";
+         /*$tmpName = $currName."_odk_w_delete";
          $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
          $this->runGenericQuery($query);
          $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
@@ -584,9 +584,72 @@ class Database {
          $this->runGenericQuery($query);
          if($key == Database::$KEY_PRIMARY){
             $this->addColumnsToPrimaryKey($tableName, array($newName));
+         }*/
+         //check what needs to change in the column. Make sure you change the name last
+         //type
+         $smFixed = false;
+         if($type != null) {
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                  . " alter column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI
+                  . " type ".$type;
+            if($type == Database::$TYPE_VARCHAR) {
+               $query .= "($length)";
+            }
+            $this->runGenericQuery($query);
+            $smFixed = true;
+            $this->logH->log(4, $this->TAG, "Changing type of $currName to $type");
+         }
+         //nullable
+         if($nullable != null) {
+            $nullValue = "set not null";
+            if($nullable == false) {
+               $nullValue = "drop not null";
+            }
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                  . " alter column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI
+                  . " ".$nullValue;
+            $this->runGenericQuery($query);
+            $smFixed = true;
+            $this->logH->log(4, $this->TAG, "Changing nullable of $currName to $nullValue");
+         }
+         //default
+         if($default != null) {//for default value of 'null' use null the string
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                  . " alter column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI
+                  . " set default $default";
+            $this->runGenericQuery($query);
+            $smFixed = true;
+            $this->logH->log(4, $this->TAG, "Changing default value to $default of $currName");
+         }
+         if($key == Database::$KEY_PRIMARY) {
+            $this->addColumnsToPrimaryKey($tableName, array($currName));
+            $smFixed = true;
+            $this->logH->log(4, $this->TAG, "Adding $currName to primary key");
+         }
+         else if($key == Database::$KEY_UNIQUE) {
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                  . " add constraint ".Database::$QUOTE_SI.$currName.Workflow::generateRandomID(4).Database::$QUOTE_SI." unique(".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI.")";
+            $this->runGenericQuery($query);
+            $smFixed = true;
+            $this->logH->log(4, $this->TAG, "Making $currName unique");
+         }
+         //name
+         if($newName != null && $currName != $newName) {
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                  . " rename column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI
+                  . " to".Database::$QUOTE_SI.$newName.Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+            $smFixed = true;
+            $this->logH->log(4, $this->TAG, "Changing name of $currName to $newName");
+         }
+         if($smFixed == true) {
+            $this->logH->log(3, $this->TAG, "$newName in $tableName altered");
+         }
+         else {
+            $this->logH->log(3, $this->TAG, "Could not find a reason for altering $currName in $tableName");
          }
       } catch (WAException $ex) {
-         throw new WAException("Unable to get an update column expression for $'currName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+         throw new WAException("Could not alter '$currName' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
    
