@@ -118,6 +118,10 @@ class Workflow {
       }
    }
    
+   public function getWorkflowName() {
+      return $this->workflowName;
+   }
+   
    /**
     * This function saves the user's access level in the MySQL database
     * 
@@ -386,7 +390,7 @@ class Workflow {
     * 
     * @return string The id
     */
-   private static function generateRandomID($length = 20){
+   public static function generateRandomID($length = 20){
       //get first random alphabetic character
       $characters = 'abcdefghijklmnopqrstuvwxyz';
       $randomString = $characters[rand(0, strlen($characters))];
@@ -1150,6 +1154,59 @@ class Workflow {
       }
    }
    
+   public function resolveTrivialSchemaDiff($workflow2Id){
+      $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
+      $savePoint = $this->save("Resolve trivial differences with ".$workflow2->getWorkflowName());
+      if($this->healthy == TRUE){
+         try {
+            $rawDiff = Workflow::getSchemaDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
+            $diff = $rawDiff['diff'];
+            $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
+            $diffCount = count($diff);
+            for($index = 0; $index < $diffCount; $index++) {
+               $currDiff = $diff[$index];
+               if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing"  && is_null($currDiff[$this->instanceId])){
+                  $missingSheet = $currDiff[$workflow2Id];
+                  $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
+                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
+                  $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet['name'], true));
+               }
+               else if($currDiff['level'] == "column" && $currDiff['type'] == "conflict") {
+                  //check what trivial change should be made (can either be length or nullable)
+                  $column = $currDiff[$this->instanceId];
+                  if($currDiff[$this->instanceId]['nullable'] != $currDiff[$workflow2Id]['nullable']) {//nullable value does not match
+                     $column['nullable'] = true;
+                  }
+                  if($currDiff[$this->instanceId]['length'] < $currDiff[$workflow2Id]['length']) {//lenght of the column in this workflow is less than that of the reference workflow
+                     $column['length'] = $currDiff[$workflow2Id]['length'];
+                  }
+                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet']);
+                  $column['original_name'] = $column['name'];
+                  $column['delete'] = false;
+                  $sheetObject->alterColumn($column);
+                  $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
+               }
+               else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
+                  $this->database->runCreateTableQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
+                  $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
+               }
+            }
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to resolve trivial changes because of an error");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to resolve trivial changes because workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to resolve trivial changes because workflow with id = '{$this->instanceId}' is unhealthy");
+      }
+   }
+   
    /**
     * This function adds a foreign key to the workflow
     * 
@@ -1361,7 +1418,7 @@ class Workflow {
                         "level" => "sheet",
                         "type" => "missing",
                         $workflowID1 => $schema1['sheets'][$sheet1Indexes[$schema1SheetNames[$index]]],
-                        $workflowID2 => ""
+                        $workflowID2 => null
                      );
                   }
                }
@@ -1379,7 +1436,7 @@ class Workflow {
                      $diff[] = array(
                         "level" => "sheet",
                         "type" => "missing",
-                        $workflowID1 => "",
+                        $workflowID1 => null,
                         $workflowID2 => $schema2['sheets'][$sheet2Indexes[$schema2SheetNames[$index]]]
                      );
                   }
@@ -1422,7 +1479,7 @@ class Workflow {
                            "type" => "missing",
                            "sheet" => $currSheetName,
                            $workflowID1 => $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]],
-                           $workflowID2 => ""
+                           $workflowID2 => null
                         );
                      }
                   }
@@ -1441,7 +1498,7 @@ class Workflow {
                            "level" => "column",
                            "type" => "missing",
                            "sheet" => $currSheetName,
-                           $workflowID1 => "",
+                           $workflowID1 => null,
                            $workflowID2 => $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]
                         );
                      }
