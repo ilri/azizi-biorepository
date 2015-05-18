@@ -81,6 +81,7 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
+<div id="blanket_cover" style="position: absolute; background-color: white; opacity: 0.6; display: none; z-index: 5;"></div>
 <div id="menu_bar">
    <ul>
       <li>DMP
@@ -96,6 +97,7 @@ class DMP extends Repository{
                   </ul>
               </li>
               <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
+              <li><a id="merge_schema_menu_btn" style="text-decoration: none; color: black;">Merge with another project</a></li>
               <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Schema (and project)</a></li>
           </ul>
       </li>
@@ -108,7 +110,7 @@ class DMP extends Repository{
   </ul>
 </div>
 <div style="margin-top: 10px;">
-   <div id="new_project_wndw" style="display: none;">
+   <div id="new_project_wndw" style="display: none; z-index: 6;">
       <div>Create a new project</div>
       <div>
          <div style="margin-left: 5%">
@@ -122,7 +124,7 @@ class DMP extends Repository{
          <button type="button" id="create_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Create</button>
       </div>
    </div>
-   <div id="new_foreign_key_wndw" style="display: none;">
+   <div id="new_foreign_key_wndw" style="display: none; z-index: 6;">
       <div>Create a foreign key</div>
       <div>
          <div style="margin-left: 5%">
@@ -136,7 +138,7 @@ class DMP extends Repository{
          <button type="button" id="add_foreign_key_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
       </div>
    </div>
-   <div id="db_credentials_wndw" style="display: none;">
+   <div id="db_credentials_wndw" style="display: none; z-index: 6;">
       <div>Database Credentials</div>
       <div>
          <div style="margin-left: 5%">
@@ -150,7 +152,7 @@ class DMP extends Repository{
          </div>
       </div>
    </div>
-   <div id="rename_sheet_wndw" style="display: none;">
+   <div id="rename_sheet_wndw" style="display: none; z-index: 6;">
       <div>Rename sheet</div>
       <div>
          <div style="margin-left: 5%">
@@ -161,7 +163,7 @@ class DMP extends Repository{
          <button type="button" id="rename_sheet_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
       </div>
    </div>
-   <div id="rename_project_wndw" style="display: none;">
+   <div id="rename_project_wndw" style="display: none; z-index: 6;">
       <div>Rename project</div>
       <div>
          <div style="margin-left: 5%">
@@ -171,12 +173,30 @@ class DMP extends Repository{
          <button type="button" id="rename_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
       </div>
    </div>
-   <div id="delete_project_wndw" style="display: none;">
+   <div id="delete_project_wndw" style="display: none; z-index: 6;">
       <div>Delete Project</div>
       <div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">Are you sure you want to delete this project?</div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
             <button type="button" id="delete_project_btn" class="btn btn-danger" style="margin-right: 5%; margin-top: 10px;">Delete</button>
+         </div>
+      </div>
+   </div>
+   <div id="other_projects_wndw" style="display: none; z-index: 6;">
+      <div>Select the project</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_project_list"></select></div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="merge_schema_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
+         </div>
+      </div>
+   </div>
+   <div id="project_diff_wndw" style="display: none; z-index: 6;">
+      <div>Resolve Schema Conflicts</div>
+      <div>
+         <div id="diff_grid"></div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="apply_diff_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
          </div>
       </div>
    </div>
@@ -222,7 +242,7 @@ class DMP extends Repository{
       /*$cypherSecret = $_SESSION['password'];
       $username = $_SESSION['username'];
       $authType = $_SESSION['auth_type'];*/
-      $cypherSecret = "Ncb/vu6jAFsPHBqEoP+IhJEQF1Co63LYQdH9MTD4AGERAzlwYc004Dm1Dcg4iTX0GrWfLMv16s1fNeKCLiJTFQ7YUE6UF5b2xHDZYPllBtlMcmSN0EIM+TDlUXRyfh2DRqEb8OlASmW+8DSs7j+Ex+dLnZiej52LCdh55/OPiWw=";
+      $cypherSecret = $_SESSION['password'];
       $username = "jrogena2";
       $authType = "local";
       $this->Dbase->CreateLogEntry("session = ".print_r($_SESSION, true), "debug");
