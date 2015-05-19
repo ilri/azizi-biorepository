@@ -406,10 +406,12 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       if(diffs[diffIndex].level == "column"){
          currDiffData['sheet'] = diffs[diffIndex].sheet;
          currDiffData['name'] = diffs[diffIndex][window.dvs.project].name;
-         currDiffData['type_1'] = diffs[diffIndex][window.dvs.project].type;
-         currDiffData['length_1'] = diffs[diffIndex][window.dvs.project].length;
-         currDiffData['nullable_1'] = diffs[diffIndex][window.dvs.project].nullable;
-         currDiffData['default_1'] = diffs[diffIndex][window.dvs.project].default;
+         currDiffData['type'] = diffs[diffIndex][window.dvs.project].type;
+         currDiffData['length'] = diffs[diffIndex][window.dvs.project].length;
+         currDiffData['nullable'] = diffs[diffIndex][window.dvs.project].nullable;
+         currDiffData['default'] = diffs[diffIndex][window.dvs.project].default;
+         currDiffData['key'] = diffs[diffIndex][window.dvs.project].key;
+         currDiffData['present'] = true;
          currDiffData['type_2'] = diffs[diffIndex][project2].type;
          currDiffData['length_2'] = diffs[diffIndex][project2].length;
          currDiffData['nullable_2'] = diffs[diffIndex][project2].nullable;
@@ -421,16 +423,18 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
    var source = {
       datatype: "json",
       datafields: [
+         {name: 'present'},
          {name: 'sheet'},
          {name: 'name'},
-         {name: 'type_1'},
+         {name: 'type'},
          {name: 'type_2'},
-         {name: 'length_1'},
+         {name: 'length'},
          {name: 'length_2'},
-         {name: 'nullable_1'},
+         {name: 'nullable'},
          {name: 'nullable_2'},
-         {name: 'default_1'},
-         {name: 'default_2'}
+         {name: 'default'},
+         {name: 'default_2'},
+         {name: 'key'}
       ],
       root: 'diffs',
       localdata: data
@@ -473,27 +477,27 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       columns: [
          {text: 'Sheet', datafield: 'sheet', editable:false, width: gridWidth * 0.1},
          {text: 'Name', datafield: 'name', editable:false, width: gridWidth * 0.18},
-         {text: 'Type', columntype: 'dropdownlist', width: gridWidth * 0.1 , datafield: 'type_1',initeditor: function (row, cellvalue, editor) {
+         {text: 'Type', columntype: 'dropdownlist', width: gridWidth * 0.1 , datafield: 'type',initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: columnTypes});
          }, cellsrenderer: function(row, column, value) {
             var rowData = $("#diff_grid").jqxGrid('getrowdata', row);
             var color = "";
-            if(rowData.type_1 != rowData.type_2){
+            if(rowData.type != rowData.type_2){
                color = "color:#FF3D3D; font-weight:bold;";
             }
             return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px; '+color+'">' + value + '</div>';
          }},
          {text: 'Conflict Type', datafield: 'type_2', editable: false, width: gridWidth * 0.1},
-         {text: 'Length', columntype: 'numberinput', datafield: 'length_1', width: gridWidth * 0.08},
+         {text: 'Length', columntype: 'numberinput', datafield: 'length', width: gridWidth * 0.08},
          {text: 'Conflict Length', datafield: 'length_2', editable: false, width: gridWidth * 0.08},
-         {text: 'Nullable', columntype: 'dropdownlist', width: gridWidth * 0.08, datafield: 'nullable_1',initeditor: function (row, cellvalue, editor) {
+         {text: 'Nullable', columntype: 'dropdownlist', width: gridWidth * 0.08, datafield: 'nullable',initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: nullableTypes});
          }},
          {text: 'Conflict Nullable', datafield: 'nullable_2', width: gridWidth * 0.08, editable: false},
-         {text: 'Default', datafield: 'default_1', width: gridWidth * 0.1, cellsrenderer: function(row, column, value) {
+         {text: 'Default', datafield: 'default', width: gridWidth * 0.1, cellsrenderer: function(row, column, value) {
             var rowData = $("#diff_grid").jqxGrid('getrowdata', row);
             var color = "";
-            if(rowData.default_1 != rowData.default_2){
+            if(rowData.default != rowData.default_2){
                color = "color:#FF3D3D; font-weight:bold;";
             }
             return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px; '+color+'">' + value + '</div>';
@@ -510,13 +514,13 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
 };
 
 DMPVSchema.prototype.diffGridCellValueChanged = function(event) {
+   console.log("Cell in diff grid changed");
    if(window.dvs.schema != null && event.args.oldvalue !== event.args.value) {
       console.log(event);
       var columnData = event.args.row;
-      console.log(columnData)
-      var sheetData = window.dvs.schema.sheets[columnData.sheet];
-      if(typeof sheetData !== 'undefined') {
-         var sheetName = sheetData.name;
+      if(typeof columnData.sheet != 'undefined' && typeof columnData.name != 'undefined') {
+         console.log("sheet data found");
+         var sheetName = columnData.sheet;
          var columnName = columnData.name;
          if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
             window.dvs.schemaChanges[sheetName] = {};

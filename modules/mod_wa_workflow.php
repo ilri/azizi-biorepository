@@ -438,14 +438,16 @@ class Workflow {
     * 
     * @param String $url The URL where the data file exists
     */
-   public function addRawDataFile($url) {
-      $this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
+   public function addRawDataFile($url, $name = null) {
+      if($name == null) $name = $this->instanceId.".xlsx";
+      $this->lH->log(3, $this->TAG, "Adding '$name' in '$url' to the list of raw datafiles for '{$this->instanceId}'");
+      //$this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
       if($this->workingDir !== null 
               && $this->instanceId !== null
               && $this->database !== null){
          try {
             $file = new WAFile($this->config, $this->instanceId, $this->database, $this->workingDir, WAFile::$TYPE_RAW);
-            $file->downloadFile($this->instanceId.".xlsx", $url, $this->currUser);
+            $file->downloadFile($name, $url, $this->currUser);
             array_push($this->files, $file);
          } catch (Exception $ex) {
             $this->lH->log(1, $this->TAG, "An error occurred while trying to add a new file to the workflow");
@@ -1063,6 +1065,17 @@ class Workflow {
       return $savePoint;
    }
    
+   public function getRawDataFiles() {
+      $dataFiles = array();
+      for($index = 0; $index < count($this->files); $index++) {
+         $currFile = $this->files[$index];
+         if($currFile->getType() == WAFile::$TYPE_RAW) {
+            array_push($dataFiles, $currFile);
+         }
+      }
+      return $dataFiles;
+   }
+   
    /**
     * This function dumps data from the data files into the database
     */
@@ -1073,14 +1086,7 @@ class Workflow {
               && count($this->files) > 0
               && $this->healthy == true){
          //get only the data files
-         $dataFiles = array();
-         for($index = 0; $index < count($this->files); $index++) {
-            $currFile = $this->files[$index];
-            if($currFile->getType() == WAFile::$TYPE_RAW) {
-               array_push($dataFiles, $currFile);
-            }
-         }
-         
+         $dataFiles = $this->getRawDataFiles();
          if(count($dataFiles) > 0) {
             if(count($dataFiles) == 1) {//currently only support one data file
                //delete any existing data table in the database
@@ -1193,6 +1199,13 @@ class Workflow {
                   $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
                }
+            }
+            
+            //copy the raw data files from workflow_2 to this workflow
+            $dataFiles = $workflow2->getRawDataFiles();
+            for($index = 0; $index < count($dataFiles); $index++) {
+               $name = basename($dataFiles[$index]->getFSLocation());
+               $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
             }
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
