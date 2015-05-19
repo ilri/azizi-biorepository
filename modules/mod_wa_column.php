@@ -86,23 +86,29 @@ class WAColumn {
    public function update($sheetName, $name, $type, $length, $nullable, $default, $key) {
       
       try {
-         if($this->name == $name) $name = null;
-         if($this->type == $type && $this->length == $length) {
-            $type = null;
-            $length = null;
-         }
-         if($nullable == null) $nullable = "null";
-         if($nullable == "null" && $this->nullable == null) $nullable = null;
-         else if($nullable == $this->nullable) $nullable = null;
-         if($this->default == $default) $default = null;
-         if($this->key == $key) $key = null;
-         $this->database->runAlterColumnQuery($sheetName, $this->name, $name, $type, $length, $nullable, $default, $key);
-         if($name != null) $this->name = $name;
-         if($type != null) $this->type = $type;
-         if($length != null)$this->length = $length;
-         if($nullable != null)$this->nullable = $nullable;
-         if($default != null)$this->default = $default;
-         if($key != null)$this->key = $key;
+         $new = array(
+            "name" => $name,
+            "type" => $type,
+            "length" => $length,
+            "nullable" => $nullable,
+            "default" => $default,
+            "key" => $key
+         );
+         $existing = array(
+            "name" => $this->name,
+            "type" => $this->type,
+            "length" => $this->length,
+            "nullable" => $this->nullable,
+            "default" => $this->default,
+            "key" => $this->key
+         );
+         $this->database->runAlterColumnQuery($sheetName, $existing, $new);
+         $this->name = $name;
+         $this->type = $type;
+         $this->length = $length;
+         $this->nullable = $nullable;
+         $this->default = $default;
+         $this->key = $key;
       } catch (WAException $ex) {
          throw new WAException("Unable to alter the column '{$this->name}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
       }
