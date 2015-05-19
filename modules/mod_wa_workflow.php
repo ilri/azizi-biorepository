@@ -1205,6 +1205,7 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to resolve trivial changes because workflow with id = '{$this->instanceId}' is unhealthy");
       }
+      return $savePoint;
    }
    
    /**

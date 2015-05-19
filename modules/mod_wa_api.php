@@ -807,9 +807,12 @@ class ODKWorkflowAPI extends Repository {
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("workflow_id_2", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            $workflow->resolveTrivialSchemaDiff($json['workflow_id_2']);
+            $savePoint = $workflow->resolveTrivialSchemaDiff($json['workflow_id_2']);
             $status = $workflow->getCurrentStatus();
-            $this->returnResponse(array("status" => $status));
+            $this->returnResponse(array(
+               "save_point" => $savePoint,
+               "status" => $status
+            ));
          }
          else {
             $this->lH->log(2, $this->TAG, "workflow_id or workflow_id_2 not set in data provided to resolve_trivial_diff endpoint");
