@@ -17,6 +17,7 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.rightSideWidth = 0;
    window.dvs.lastSavePoint = null;
    window.dvs.uploadFileLoc = null;
+   window.dvs.diffProject = null;//holds project id for the project chosen to be merged with this one
    $("#whoisme").hide();
    //initialize source for project_list_box
    $(document).ready(function(){
@@ -124,7 +125,7 @@ DMPVSchema.prototype.documentReady = function() {
    window.dvs.initColumnGrid();
    //window.dvs.initFileDropArea();
    $("#cancel_btn").click(window.dvs.cancelButtonClicked);
-   $("#update_btn").click(window.dvs.updateButtonClicked);
+   $("#update_btn").click(window.dvs.applySchemaChanges);
    $("#create_project_btn").click(window.dvs.createProjectButtonClicked);
    $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
    $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
@@ -142,6 +143,72 @@ DMPVSchema.prototype.documentReady = function() {
    });
    $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
    $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
+   $("#apply_diff_changes").click(window.dvs.applyDiffButtonClicked);
+};
+
+DMPVSchema.prototype.applyDiffButtonClicked = function() {
+   if(window.dvs.diffProject != null && window.dvs.project != null) {
+      //first resolve the trivial conflicts then apply the non trivial ones one by one
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "workflow_id_2": window.dvs.diffProject
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      var wasSuccessful = false;
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=resolve_trivial_diff",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to gete database credentails");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed exteral access to the database");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from resolve_trivial_diff endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not resolve trivial differences"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  console.log("Successfully resolved trivial changes");
+                  wasSuccessful = true;//this will prevent this function from refreshing save points in onComplete
+                  window.dvs.applySchemaChanges();//calling this function will trigger refreshSavePoints at some point
+                  $("#project_diff_wndw").hide();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not resolve trivial differences between projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            if(wasSuccessful == false) {//could not resolve trivial conflicts
+               //refresh save points
+               window.dvs.refreshSavePoints();
+            }
+         }
+      });
+   }
 };
 
 DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
@@ -306,6 +373,7 @@ DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
                }
                else {
                   $("#other_projects_wndw").hide();
+                  window.dvs.diffProject = jsonResult.workflow_2;
                   window.dvs.initDiffGrid(jsonResult.workflow_2, jsonResult.diff);
                   $("#project_diff_wndw").show();
                }
@@ -358,7 +426,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
          {name: 'type_1'},
          {name: 'type_2'},
          {name: 'length_1'},
-         {name: 'length_1'},
+         {name: 'length_2'},
          {name: 'nullable_1'},
          {name: 'nullable_2'},
          {name: 'default_1'},
@@ -389,8 +457,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       'primary',
       'unique'
    ];
-   $(".diff_grid_red").css("background-color", "#FFA1A1");
-   var gridWidth = $("#project_diff_wndw").width()* 0.99;
+   var gridWidth = $("#project_diff_wndw").width() * 0.95;
    $("#diff_grid").jqxGrid({
       width: window.dvs.rightSideWidth,
       height: '85%',
@@ -1160,7 +1227,7 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
  * 
  * @returns {undefined}
  */
-DMPVSchema.prototype.updateButtonClicked = function() {
+DMPVSchema.prototype.applySchemaChanges = function() {
    console.log("Update button clicked");
    //go through each and every changed sheet
    $("#loading_box").html("Loading. Please don't close this tab");

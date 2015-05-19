@@ -194,7 +194,7 @@ class DMP extends Repository{
    <div id="project_diff_wndw" style="display: none; z-index: 6;">
       <div>Resolve Schema Conflicts</div>
       <div>
-         <div id="diff_grid"></div>
+         <div id="diff_grid" style="width: 90%"></div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
             <button type="button" id="apply_diff_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
          </div>
