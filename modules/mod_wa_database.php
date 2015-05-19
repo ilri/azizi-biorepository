@@ -567,7 +567,7 @@ class Database {
    public function runAlterColumnQuery($tableName, $existing, $new) {
       //instead of altering the current column, add new column after existing then drop existing
       $isSpecial = false;
-      if($existing['key'] == Database::$KEY_PRIMARY) $isSpecial = true;
+      if($existing['key'] == Database::$KEY_PRIMARY || $existing['key'] == Database::$KEY_UNIQUE) $isSpecial = true;
       try {
          if($isSpecial == false) {//column considered special if it is currently part of a key
             $this->logH->log(4, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");

@@ -444,9 +444,9 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
    
    var columnTypes = [
          'varchar',
-         'integer',
-         'double',
-         'tinyint',
+         'numeric',
+         'double precision',
+         'smallint',
          'time without time zone',
          'date',
          'timestamp without time zone',
@@ -1677,9 +1677,9 @@ DMPVSchema.prototype.initColumnGrid = function() {
    
    var columnTypes = [
          'varchar',
-         'integer',
-         'double',
-         'tinyint',
+         'numeric',
+         'double precision',
+         'smallint',
          'time without time zone',
          'date',
          'timestamp without time zone',
