@@ -526,13 +526,7 @@ class Workflow {
               && $this->config != null
               && $this->files != null) {
          //get only the data files
-         $dataFiles = array();
-         for($index = 0; $index < count($this->files); $index++) {
-            $currFile = $this->files[$index];
-            if($currFile->getType() == WAFile::$TYPE_RAW) {
-               array_push($dataFiles, $currFile);
-            }
-         }
+         $dataFiles = $this->getRawDataFiles();
          
          if(count($dataFiles) > 0) {
             if(count($dataFiles) == 1) {//currently only support one data file
@@ -1088,19 +1082,20 @@ class Workflow {
          //get only the data files
          $dataFiles = $this->getRawDataFiles();
          if(count($dataFiles) > 0) {
-            if(count($dataFiles) == 1) {//currently only support one data file
-               //delete any existing data table in the database
-               $excelFile = new WAExcelFile($dataFiles[0]);
+            //delete any existing data table in the database
+            for($index = 0; $index < count($dataFiles); $index++) {
                try {
-                  $excelFile->dumpData();
+                  $excelFile = new WAExcelFile($dataFiles[$index]);
+                  if($index == 0) {
+                     $excelFile->dumpData(true);//first delete existing data before dumping
+                  }
+                  else {
+                     $excelFile->dumpData(false);//don't delete existing data before dumping
+                  }
                } catch (WAException $ex) {
                   $this->lH->log(1, $this->TAG, "Could not dump data from the data file for workflow with id = {$this->instanceId} to MySQL");
                   array_push($this->errors, $ex);
                }
-            }
-            else {
-               $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' has more than one data file");
-               array_push($this->errors, new WAException("Workflow not linked to more than one data file. Feature currently not supported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
             }
          }
          else {
@@ -1297,27 +1292,16 @@ class Workflow {
       if($this->files != null
               && is_array($this->files)) {
          try {
-            $dataFiles = array();
-            for($index = 0; $index < count($this->files); $index++) {
-               $currFile = $this->files[$index];
-               if($currFile->getType() == WAFile::$TYPE_RAW) {
-                  $dataFiles[] = $currFile;
-               }
-            }
-            if(count($dataFiles) == 1) {
+            $dataFiles = $this->getRawDataFiles();
+            if(count($dataFiles) > 0) {
                $excelFile = new WAExcelFile($dataFiles[0]);
                $data = $excelFile->getSheetData($sheetName);
                return $data;
             }
-            else if(count($dataFiles) == 0) {//should not happen
+            else {//should not happen
                array_push($this->errors, new WAException("Workflow does not have data files", WAException::$CODE_WF_INSTANCE_ERROR, null));
                $this->healthy = false;
                $this->lH->log(1, $this->TAG, "Workflow with id = '{$this->instanceId}'does not have data files");
-            }
-            else {//currently not supported
-               array_push($this->errors, new WAException("Workflow has more than one data file. This feature is currently unsupported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
-               $this->healthy = false;
-               $this->lH->log(1, $this->TAG, "Workflow with id = '{$this->instanceId}' has more than one data file. This feature is currently unsupported");
             }
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
