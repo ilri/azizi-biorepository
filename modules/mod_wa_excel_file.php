@@ -133,7 +133,7 @@ class WAExcelFile {
    /**
     * This function dumps data from the excel file into the database
     */
-   public function dumpData() {
+   public function dumpData($deleteData = true) {
       try {
          if($this->excelObject != null) {
             $sheetNames = WASheet::getAllWASheets($this->config, $this->database->getDatabaseName(), $this->database);
@@ -141,9 +141,10 @@ class WAExcelFile {
             //$sheetName = WASheet::getSheetOriginalName($this->database, $sheetName);
             try {
                //delete data from the sheets (start from last index)
-               if(count($sheetNames) > 0) {
+               if(count($sheetNames) > 0 && $deleteData == true) {
+                  $this->lH->log(3, $this->TAG, "Truncating all tables before dumping data");
                   for($index = count($sheetNames) - 1; $index >= 0; $index--) {
-                     $query = "delete from ".Database::$QUOTE_SI.$sheetNames[$index].Database::$QUOTE_SI." where 1 = 1";
+                     $query = "truncate table ".Database::$QUOTE_SI.$sheetNames[$index].Database::$QUOTE_SI." cascade";
                      $this->database->runGenericQuery($query);
                   }
                }

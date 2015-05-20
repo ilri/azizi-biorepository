@@ -234,6 +234,10 @@ class WASheet {
          }
 
          if($column != null) {
+            $this->lH->log(4, $this->TAG, "*****************************************");
+            $this->lH->log(4, $this->TAG, print_r($column, true));
+            $this->lH->log(4, $this->TAG, print_r($columnDetails, true));
+            $this->lH->log(4, $this->TAG, "*****************************************");
             if($columnDetails['delete'] === false) {
                $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' in '{$this->sheetName}'");
                try {
@@ -300,28 +304,32 @@ class WASheet {
     * 
     * @throws WAException
     */
-   public function saveAsMySQLTable($linkSheets) {
+   public function saveAsMySQLTable($linkSheets, $mysqlColumns = array()) {
       try {
          //$this->processColumns();
          $this->switchToThisSheet();
          if(is_array($this->columnArray) 
                  && count($this->columnArray) > 0) {
             $columnNames = array_keys($this->columnArray);
-            
-            $mysqlColumns = array();
+            $columnsProvided = false;
+            if(count($mysqlColumns) > 0){
+               $columnsProvided = true;
+            }
             if($linkSheets == true) {
                $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
                array_push($mysqlColumns, $primayKey);
             }
-            for($index = 0; $index < count($columnNames); $index++) {
-               $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
-               $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
-               array_push($mysqlColumns, $currMySQLColumn);
+            if($columnsProvided == false){
+               for($index = 0; $index < count($columnNames); $index++) {
+                  $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
+                  $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
+                  array_push($mysqlColumns, $currMySQLColumn);
+               }
             }
             
             $columnCount = count($columnNames);
             if($linkSheets) $columnCount++;
-            if(count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns)) {
+            if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
                $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
                throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
             }
@@ -350,7 +358,7 @@ class WASheet {
     */
    public function getData() {
       try {
-         $this->processColumns();
+         $this->processColumns(true);//process columns but limit the number of rows processed
          return $this->columnArray;
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to extract data from sheet with name = '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
@@ -364,7 +372,7 @@ class WASheet {
     * 
     * @throws WAException
     */
-   public function processColumns() {
+   public function processColumns($limit = false) {
       try {
          $primaryKeyThere = false;
          $this->switchToThisSheet();
@@ -408,6 +416,9 @@ class WASheet {
                }
                else {
                   $this->lH->log(2, $this->TAG, "Sheet with name = '{$this->sheetName}' has no heading columns. Will be ignoring this sheet");
+               }
+               if($limit == true && $rowIndex >= 20) {
+                  break;
                }
             }
          }

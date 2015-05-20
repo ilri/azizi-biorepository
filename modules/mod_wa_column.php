@@ -86,7 +86,23 @@ class WAColumn {
    public function update($sheetName, $name, $type, $length, $nullable, $default, $key) {
       
       try {
-         $this->database->runAlterColumnQuery($sheetName, $this->name, $name, $type, $length, $nullable, $default, $key);
+         $new = array(
+            "name" => $name,
+            "type" => $type,
+            "length" => $length,
+            "nullable" => $nullable,
+            "default" => $default,
+            "key" => $key
+         );
+         $existing = array(
+            "name" => $this->name,
+            "type" => $this->type,
+            "length" => $this->length,
+            "nullable" => $this->nullable,
+            "default" => $this->default,
+            "key" => $this->key
+         );
+         $this->database->runAlterColumnQuery($sheetName, $existing, $new);
          $this->name = $name;
          $this->type = $type;
          $this->length = $length;

@@ -118,6 +118,10 @@ class Workflow {
       }
    }
    
+   public function getWorkflowName() {
+      return $this->workflowName;
+   }
+   
    /**
     * This function saves the user's access level in the MySQL database
     * 
@@ -386,7 +390,7 @@ class Workflow {
     * 
     * @return string The id
     */
-   private static function generateRandomID($length = 20){
+   public static function generateRandomID($length = 20){
       //get first random alphabetic character
       $characters = 'abcdefghijklmnopqrstuvwxyz';
       $randomString = $characters[rand(0, strlen($characters))];
@@ -434,14 +438,16 @@ class Workflow {
     * 
     * @param String $url The URL where the data file exists
     */
-   public function addRawDataFile($url) {
-      $this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
+   public function addRawDataFile($url, $name = null) {
+      if($name == null) $name = $this->instanceId.".xlsx";
+      $this->lH->log(3, $this->TAG, "Adding '$name' in '$url' to the list of raw datafiles for '{$this->instanceId}'");
+      //$this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
       if($this->workingDir !== null 
               && $this->instanceId !== null
               && $this->database !== null){
          try {
             $file = new WAFile($this->config, $this->instanceId, $this->database, $this->workingDir, WAFile::$TYPE_RAW);
-            $file->downloadFile($this->instanceId.".xlsx", $url, $this->currUser);
+            $file->downloadFile($name, $url, $this->currUser);
             array_push($this->files, $file);
          } catch (Exception $ex) {
             $this->lH->log(1, $this->TAG, "An error occurred while trying to add a new file to the workflow");
@@ -520,13 +526,7 @@ class Workflow {
               && $this->config != null
               && $this->files != null) {
          //get only the data files
-         $dataFiles = array();
-         for($index = 0; $index < count($this->files); $index++) {
-            $currFile = $this->files[$index];
-            if($currFile->getType() == WAFile::$TYPE_RAW) {
-               array_push($dataFiles, $currFile);
-            }
-         }
+         $dataFiles = $this->getRawDataFiles();
          
          if(count($dataFiles) > 0) {
             if(count($dataFiles) == 1) {//currently only support one data file
@@ -1059,6 +1059,17 @@ class Workflow {
       return $savePoint;
    }
    
+   public function getRawDataFiles() {
+      $dataFiles = array();
+      for($index = 0; $index < count($this->files); $index++) {
+         $currFile = $this->files[$index];
+         if($currFile->getType() == WAFile::$TYPE_RAW) {
+            array_push($dataFiles, $currFile);
+         }
+      }
+      return $dataFiles;
+   }
+   
    /**
     * This function dumps data from the data files into the database
     */
@@ -1069,28 +1080,22 @@ class Workflow {
               && count($this->files) > 0
               && $this->healthy == true){
          //get only the data files
-         $dataFiles = array();
-         for($index = 0; $index < count($this->files); $index++) {
-            $currFile = $this->files[$index];
-            if($currFile->getType() == WAFile::$TYPE_RAW) {
-               array_push($dataFiles, $currFile);
-            }
-         }
-         
+         $dataFiles = $this->getRawDataFiles();
          if(count($dataFiles) > 0) {
-            if(count($dataFiles) == 1) {//currently only support one data file
-               //delete any existing data table in the database
-               $excelFile = new WAExcelFile($dataFiles[0]);
+            //delete any existing data table in the database
+            for($index = 0; $index < count($dataFiles); $index++) {
                try {
-                  $excelFile->dumpData();
+                  $excelFile = new WAExcelFile($dataFiles[$index]);
+                  if($index == 0) {
+                     $excelFile->dumpData(true);//first delete existing data before dumping
+                  }
+                  else {
+                     $excelFile->dumpData(false);//don't delete existing data before dumping
+                  }
                } catch (WAException $ex) {
                   $this->lH->log(1, $this->TAG, "Could not dump data from the data file for workflow with id = {$this->instanceId} to MySQL");
                   array_push($this->errors, $ex);
                }
-            }
-            else {
-               $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' has more than one data file");
-               array_push($this->errors, new WAException("Workflow not linked to more than one data file. Feature currently not supported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
             }
          }
          else {
@@ -1148,6 +1153,67 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to get data tables because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
+   }
+   
+   public function resolveTrivialSchemaDiff($workflow2Id){
+      $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
+      $savePoint = $this->save("Resolve trivial differences with ".$workflow2->getWorkflowName());
+      if($this->healthy == TRUE){
+         try {
+            $rawDiff = Workflow::getSchemaDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
+            $diff = $rawDiff['diff'];
+            $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
+            $diffCount = count($diff);
+            for($index = 0; $index < $diffCount; $index++) {
+               $currDiff = $diff[$index];
+               if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing"  && is_null($currDiff[$this->instanceId])){
+                  $missingSheet = $currDiff[$workflow2Id];
+                  $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
+                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
+                  $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet['name'], true));
+               }
+               else if($currDiff['level'] == "column" && $currDiff['type'] == "conflict") {
+                  //check what trivial change should be made (can either be length or nullable)
+                  $column = $currDiff[$this->instanceId];
+                  if($currDiff[$this->instanceId]['nullable'] != $currDiff[$workflow2Id]['nullable']) {//nullable value does not match
+                     $column['nullable'] = true;
+                  }
+                  if($currDiff[$this->instanceId]['length'] < $currDiff[$workflow2Id]['length']) {//lenght of the column in this workflow is less than that of the reference workflow
+                     $column['length'] = $currDiff[$workflow2Id]['length'];
+                  }
+                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet']);
+                  $column['original_name'] = $column['name'];
+                  $column['delete'] = false;
+                  $sheetObject->alterColumn($column);
+                  $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
+               }
+               else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
+                  $this->database->runCreateTableQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
+                  $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
+               }
+            }
+            
+            //copy the raw data files from workflow_2 to this workflow
+            $dataFiles = $workflow2->getRawDataFiles();
+            for($index = 0; $index < count($dataFiles); $index++) {
+               $name = basename($dataFiles[$index]->getFSLocation());
+               $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
+            }
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to resolve trivial changes because of an error");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to resolve trivial changes because workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to resolve trivial changes because workflow with id = '{$this->instanceId}' is unhealthy");
+      }
+      return $savePoint;
    }
    
    /**
@@ -1226,27 +1292,16 @@ class Workflow {
       if($this->files != null
               && is_array($this->files)) {
          try {
-            $dataFiles = array();
-            for($index = 0; $index < count($this->files); $index++) {
-               $currFile = $this->files[$index];
-               if($currFile->getType() == WAFile::$TYPE_RAW) {
-                  $dataFiles[] = $currFile;
-               }
-            }
-            if(count($dataFiles) == 1) {
+            $dataFiles = $this->getRawDataFiles();
+            if(count($dataFiles) > 0) {
                $excelFile = new WAExcelFile($dataFiles[0]);
                $data = $excelFile->getSheetData($sheetName);
                return $data;
             }
-            else if(count($dataFiles) == 0) {//should not happen
+            else {//should not happen
                array_push($this->errors, new WAException("Workflow does not have data files", WAException::$CODE_WF_INSTANCE_ERROR, null));
                $this->healthy = false;
                $this->lH->log(1, $this->TAG, "Workflow with id = '{$this->instanceId}'does not have data files");
-            }
-            else {//currently not supported
-               array_push($this->errors, new WAException("Workflow has more than one data file. This feature is currently unsupported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
-               $this->healthy = false;
-               $this->lH->log(1, $this->TAG, "Workflow with id = '{$this->instanceId}' has more than one data file. This feature is currently unsupported");
             }
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
@@ -1315,10 +1370,228 @@ class Workflow {
       return $result;
    }
    
-   /*public static function getDatabaseAccess($config, $instanceId, $userURI) {
+   public static function getSchemaDifference($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all") {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
+      
+      $errors = array();
+      $healthy = true;
+      $diff = array();
+      $lH = new LogHandler("./");
+      $lH->log(3, "waworkflow_static", "Determining schema difference between '{$workflowID1}' and '{$workflowID2}'");
+      try {
+         $workflow1 = new Workflow($config, null, $userUUID, $workflowID1);
+         $schema1 = $workflow1->getSchema();
+         $lH->log(4, "waworkflow_static", "Schema1 = ".print_r($schema1, true));
+         $workflow2 = new Workflow($config, null, $userUUID, $workflowID2);
+         $schema2 = $workflow2->getSchema();
+         $lH->log(4, "waworkflow_static", "Schema2 = ".print_r($schema2, true));
+         $status1 = $workflow1->getCurrentStatus();
+         $status2 = $workflow2->getCurrentStatus();
+         if($status1['healthy'] == true && $status2['healthy'] == true){
+            $sheet1Indexes = array();//an array containing indexes of all the sheets in workflow 1
+            $sheet2Indexes = array();//an array containing indexes of all the sheets in workflow 2
+            $noSheets = count($schema1['sheets']);
+            for($index = 0; $index < $noSheets; $index++){
+               $sheet1Indexes[$schema1['sheets'][$index]['name']] = $index;
+            }
+            $lH->log(4, "waworkflow_static", "Sheet 1 indexes = ".print_r($sheet1Indexes, true));
+            $noSheets = count($schema2['sheets']);
+            for($index = 0; $index < $noSheets; $index++){
+               $sheet2Indexes[$schema2['sheets'][$index]['name']] = $index;
+            }
+            $lH->log(4, "waworkflow_static", "Sheet 2 indexes = ".print_r($sheet2Indexes, true));
+            
+            $schema1SheetNames = array_keys($sheet1Indexes);
+            $schema2SheetNames = array_keys($sheet2Indexes);
+            $commonSheetNames = array();
+            //check which sheets are in workflow1 and not in workflow2
+            $noNames = count($schema1SheetNames);
+            for($index = 0; $index < $noNames; $index++){
+               if(in_array($schema1SheetNames[$index], $schema2SheetNames) == false){
+                  $lH->log(4, "waworkflow_static", "Sheet {$schema1SheetNames[$index]} not in $workflowID2");
+                  if($diffType == "all" || $diffType == "trivial"){
+                     $diff[] = array(
+                        "level" => "sheet",
+                        "type" => "missing",
+                        $workflowID1 => $schema1['sheets'][$sheet1Indexes[$schema1SheetNames[$index]]],
+                        $workflowID2 => null
+                     );
+                  }
+               }
+               else {
+                  $commonSheetNames[] = $schema1SheetNames[$index];
+               }
+            }
+            $lH->log(4, "waworkflow_static", "Common sheet names = ".print_r($commonSheetNames, true));
+            //check which sheets are in workflow2 and not in workflow1
+            if($diffType == "all" || $diffType == "trivial"){
+               $noNames = count($schema2SheetNames);
+               for($index = 0; $index < $noNames; $index++){
+                  if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false){
+                     $lH->log(4, "waworkflow_static", "Sheet {$schema2SheetNames[$index]} not in $workflowID1");
+                     $diff[] = array(
+                        "level" => "sheet",
+                        "type" => "missing",
+                        $workflowID1 => null,
+                        $workflowID2 => $schema2['sheets'][$sheet2Indexes[$schema2SheetNames[$index]]]
+                     );
+                  }
+               }
+            }
+            
+            //for each of the common sheets
+            $noCommonSheets = count($commonSheetNames);
+            for($index = 0; $index < $noCommonSheets; $index++){
+               $currSheetName = $commonSheetNames[$index];
+               $lH->log(4, "waworkflow_static", "Comparing columns in $currSheetName");
+               $currSheetIn1 = $schema1['sheets'][$sheet1Indexes[$currSheetName]];
+               $currSheetIn2 = $schema2['sheets'][$sheet2Indexes[$currSheetName]];
+               
+               //get the column indexes
+               $col1Indexes = array();
+               $col2Indexes = array();
+               $colSize = count($currSheetIn1['columns']);
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  $col1Indexes[$currSheetIn1['columns'][$colIndex]['name']] = $colIndex;
+               }
+               $lH->log(4, "waworkflow_static", "Column1Indexes = ".  print_r($col1Indexes, TRUE));
+               $colSize = count($currSheetIn2['columns']);
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  $col2Indexes[$currSheetIn2['columns'][$colIndex]['name']] = $colIndex;
+               }
+               $lH->log(4, "waworkflow_static", "Column2Indexes = ".  print_r($col2Indexes, TRUE));
+               
+               $col1Names = array_keys($col1Indexes);
+               $col2Names = array_keys($col2Indexes);
+               $commonColumnNames = array();
+               $colSize = count($col1Names);
+               //check which columns are in workflow1 and not workflow2
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  if(in_array($col1Names[$colIndex], $col2Names) == false){
+                     $lH->log(4, "waworkflow_static", "{$col1Names[$colIndex]} not in $workflowID2");
+                     if($diffType == "all" || $diffType == "trivial"){
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "missing",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]],
+                           $workflowID2 => null
+                        );
+                     }
+                  }
+                  else {
+                     $commonColumnNames[] = $col1Names[$colIndex];
+                  }
+               }
+               $lH->log(4, "waworkflow_static", "Common column names = ".  print_r($commonColumnNames, TRUE));
+               $colSize = count($col2Names);
+               //check which columns are in workflow2 and not workflow1
+               if($diffType == "all" || $diffType == "trivial"){
+                  for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                     if(in_array($col2Names[$colIndex], $col1Names) == false){
+                        $lH->log(4, "waworkflow_static", "{$col2Names[$colIndex]} not in $workflowID1");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "missing",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => null,
+                           $workflowID2 => $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]
+                        );
+                     }
+                  }
+               }
+               
+               //for each of the common columns, check which ones are different
+               
+               $colSize = count($commonColumnNames);
+               for($colIndex = 0; $colIndex < $colSize; $colIndex++){
+                  $currCol1 = $currSheetIn1['columns'][$col1Indexes[$commonColumnNames[$colIndex]]];
+                  $lH->log(4, "waworkflow_static", "Current column1 = ".print_r($currCol1,true));
+                  $currCol2 = $currSheetIn2['columns'][$col2Indexes[$commonColumnNames[$colIndex]]];
+                  $lH->log(4, "waworkflow_static", "Current column2 = ".print_r($currCol2,true));
+                  if($diffType == "trivial"){//Trivial cases. Only when length or nullable differ
+                     if($currCol1['type'] == $currCol2['type']
+                        && $currCol1['default'] == $currCol2['default']
+                        && ($currCol1['length'] != $currCol2['length']
+                        || $currCol1['nullable'] != $currCol2['nullable'])) {//TODO: not catered for key and present
+                        $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "conflict",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currCol1,
+                           $workflowID2 => $currCol2
+                        );
+                     }
+                  }
+                  else if($diffType == "non_trivial"){//When type or default value differ
+                     if($currCol1['type'] != $currCol2['type']
+                        || $currCol1['default'] != $currCol2['default']) {//TODO: not catered for key and present
+                        $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "conflict",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currCol1,
+                           $workflowID2 => $currCol2
+                        );
+                     }
+                  }
+                  else {//all cases
+                     if($currCol1['length'] != $currCol2['length']
+                        || $currCol1['nullable'] != $currCol2['nullable']
+                        || $currCol1['type'] != $currCol2['type']
+                        || $currCol1['default'] != $currCol2['default']) {//TODO: not catered for key and present
+                        $lH->log(4, "waworkflow_static", "{$currCol2['name']} in $workflowID1 and $workflowID2 differ");
+                        $diff[] = array(
+                           "level" => "column",
+                           "type" => "conflict",
+                           "sheet" => $currSheetName,
+                           $workflowID1 => $currCol1,
+                           $workflowID2 => $currCol2
+                        );
+                     }
+                  }
+               }
+            }
+         }
+         else {
+            if($status1['healthy'] == false && $status2['healthy'] == false){
+               $error = new WAException("Both workflows are not healthy. Cannot get schema difference", WAException::$CODE_WF_INSTANCE_ERROR);
+               $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}' because both workflows are not healthy");
+            }
+            else if($status1['healthy'] == false){
+               $error = new WAException("Workflow with instance id = '$workflowID1' is not healthy. Cannot get schema difference with '$workflowID2'", WAException::$CODE_WF_INSTANCE_ERROR);
+               $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}' because '{$workflow1}' is not healthy");
+            }
+            else if($status2['healthy'] == false){
+               $error = new WAException("Workflow with instance id = '$workflowID2' is not healthy. Cannot get schema difference with '$workflowID1'", WAException::$CODE_WF_INSTANCE_ERROR);
+               $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}' because '{$workflow2}' is not healthy");
+            }
+            $healthy = false;
+            array_push($errors, $error);
+         }
+      } catch (WAException $ex) {
+         array_push($errors, $ex);
+         $healthy = false;
+         $lH->log(1, "waworkflow_static", "Unable to get schema differences between '{$workflowID1}' and '{$workflowID2}'");
+      }
+      $result = array(
+         "diff" => $diff,
+         "workflow_1" => $workflowID1,
+         "workflow_2" => $workflowID2,
+         "status" => Workflow::getStatusArray($healthy, $errors)
+      );
+      return $result;
+   }
+   
+   public static function getUserDBCredentials($userURI, $config, $instanceId) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      include_once 'mod_wa_sheet.php';
       
       $errors = array();
       $healthy = true;
@@ -1327,17 +1600,43 @@ class Workflow {
       $lH->log(3, "waworkflow_static", "Getting save points for workflow with id = '{$instanceId}'");
       try {
          $database = new Database($config);
-         $query = "select connection_password from clients where uri = ".$database->quote($userURI);
+         $query = "select db_username, db_password from clients where uri = ".$database->quote($userURI);
          $result = $database->runGenericQuery($query, TRUE);
          if(is_array($result) && count($result) == 1){
-            $connectionPassword = $result[0]['connection_password'];
-            if($connectionPassword == null || strlen($connectionPassword) == 0) {//user not given a connection password
+            $db2 = new Database($config, $instanceId);
+            $username = $result[0]['db_username'];
+            $password = $result[0]['db_password'];
+            $sheetNames = WASheet::getAllWASheets($config, $instanceId, $db2);
+            //TODO: get all table names
+            if($username == null || strlen($username) == 0 || $password == null || strlen($password) == 0) {//user not given a connection password
+               $randomUsername = Workflow::generateRandomID(10);
                $randomPassword = Workflow::generateRandomID(20);
-               
+               $query = "create user $randomUsername with password ".$database->quote($randomPassword);
+               $database->runGenericQuery($query);
+               $query = "update clients set db_username = ".$database->quote($randomUsername).", db_password = ".$database->quote($randomPassword)." where uri = ".$database->quote($userURI);
+               $database->runGenericQuery($query);
+               $username = $randomUsername;
+               $password = $randomPassword;
+            }
+            $query = "grant connect on database $instanceId to $username";
+            $db2->runGenericQuery($query);
+            $query = "grant usage on schema public to $username";
+            $db2->runGenericQuery($query);
+            $query = "grant select on ".Database::$QUOTE_SI.implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $sheetNames).Database::$QUOTE_SI." to $username";
+            $db2->runGenericQuery($query);
+            $credentials['user'] = $username;
+            $credentials['password'] = $password;
+            if($config['testbed_dbloc'] == "localhost" || $config['testbed_dbloc'] == "127.0.0.1"){
+               $credentials['host'] = $_SERVER['SERVER_ADDR'];
+            }
+            else {
+               $credentials['host'] = $config['testbed_dbloc'];
             }
          }
       } catch (WAException $ex) {
-
+         array_push($errors, $ex);
+         $healthy = false;
+         $lH->log(1, "waworkflow_static", "Unable to get database credentails for user $userURI on workflow '{$instanceId}'");
       }
       
       $result = array(
@@ -1345,7 +1644,7 @@ class Workflow {
           "status" => Workflow::getStatusArray($healthy, $errors)
       );
       return $result;
-   }*/
+   }
    
    /**
     * This function returns an array containing details of workflows that the

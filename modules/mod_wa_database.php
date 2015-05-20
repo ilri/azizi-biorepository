@@ -560,33 +560,107 @@ class Database {
    /**
     * This function alters a table column
     * 
-    * @param type $tableName
-    * @param type $currName
-    * @param type $newName
-    * @param type $type
-    * @param type $length
-    * @param type $nullable
-    * @param type $default
-    * @param type $key
+    * @param type $tableName  Name of the table where column is
+    * @param type $existing   All properties for the existing column
+    * @param type $new        All properties for the column after altering
     */
-   public function runAlterColumnQuery($tableName, $currName, $newName, $type, $length, $nullable, $default, $key) {
+   public function runAlterColumnQuery($tableName, $existing, $new) {
       //instead of altering the current column, add new column after existing then drop existing
+      $isSpecial = false;
+      if($existing['key'] == Database::$KEY_PRIMARY || $existing['key'] == Database::$KEY_UNIQUE) $isSpecial = true;
       try {
-         //if column was previously part of the primary key, the primary key will be deleted
-         //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
-         $tmpName = $currName."_odk_w_delete";
-         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-         $this->runGenericQuery($query);
-         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
-         $query .= $this->getColumnExpression($newName, $type, $length, $key, $default, $nullable);
-         $this->runGenericQuery($query);
-         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-         $this->runGenericQuery($query);
-         if($key == Database::$KEY_PRIMARY){
-            $this->addColumnsToPrimaryKey($tableName, array($newName));
+         if($isSpecial == false) {//column considered special if it is currently part of a key
+            $this->logH->log(4, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            //if column was previously part of the primary key, the primary key will be deleted
+            //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
+            $tmpName = $existing['name']."_odk_w_delete";
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
+            $query .= $this->getColumnExpression($new['name'], $new['type'], $new['length'], $new['key'], $new['default'], $new['nullable']);
+            $this->runGenericQuery($query);
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+            if($new['key'] == Database::$KEY_PRIMARY){
+               $this->addColumnsToPrimaryKey($tableName, array($new['name']));
+            }
+         }
+         else {//column is special. That means the previous method (deleting existing column and replacing it with a new one wont work. The case for columns that are already part of a key)
+            //check what needs to change in the column. Make sure you change the name last
+            if($new['name'] == $existing['name']) $new['name'] = null;
+            if($new['type'] == $existing['type'] && $new['length'] == $existing['length']) {
+               $new['type'] = null;
+               $new['length'] = null;
+            }
+            if($new['nullable'] == null) $new['nullable'] = "null";
+            if($new['nullable'] == "null" && $existing['nullable'] == null) $new['nullable'] = null;
+            else if($new['nullable'] == $existing['nullable']) $new['nullable'] = null;
+            if($new['default'] == $existing['default']) $new['default'] = null;
+            if($new['key'] == $existing['key']) $new['key'] = null;
+            //type
+            $this->logH->log(4, $this->TAG, "Column '{$existing['name']}' being considered as special during alter");
+            $smFixed = false;
+            if($new['type'] != null) {
+               if($new['type'] == Database::$TYPE_VARCHAR) $new['type'] .= "({$new['length']})";
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " type ".$new['type'];
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing type of {$existing['name']} to {$new['type']}");
+            }
+            //nullable
+            if($new['nullable'] != null) {
+               $nullValue = "set not null";
+               if($new['nullable'] == false) {
+                  $nullValue = "drop not null";
+               }
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " ".$nullValue;
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing nullable of {$existing['name']} to $nullValue");
+            }
+            //default
+            if($new['default'] != null) {//for default value of 'null' use null the string
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " set default {$new['default']}";
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing default value to {$new['default']} of {$existing['name']}");
+            }
+            if($new['key'] == Database::$KEY_PRIMARY) {
+               $this->addColumnsToPrimaryKey($tableName, array($existing['name']));
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Adding {$existing['name']} to primary key");
+            }
+            else if($new['key'] == Database::$KEY_UNIQUE) {
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " add constraint ".Database::$QUOTE_SI.$existing['name'].Workflow::generateRandomID(4).Database::$QUOTE_SI." unique(".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI.")";
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Making {$existing['name']} unique");
+            }
+            //name
+            if($new['name'] != null && $existing['name'] != $new['name']) {
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " to".Database::$QUOTE_SI.$new['name'].Database::$QUOTE_SI;
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing name of {$existing['name']} to {$new['name']}");
+            }
+            if($smFixed == true) {
+               $this->logH->log(3, $this->TAG, "{$new['name']} in $tableName altered");
+            }
+            else {
+               $this->logH->log(3, $this->TAG, "Could not find a reason for altering {$existing['name']} in $tableName");
+            }
          }
       } catch (WAException $ex) {
-         throw new WAException("Unable to get an update column expression for $'currName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+         throw new WAException("Could not alter '{$existing['name']}' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
    

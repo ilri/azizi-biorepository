@@ -372,7 +372,7 @@ class WAFile {
       $database = new Database($config, $workflowId);
       
       $query = "select ".Database::$QUOTE_SI."location".Database::$QUOTE_SI.",".Database::$QUOTE_SI."workflow_type".Database::$QUOTE_SI.""
-              . " from ".WAFile::$TABLE_META_FILES;
+              . " from ".WAFile::$TABLE_META_FILES." order by id";
       try {
          $result = $database->runGenericQuery($query, true);
          if($result !== false){
