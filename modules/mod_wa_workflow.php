@@ -16,6 +16,7 @@ class Workflow {
    private $files;//list of WAFiles held by this workflow instance
    private $currUser;//current user interracting with instance
    private $processing;//flag to be used with asynchronous processes. Set to true if asynchronous task working for current instance (example of task is converting excel sheets to MySQL tables)
+   private static $workflowPrefix = "dmp_";//prefix to be used in instance IDs and db users
    
    public static $TABLE_META_CHANGES = "__meta_changes";
    public static $TABLE_META_VAR_NAMES = "__meta_var_names";
@@ -354,7 +355,8 @@ class Workflow {
       $generated = false;
       while($generated === false) {
          //generate random id
-         $randomID = Workflow::generateRandomID();
+         
+         $randomID = Workflow::$workflowPrefix.Workflow::generateRandomID();
          
          //check if random id is unique
          try{
@@ -1609,7 +1611,7 @@ class Workflow {
             $sheetNames = WASheet::getAllWASheets($config, $instanceId, $db2);
             //TODO: get all table names
             if($username == null || strlen($username) == 0 || $password == null || strlen($password) == 0) {//user not given a connection password
-               $randomUsername = Workflow::generateRandomID(10);
+               $randomUsername = Workflow::$workflowPrefix.Workflow::generateRandomID(10);
                $randomPassword = Workflow::generateRandomID(20);
                $query = "create user $randomUsername with password ".$database->quote($randomPassword);
                $database->runGenericQuery($query);
