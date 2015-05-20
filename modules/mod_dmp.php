@@ -221,7 +221,7 @@ class DMP extends Repository{
       <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>
       <button type="button" id="update_btn" class="btn btn-primary" disabled>Update</button>
    </div>
-   <div id="loading_box" style="display: none;background-color: rgb(212, 125, 120)">Loading..</div>
+   <div id="loading_box" style="display: none; background-color: rgb(212, 125, 120); z-index: 10;">Loading..</div>
    <div id="enotification_pp"></div>
    <div id="inotification_pp"></div>
 </div>
@@ -243,10 +243,8 @@ class DMP extends Repository{
       $username = $_SESSION['username'];
       $authType = $_SESSION['auth_type'];*/
       $cypherSecret = $_SESSION['password'];
-      $username = "jrogena2";
-      $authType = "local";
-      $this->Dbase->CreateLogEntry("session = ".print_r($_SESSION, true), "debug");
-      $this->Dbase->CreateLogEntry("server = ".print_r($_SERVER, true), "debug");
+      $username = $_SESSION['username'];
+      $authType = $_SESSION['auth_type'];
       $tokenString = json_encode(array(
           "server" => $_SERVER['SERVER_ADDR'],
           "user" => $username,
