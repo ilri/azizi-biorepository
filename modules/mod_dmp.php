@@ -221,9 +221,9 @@ class DMP extends Repository{
       <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>
       <button type="button" id="update_btn" class="btn btn-primary" disabled>Update</button>
    </div>
-   <div id="loading_box" style="display: none; background-color: rgb(212, 125, 120); z-index: 10;">Loading..</div>
-   <div id="enotification_pp"></div>
-   <div id="inotification_pp"></div>
+   <div id="loading_box" style="display: none; background-color: rgb(212, 125, 120); z-index: 2000;">Loading..</div>
+   <div id="enotification_pp" style="z-index: 2000;"></div>
+   <div id="inotification_pp" style="z-index: 2000;"></div>
 </div>
 <script type="text/javascript">
    //var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");

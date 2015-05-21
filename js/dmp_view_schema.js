@@ -148,6 +148,7 @@ DMPVSchema.prototype.documentReady = function() {
 
 DMPVSchema.prototype.applyDiffButtonClicked = function() {
    if(window.dvs.diffProject != null && window.dvs.project != null) {
+      $("#apply_diff_changes").prop('disabled', true);
       //first resolve the trivial conflicts then apply the non trivial ones one by one
       $("#loading_box").show();
       var sData = JSON.stringify({
@@ -201,6 +202,7 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
             }
          },
          complete: function() {
+            $("#apply_diff_changes").prop('disabled', false);
             $("#loading_box").hide();
             if(wasSuccessful == false) {//could not resolve trivial conflicts
                //refresh save points
