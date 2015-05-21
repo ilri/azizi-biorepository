@@ -50,8 +50,7 @@ class DMP extends Repository{
 <div id="inotification_pp"></div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
-   //var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>");
-   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>");
+   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>");
 </script>
 <?php
    }
@@ -226,8 +225,7 @@ class DMP extends Repository{
    <div id="inotification_pp" style="z-index: 2000;"></div>
 </div>
 <script type="text/javascript">
-   //var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
-   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
+   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
 </script>
 <?php
    }
@@ -242,16 +240,14 @@ class DMP extends Repository{
       /*$cypherSecret = $_SESSION['password'];
       $username = $_SESSION['username'];
       $authType = $_SESSION['auth_type'];*/
-      $cypherSecret = $_SESSION['password'];
-      $username = $_SESSION['username'];
-      $authType = $_SESSION['auth_type'];
+      $this->Dbase->CreateLogEntry("Repository username = ".$_SESSION['username'], "debug");
       $tokenString = json_encode(array(
           "server" => $_SERVER['SERVER_ADDR'],
-          "user" => $username,
-          "auth_mode" => $authType,
-          "secret" => base64_encode($cypherSecret)
+          "user" => $_SESSION['username'],
+          "auth_mode" => $_SESSION['auth_type'],
+          "secret" => base64_encode($_SESSION['password'])
       ));
-      $authURL = "http://".$_SERVER['SERVER_ADDR']."/repository/mod_ajax.php?page=odk_workflow&do=auth";
+      $authURL = "http://azizi.ilri.cgiar.org/repository/mod_ajax.php?page=odk_workflow&do=auth";
       $authCh = curl_init($authURL);
       curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);

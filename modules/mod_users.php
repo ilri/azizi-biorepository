@@ -439,7 +439,7 @@ class Users {
       $groupIDs = explode(",",$_POST['user_groups']);
       
       $result = $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $_POST['email'], $groupIDs, $_POST['ldap'], $_POST['allowed']);
-      if(strlen($_POST['pass_1']) > 0) {
+      if($_POST['ldap'] == 1|| strlen($_POST['pass_1']) > 0) {
          $this->grantDMPAccess($_POST['username'], $_POST['user_groups'], $_POST['ldap'], $_POST['pass_1']);
       }
       return $result;
@@ -486,7 +486,7 @@ class Users {
              "auth_mode" => $_SESSION['auth_type'],
              "secret" => base64_encode($_SESSION['password'])
          ));
-         $authURL = "http://".$_SERVER['SERVER_ADDR']."/repository/mod_ajax.php?page=odk_workflow&do=auth";
+         $authURL = "http://azizi.ilri.cgiar.org/repository/mod_ajax.php?page=odk_workflow&do=auth";
          $authCh = curl_init($authURL);
          curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
          curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
