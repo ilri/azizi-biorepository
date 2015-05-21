@@ -1100,17 +1100,20 @@ class Workflow {
                      $excelFile->dumpData(false);//don't delete existing data before dumping
                   }
                } catch (WAException $ex) {
+                  $this->healthy = false;
                   $this->lH->log(1, $this->TAG, "Could not dump data from the data file for workflow with id = {$this->instanceId} to MySQL");
                   array_push($this->errors, $ex);
                }
             }
          }
          else {
+            $this->healthy = false;
             $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' does not have any linked data files");
             array_push($this->errors, new WAException("Workflow not linked to any data file", WAException::$CODE_WF_INSTANCE_ERROR, null));
          }
       }
       else {
+         $this->healthy = false;
          array_push($this->errors, new WAException("Unable to dump data because the workflow wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to dump data because workflow with id = '{$this->instanceId}' wasn't initialized correctly");

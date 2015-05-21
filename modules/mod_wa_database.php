@@ -115,7 +115,7 @@ class Database {
             }
 
          } catch (PDOException $ex) {
-            $this->logH->log(2, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
+            $this->logH->log(1, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
             throw new WAException("PDOException thrown while trying to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, $ex);
          }
       }
