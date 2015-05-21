@@ -38,8 +38,8 @@ class Database {
    private $pdoObject;
    private $connectedDb;
    private $wInstanceId;//the workflow instance ID. Should correspond to the database name linked to that instance
-   
-   private $DEFAULT_DATABASE = "dmp_master";//default database TODO: rename this 
+
+   private $DEFAULT_DATABASE = "dmp_master";//default database
    
    /**
     * Default constructor for this class.

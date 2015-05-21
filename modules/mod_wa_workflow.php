@@ -273,7 +273,7 @@ class Workflow {
                      array("name" => "workflow_name" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "created_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "time_created" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                     array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>30 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "processing" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'false' , "key"=>Database::$KEY_NONE),
                      array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'true' , "key"=>Database::$KEY_NONE)
