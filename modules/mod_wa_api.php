@@ -975,32 +975,33 @@ class ODKWorkflowAPI extends Repository {
       $this->lH->log(4, $this->TAG, "Dbase object = ".print_r($this->Dbase, TRUE));
       $security = new Security($this->Dbase);
       $decryptedCypher = $security->decryptCypherText(base64_decode($cypherSecret));
+      $this->lH->log(4, $this->TAG, "decryptedCipher = $decryptedCypher");
       if($decryptedCypher != null){
          if($authMode == "local") {
-            try {
-               $database = new Database($this->config);
-               if($database != null){
-                  $query = "select salt, secret, id from clients where uri = '{$uri}'";
-                  $result = $database->runGenericQuery($query, true);
-                  if(is_array($result) && count($result) == 1) {
-                     $salt = $result[0]['salt'];
-                     $secret = $result[0]['secret'];
-                     $clientId = $result[0]['id'];
-                     if($security->hashPassword($decryptedCypher, $salt) == $secret) {//client authenticated
-                        //create session id
-                        $sessionId = $this->setSessionId($database, $security, $clientId);
+               try {
+                  $database = new Database($this->config);
+                  if($database != null){
+                     $query = "select salt, secret, id from clients where uri = '{$uri}'";
+                     $result = $database->runGenericQuery($query, true);
+                     if(is_array($result) && count($result) == 1) {
+                        $salt = $result[0]['salt'];
+                        $secret = $result[0]['secret'];
+                        $clientId = $result[0]['id'];
+                        if($security->hashPassword($decryptedCypher, $salt) == $secret) {//client authenticated
+                           //create session id
+                           $sessionId = $this->setSessionId($database, $security, $clientId);
 
-                        return $sessionId;
+                           return $sessionId;
+                        }
                      }
                   }
+                  else {
+                     throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+                  }
                }
-               else {
-                  throw new WAException("Unable to authenticate client because database object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+               catch(WAException $ex) {
+                  throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
                }
-            }
-            catch(WAException $ex) {
-               throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
-            }
          }
          else if($authMode == "ldap") {
             try {
@@ -1013,6 +1014,7 @@ class ODKWorkflowAPI extends Repository {
                      $ldapAuth = $result[0]['ldap_auth'];
                      $userURI = ODKWorkflowAPI::explodeUserUUID($uri);
                      $ldapRes = $security->ldapAuth($userURI['user'], $decryptedCypher);
+                     $this->lH->log(4, $this->TAG, "LDAP AUTH result = ".print_r($ldapRes, true));
                      if($ldapAuth == "t" && $ldapRes == 0) {//client authenticated
                         //create session id
                         $sessionId = $this->setSessionId($database, $security, $clientId);
