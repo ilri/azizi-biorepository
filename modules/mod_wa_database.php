@@ -546,10 +546,10 @@ class Database {
    }
    
    public function dropAllOtherConnections() {
-      $query = "SELECT pg_terminate_backend(pg_stat_activity.procpid)
+      $query = "SELECT pg_terminate_backend(pg_stat_activity.pid)
                FROM pg_stat_activity
                WHERE datname = current_database()
-               AND procpid <> pg_backend_pid()";
+               AND pid <> pg_backend_pid()";
       //change procpid to pid when updating to PostgreSQL 9.2 and above
       try {
          $this->runGenericQuery($query);
