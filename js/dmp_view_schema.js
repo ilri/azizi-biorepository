@@ -103,10 +103,10 @@ DMPVSchema.prototype.documentReady = function() {
    $("#rename_project_wndw").on("show", function(){$("#blanket_cover").show();});
    $("#rename_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
    var dbCredentailsWindowPos = {
-      y:window.innerHeight/2 - 100/2 - window.innerHeight*0.1,
+      y:window.innerHeight/2 - 110/2 - window.innerHeight*0.1,
       x:window.innerWidth/2 - 250/2
    };
-   $("#db_credentials_wndw").jqxWindow({height: 100, width: 250, position: dbCredentailsWindowPos, theme: ''});
+   $("#db_credentials_wndw").jqxWindow({height: 110, width: 250, position: dbCredentailsWindowPos, theme: ''});
    $("#manual_file_upload").jqxFileUpload({
       width:500,
       fileInputName: "data_file",
@@ -168,11 +168,11 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
          data: {data: sData, token: sToken},
          statusCode: {
             400: function() {//bad request
-               $("#enotification_pp").html("Was unable to gete database credentails");
+               $("#enotification_pp").html("Was unable to apply schema changes");
                $("#enotification_pp").jqxNotification("open");
             },
             403: function() {//forbidden
-               $("#enotification_pp").html("User not allowed exteral access to the database");
+               $("#enotification_pp").html("User not allowed to make schema changes");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -253,6 +253,7 @@ DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
                   $("#enotification_pp").jqxNotification("open");
                }
                else {
+                  $("#db_cred_database").html("Database: "+window.dvs.project);
                   $("#db_cred_host").html("Host: "+jsonResult.credentials.host);
                   $("#db_cred_username").html("User: "+jsonResult.credentials.user);
                   $("#db_cred_password").html("Password: "+jsonResult.credentials.password);

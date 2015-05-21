@@ -141,13 +141,16 @@ class DMP extends Repository{
       <div>Database Credentials</div>
       <div>
          <div style="margin-left: 5%">
-            <div id="db_cred_host"></div>
+            <div id="db_cred_database"></div>
          </div>
          <div style="margin-left: 5%">
             <div id="db_cred_username"></div>
          </div>
          <div style="margin-left: 5%">
             <div id="db_cred_password"></div>
+         </div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_host"></div>
          </div>
       </div>
    </div>
