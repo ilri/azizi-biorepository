@@ -302,11 +302,11 @@ class ODKWorkflowAPI extends Repository {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             
             $workflow->setIsProcessing(true);//set is processing to be true because workflow instance is going to be left processing after response sent to user
+            //call this function after sending response to client because it's goin to take some time
+            $workflow->convertDataFilesToMySQL($json['link_sheets']);
             $data = array(
                 "status" => $workflow->getCurrentStatus()
             );
-            //call this function after sending response to client because it's goin to take some time
-            $workflow->convertDataFilesToMySQL($json['link_sheets']);
             $this->returnResponse($data);
          }
          else {

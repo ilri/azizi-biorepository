@@ -547,22 +547,26 @@ class Workflow {
                } catch (WAException $ex) {
                   $this->lH->log(1, $this->TAG, "Could not process data file for workflow with id = {$this->instanceId} to MySQL");
                   array_push($this->errors, $ex);
+                  $this->healthy = false;
                }
             }
             else {
                $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' has more than one data file");
                array_push($this->errors, new WAException("Workflow not linked to more than one data file. Feature currently not supported", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null));
+               $this->healthy = false;
             }
          }
          else {
             $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' does not have any linked data files");
             array_push($this->errors, new WAException("Workflow not linked to any data file", WAException::$CODE_WF_INSTANCE_ERROR, null));
+            $this->healthy = false;
          }
       }
       else {
          $this->lH->log(1, $this->TAG, "Workflow with instance id = '{$this->instanceId}' not initialized properly. Unable to convert workflow's data files to MySQL'");
          $this->lH->log(4, $this->TAG, "Workflow instance details ".  print_r($this, true));
          array_push($this->errors, new WAException("Workflow not initialized properly. Unable to convert workflow's data files to MySQL'", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
       }
       $this->setIsProcessing(false);
       $this->cacheIsProcessing();

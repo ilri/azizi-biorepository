@@ -424,4 +424,20 @@ class WAColumn {
          throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
+   
+   /**
+    * This function tries to remove the sheet name from the column name in an
+    * effort to try minimize the length of the column. Make sure you record the
+    * change (if name changes) in the meta changes table
+    * 
+    * @param String $sheetName   Name of the sheet
+    * @param String $columnName  Name of the column
+    * @return String The new column name or the original column name if name doesn't change
+    */
+   public static function trimColumnName($sheetName, $columnName){
+      if(substr($columnName, 0, strlen($sheetName)) == $sheetName) {//the column name starts with the sheet name
+         $columnName = str_replace($sheetName."-", "", $columnName);
+      }
+      return $columnName;
+   }
 }

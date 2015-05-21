@@ -321,9 +321,15 @@ class WASheet {
             }
             if($columnsProvided == false){
                for($index = 0; $index < count($columnNames); $index++) {
-                  $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
-                  $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
-                  array_push($mysqlColumns, $currMySQLColumn);
+                  if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
+                     $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
+                     $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
+                     array_push($mysqlColumns, $currMySQLColumn);
+                  }
+                  else {
+                     $this->lH->log(1, $this->TAG, "Column '{$columnNames[$index]}' has a name that is longer than ".Database::$MAX_TABLE_NAME_LENGTH." characters long");
+                     throw new WAException("Column '{$columnNames[$index]}' has a name that is longer than ".Database::$MAX_TABLE_NAME_LENGTH." characters long", WAException::$CODE_WF_PROCESSING_ERROR, null);
+                  }
                }
             }
             
@@ -398,7 +404,14 @@ class WASheet {
                      $this->lH->log(3, $this->TAG, "Sheet '{$this->sheetName}' has $columnNumber columns");
                   }
                   else {
-                     $this->columnArray[$cellValue] = array();
+                     $currHeadingName = $cellValue;
+                     if(strlen($currHeadingName) > 0){
+                        $this->columnArray[$currHeadingName] = array();
+                     }
+                     else {
+                        $readableCIndex = $columnIndex + 1;
+                        throw new WAException("Column number ".$readableCIndex." in '{$this->sheetName}' is empty", WAException::$CODE_WF_PROCESSING_ERROR, null);
+                     }
                   }
                   $columnIndex++;
                }

@@ -24,6 +24,7 @@ class Database {
    public static $TYPE_DATE = "date";
    public static $TYPE_DATETIME = "timestamp without time zone";
    public static $TYPE_BOOLEAN = "boolean";
+   public static $MAX_TABLE_NAME_LENGTH = 63;
    
    public static $BOOL_TRUE = 't';
    public static $BOOL_FALSE = 'f';
