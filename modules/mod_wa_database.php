@@ -885,7 +885,7 @@ class Database {
 
          //add nullable
          $nullable = "not null";
-         if($isNullable === true) $nullable = "null";
+         if($isNullable == true) $nullable = "null";
          $createString .= "{$nullable} ";
       }
       /*else if($key == Database::$KEY_PRIMARY){

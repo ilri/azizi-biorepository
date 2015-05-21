@@ -1090,6 +1090,7 @@ class Workflow {
          if(count($dataFiles) > 0) {
             //delete any existing data table in the database
             for($index = 0; $index < count($dataFiles); $index++) {
+               $this->lH->log(3, $this->TAG, "Now dumping ".$dataFiles[$index]->getFSLocation());
                try {
                   $excelFile = new WAExcelFile($dataFiles[$index]);
                   if($index == 0) {
@@ -1182,7 +1183,7 @@ class Workflow {
                else if($currDiff['level'] == "column" && $currDiff['type'] == "conflict") {
                   //check what trivial change should be made (can either be length or nullable)
                   $column = $currDiff[$this->instanceId];
-                  if($currDiff[$this->instanceId]['nullable'] != $currDiff[$workflow2Id]['nullable']) {//nullable value does not match
+                  if($currDiff[$this->instanceId]['nullable'] != $currDiff[$workflow2Id]['nullable'] && $currDiff[$this->instanceId]['nullable'] == false) {//nullable value does not match
                      $column['nullable'] = true;
                   }
                   if($currDiff[$this->instanceId]['length'] < $currDiff[$workflow2Id]['length']) {//lenght of the column in this workflow is less than that of the reference workflow
@@ -1199,6 +1200,16 @@ class Workflow {
                   $this->database->runCreateTableQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
                   $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
+               }
+               else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$workflow2Id])) {
+                  $column = $currDiff[$this->instanceId];
+                  $column['nullable'] = true;
+                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet']);
+                  $column['original_name'] = $column['name'];
+                  $column['delete'] = false;
+                  $sheetObject->alterColumn($column);
+                  $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
             }
             
