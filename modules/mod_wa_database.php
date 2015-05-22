@@ -484,15 +484,26 @@ class Database {
     * @param type $filename      Name to be given to the backup file
     */
    public function backup($workingDir, $filename, $user, $description) {
+      /*
+       * #since you have to use the same pg_dump version as the server
+       * #install using rpm from http://yum.postgresql.org/repopackages.php#pg93
+       * wget -c http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+       * #install just the client
+       * yum install postgresql93.x86_64
+       * #find out where pg_dump was put
+       * rpm -ql postgresql93.x86_64|grep bin
+       * #save the pg_dump path in the repository config file
+       */
       try {
          $this->logH->log(3, $this->TAG, "Backing up '".$this->getDatabaseName()."'");
          //($config, $workflowID, $database, $workingDir, $type, $filename = null)
          $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
          $subDirPath = $dumpFile->createWorkingSubdir();
          $path = $subDirPath . "/" . $filename;
-         $command = "export PGPASSWORD=".$this->config['testbed_pass'].";pg_dump --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} > $path";
+         $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
          $this->logH->log(4, $this->TAG, "Backup command is '$command'");
-         shell_exec($command);
+         $output = shell_exec($command);
+         $this->logH->log(3, $this->TAG, "Output from backup command is '$output'");
          if(file_exists($path)) {
             $columns = array(
                "location" => "'$filename'",
