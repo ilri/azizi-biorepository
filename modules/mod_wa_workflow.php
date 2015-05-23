@@ -1089,6 +1089,9 @@ class Workflow {
                if($filter == "all" || ($filter == "prefix" && count($currSheetData) > 0)) {//do not add sheet to list of sheets to be added to the excel file if we are filtering based on prefix and no data fetched from the sheet
                   $sheetData[$currSheet->getSheetName()] = $currSheetData;
                }
+               else {
+                  $this->lH->log(2, $this->TAG, "No data available in ".$currSheet->getSheetName().". Not adding sheet to excel file");
+               }
             }
          }
          else if($filter == "query") {
@@ -1106,10 +1109,10 @@ class Workflow {
          $name = "";
          $rand = Workflow::generateRandomID(5);
          if($filter == "all") $name = $this->instanceId."_".$rand;
-         else if($filter == "prefix") $name = $this->instanceId."_".$prefix."_".$rand;
+         else if($filter == "prefix") $name = $this->instanceId."_prefix_".$rand;
          else if($filter == "query") $name = $this->instanceId."_query_".$rand;
          $relativeURL = WAExcelFile::saveAsExcelFile($this->config, $this->instanceId, $this->workingDir, $this->database, $name, $sheetData);
-         return "http://".$_SERVER["HTTP_HOST"].$relativeURL;
+         return "http://".$_SERVER["HTTP_HOST"].str_replace("..", "", $relativeURL);
       }
       else {
          array_push($this->errors, new WAException("Unable to get data because the workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
