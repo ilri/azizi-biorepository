@@ -104,6 +104,7 @@ class DMP extends Repository{
          <ul style='width: 250px;'>
             <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
             <li><a id="db_credentials_btn" style="text-decoration: none; color: black;">Get Database Credentials</a></li>
+            <li><a id="get_data_btn" style="text-decoration: none; color: black;">Get Data</a></li>
           </ul>
       </li>
   </ul>
@@ -121,6 +122,28 @@ class DMP extends Repository{
             <div id="manual_file_upload" style="position: absolute; bottom: 0;"></div>
          </div>
          <button type="button" id="create_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Create</button>
+      </div>
+   </div>
+   <div id="get_data_wndw" style="display: none; z-index: 6;">
+      <div>Get Data</div>
+      <div>
+         <div style="margin-left: 5%">
+            <label for="data_filter_type">Filter</label>
+            <select type="text" id="data_filter_type" style="height: 25px; width: 300px;">
+               <option value="all">All</option>
+               <option value="prefix">Prefix</option>
+               <option value="query">Query</option>
+            </select>
+         </div>
+         <div style="margin-left: 5%; display: none;" id="filter_query_div">
+            <label for="filter_query">Query</label>
+            <textarea id="filter_query" style="width: 500px;" cols="1" placeholder="Valid PostgreSQL select query"></textarea>
+         </div>
+         <div style="margin-left: 5%; display: none;" id="filter_prefix_div">
+            <label for="filter_prefix">Prefix</label>
+            <textarea id="filter_prefix" style="width: 500px;" cols="1" placeholder="Prefixes for the columns you want to get. Seperate prefixes with semicolons"></textarea>
+         </div>
+         <button type="button" id="get_data_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Get Data</button>
       </div>
    </div>
    <div id="new_foreign_key_wndw" style="display: none; z-index: 6;">

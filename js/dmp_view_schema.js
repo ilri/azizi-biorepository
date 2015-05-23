@@ -60,6 +60,13 @@ DMPVSchema.prototype.documentReady = function() {
    $("#new_project_wndw").jqxWindow({height: 220, width: 600, position:newProjectWindowPos, theme: ''});
    $("#new_project_wndw").on("show", function(){$("#blanket_cover").show();});
    $("#new_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
+   var getDataWindowPos = {
+      y:window.innerHeight/2 - 220/2 - window.innerHeight*0.1,
+      x:window.innerWidth/2 - 600/2
+   };
+   $("#get_data_wndw").jqxWindow({height: 220, width: 600, position:getDataWindowPos, theme: ''});
+   $("#get_data_wndw").on("show", function(){$("#blanket_cover").show();});
+   $("#get_data_wndw").on("hide", function(){$("#blanket_cover").hide();});
    var deleteProjectWindowPos = {
       y:window.innerHeight/2 - 100/2 - window.innerHeight*0.1,
       x:window.innerWidth/2 - 300/2
@@ -144,6 +151,24 @@ DMPVSchema.prototype.documentReady = function() {
    $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
    $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
    $("#apply_diff_changes").click(window.dvs.applyDiffButtonClicked);
+   $("#get_data_btn").click(function() {
+      $("#get_data_wndw").show();
+   });
+   $("#data_filter_type").change(function() {
+      if($("#data_filter_type").val() == "all") {
+         $("#filter_query_div").hide();
+         $("#filter_prefix_div").hide();
+      }
+      else if($("#data_filter_type").val() == "query") {
+         $("#filter_query_div").show();
+         $("#filter_prefix_div").hide();
+      }
+      else if($("#data_filter_type").val() == "prefix") {
+         $("#filter_query_div").hide();
+         $("#filter_prefix_div").show();
+      }
+   });
+   $("#get_data_btn2").click(window.dvs.getDataButtonClicked);
 };
 
 DMPVSchema.prototype.applyDiffButtonClicked = function() {
@@ -211,6 +236,89 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
          }
       });
    }
+};
+
+DMPVSchema.prototype.getDataButtonClicked = function() {
+   var filterType = $("#data_filter_type").val();
+   var query = $("#filter_query").val();
+   var prefix = $("#filter_prefix").val();
+   var correct = true;
+   if(filterType == "query" && query.length == 0) correct = false;
+   if(filterType == "prefix" && prefix.length == 0) correct = false;
+   if(window.dvs.project != null && correct == true) {
+      $("#get_data_btn2").attr("disabled", true);
+      $("#apply_diff_changes").prop('disabled', true);
+      //first resolve the trivial conflicts then apply the non trivial ones one by one
+      $("#loading_box").show();
+      var sDataObj = {};
+      sDataObj.workflow_id = window.dvs.project;
+      sDataObj.filter = filterType;
+      if(filterType == "query") {
+         sDataObj.query = query;
+      }
+      else if(filterType == "prefix") {
+         var prefixes = prefix.split(";");
+         for(var index = 0; index < prefixes.length; index++) {
+            prefixes[index] = $.trim(prefixes[index]);
+         }
+         sDataObj.prefix = prefixes;
+      }
+      var sData = JSON.stringify(sDataObj);
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_data",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get the data");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get some or all of the data");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_data endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get the data"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#get_data_wndw").hide();
+                  window.dvs.startDownload(jsonResult.data_file);
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not resolve trivial differences between projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            $("#get_data_btn2").attr("disabled", false);
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.startDownload = function(url) {
+   $("#hiddenDownloader").remove();
+   $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");   
+   $("#hiddenDownloader").attr("src", url);
 };
 
 DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
