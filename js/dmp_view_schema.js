@@ -410,7 +410,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
          currDiffData['sheet'] = diffs[diffIndex].sheet;
          currDiffData['name'] = diffs[diffIndex][window.dvs.project].name;
          currDiffData['type'] = diffs[diffIndex][window.dvs.project].type;
-         currDiffData['length'] = diffs[diffIndex][window.dvs.project].length;
+         currDiffData['vlength'] = diffs[diffIndex][window.dvs.project].length;
          currDiffData['nullable'] = diffs[diffIndex][window.dvs.project].nullable;
          currDiffData['default'] = diffs[diffIndex][window.dvs.project].default;
          currDiffData['key'] = diffs[diffIndex][window.dvs.project].key;
@@ -431,7 +431,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
          {name: 'name'},
          {name: 'type'},
          {name: 'type_2'},
-         {name: 'length'},
+         {name: 'vlength'},
          {name: 'length_2'},
          {name: 'nullable'},
          {name: 'nullable_2'},
@@ -491,7 +491,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
             return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px; '+color+'">' + value + '</div>';
          }},
          {text: 'Conflict Type', datafield: 'type_2', editable: false, width: gridWidth * 0.1},
-         {text: 'Length', columntype: 'numberinput', datafield: 'length', width: gridWidth * 0.08},
+         {text: 'Length', columntype: 'numberinput', datafield: 'vlength', width: gridWidth * 0.08},
          {text: 'Conflict Length', datafield: 'length_2', editable: false, width: gridWidth * 0.08},
          {text: 'Nullable', columntype: 'dropdownlist', width: gridWidth * 0.08, datafield: 'nullable',initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: nullableTypes});
@@ -1252,6 +1252,9 @@ DMPVSchema.prototype.applySchemaChanges = function() {
                else {
                   details["delete"] = true;
                }
+               if(typeof details["vlength"] != 'undefined'){
+                  details['length'] = details['vlength'];
+               }
                
                var sData = JSON.stringify({
                      "workflow_id": window.dvs.project,
@@ -1666,7 +1669,7 @@ DMPVSchema.prototype.initColumnGrid = function() {
          {name: 'present', type:'bool'},
          {name: 'name'},
          {name: 'type'},
-         {name: 'length'},
+         {name: 'vlength'},
          {name: 'nullable'},
          {name: 'default'},
          {name: 'key'},
@@ -1716,7 +1719,7 @@ DMPVSchema.prototype.initColumnGrid = function() {
          {text: 'Type', columntype: 'dropdownlist', datafield: 'type', width: gridWidth*0.2206,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: columnTypes});
          }},
-         {text: 'Length', columntype: 'numberinput', datafield: 'length', width: gridWidth*0.1103},
+         {text: 'Length', columntype: 'numberinput', datafield: 'vlength', width: gridWidth*0.1103},
          {text: 'Nullable', columntype: 'dropdownlist', datafield: 'nullable', width: gridWidth*0.1103,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: nullableTypes});
          }},
@@ -1992,23 +1995,19 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
 DMPVSchema.prototype.updateColumnGrid = function(data) {
    console.log("updating column grid");
    //check if each of the columns is in a foreing key
+   var allFKeyColumns = [];
    if(window.dvs.foreignKeys != null && typeof window.dvs.foreignKeys[data.name] != 'undefined') {//the current sheet has foreign keys
       var foreignKeys = window.dvs.foreignKeys[data.name];
-      var allFKeyColumns = [];
       for(var index = 0; index < foreignKeys.length; index++) {
          allFKeyColumns = allFKeyColumns.concat(foreignKeys[index].columns);
       }
-      for(var index = 0; index < data.columns.length; index++) {
-         if(allFKeyColumns.indexOf(data.columns[index].name) != -1) {
-            data.columns[index].link = true;
-         }
-         else {
-            data.columns[index].link = false;
-         }
-      }
    }
-   else {
-      for(var index = 0; index < data.columns.length; index++) {
+   for(var index = 0; index < data.columns.length; index++) {
+      data.columns[index].vlength = data.columns[index]['length'];
+      if(allFKeyColumns.indexOf(data.columns[index].name) != -1) {
+         data.columns[index].link = true;
+      }
+      else {
          data.columns[index].link = false;
       }
    }
@@ -2019,7 +2018,7 @@ DMPVSchema.prototype.updateColumnGrid = function(data) {
          {name: 'present', type:'boolean'},
          {name: 'name'},
          {name: 'type'},
-         {name: 'length'},
+         {name: 'vlength'},
          {name: 'nullable'},
          {name: 'default'},
          {name: 'key'},
