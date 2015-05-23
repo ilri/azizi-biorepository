@@ -86,7 +86,7 @@ class DMP extends Repository{
       <li>DMP
          <ul style="width: 250px;">
             <li><a href="?page=dmp">Home</a></li>
-            <li><a style="text-decoration: none; color: black;">Create New Project</a></li>
+            <li><a style="text-decoration: none; color: black;" href="?page=dmp&do=view_schema&project=&session=<?php echo $sessionId;?>">Create New Project</a></li>
          </ul>
       </li>
       <li>Schema
