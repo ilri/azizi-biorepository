@@ -10,7 +10,9 @@ class WAFile {
    public static $WORKING_SUB_DIRS = array(
        "raw_data" => "/raw_data",
        "processed_data" => "/processed_data",
-       "backups" => "/backups");
+       "backups" => "/backups",
+       "tmp" => "/tmp"
+      );
    public static $TABLE_META_FILES = "__meta_files";
    
    private $TAG = "wafile";
@@ -91,6 +93,27 @@ class WAFile {
       );
       
       return $details;
+   }
+   
+   /**
+    * This function tries to save the current file as an excel file
+    * 
+    * @param PHPExcel $excelObject  The PHPExcel object to be saved as a file
+    * @return String The URL to the file
+    * 
+    * @throws WAException
+    */
+   public function saveAsExcelFile($excelObject) {
+      include_once $this->config['common_folder_path'].'PHPExcel/Classes/PHPExcel/IOFactory.php';
+      try {
+         $objWriter = new PHPExcel_Writer_Excel2007($excelObject);
+         $subDirPath = $this->createWorkingSubdir();
+         $objWriter->save($subDirPath."/".$this->filename);
+         return $subDirPath."/".$this->filename;
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to save excel object as a file");
+         throw new WAException("An error occurred while trying to save excel object as a file", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
    }
    
    /**

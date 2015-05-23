@@ -44,6 +44,10 @@ class WASheet {
       }
    }
    
+   public function getSheetName() {
+      return $this->sheetName;
+   }
+   
    /**
     * This function initializes this object using details stored in the MySQL database
     * @param boolean $initColumns   Whether to also initialize all the columns
@@ -68,6 +72,63 @@ class WASheet {
       else {
          $this->lH->log(1, $this->TAG, "Unable to get schema details for data table (sheet) with name = '$this->sheetName' from the database because sheet object not initialized correctly");
          throw new WAException("Unable to get schema details for data table (sheet) with name = '$this->sheetName' from the database because sheet object not initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function gets data for this sheet that has been dumped in the database
+    * 
+    * @param String $prefix   The prefix to determine which columns to get data for
+    * 
+    * @return array  An associative array with the data
+    */
+   public function getDatabaseData($prefix = array()) {
+      $data = array();
+      $selectColumnsString = "";
+      $entireSheetMatches = false;//whether the entire sheet matches prefix
+      if(count($prefix) == 0){
+         $entireSheetMatches = true;
+      }
+      else {
+         for($pIndex = 0; $pIndex < count($prefix); $pIndex++) {
+            $currPrefix = $prefix[$pIndex];
+            if($currPrefix === "" || strrpos($this->sheetName, $currPrefix, -strlen($this->sheetName)) !== FALSE) {//column has prefix
+               $entireSheetMatches = true;
+               $this->lH->log(3, $this->TAG, "Entire sheet ".$this->sheetName." matches the prefix '$currPrefix'");
+               break;
+            }
+         }
+      }
+      try {
+         for($cIndex = 0; $cIndex < count($this->columns); $cIndex++) {
+            $currColumn = $this->columns[$cIndex];
+            if($entireSheetMatches == true) {//add the column since the entire sheet matches at least one prefix
+               if(strlen($selectColumnsString) == 0) $selectColumnsString = Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
+               else $selectColumnsString .= ", ".Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
+            }
+            else {
+               //search if the current column matches any of the prefixes
+               for($pIndex = 0; $pIndex < count($prefix); $pIndex++){
+                  $currPrefix = $prefix[$pIndex];
+                  if(strrpos($currColumn->getName(), $currPrefix, -strlen($currColumn->getName())) !== FALSE) {
+                     if(strlen($selectColumnsString) == 0) $selectColumnsString = Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
+                     else $selectColumnsString .= ", ".Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
+                     break;
+                  }
+               }
+            }
+         }
+         if(strlen($selectColumnsString) > 0) {
+            $query = "select $selectColumnsString from ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI;
+            $data = $this->database->runGenericQuery($query, TRUE);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "None of the columns in ".$this->sheetName." match the prefix '$prefix'");
+         }
+         return $data;
+      } catch (WAException $ex) {
+         $this->lH->log(2, $this->TAG, "An error occurred while trying to get database data from ".$this->sheetName);
+         throw new WAException("An error occurred while trying to get database data from ".$this->sheetName, WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
    

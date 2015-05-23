@@ -1065,6 +1065,60 @@ class Workflow {
       return $savePoint;
    }
    
+   /**
+    * This function get's data from the database
+    * 
+    * @param String $filter   The filter to be used for getting the data. Can be 'all', 'query' or 'prefix'
+    * @param type $query      If filter is query, the corresponding query to be used to get the data
+    * @param type $prefix     If filter is prefix, the prefix to be used to select columns to be fetched
+    * 
+    * @return string A url to the data file
+    */
+   public function getData($filter, $query = null, $prefix = null) {
+      $url = "";
+      if($this->healthy == true
+            && $this->database != null) {
+         $sheetData = array();
+         if($filter == "all" || $filter == "prefix"){//user wants all the data
+            if($filter == "all") $prefix = array();
+            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+            //get data from all the sheets
+            for($index = 0; $index < count($dataTables); $index++) {
+               $currSheet = new WASheet($this->config, $this->database, null, $dataTables[$index]);
+               $currSheetData = $currSheet->getDatabaseData($prefix);
+               if($filter == "all" || ($filter == "prefix" && count($currSheetData) > 0)) {//do not add sheet to list of sheets to be added to the excel file if we are filtering based on prefix and no data fetched from the sheet
+                  $sheetData[$currSheet->getSheetName()] = $currSheetData;
+               }
+            }
+         }
+         else if($filter == "query") {
+            if($query != null) {
+               $sheetData['data'] = $this->database->runGenericQuery($query, true);
+               $sheetData['meta'] = array(array("query" => $query));
+            }
+            else {
+               array_push($this->errors, new WAException("Query not provided for fetching data from sheet", WAException::$CODE_WF_PROCESSING_ERROR, null));
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Unable to get data because no query was provided for fetching data");
+            }
+         }
+         //save the fetched data in a file
+         $name = "";
+         $rand = Workflow::generateRandomID(5);
+         if($filter == "all") $name = $this->instanceId."_".$rand;
+         else if($filter == "prefix") $name = $this->instanceId."_".$prefix."_".$rand;
+         else if($filter == "query") $name = $this->instanceId."_query_".$rand;
+         $relativeURL = WAExcelFile::saveAsExcelFile($this->config, $this->instanceId, $this->workingDir, $this->database, $name, $sheetData);
+         return "http://".$_SERVER["HTTP_HOST"].$relativeURL;
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to get data because the workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to get data because the workflow with instance id = '{$this->instanceId}' is unhealthy");
+      }
+      return $url;
+   }
+   
    public function getRawDataFiles() {
       $dataFiles = array();
       for($index = 0; $index < count($this->files); $index++) {

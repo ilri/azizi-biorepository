@@ -142,6 +142,9 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_trivial_diff") {
                         $this->handleResolveTrivialDiffEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_data") {
+                        $this->handleGetDataEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -825,6 +828,44 @@ class ODKWorkflowAPI extends Repository {
       }
       else {
          $this->lH->log(2, $this->TAG, "data variable not set in data provided to resolve_trivial_diff endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_data endpoint
+    * The get_data endpoint get's data from the database (and not the raw data files)
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id    :  "Instance id for the main workflow"
+    *    filter         :  "What should be used to filter the data. Can either be all, query or prefix"
+    * }
+    */
+   private function handleGetDataEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("filter", $json)
+               && (($json['filter'] == "all")
+                     || ($json['filter'] == "query" && array_key_exists("query", $json)) 
+                     || ($json['filter'] == "prefix" && array_key_exists("prefix", $json) && is_array($json['prefix'])))) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            //get the path to the data file
+            $url = $workflow->getData($json['filter'], $json['query'], $json['prefix']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "data_file" => $url,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_data endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_data endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }

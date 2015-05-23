@@ -175,6 +175,76 @@ class WAExcelFile {
       $this->excelObject->disconnectWorksheets();
       WAFile::rmDir($this->cachePath);
    }
+   
+   /**
+    * This function dumps data from the data provided into an PHPExcel object
+    * 
+    * @param Array   $config     Repository general config file
+    * @param String  $workflowID The instance id of the workflow
+    * @param String  $workingDir Where to save the excel file
+    * @param String  $title      The title to be given to the excel file
+    * @param Array   $data       An associative array of the data with the top heirarchy being the sheets,
+    *                            second level being the rows and the third level the columns
+    * 
+    * @return PHPExcel  A PHPExcelObject containing the dumped data
+    * @throws WAException
+    */
+   public static function saveAsExcelFile($config, $workflowID, $workingDir, $database, $title, $data) {
+      include_once $config['common_folder_path'].'PHPExcel/Classes/PHPExcel.php';include_once 'mod_log.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_wa_file.php';
+      
+      $lH = new LogHandler("./");
+      $tag = "washeet_static";
+      $phpExcel = new PHPExcel();
+      $creator = "ODK Workflow API";
+      $phpExcel->getProperties()->setCreator($creator);
+      $phpExcel->getProperties()->setLastModifiedBy($creator);
+      $phpExcel->getProperties()->setTitle($title);
+      $phpExcel->getProperties()->setSubject("Created using ".$creator);
+      $phpExcel->getProperties()->setDescription("This Excel file has been generated using $creator that utilizes the PHPExcel library on PHP. $creator was created by Jason Rogena (j.rogena@cgiar.org)");
+      $sheetNames = array_keys($data);
+      for($sheetIndex = 0; $sheetIndex < count($data); $sheetIndex++) {
+         $phpExcel->setActiveSheetIndex($sheetIndex);
+         $phpExcel->getActiveSheet()->setTitle($sheetNames[$sheetIndex]);
+         $sheetData = $data[$sheetIndex];
+         //add the column titles
+         if(count($sheetData) > 0) {
+            $columnNames = array_keys($sheetData[0]);
+            for($columnIndex = 0; $columnIndex < count($columnNames); $columnIndex++) {
+               $columnKey = PHPExcel_Cell::stringFromColumnIndex($columnIndex);//not sure if this should be 0 based or 1 based
+               $phpExcel->getActiveSheet()->setCellValue($columnKey."1", $columnNames[$columnIndex]);
+               $phpExcel->getActiveSheet()->getStyle($columnKey."1")->getFont()->setBold(true);
+               $phpExcel->getActiveSheet()->getColumnDimension($columnKey)->setAutoSize(true);
+            }
+            //add the data rows
+            for($rowIndex = 0; $rowIndex < count($sheetData); $rowIndex++) {
+               $currRow = $sheetData[$rowIndex];
+               $columnCount = count($currRow);
+               if($columnCount == count($columnNames)) {
+                  for($columnIndex = 0; $columnIndex < $columnCount; $columnIndex++){
+                     $currColumnName = $columnNames[$columnIndex];
+                     $rowKey = $rowIndex + 2;
+                     $columnKey = PHPExcel_Cell::stringFromColumnIndex($columnIndex);
+                     $phpExcel->getActiveSheet()->setCellValue($columnKey.$rowKey, $currRow[$currColumnName]);
+                  }
+               }
+               else {
+                  $readableRI = $rowIndex + 1;
+                  $lH->log(1, $tag, "Column count in current row ($readableRI) of $sheetNames[$sheetIndex] does not match the expected column count");
+                  throw new WAException("Column count in current row ($readableRI) of $sheetNames[$sheetIndex] does not match the expected column count", WAException::$CODE_WF_PROCESSING_ERROR, null);
+               }
+            }
+         }
+         else {
+            $lH->log(2, $tag, "{$sheetNames[$sheetIndex]} does not have any data");
+         }
+      }
+      //save the file
+      $file = new WAFile($config, $workflowID, $database, $workingDir, "tmp", $title.".xlsx");
+      $url = $file->saveAsExcelFile($phpExcel);
+      return $url;
+   }
 }
 
 ?>
