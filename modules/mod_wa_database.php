@@ -876,12 +876,12 @@ class Database {
          }
 
          //add default value
-         if($nullable === "null" 
+         if($isNullable == true 
                  && ($default == null || $default == "NULL" || $default == "null")) {
             //column is nullable and default value is null
             $createString .= "default null ";
          }
-         else if($nullable === "not null"
+         else if($isNullable == false
                  && ($default == null || $default == "NULL" || $default == "null")) {
             //column doesn't have a default value
          }
