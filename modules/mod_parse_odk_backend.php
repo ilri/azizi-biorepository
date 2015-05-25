@@ -404,7 +404,7 @@ class Parser {
       $dicObjWriter->save($this->downloadDir.'/dictionary.xlsx');
 
       //zip parsed files
-      $zipName = 'download/'.$this->sessionID.'.zip';
+      $zipName = 'download/'.$_POST['fileName']."_".$this->sessionID.'.zip';
       //$this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
       $this->logHandler->log(3, $this->TAG, 'zipping output files into '.$zipName);
       $this->gTasks->zipDir($this->downloadDir, $this->ROOT.$zipName);
