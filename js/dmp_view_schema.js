@@ -61,10 +61,10 @@ DMPVSchema.prototype.documentReady = function() {
    $("#new_project_wndw").on("show", function(){$("#blanket_cover").show();});
    $("#new_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
    var getDataWindowPos = {
-      y:window.innerHeight/2 - 220/2 - window.innerHeight*0.1,
+      y:window.innerHeight/2 - 160/2 - window.innerHeight*0.1,
       x:window.innerWidth/2 - 600/2
    };
-   $("#get_data_wndw").jqxWindow({height: 220, width: 600, position:getDataWindowPos, theme: ''});
+   $("#get_data_wndw").jqxWindow({height: 160, width: 600, position:getDataWindowPos, theme: ''});
    $("#get_data_wndw").on("show", function(){$("#blanket_cover").show();});
    $("#get_data_wndw").on("hide", function(){$("#blanket_cover").hide();});
    var deleteProjectWindowPos = {
@@ -152,21 +152,32 @@ DMPVSchema.prototype.documentReady = function() {
    $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
    $("#apply_diff_changes").click(window.dvs.applyDiffButtonClicked);
    $("#get_data_btn").click(function() {
+      //get the project groups
+      var projectGroups = window.dvs.getProjectGroups();
+      var html = "";
+      for(var gIndex = 0; gIndex < projectGroups.length; gIndex++) {
+         html = html + "<input type='checkbox' name='project_groups' id='"+projectGroups[gIndex]+"' value='"+projectGroups[gIndex]+"' />"+projectGroups[gIndex]+"<br />";
+      }
+      $("#data_project_groups_div").html(html);
       $("#get_data_wndw").show();
    });
    $("#data_filter_type").change(function() {
+      var wHeight = 160;
       if($("#data_filter_type").val() == "all") {
          $("#filter_query_div").hide();
          $("#filter_prefix_div").hide();
       }
       else if($("#data_filter_type").val() == "query") {
+         wHeight = 230;
          $("#filter_query_div").show();
          $("#filter_prefix_div").hide();
       }
       else if($("#data_filter_type").val() == "prefix") {
+         wHeight = 280;
          $("#filter_query_div").hide();
          $("#filter_prefix_div").show();
       }
+      $("#get_data_wndw").jqxWindow({height: wHeight});
    });
    $("#get_data_btn2").click(window.dvs.getDataButtonClicked);
 };
@@ -238,13 +249,32 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
    }
 };
 
+DMPVSchema.prototype.getProjectGroups = function() {
+   var groupNames = [];
+   for(var sIndex = 0; sIndex < window.dvs.schema.sheets.length; sIndex++) {
+      var currSection = window.dvs.schema.sheets[sIndex];
+      for(var cIndex = 0; cIndex < currSection.columns.length; cIndex++) {
+         var currColumnName = currSection.columns[cIndex].name;
+         var nameParts = currColumnName.split("-");
+         if(groupNames.indexOf(nameParts[0]) == -1) {
+            groupNames[groupNames.length] = nameParts[0];
+         }
+      }
+   }
+   console.log(groupNames);
+   return groupNames;
+};
+
 DMPVSchema.prototype.getDataButtonClicked = function() {
    var filterType = $("#data_filter_type").val();
    var query = $("#filter_query").val();
-   var prefix = $("#filter_prefix").val();
+   var prefixes = [];
+   $("input:checkbox[name=project_groups]:checked").each(function() {
+      prefixes[prefixes.length] = $(this).val();
+   });
    var correct = true;
    if(filterType == "query" && query.length == 0) correct = false;
-   if(filterType == "prefix" && prefix.length == 0) correct = false;
+   if(filterType == "prefix" && prefixes.length == 0) correct = false;
    if(window.dvs.project != null && correct == true) {
       $("#get_data_btn2").attr("disabled", true);
       $("#apply_diff_changes").prop('disabled', true);
@@ -257,10 +287,6 @@ DMPVSchema.prototype.getDataButtonClicked = function() {
          sDataObj.query = query;
       }
       else if(filterType == "prefix") {
-         var prefixes = prefix.split(";");
-         for(var index = 0; index < prefixes.length; index++) {
-            prefixes[index] = $.trim(prefixes[index]);
-         }
          sDataObj.prefix = prefixes;
       }
       var sData = JSON.stringify(sDataObj);

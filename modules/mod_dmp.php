@@ -131,7 +131,7 @@ class DMP extends Repository{
             <label for="data_filter_type">Filter</label>
             <select type="text" id="data_filter_type" style="height: 25px; width: 300px;">
                <option value="all">All</option>
-               <option value="prefix">Prefix</option>
+               <option value="prefix">Groups</option>
                <option value="query">Query</option>
             </select>
          </div>
@@ -140,8 +140,9 @@ class DMP extends Repository{
             <textarea id="filter_query" style="width: 500px;" cols="1" placeholder="Valid PostgreSQL select query"></textarea>
          </div>
          <div style="margin-left: 5%; display: none;" id="filter_prefix_div">
-            <label for="filter_prefix">Prefix</label>
-            <textarea id="filter_prefix" style="width: 500px;" cols="1" placeholder="Prefixes for the columns you want to get. Seperate prefixes with semicolons"></textarea>
+            <label for="filter_prefix">Groups</label>
+            <div id="data_project_groups_div" style="margin-left: 3%;max-height: 110px;overflow-y: scroll;">
+            </div>
          </div>
          <button type="button" id="get_data_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Get Data</button>
       </div>
