@@ -50,7 +50,7 @@ class UploadODK extends Repository{
 
       $this->authCookies = $this->tmpDir."/"."AUTH".mt_rand();
       $this->userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0";
-      $this->maxTestingTime = 10;
+      $this->maxTestingTime = Config::$config['odk_testing_period'];//test period in seconds
    }
 
    public function TrafficController() {
@@ -445,9 +445,9 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                      
                      //schedule testing form for a delete
                      if($_POST['upload_type'] == 'testing'){
-                        $tenMinLater = date('Y-m-d H:i:s', time()+600);
-                        $query = "INSERT INTO odk_deleted_forms(form, status, time_to_delete) VALUES(:form_id, 'not_deleted', :ten_after)";
-                        $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "ten_after" => $tenMinLater));
+                        $oneDayLater = date('Y-m-d H:i:s', time() + $this->maxTestingTime);
+                        $query = "INSERT INTO odk_deleted_forms(form, status, time_to_delete) VALUES(:form_id, 'not_deleted', :after)";
+                        $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "after" => $oneDayLater));
                      }
                      //email uploader
                      $this->sendInstructionEmail($formTitle,$instanceID, $_POST['email']);
@@ -568,7 +568,8 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
    private function sendInstructionEmail($formName, $instanceID,  $address) {
       $emailSubject = "Upload of ".$formName." Form on Azizi's ODK Server";
       $timeLimit = "";
-      if($_POST['upload_type'] === "testing") $timeLimit = " However you have ".  $this->maxTestingTime . " minutes to download it from ODK Collect after which it will be deleted automatically.";
+      $oneDayLater = date('Y-m-d H:i:s', time()+$this->maxTestingTime);
+      if($_POST['upload_type'] === "testing") $timeLimit = " However you have until ".  $oneDayLater . " before the form is permanently deleted on the server.";
 
       $message = "Hi {$_SESSION['onames']},\n\n";
       $message .= "$formName (with an insance_id '$instanceID') has been successfully uploaded to the Azizi ODK Server.\n\n";
