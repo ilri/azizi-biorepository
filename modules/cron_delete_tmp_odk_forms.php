@@ -3,6 +3,7 @@ class ODKDeletor {
    public function __construct() {
       require_once 'repository_config';
       include_once Config::$config['httpd_root']."common/dbmodules/mod_objectbased_dbase_v1.1.php";
+      include_once Config::$config['httpd_root']."common/mod_general_v0.6.php";
       $Dbase = new DBase('mysql');
       $Dbase->InitializeConnection();
       $Dbase->InitializeLogs();
@@ -47,9 +48,11 @@ class ODKDeletor {
          curl_close($ch); 
          
          //the server should return a status code 200 if it was able to process request.
-         echo "HTTP STATUS from deleteForm = ".$http_status." \n";
-         $query = "update azizi_miscdb.odk_deleted_forms set status = 'deleted' where form = $formId";
-         $Dbase->ExecuteQuery($query);
+         if($http_status == 200) {//form was successfully deleted
+            echo "HTTP STATUS from deleteForm = ".$http_status." \n";
+            $query = "update azizi_miscdb.odk_deleted_forms set status = 'deleted' where form = $formId";
+            $Dbase->ExecuteQuery($query);
+         }
       }
    }
    
