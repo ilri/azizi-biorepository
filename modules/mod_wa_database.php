@@ -488,6 +488,7 @@ class Database {
        * #since you have to use the same pg_dump version as the server
        * #install using rpm from http://yum.postgresql.org/repopackages.php#pg93
        * wget -c http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+       * yum install pgdg-centos93-9.3-1.noarch.rpm
        * #install just the client
        * yum install postgresql93.x86_64
        * #find out where pg_dump was put
