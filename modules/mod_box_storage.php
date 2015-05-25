@@ -1272,7 +1272,15 @@ class BoxStorage extends Repository{
     * @return string Results for handling the delete box action in the database. Can be either positive or negative
     */
    private function submitDeleteRequest($fromAjaxRequest = false){
-      if(strlen($_POST['box_id']) > 0){
+      $boxId = $_POST['box_id'];
+      if(strlen($boxId) == 0 && strlen($_POST['box_label']) > 0) {//user defined box label but not the box_id
+         $query = "select box_id from ".Config::$config['azizi_db'].".boxes_def where box_name = :box_name";
+         $result = $this->Dbase->ExecuteQuery($query, array("box_name" => $_POST['box_label']));
+         if(is_array($result) && count($result) == 1) {
+            $boxId = $result[0]['box_id'];
+         }
+      }
+      if(strlen($boxId) > 0){
          $message = "";
          $query = "SELECT id FROM ".Config::$config['azizi_db'].".boxes_local_def WHERE facility = ?";
          $result = $this->Dbase->ExecuteQuery($query, array(Config::$deletedBoxesLoc));
@@ -1280,13 +1288,13 @@ class BoxStorage extends Repository{
             $deletedBoxesLocId = $result[0]['id'];
             $this->Dbase->CreateLogEntry('mod_box_storage: deletedBoxesLocId = '.$deletedBoxesLocId, 'debug');
             $query = "UPDATE ".Config::$config['azizi_db'].".boxes_def SET location = ? WHERE box_id = ?";
-            $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $_POST['box_id']));
+            $result = $this->Dbase->ExecuteQuery($query, array($deletedBoxesLocId, $boxId));
             if($result === 1){
                $message = "Unable to delete the box";
                $this->Dbase->CreateLogEntry('mod_box_storage: Unable to delete box (move it to the EmptiesBox) in lims database '.$this->Dbase->lastError, 'fatal');
             }
             else{
-               $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$_POST['box_id']." as deleted", 'debug');
+               $this->Dbase->CreateLogEntry('mod_box_storage: Updating database to show box with id = '.$boxId." as deleted", 'debug');
 
                $userId = 1;
                if(strlen($_SESSION['username']) > 0){
@@ -1308,7 +1316,7 @@ class BoxStorage extends Repository{
                $query = "UPDATE ".Config::$config['dbase'].".lcmod_boxes_def SET date_deleted = ?, deleted_by = ?, delete_comment = ? WHERE box_id = ?";
                $now = date('Y-m-d H:i:s');
 
-               $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $_POST['box_id']));
+               $result = $this->Dbase->ExecuteQuery($query, array($now, $deletedBy, $_POST['delete_comment'], $boxId));
                if($result === 1){
                   $message = "Unable to record extra information on the delete";
                   $this->Dbase->CreateLogEntry('mod_box_storage: Unable to record details of the last box delete. Last error is '.$this->Dbase->lastError, 'fatal');

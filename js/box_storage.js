@@ -569,7 +569,7 @@ var BoxStorage = {
       if(this.validateDeleteInput()){
          BoxStorage.deleteDataCache("tankData");
          //console.log("trying to delete");
-         var formData = {delete_comment: $("#delete_comment").val(), box_id: $("#box_id").val()};
+         var formData = {delete_comment: $("#delete_comment").val(), box_id: $("#box_id").val(), box_label: $("#box_label").val()};
 
          var responseText = $.ajax({
             url: "mod_ajax.php?page=box_storage&do=ajax&action=submit_delete_request",
@@ -607,13 +607,8 @@ var BoxStorage = {
       $("#delete_comment").val($("#delete_comment").val().trim());
       $("#box_label").val($("#box_label").val().trim());
 
-      if($("#box_label").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the box label', error:true});
-         $("#box_label").focus();
-         return false;
-      }
-      if($("#box_id").val() === ""){
-         Notification.show({create:true, hide:true, updateText:false, text:'The box you specified does not exist. Use provided suggestions', error:true});
+      if($("#box_label").val() === "" && $("#box_id").val() === ""){//users can either specify the box label or box_id (if redirected to this page from another in the boxes system)
+         Notification.show({create:true, hide:true, updateText:false, text:'Please specify the box', error:true});
          $("#box_label").focus();
          return false;
       }
