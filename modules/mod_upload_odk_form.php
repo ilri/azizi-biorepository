@@ -568,12 +568,12 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
    private function sendInstructionEmail($formName, $instanceID,  $address) {
       $emailSubject = "Upload of ".$formName." Form on Azizi's ODK Server";
       $timeLimit = "";
-      $oneDayLater = date('Y-m-d H:i:s', time()+$this->maxTestingTime);
-      if($_POST['upload_type'] === "testing") $timeLimit = " However you have until ".  $oneDayLater . " before the form is permanently deleted on the server.";
+      $oneDayLater = date('jS F Y H:i:s', time()+$this->maxTestingTime);
+      if($_POST['upload_type'] === "testing") $timeLimit = " However you have until ".  $oneDayLater . " before the form is permanently removed from the server";
 
       $message = "Hi {$_SESSION['onames']},\n\n";
       $message .= "$formName (with an insance_id '$instanceID') has been successfully uploaded to the Azizi ODK Server.\n\n";
-      $message .= "You can now download the form in ODK Collect on your Android device. $timeLimit.";
+      $message .= "You can now download the form in ODK Collect on your Android device. $timeLimit. ";
       $message .= "If you do not have ODK Collect installed on your device, download it from http://goo.gl/cGVSxc. Once installed, edit the following platform settings in ODK Collect:\n\n";
       $message .= "             URL : http://azizi.ilri.cgiar.org/aggregate\n";
       $message .= "             Username  : collector\n";
