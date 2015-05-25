@@ -1097,10 +1097,11 @@ class Parser {
                      $rowColumns = explode("</td>", $rows[$rowIndex]);
 
                      //array_unshift($rowColumns, $this->odkInstance . "_" . $secondaryKey);
-                     array_unshift($rowColumns, $sheetName . "_" . $this->primaryKeys[$sheetName]);//insert primary key
+                     array_unshift($rowColumns, $this->odkInstance."_".$sheetName."_" . $this->primaryKeys[$sheetName]);//insert primary key
                      $this->primaryKeys[$sheetName] = $this->primaryKeys[$sheetName] + 1;
-                     if($parentSheetName == "main_sheet") $parentSheetName = $this->odkInstance;
-                     array_unshift($rowColumns, $parentSheetName . "_" . $secondaryKey);//insert secondary key
+                     if($parentSheetName == "main_sheet") $skPrefix = $this->odkInstance;
+                     else $skPrefix = $this->odkInstance."_".$parentSheetName;
+                     array_unshift($rowColumns, $skPrefix . "_" . $secondaryKey);//insert secondary key
 
                      if ((sizeof($headings) + 1) === sizeof($rowColumns)) {
                         for ($columnIndex = 0; $columnIndex < sizeof($rowColumns); $columnIndex++) {
