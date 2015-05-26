@@ -62,6 +62,8 @@ class ODKPruner {
             echo "Updating database record for $instanceId \n";
             $query = "update azizi_miscdb.odk_deleted_forms set status = 'deleted' where form = $formId";
             $Dbase->ExecuteQuery($query);
+            $query = "update azizi_miscdb.odk_forms set is_active = 0 where id = $formId";
+            $Dbase->ExecuteQuery($query);
          }
          else echo "Aggregate server did not delete the form. HTTP status = '$http_status' \n";
       }
