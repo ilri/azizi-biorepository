@@ -186,6 +186,18 @@ class ODKWorkflowAPI extends Repository {
       return $array;
    }
    
+   /**
+    * This functioin hanles the register endpoint of the API.
+    * The register endpoint registers a new user.
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    server   :  "The IP address from where this user is going to access the API"
+    *    user     :  "The username to be used for authenticating. Should be unique for each server"
+    *    secret   :  "If type of authentication is local, the secret to be used for authetication"
+    *    auth_mode:  "Can either be local or ldap"
+    * }
+    */
    private function handleRegisterEndpoint() {
       if(isset($_REQUEST['data'])) {
          $authJson = $this->getData($_REQUEST['data']);
@@ -897,6 +909,11 @@ class ODKWorkflowAPI extends Repository {
       return $server."_:_".$user;
    }
    
+   /**
+    * This function seperates the server from
+    * @param type $userUUID
+    * @return null
+    */
    public static function explodeUserUUID($userUUID) {
       $details = explode("_:_", $userUUID);
       if(count($details) == 2) {

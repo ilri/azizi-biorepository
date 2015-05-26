@@ -119,6 +119,11 @@ class Workflow {
       }
    }
    
+   /**
+    * This function returns the name of the current workflow
+    * 
+    * @return String the name of the workflow
+    */
    public function getWorkflowName() {
       return $this->workflowName;
    }
@@ -145,6 +150,16 @@ class Workflow {
       }
    }
    
+   /**
+    * This function saves workflow details including:
+    *    - the name
+    *    - created by
+    *    - time created
+    *    - workflow_id
+    *    - working directory
+    *    - whether a process is currently running
+    *    - the workflow health
+    */
    private function saveWorkflowDetails() {
       $this->lH->log(3, $this->TAG, "Saving details for workflow with id = '{$this->instanceId}'");
       $this->lH->log(4, $this->TAG, "************************************************************ inserting into meta document table");
@@ -286,6 +301,10 @@ class Workflow {
       }
    }
    
+   /**
+    * This funciton checks whether the metaErrors table is created and creates it if not.
+    * This table stores the code, message and timestamp for the error
+    */
    private function createMetaErrorsTable() {
       try {
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_ERRORS,
@@ -603,6 +622,15 @@ class Workflow {
       return $status;
    }
    
+   /**
+    * This function recurrsively extracts error messages from exception objects
+    * 
+    * @param Exception $exception   The exception object from which to extract the message
+    * @param int $level             The current level in the exception. 0 is root
+    * @param string $currMessage    The current error message
+    * 
+    * @return string The extracted error message
+    */
    public static function getErrorMessage($exception, $level = 0, $currMessage = "") {
       $prepend = " -> ";
       if($level == 0) $prepend = "";
@@ -828,6 +856,14 @@ class Workflow {
       return $status;
    }
    
+   /**
+    * This function completely deletes a workflow
+    * 
+    * @param type $config     The repository config file
+    * @param type $instanceId The instance id of the workflow to be deleted
+    * 
+    * @return Array  The status after deleting the workflow
+    */
    public static function delete($config, $instanceId) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
@@ -850,6 +886,12 @@ class Workflow {
       return $status;
    }
    
+   /**
+    * This function records name changes for sheets in the current workflow
+    * 
+    * @param type $previousName  The current sheet name (should exist)
+    * @param type $currentName   The new name for the sheet
+    */
     private function recordSheetNameChange($previousName, $currentName){
       if($this->database != null
               && $this->instanceId == $this->database->getDatabaseName()){
@@ -895,6 +937,13 @@ class Workflow {
       }
    }
    
+   /**
+    * This function records name changes for columns
+    * 
+    * @param string $sheetName   The name of the sheet where the column is found
+    * @param type $previousName  The current name for the column
+    * @param type $currentName   The new name given to the column
+    */
    private function recordColumnNameChange($sheetName, $previousName, $currentName){
       if($this->database != null
               && $this->instanceId == $this->database->getDatabaseName()){
@@ -1123,6 +1172,12 @@ class Workflow {
       return $url;
    }
    
+   /**
+    * This function returns a list of all the data files associated to the current
+    * workflow
+    * 
+    * @return Array The list of files
+    */
    public function getRawDataFiles() {
       $dataFiles = array();
       for($index = 0; $index < count($this->files); $index++) {
@@ -1508,6 +1563,17 @@ class Workflow {
       return Workflow::getStatusArray($healthy, $errors);
    }
    
+   /**
+    * This function returns schema differences between the provided workflows
+    * 
+    * @param string $userUUID    The current user's UUID
+    * @param array $config       The repository config file
+    * @param string $workflowID1 The instance id for the first workflow
+    * @param string $workflowID2 The instance id for the second workflow
+    * @param string $diffType    Can either be 'all', 'trivial' or 'non_trivial'
+    * 
+    * @return Array  An array containing the differences plus status
+    */
    public static function getSchemaDifference($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all") {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
@@ -1725,6 +1791,15 @@ class Workflow {
       return $result;
    }
    
+   /**
+    * This function returns the username and password to be used by a user to access
+    * the specified workflow
+    * 
+    * @param String $userURI     The user's UUID
+    * @param Array $config       repository config file
+    * @param type $instanceId    The instance id for the workflow
+    * @return Array  An array containing both the status and and the database credentials
+    */
    public static function getUserDBCredentials($userURI, $config, $instanceId) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
