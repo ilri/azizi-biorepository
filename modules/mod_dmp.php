@@ -220,6 +220,10 @@ class DMP extends Repository{
    <div id="project_diff_wndw" style="display: none; z-index: 6;">
       <div>Resolve Schema Conflicts</div>
       <div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <label for="merged_schema_name">Merged Schema Name</label>
+            <input type="text" id="merged_schema_name" style="height: 25px; width: 300px;" />
+         </div>
          <div id="diff_grid" style="width: 90%"></div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
             <button type="button" id="apply_diff_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>

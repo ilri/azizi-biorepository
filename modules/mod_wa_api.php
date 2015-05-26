@@ -806,15 +806,17 @@ class ODKWorkflowAPI extends Repository {
     * {
     *    workflow_id    :  "Instance id for the main workflow"
     *    workflow_id_2  :  "Instance id for the workflow you are comparing main workflow with"
+    *    "name"         :  "Name"
     * }
     */
    private function handleResolveTrivialDiffEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
-               && array_key_exists("workflow_id_2", $json)) {
+               && array_key_exists("workflow_id_2", $json)
+               && array_key_exists("name", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            $savePoint = $workflow->resolveTrivialSchemaDiff($json['workflow_id_2']);
+            $savePoint = $workflow->resolveTrivialSchemaDiff( $json['name'], $json['workflow_id_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "save_point" => $savePoint,

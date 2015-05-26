@@ -812,6 +812,7 @@ class Workflow {
       try {
          $database = new Database($config);
          $workflowDetails = Workflow::getWorkflowDetails($config, $instanceId);
+         $lH->log(4, "waworkflow_static", "Workflow details before restore = ".print_r($workflowDetails, true));
          $workingDir = $workflowDetails['working_dir'];
          $path = WAFile::getSavePointFilePath($workingDir, $restorePoint);
          $database->restore($instanceId, $path);
@@ -1222,11 +1223,29 @@ class Workflow {
       }
    }
    
-   public function resolveTrivialSchemaDiff($workflow2Id){
+   /**
+    * This function resolves trivial differences between this workflow and the 
+    * one provided
+    * 
+    * @param type $newName       The name to be given to the new merged schema
+    * @param type $workflow2Id   The Instance id for the second workflow
+    * @return type
+    */
+   public function resolveTrivialSchemaDiff($newName, $workflow2Id){
       $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
       $savePoint = $this->save("Resolve trivial differences with ".$workflow2->getWorkflowName());
-      if($this->healthy == TRUE){
+      $instanceId2 = $this->generateInstanceID();
+      $workingDir2 = Workflow::$WORKFLOW_ROOT_DIR.$instanceId2;
+      //create a workflow with the schema before the merge
+      $status = Workflow::copyWorkflow($this->config, $this->instanceId, $instanceId2, $this->workingDir, $workingDir2, $savePoint);
+      if($this->healthy == TRUE && $status['healthy'] == true){
          try {
+            //truncate data from all the data tables
+            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+            for($index = 0; $index < count($dataTables); $index++) {
+               $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
+               $this->database->runGenericQuery($query);
+            }
             $rawDiff = Workflow::getSchemaDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
             $diff = $rawDiff['diff'];
             $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
@@ -1279,6 +1298,9 @@ class Workflow {
                $name = basename($dataFiles[$index]->getFSLocation());
                $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
             }
+            
+            //rename the workflow
+            $savePoint = $this->modifyName($newName);
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
             $this->healthy = false;
@@ -1286,6 +1308,7 @@ class Workflow {
          }
       }
       else {
+         $this->errors = array_merge($this->errors, $status['errors']);
          array_push($this->errors, new WAException("Unable to resolve trivial changes because workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to resolve trivial changes because workflow with id = '{$this->instanceId}' is unhealthy");
@@ -1445,6 +1468,44 @@ class Workflow {
           "status" => Workflow::getStatusArray($healthy, $errors)
       );
       return $result;
+   }
+   
+   /**
+    * This function copies the contents of the first workflow to the new workflow
+    * 
+    * @param array $config          The repository_config file
+    * @param type $oldWorkflowId    The id of the existing workflow
+    * @param type $newWorkflowId    The id of the new workflow
+    * @param type $oldWorkingDir    The working directory for the existing workflow
+    * @param type $newWorkingDir    The working directory for the new workflow
+    * @param type $savePoint        The save point in the existing workflow for which to dump into the new workflow
+    * 
+    * @return array  An array containing the status after the copy
+    */
+   public static function copyWorkflow($config, $oldWorkflowId, $newWorkflowId, $oldWorkingDir, $newWorkingDir, $savePoint) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_log.php';
+      include_once 'mod_wa_file.php';
+      
+      $errors = array();
+      $healthy = true;
+      $lH = new LogHandler("./");
+      $lH->log(3, "waworkflow_static", "Updating the workflow details for '$oldWorkflowId' to '$newWorkflowId'");
+      try {
+         WAFile::copyDir($oldWorkingDir, $newWorkingDir);
+         $database = new Database($config);
+         $database->restore($newWorkflowId, WAFile::getSavePointFilePath($oldWorkingDir, $savePoint), false);//create the database for $newWorkflowId using $savePoint
+         $database2 = new Database($config, $newWorkflowId);
+         $query = "update ".Workflow::$TABLE_META_DOCUMENT." set workflow_id = '$newWorkflowId', working_dir = '$newWorkingDir'";
+         $database2->runGenericQuery($query);
+      } catch (WAException $ex) {
+         array_push($errors, $ex);
+         $healthy = false;
+         $lH->log(1, "waworkflow_static", "Unable to copy workflow from '{$oldWorkflowId}' to '{$newWorkflowId}'".  print_r($ex, true));
+      }
+      
+      return Workflow::getStatusArray($healthy, $errors);
    }
    
    public static function getSchemaDifference($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all") {

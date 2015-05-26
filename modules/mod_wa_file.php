@@ -490,6 +490,29 @@ class WAFile {
       $phpExcelCache = $workingDir.WAFile::$WORKING_SUB_DIRS["raw_data"]."/phpexcel_cache";
       WAFile::rmDir($phpExcelCache);
    }
+   
+   /**
+    * This function copies the contents of a source directory to a destination
+    * directory
+    * 
+    * @param String $src   The source directory
+    * @param String $dst   The destination directory
+    */
+   public static function copyDir($src, $dst) { 
+      $dir = opendir($src);
+      @mkdir($dst);
+      while(false !== ( $file = readdir($dir)) ) {
+         if (( $file != '.' ) && ( $file != '..' )) {
+            if ( is_dir($src . '/' . $file) ) {
+               WAFile::copyDir($src . '/' . $file,$dst . '/' . $file);
+            }
+            else {
+               copy($src . '/' . $file, $dst . '/' . $file);
+            }
+         }
+      }
+      closedir($dir); 
+   }
 }
 ?>
 
