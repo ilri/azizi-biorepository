@@ -526,7 +526,27 @@ class Database {
       }
    }
    
-   public function restore($databaseName, $restoreFile) {
+   /**
+    * This function restores a database from an SQL file. If the database does not
+    * exist, it creates it (instead of restoring it).
+    * 
+    * @param type $databaseName     The name of the database
+    * @param type $restoreFile      The sql file to be used to restore the file
+    * @param type $databaseExists   True if the database already exists
+    * @throws WAException
+    */
+   public function restore($databaseName, $restoreFile, $databaseExists = true) {
+      /*
+       * #since you have to use the same pg_dump version as the server
+       * #install using rpm from http://yum.postgresql.org/repopackages.php#pg93
+       * wget -c http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+       * yum install pgdg-centos93-9.3-1.noarch.rpm
+       * #install just the client
+       * yum install postgresql93.x86_64
+       * #find out where pg_dump was put
+       * rpm -ql postgresql93.x86_64|grep bin
+       * #save the pg_dump path in the repository config file
+       */
       if(file_exists($restoreFile)) {
          try {
             $this->logH->log(3, $this->TAG, "Restoring '$databaseName' to state defined in '$restoreFile'");
@@ -535,14 +555,17 @@ class Database {
             /*$command = "export PGPASSWORD=".$this->config['testbed_pass'].";dropdb -U ".$this->config['testbed_user']." {$databaseName}";
             shell_exec($command);*/
             //drop all the tables
-            $db2 = new Database($this->config, $databaseName);
-            $db2->dropAllOtherConnections();
-            $db2->runGenericQuery("drop schema public cascade");
-            $db2->runGenericQuery("create schema public");
-            $db2->close();
-            $this->runDropDatabaseQuery($databaseName);
+            if($databaseExists == true) {
+               $db2 = new Database($this->config, $databaseName);
+               $db2->dropAllOtherConnections();
+               $db2->runGenericQuery("drop schema public cascade");
+               $db2->runGenericQuery("create schema public");
+               $db2->close();
+               $this->runDropDatabaseQuery($databaseName);
+            }
             $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
-            $command = "export PGPASSWORD=".$this->config['testbed_pass'].";psql -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile";
+            //$command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
+            $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['psql']." -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile -h {$this->config['testbed_dbloc']}";
             $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);
             $output = shell_exec($command);
             $this->logH->log(4, $this->TAG, "Message from pg_restore is ".$output);
@@ -580,10 +603,10 @@ class Database {
    public function runAlterColumnQuery($tableName, $existing, $new) {
       //instead of altering the current column, add new column after existing then drop existing
       $isSpecial = false;
-      if($existing['key'] == Database::$KEY_PRIMARY || $existing['key'] == Database::$KEY_UNIQUE) $isSpecial = true;
+      if($existing['key'] === Database::$KEY_PRIMARY || $existing['key'] === Database::$KEY_UNIQUE) $isSpecial = true;
       try {
          if($isSpecial == false) {//column considered special if it is currently part of a key
-            $this->logH->log(4, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
             //if column was previously part of the primary key, the primary key will be deleted
             //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
             $tmpName = $existing['name']."_odk_w_delete";
@@ -600,6 +623,10 @@ class Database {
          }
          else {//column is special. That means the previous method (deleting existing column and replacing it with a new one wont work. The case for columns that are already part of a key)
             //check what needs to change in the column. Make sure you change the name last
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' current details".print_r($existing, true));
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' New details".print_r($new, true));
+            
             if($new['name'] == $existing['name']) $new['name'] = null;
             if($new['type'] == $existing['type'] && $new['length'] == $existing['length']) {
                $new['type'] = null;
