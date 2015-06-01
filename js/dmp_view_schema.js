@@ -211,6 +211,10 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to make schema changes");
                $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -309,6 +313,10 @@ DMPVSchema.prototype.getDataButtonClicked = function() {
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to get some or all of the data");
                $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -372,6 +380,10 @@ DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed exteral access to the database");
                $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -428,6 +440,10 @@ DMPVSchema.prototype.mergeSchemaMenuButtonClicked = function() {
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to get the list of other projects");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -493,6 +509,10 @@ DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to get schema differences for the two projects");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -708,6 +728,10 @@ DMPVSchema.prototype.dumpDataButtonClicked = function() {
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to dump data");
                $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -765,6 +789,10 @@ DMPVSchema.prototype.renameProjectButtonClicked = function() {
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to rename project");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -847,6 +875,10 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function () {
                $("#enotification_pp").html("User not allowed to rename "+sheet.name);
                $("#enotification_pp").jqxNotification("open");
                canContinue = false;
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -919,6 +951,10 @@ DMPVSchema.prototype.deleteSheetButtonClicked = function() {
                $("#enotification_pp").html("User not allowed to delete "+sheet.name);
                $("#enotification_pp").jqxNotification("open");
                canContinue = false;
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -983,6 +1019,10 @@ DMPVSchema.prototype.deleteProjectButtonClicked = function() {
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to delete projects");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -1088,6 +1128,10 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to create projects");
                $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -1151,6 +1195,10 @@ DMPVSchema.prototype.processProjectSchema = function() {
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to process schemas");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -1231,6 +1279,10 @@ DMPVSchema.prototype.refreshSavePoints = function() {
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to fetch save points");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -1339,6 +1391,10 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
          403: function() {//forbidden
             $("#enotification_pp").html("User not allowed to undo changes");
             $("#enotification_pp").jqxNotification("open");
+         },
+         500: function() {//forbidden
+            $("#enotification_pp").html("An error occurred in the server");
+            $("#enotification_pp").jqxNotification("open");
          }
       },
       success: function(jsonResult, textStatus, jqXHR){
@@ -1424,6 +1480,10 @@ DMPVSchema.prototype.applySchemaChanges = function() {
                         $("#enotification_pp").html("User not allowed to perform action");
                         $("#enotification_pp").jqxNotification("open");
                         canContinue = false;
+                     },
+                     500: function() {//forbidden
+                        $("#enotification_pp").html("An error occurred in the server");
+                        $("#enotification_pp").jqxNotification("open");
                      }
                   },
                   success: function(jsonResult, textStatus, jqXHR){
@@ -1637,6 +1697,10 @@ DMPVSchema.prototype.loadSheetData = function(sheetName) {
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to fetch sheet data");
                $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
@@ -1696,6 +1760,10 @@ DMPVSchema.prototype.refreshForeignKeys = function() {
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
@@ -2008,6 +2076,10 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
             },
             403: function() {//forbidden
                $("#enotification_pp").html("User not allowed to fetch foreign keys");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
                $("#enotification_pp").jqxNotification("open");
             }
          },
