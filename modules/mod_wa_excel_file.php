@@ -148,10 +148,16 @@ class WAExcelFile {
                      $this->database->runGenericQuery($query);
                   }
                }
+               $fileSheetNames = $this->excelObject->getSheetNames();
                //dump data into database tables (start from first)
                for($index = 0; $index < count($sheetNames); $index++){
-                  $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
-                  $currSheet->dumpData();
+                  if(in_array($sheetNames[$index], $fileSheetNames)){//is the current sheet in the current raw data file?
+                     $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
+                     $currSheet->dumpData();
+                  }
+                  else {
+                     $this->lH->log(3, $this->TAG, "Sheet '{$sheetNames[$index]} not in current raw data file");
+                  }
                }
             } catch (WAException $ex) {
                $this->lH->log(1, $this->TAG, "Unable to dump data from data file for workflow with id = '{$this->database->getDatabaseName()}'");

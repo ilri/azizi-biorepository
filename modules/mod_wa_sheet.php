@@ -368,7 +368,6 @@ class WASheet {
    public function saveAsMySQLTable($linkSheets, $mysqlColumns = array()) {
       try {
          //$this->processColumns();
-         $this->switchToThisSheet();
          if(is_array($this->columnArray) 
                  && count($this->columnArray) > 0) {
             $columnNames = array_keys($this->columnArray);
@@ -381,6 +380,7 @@ class WASheet {
                array_push($mysqlColumns, $primayKey);
             }
             if($columnsProvided == false){
+               $this->switchToThisSheet();
                for($index = 0; $index < count($columnNames); $index++) {
                   if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
                      $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
