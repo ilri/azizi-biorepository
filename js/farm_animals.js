@@ -240,6 +240,7 @@ Animals.prototype.addOwnership = function(){
           }
           else{
              animals.byLocations = data.animals;
+             animals.allAnimals = data.animals.allAnimals;
              animals.locationOrganiser();
              animals.owners = data.owners;
              animals.byOwners = data.animalsByOwners;
@@ -281,6 +282,9 @@ var mainContent = '\
    // initiate the list boxes
    animals.initiateFiltersnLists();
    animals.movedAnimals = {};
+
+   // default to all animals
+   $('#fromId').val('all').change();
 };
 
 /**
@@ -494,6 +498,7 @@ Animals.prototype.initiateFiltersnLists = function(){
    }
    else if(this.sub_module === 'ownership' || this.sub_module === 'experiments'){
       var owners = animals.owners;
+      owners[Object.keys(owners).length] = {id:'all', name: 'Select All'};
       owners[Object.keys(owners).length] = {id:'floating', name: 'Select unattached'};
       var settings = {name: 'from', id: 'fromId', data: owners, initValue: 'Select One', required: 'true'};
       var fromCombo = Common.generateCombo(settings);
@@ -592,7 +597,7 @@ Animals.prototype.filterAnimals = function(sender){
       });
    }
    // check if we need to mask out some animals from the from list
-   if(this.sub_module === 'experiments' || this.sub_module === 'events' || this.sub_module === 'move_animals'){
+   if(this.sub_module === 'experiments' || this.sub_module === 'events' || this.sub_module === 'move_animals' || this.sub_module === 'ownership'){
       if($('#fromId').val() === '0' || $('#toComboId').val() === '0'){ return; }
       else{
          // if the animal is already in the to list... no need to enable it for selection

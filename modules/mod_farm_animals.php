@@ -671,20 +671,29 @@ class FarmAnimals{
     */
    private function saveAnimalOwners(){
       $animals = json_decode($_POST['animals']);
-      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_owners(owner_id, animal_id, start_date) values(:owner_id, :animal_id, :start_date)';
-      $updateQuery = 'update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date where owner_id = :owner_id and animal_id = :animal_id and end_date is null';
+      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_owners(owner_id, animal_id, start_date, added_at, added_by) values(:owner_id, :animal_id, :start_date, :added_at, :added_by)';
+      $updateQuery = 'update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date, updated_at = :updated_at, updated_by = :updated_by where owner_id = :owner_id and animal_id = :animal_id and end_date is null';
+      $updateWoOwnerQuery = 'update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date, updated_at = :updated_at, updated_by = :updated_by where animal_id = :animal_id and end_date is null limit 1';
       $updateOwnerQuery = 'update '. Config::$farm_db .'.farm_animals set current_owner = :current_owner where id = :animal_id';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
-         if($_POST['from'] != 'floating'){
-            $res = $this->Dbase->ExecuteQuery($updateQuery, array('owner_id' => $_POST['from'], 'animal_id' => $id, 'end_date' => date('Y-m-d')));
+         if(!in_array($_POST['from'], array('floating', 'all'))){
+            $res = $this->Dbase->ExecuteQuery($updateQuery, array('owner_id' => $_POST['from'], 'animal_id' => $id, 'end_date' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
+            if($res == 1){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            }
+         }
+         // if we are selecting from all, update the previous ownership
+         if($_POST['from'] == 'all'){
+            $res = $this->Dbase->ExecuteQuery($updateWoOwnerQuery, array('animal_id' => $id, 'end_date' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
             if($res == 1){
                $this->Dbase->RollBackTrans();
                die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
             }
          }
 
-         $res = $this->Dbase->ExecuteQuery($addQuery, array('owner_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d')));
+         $res = $this->Dbase->ExecuteQuery($addQuery, array('owner_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'), 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']));
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
