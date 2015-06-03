@@ -545,7 +545,7 @@ Animals.prototype.filterAnimals = function(sender){
       else if(this.sub_module === 'events'){ neededAnimals = animals.byLocations.animals['floating']; }
       else if(this.sub_module === 'experiments'){ neededAnimals = animals.byOwners['floating']; }
    }
-   else if(selected === 'all'){ neededAnimals = animals.allAnimals; }
+   else if(selected === 'all' || selected === 'all_all'){ neededAnimals = animals.allAnimals; }
    else if(selected === 'new' && this.sub_module === 'events'){ animals.newEventName(); }
    else{
       // get the needed animals
@@ -568,7 +568,6 @@ Animals.prototype.filterAnimals = function(sender){
                neededAnimals = animals.byLocations.animals[index];
             break;
          };
-
       }
       else if(this.sub_module === 'experiments') {
          if(sender.target.id === 'fromId'){ neededAnimals = animals.byOwners[selected]; }
@@ -620,6 +619,7 @@ Animals.prototype.filterAnimals = function(sender){
 Animals.prototype.populateEventsFilter = function(){
    var selected = $('#from_top_filter').jqxDropDownList('getCheckedItems');
    var desiredGroupings = {};
+   var showAllAnimals = false;
 
    // loop through the selected items and get the items to populate the from dropdown filter
    $.each(selected, function (i, that) {
@@ -641,14 +641,23 @@ Animals.prototype.populateEventsFilter = function(){
                desiredGroupings[Object.keys(desiredGroupings).length] = {id: 'own_' + this.id, name: this.name};
             });
             break;
+
+         case 'all':
+            desiredGroupings[Object.keys(desiredGroupings).length] = {id: 'all_all', name: 'All Animals'};
+            showAllAnimals = true;
+            break;
       }
-      ;
    });
 
    animals.desiredGroupings = desiredGroupings;
    var settings = {name: 'from', id: 'fromId', data: animals.desiredGroupings, initValue: 'Select One', required: 'true'};
    var fromCombo = Common.generateCombo(settings);
    $('#from_filter').html(fromCombo);
+
+   // check if we need to show all animals
+   if(showAllAnimals){
+      $('#fromId').val('all').change();
+   }
 };
 
 /**
@@ -956,6 +965,7 @@ Animals.prototype.newEvent = function(){
              else{
                animals.showNotification('The data has been successfully fetched.', 'success');
                animals.byLocations = data.data.byLocations;
+               animals.allAnimals = data.data.byLocations.allAnimals;
                animals.locationOrganiser();
                animals.allEvents = data.data.events;
                animals.allSubEvents = data.data.sub_events;
@@ -1003,7 +1013,7 @@ var mainContent = '\
    $("#reset, #remove, #add, #add_all").on('click', function(sender){ animals.moveAnimals(sender); });
 
    // grouping options
-   var groups = [{id: 'pis', name: 'By PI'}, {id: 'exp', name: 'By Experiment'}, {id: 'location', name: 'By Location'}];
+   var groups = [{id: 'pis', name: 'By PI'}, {id: 'exp', name: 'By Experiment'}, {id: 'location', name: 'By Location'}, {id: 'all', name: 'Show all animals'}];
 //   var groups = ['By PI', 'By Experiment', 'By Location', 'All groupings'];
    $('#from_top_filter').jqxDropDownList({source: groups, dropDownHeight: 100, checkboxes: true, displayMember: 'name', valueMember: 'id'});
    $('#from_top_filter').on('checkChange', function(){ animals.populateEventsFilter(); });
@@ -1011,6 +1021,9 @@ var mainContent = '\
    // initiate the list boxes
    animals.initiateFiltersnLists();
    animals.movedAnimals = {};
+
+   $('#from_top_filter').jqxDropDownList('checkItem', 'all');
+   $('#fromId').val('all_all').change();
 };
 
 Animals.prototype.reInitializeEvents = function(){
