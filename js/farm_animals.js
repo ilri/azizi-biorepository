@@ -480,12 +480,13 @@ Animals.prototype.initiateFiltersnLists = function(){
    }
    else if(this.sub_module === 'experiments'){
       var settings = {name: 'toCombo', id: 'toComboId', data: animals.allExperiments, initValue: 'Select One', required: 'true'};
-      var fromCombo = Common.generateCombo(settings);
-      $('#to_filter').html(fromCombo);
+      var toCombo = Common.generateCombo(settings);
+      $('#to_filter').html(toCombo);
    }
 
    // from filter
    if(this.sub_module === 'move_animals'){
+      animals.allLevels[Object.keys(animals.allLevels).length] = {id:'all', name: 'Select All'};
       animals.allLevels[Object.keys(animals.allLevels).length] = {id:'floating', name: 'Select unattached'};
       var settings = {name: 'from', id: 'fromId', data: animals.allLevels, initValue: 'Select One', required: 'true'};
       var fromCombo = Common.generateCombo(settings);
@@ -539,6 +540,7 @@ Animals.prototype.filterAnimals = function(sender){
       else if(this.sub_module === 'events'){ neededAnimals = animals.byLocations.animals['floating']; }
       else if(this.sub_module === 'experiments'){ neededAnimals = animals.byOwners['floating']; }
    }
+   else if(selected === 'all'){ neededAnimals = animals.allAnimals; }
    else if(selected === 'new' && this.sub_module === 'events'){ animals.newEventName(); }
    else{
       // get the needed animals
@@ -590,7 +592,7 @@ Animals.prototype.filterAnimals = function(sender){
       });
    }
    // check if we need to mask out some animals from the from list
-   if(this.sub_module === 'experiments' || this.sub_module === 'events'){
+   if(this.sub_module === 'experiments' || this.sub_module === 'events' || this.sub_module === 'move_animals'){
       if($('#fromId').val() === '0' || $('#toComboId').val() === '0'){ return; }
       else{
          // if the animal is already in the to list... no need to enable it for selection
@@ -808,6 +810,7 @@ Animals.prototype.saveChanges = function (){
          }
          else{
             animals.showNotification(data.mssg, 'success');
+            animals.movedAnimals = {};
             if(animals.sub_module === 'ownership'){ animals.reInitializeOwnership(); }
             else if(animals.sub_module === 'events'){ animals.reInitializeEvents(); }
             else if(animals.sub_module === 'experiments'){ animals.reInitializeExperiment(); }
@@ -817,6 +820,9 @@ Animals.prototype.saveChanges = function (){
                $("#to_list").jqxListBox('clear');
                $('#fromComboId').val(0);
                $("#toComboId").val(0);
+
+               // reset to selecting all animals
+               $('#fromId').val('all').change();
             }
          }
      }

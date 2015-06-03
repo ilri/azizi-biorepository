@@ -442,6 +442,12 @@ class FarmAnimals{
       $query = 'select id, level2 as `name` from '. Config::$farm_db .'.farm_locations where level1 = :level1 group by level2 order by level2';
       $i = 2;
       $animalLocations = array();
+
+      // get all animals
+      $animalsQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.end_date is null order by b.animal_id';
+      $allAnimals = $this->Dbase->ExecuteQuery($animalsQuery);
+      if($allAnimals == 1) return $this->Dbase->lastError;
+
       foreach($res as $loc){
          // loop thru all level1 locations and get level2 locations
          $res1 = $this->Dbase->ExecuteQuery($query, array('level1' => $loc['level1']));
@@ -468,7 +474,7 @@ class FarmAnimals{
          $i++;
       }
 
-      return array('level1' => $level1Locations, 'level2' => $level2Locations, 'animals' => $animalLocations);
+      return array('level1' => $level1Locations, 'level2' => $level2Locations, 'animals' => $animalLocations, 'allAnimals' => $allAnimals);
    }
 
    /**
@@ -739,6 +745,7 @@ class FarmAnimals{
 
    var animals = new Animals();
    animals.byLocations = <?php echo json_encode($animalLocations); ?>;
+   animals.allAnimals = <?php echo json_encode($animalLocations['allAnimals']); ?>;
    animals.locationOrganiser();
 
    // bind the click functions of the buttons
@@ -746,6 +753,9 @@ class FarmAnimals{
    $("#save").live('click', function(){ animals.saveChanges(); });
    animals.movedAnimals = {};
    animals.initiateFiltersnLists('movement');
+
+   //default to select all animals
+   $('#fromId').val('all').change();
 </script>
 <?php
    }
@@ -756,19 +766,27 @@ class FarmAnimals{
    private function saveAnimalMovement(){
       // lets save the animal new locations
       $animals = json_decode($_POST['animals']);
-      $mvmntQuery = 'insert into '. Config::$farm_db .'.farm_animal_locations(location_id, animal_id, start_date) values(:location_id, :animal_id, :start_date)';
-      $updateQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate where location_id = :location_id and animal_id = :animal_id and end_date is null';
+      $mvmntQuery = 'insert into '. Config::$farm_db .'.farm_animal_locations(location_id, animal_id, start_date, added_by, added_at) values(:location_id, :animal_id, :start_date, :added_by, :added_at)';
+      $updateQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate, updated_by = :updated_by, updated_at = :updated_at where location_id = :location_id and animal_id = :animal_id and end_date is null';
+      $updateWOLocationQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate, updated_by = :updated_by, updated_at = :updated_at where animal_id = :animal_id and end_date is null limit 1';
       $updateAnimalLocation = 'update '. Config::$farm_db .'.farm_animals set current_location = :current_loc where id = :animal_id';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          // update the from locations
          if(!in_array($_POST['from'], array('floating', 'all', 0)) ){
-            $upcols = array('edate' => date('Y-m-d'), 'location_id' => $_POST['from'], 'animal_id' => $id);
-            $this->Dbase->CreateLogEntry('updating the locations for ... '. implode(', ', $upcols),  'fatal');
+            $upcols = array('edate' => date('Y-m-d'), 'location_id' => $_POST['from'], 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
+            $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
             $res1 = $this->Dbase->ExecuteQuery($updateQuery, $upcols);
             if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
          }
-         $colvals = array('location_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'));
+         // if the origin is from all, then update the end date of the previous record before adding the new record
+         if($_POST['from'] == 'all'){
+            $upcols = array('edate' => date('Y-m-d'), 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
+            $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
+            $res1 = $this->Dbase->ExecuteQuery($updateWOLocationQuery, $upcols);
+            if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+         }
+         $colvals = array('location_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'), 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']);
          $res = $this->Dbase->ExecuteQuery($mvmntQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
