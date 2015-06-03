@@ -31,7 +31,7 @@ class DMP extends Repository{
          if(OPTIONS_REQUESTED_ACTION == "upload_data_file") $this->uploadDataFile();
       }
    }
-
+   
    /**
     * This function renders the home page
     */
@@ -51,13 +51,12 @@ class DMP extends Repository{
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
    var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>");
-//   var dmpHome = new DMPHome("<?php echo $_SERVER['SERVER_ADDR']; ?>", "jrogena2", "<?php echo $sessionId; ?>");
 </script>
 <?php
    }
-
+   
    /**
-    *
+    * 
     */
    public function viewSchemaPage() {
       $this->jqGridFiles();//import vital jqx files
@@ -81,11 +80,13 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
+<div id="blanket_cover" style="position: absolute; background-color: white; opacity: 0.6; display: none; z-index: 5;"></div>
 <div id="menu_bar">
    <ul>
       <li>DMP
          <ul style="width: 250px;">
             <li><a href="?page=dmp">Home</a></li>
+            <li><a style="text-decoration: none; color: black;" href="?page=dmp&do=view_schema&project=&session=<?php echo $sessionId;?>">Create New Project</a></li>
          </ul>
       </li>
       <li>Schema
@@ -95,18 +96,21 @@ class DMP extends Repository{
                   </ul>
               </li>
               <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
+              <li><a id="merge_schema_menu_btn" style="text-decoration: none; color: black;">Merge with another project</a></li>
               <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Schema (and project)</a></li>
           </ul>
       </li>
       <li>Data
          <ul style='width: 250px;'>
             <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
+            <li><a id="db_credentials_btn" style="text-decoration: none; color: black;">Get Database Credentials</a></li>
+            <li><a id="get_data_btn" style="text-decoration: none; color: black;">Get Data</a></li>
           </ul>
       </li>
   </ul>
 </div>
 <div style="margin-top: 10px;">
-   <div id="new_project_wndw" style="display: none;">
+   <div id="new_project_wndw" style="display: none; z-index: 6;">
       <div>Create a new project</div>
       <div>
          <div style="margin-left: 5%">
@@ -120,7 +124,30 @@ class DMP extends Repository{
          <button type="button" id="create_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Create</button>
       </div>
    </div>
-   <div id="new_foreign_key_wndw" style="display: none;">
+   <div id="get_data_wndw" style="display: none; z-index: 6;">
+      <div>Get Data</div>
+      <div>
+         <div style="margin-left: 5%">
+            <label for="data_filter_type">Filter</label>
+            <select type="text" id="data_filter_type" style="height: 25px; width: 300px;">
+               <option value="all">All</option>
+               <option value="prefix">Groups</option>
+               <option value="query">Query</option>
+            </select>
+         </div>
+         <div style="margin-left: 5%; display: none;" id="filter_query_div">
+            <label for="filter_query">Query</label>
+            <textarea id="filter_query" style="width: 500px;" cols="1" placeholder="Valid PostgreSQL select query"></textarea>
+         </div>
+         <div style="margin-left: 5%; display: none;" id="filter_prefix_div">
+            <label for="filter_prefix">Groups</label>
+            <div id="data_project_groups_div" style="margin-left: 3%;max-height: 110px;overflow-y: scroll;">
+            </div>
+         </div>
+         <button type="button" id="get_data_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Get Data</button>
+      </div>
+   </div>
+   <div id="new_foreign_key_wndw" style="display: none; z-index: 6;">
       <div>Create a foreign key</div>
       <div>
          <div style="margin-left: 5%">
@@ -134,7 +161,24 @@ class DMP extends Repository{
          <button type="button" id="add_foreign_key_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
       </div>
    </div>
-   <div id="rename_sheet_wndw" style="display: none;">
+   <div id="db_credentials_wndw" style="display: none; z-index: 6;">
+      <div>Database Credentials</div>
+      <div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_database"></div>
+         </div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_username"></div>
+         </div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_password"></div>
+         </div>
+         <div style="margin-left: 5%">
+            <div id="db_cred_host"></div>
+         </div>
+      </div>
+   </div>
+   <div id="rename_sheet_wndw" style="display: none; z-index: 6;">
       <div>Rename sheet</div>
       <div>
          <div style="margin-left: 5%">
@@ -145,7 +189,7 @@ class DMP extends Repository{
          <button type="button" id="rename_sheet_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
       </div>
    </div>
-   <div id="rename_project_wndw" style="display: none;">
+   <div id="rename_project_wndw" style="display: none; z-index: 6;">
       <div>Rename project</div>
       <div>
          <div style="margin-left: 5%">
@@ -155,12 +199,34 @@ class DMP extends Repository{
          <button type="button" id="rename_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
       </div>
    </div>
-   <div id="delete_project_wndw" style="display: none;">
+   <div id="delete_project_wndw" style="display: none; z-index: 6;">
       <div>Delete Project</div>
       <div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">Are you sure you want to delete this project?</div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
             <button type="button" id="delete_project_btn" class="btn btn-danger" style="margin-right: 5%; margin-top: 10px;">Delete</button>
+         </div>
+      </div>
+   </div>
+   <div id="other_projects_wndw" style="display: none; z-index: 6;">
+      <div>Select the project</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_project_list"></select></div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="merge_schema_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
+         </div>
+      </div>
+   </div>
+   <div id="project_diff_wndw" style="display: none; z-index: 6;">
+      <div>Resolve Schema Conflicts</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">
+            <label for="merged_schema_name">Merged Schema Name</label>
+            <input type="text" id="merged_schema_name" style="height: 25px; width: 300px;" />
+         </div>
+         <div id="diff_grid" style="width: 90%"></div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="apply_diff_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
          </div>
       </div>
    </div>
@@ -185,16 +251,16 @@ class DMP extends Repository{
       <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>
       <button type="button" id="update_btn" class="btn btn-primary" disabled>Update</button>
    </div>
-   <div id="loading_box" style="display: none;background-color: rgb(212, 125, 120)">Loading..</div>
-   <div id="enotification_pp"></div>
-   <div id="inotification_pp"></div>
+   <div id="loading_box" style="display: none; background-color: rgb(212, 125, 120); z-index: 2000;">Loading..</div>
+   <div id="enotification_pp" style="z-index: 2000;"></div>
+   <div id="inotification_pp" style="z-index: 2000;"></div>
 </div>
 <script type="text/javascript">
    var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
 </script>
 <?php
    }
-
+   
    /**
     * This function returns the session ID corresponding to the current user
     * @return string
@@ -202,18 +268,17 @@ class DMP extends Repository{
    private function getAPISessionID() {
       include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
       $security = new Security($this->Dbase);
-      $cypherSecret = $_SESSION['password'];
+      /*$cypherSecret = $_SESSION['password'];
       $username = $_SESSION['username'];
-      $authType = $_SESSION['auth_type'];
-      $this->Dbase->CreateLogEntry("session = ".print_r($_SESSION, true), "debug");
-      $this->Dbase->CreateLogEntry("server = ".print_r($_SERVER, true), "debug");
+      $authType = $_SESSION['auth_type'];*/
+      $this->Dbase->CreateLogEntry("Repository username = ".$_SESSION['username'], "debug");
       $tokenString = json_encode(array(
           "server" => $_SERVER['SERVER_ADDR'],
-          "user" => $username,
-          "auth_mode" => $authType,
-          "secret" => base64_encode($cypherSecret)
+          "user" => $_SESSION['username'],
+          "auth_mode" => $_SESSION['auth_type'],
+          "secret" => base64_encode($_SESSION['password'])
       ));
-      $authURL = "http://".$_SERVER['SERVER_ADDR']."/repository/mod_ajax.php?page=odk_workflow&do=auth";
+      $authURL = "http://azizi.ilri.cgiar.org/repository/mod_ajax.php?page=odk_workflow&do=auth";
       $authCh = curl_init($authURL);
       curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
@@ -233,7 +298,7 @@ class DMP extends Repository{
       }
       return null;
    }
-
+   
    /**
     * This function uploads files from javascript into the server
     */

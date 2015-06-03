@@ -133,7 +133,7 @@ class WAExcelFile {
    /**
     * This function dumps data from the excel file into the database
     */
-   public function dumpData() {
+   public function dumpData($deleteData = true) {
       try {
          if($this->excelObject != null) {
             $sheetNames = WASheet::getAllWASheets($this->config, $this->database->getDatabaseName(), $this->database);
@@ -141,16 +141,23 @@ class WAExcelFile {
             //$sheetName = WASheet::getSheetOriginalName($this->database, $sheetName);
             try {
                //delete data from the sheets (start from last index)
-               if(count($sheetNames) > 0) {
+               if(count($sheetNames) > 0 && $deleteData == true) {
+                  $this->lH->log(3, $this->TAG, "Truncating all tables before dumping data");
                   for($index = count($sheetNames) - 1; $index >= 0; $index--) {
-                     $query = "delete from ".Database::$QUOTE_SI.$sheetNames[$index].Database::$QUOTE_SI." where 1 = 1";
+                     $query = "truncate table ".Database::$QUOTE_SI.$sheetNames[$index].Database::$QUOTE_SI." cascade";
                      $this->database->runGenericQuery($query);
                   }
                }
+               $fileSheetNames = $this->excelObject->getSheetNames();
                //dump data into database tables (start from first)
                for($index = 0; $index < count($sheetNames); $index++){
-                  $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
-                  $currSheet->dumpData();
+                  if(in_array($sheetNames[$index], $fileSheetNames)){//is the current sheet in the current raw data file?
+                     $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
+                     $currSheet->dumpData();
+                  }
+                  else {
+                     $this->lH->log(3, $this->TAG, "Sheet '{$sheetNames[$index]} not in current raw data file");
+                  }
                }
             } catch (WAException $ex) {
                $this->lH->log(1, $this->TAG, "Unable to dump data from data file for workflow with id = '{$this->database->getDatabaseName()}'");
@@ -173,6 +180,89 @@ class WAExcelFile {
    public function unload() {
       $this->excelObject->disconnectWorksheets();
       WAFile::rmDir($this->cachePath);
+   }
+   
+   /**
+    * This function dumps data from the data provided into an PHPExcel object
+    * 
+    * @param Array   $config     Repository general config file
+    * @param String  $workflowID The instance id of the workflow
+    * @param String  $workingDir Where to save the excel file
+    * @param String  $title      The title to be given to the excel file
+    * @param Array   $data       An associative array of the data with the top heirarchy being the sheets,
+    *                            second level being the rows and the third level the columns
+    * 
+    * @return PHPExcel  A PHPExcelObject containing the dumped data
+    * @throws WAException
+    */
+   public static function saveAsExcelFile($config, $workflowID, $workingDir, $database, $title, $data) {
+      include_once $config['common_folder_path'].'PHPExcel/Classes/PHPExcel.php';include_once 'mod_log.php';
+      include_once 'mod_wa_exception.php';
+      include_once 'mod_wa_file.php';
+      try {
+         $lH = new LogHandler("./");
+         $tag = "washeet_static";
+         $phpExcel = new PHPExcel();
+         $creator = "ODK Workflow API";
+         $phpExcel->getProperties()->setCreator($creator);
+         $phpExcel->getProperties()->setLastModifiedBy($creator);
+         $phpExcel->getProperties()->setTitle($title);
+         $phpExcel->getProperties()->setSubject("Created using ".$creator);
+         $phpExcel->getProperties()->setDescription("This Excel file has been generated using $creator that utilizes the PHPExcel library on PHP. $creator was created by Jason Rogena (j.rogena@cgiar.org)");
+         $sheetNames = array_keys($data);
+         try {
+            for($sheetIndex = 0; $sheetIndex < count($data); $sheetIndex++) {
+               if($sheetIndex > 0) {
+                  $phpExcel->createSheet($sheetIndex);
+               }
+               $phpExcel->setActiveSheetIndex($sheetIndex);
+               $phpExcel->getActiveSheet()->setTitle($sheetNames[$sheetIndex]);
+               $sheetData = $data[$sheetNames[$sheetIndex]];
+               //add the column titles
+               if(count($sheetData) > 0) {
+                  $columnNames = array_keys($sheetData[0]);
+                  for($columnIndex = 0; $columnIndex < count($columnNames); $columnIndex++) {
+                     $columnKey = PHPExcel_Cell::stringFromColumnIndex($columnIndex);//not sure if this should be 0 based or 1 based
+                     $phpExcel->getActiveSheet()->setCellValue($columnKey."1", $columnNames[$columnIndex]);
+                     $phpExcel->getActiveSheet()->getStyle($columnKey."1")->getFont()->setBold(true);
+                     $phpExcel->getActiveSheet()->getColumnDimension($columnKey)->setAutoSize(true);
+                  }
+                  //add the data rows
+                  for($rowIndex = 0; $rowIndex < count($sheetData); $rowIndex++) {
+                     $currRow = $sheetData[$rowIndex];
+                     $columnCount = count($currRow);
+                     if($columnCount == count($columnNames)) {
+                        for($columnIndex = 0; $columnIndex < $columnCount; $columnIndex++){
+                           $currColumnName = $columnNames[$columnIndex];
+                           $rowKey = $rowIndex + 2;
+                           $columnKey = PHPExcel_Cell::stringFromColumnIndex($columnIndex);
+                           $phpExcel->getActiveSheet()->setCellValue($columnKey.$rowKey, $currRow[$currColumnName]);
+                        }
+                     }
+                     else {
+                        $readableRI = $rowIndex + 1;
+                        $lH->log(1, $tag, "Column count in current row ($readableRI) of $sheetNames[$sheetIndex] does not match the expected column count");
+                        throw new WAException("Column count in current row ($readableRI) of $sheetNames[$sheetIndex] does not match the expected column count", WAException::$CODE_WF_PROCESSING_ERROR, null);
+                     }
+                  }
+               }
+               else {
+                  $lH->log(2, $tag, "{$sheetNames[$sheetIndex]} does not have any data");
+               }
+            }
+            //save the file
+            $phpExcel->setActiveSheetIndex(0);
+            $file = new WAFile($config, $workflowID, $database, $workingDir, "tmp", $title.".xlsx");
+            $url = $file->saveAsExcelFile($phpExcel);
+            return $url;
+         } catch (WAException $ex1) {
+            $lH->log(1, $tag, "An error occurred while trying to create excel file for data");
+            throw new WAException("An error occurred while trying to create excel file for data", WAException::$CODE_WF_PROCESSING_ERROR, $ex1);
+         }
+      } catch (PHPExcel_Exception $ex) {
+            $lH->log(1, $tag, "A PHPExcel error occurred while trying to create excel file for data");
+            throw new WAException("A PHPExcel error occurred while trying to create excel file for data", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
    }
 }
 

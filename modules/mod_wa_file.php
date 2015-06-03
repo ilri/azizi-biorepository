@@ -10,7 +10,9 @@ class WAFile {
    public static $WORKING_SUB_DIRS = array(
        "raw_data" => "/raw_data",
        "processed_data" => "/processed_data",
-       "backups" => "/backups");
+       "backups" => "/backups",
+       "tmp" => "/tmp"
+      );
    public static $TABLE_META_FILES = "__meta_files";
    
    private $TAG = "wafile";
@@ -91,6 +93,27 @@ class WAFile {
       );
       
       return $details;
+   }
+   
+   /**
+    * This function tries to save the current file as an excel file
+    * 
+    * @param PHPExcel $excelObject  The PHPExcel object to be saved as a file
+    * @return String The URL to the file
+    * 
+    * @throws WAException
+    */
+   public function saveAsExcelFile($excelObject) {
+      include_once $this->config['common_folder_path'].'PHPExcel/Classes/PHPExcel/IOFactory.php';
+      try {
+         $objWriter = new PHPExcel_Writer_Excel2007($excelObject);
+         $subDirPath = $this->createWorkingSubdir();
+         $objWriter->save($subDirPath."/".$this->filename);
+         return $subDirPath."/".$this->filename;
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to save excel object as a file");
+         throw new WAException("An error occurred while trying to save excel object as a file", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
    }
    
    /**
@@ -372,7 +395,7 @@ class WAFile {
       $database = new Database($config, $workflowId);
       
       $query = "select ".Database::$QUOTE_SI."location".Database::$QUOTE_SI.",".Database::$QUOTE_SI."workflow_type".Database::$QUOTE_SI.""
-              . " from ".WAFile::$TABLE_META_FILES;
+              . " from ".WAFile::$TABLE_META_FILES." order by id";
       try {
          $result = $database->runGenericQuery($query, true);
          if($result !== false){
@@ -466,6 +489,29 @@ class WAFile {
       //check when last the directory was edited before deleting
       $phpExcelCache = $workingDir.WAFile::$WORKING_SUB_DIRS["raw_data"]."/phpexcel_cache";
       WAFile::rmDir($phpExcelCache);
+   }
+   
+   /**
+    * This function copies the contents of a source directory to a destination
+    * directory
+    * 
+    * @param String $src   The source directory
+    * @param String $dst   The destination directory
+    */
+   public static function copyDir($src, $dst) { 
+      $dir = opendir($src);
+      @mkdir($dst);
+      while(false !== ( $file = readdir($dir)) ) {
+         if (( $file != '.' ) && ( $file != '..' )) {
+            if ( is_dir($src . '/' . $file) ) {
+               WAFile::copyDir($src . '/' . $file,$dst . '/' . $file);
+            }
+            else {
+               copy($src . '/' . $file, $dst . '/' . $file);
+            }
+         }
+      }
+      closedir($dir); 
    }
 }
 ?>

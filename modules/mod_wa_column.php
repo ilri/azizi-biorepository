@@ -86,7 +86,23 @@ class WAColumn {
    public function update($sheetName, $name, $type, $length, $nullable, $default, $key) {
       
       try {
-         $this->database->runAlterColumnQuery($sheetName, $this->name, $name, $type, $length, $nullable, $default, $key);
+         $new = array(
+            "name" => $name,
+            "type" => $type,
+            "length" => $length,
+            "nullable" => $nullable,
+            "default" => $default,
+            "key" => $key
+         );
+         $existing = array(
+            "name" => $this->name,
+            "type" => $this->type,
+            "length" => $this->length,
+            "nullable" => $this->nullable,
+            "default" => $this->default,
+            "key" => $this->key
+         );
+         $this->database->runAlterColumnQuery($sheetName, $existing, $new);
          $this->name = $name;
          $this->type = $type;
          $this->length = $length;
@@ -407,5 +423,21 @@ class WAColumn {
       } catch (WAException $ex) {
          throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
+   }
+   
+   /**
+    * This function tries to remove the sheet name from the column name in an
+    * effort to try minimize the length of the column. Make sure you record the
+    * change (if name changes) in the meta changes table
+    * 
+    * @param String $sheetName   Name of the sheet
+    * @param String $columnName  Name of the column
+    * @return String The new column name or the original column name if name doesn't change
+    */
+   public static function trimColumnName($sheetName, $columnName){
+      if(substr($columnName, 0, strlen($sheetName)) == $sheetName) {//the column name starts with the sheet name
+         $columnName = str_replace($sheetName."-", "", $columnName);
+      }
+      return $columnName;
    }
 }

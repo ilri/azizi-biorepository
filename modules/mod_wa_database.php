@@ -24,6 +24,7 @@ class Database {
    public static $TYPE_DATE = "date";
    public static $TYPE_DATETIME = "timestamp without time zone";
    public static $TYPE_BOOLEAN = "boolean";
+   public static $MAX_TABLE_NAME_LENGTH = 63;
    
    public static $BOOL_TRUE = 't';
    public static $BOOL_FALSE = 'f';
@@ -38,8 +39,8 @@ class Database {
    private $pdoObject;
    private $connectedDb;
    private $wInstanceId;//the workflow instance ID. Should correspond to the database name linked to that instance
-   
-   private $DEFAULT_DATABASE = "__dp_meta_root";//default database
+
+   private $DEFAULT_DATABASE = "dmp_master";//default database
    
    /**
     * Default constructor for this class.
@@ -114,7 +115,7 @@ class Database {
             }
 
          } catch (PDOException $ex) {
-            $this->logH->log(2, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
+            $this->logH->log(1, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
             throw new WAException("PDOException thrown while trying to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, $ex);
          }
       }
@@ -483,15 +484,27 @@ class Database {
     * @param type $filename      Name to be given to the backup file
     */
    public function backup($workingDir, $filename, $user, $description) {
+      /*
+       * #since you have to use the same pg_dump version as the server
+       * #install using rpm from http://yum.postgresql.org/repopackages.php#pg93
+       * wget -c http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+       * yum install pgdg-centos93-9.3-1.noarch.rpm
+       * #install just the client
+       * yum install postgresql93.x86_64
+       * #find out where pg_dump was put
+       * rpm -ql postgresql93.x86_64|grep bin
+       * #save the pg_dump path in the repository config file
+       */
       try {
          $this->logH->log(3, $this->TAG, "Backing up '".$this->getDatabaseName()."'");
          //($config, $workflowID, $database, $workingDir, $type, $filename = null)
          $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
          $subDirPath = $dumpFile->createWorkingSubdir();
          $path = $subDirPath . "/" . $filename;
-         $command = "export PGPASSWORD=".$this->config['testbed_pass'].";pg_dump --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} > $path";
+         $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
          $this->logH->log(4, $this->TAG, "Backup command is '$command'");
-         shell_exec($command);
+         $output = shell_exec($command);
+         $this->logH->log(3, $this->TAG, "Output from backup command is '$output'");
          if(file_exists($path)) {
             $columns = array(
                "location" => "'$filename'",
@@ -513,7 +526,27 @@ class Database {
       }
    }
    
-   public function restore($databaseName, $restoreFile) {
+   /**
+    * This function restores a database from an SQL file. If the database does not
+    * exist, it creates it (instead of restoring it).
+    * 
+    * @param type $databaseName     The name of the database
+    * @param type $restoreFile      The sql file to be used to restore the file
+    * @param type $databaseExists   True if the database already exists
+    * @throws WAException
+    */
+   public function restore($databaseName, $restoreFile, $databaseExists = true) {
+      /*
+       * #since you have to use the same pg_dump version as the server
+       * #install using rpm from http://yum.postgresql.org/repopackages.php#pg93
+       * wget -c http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+       * yum install pgdg-centos93-9.3-1.noarch.rpm
+       * #install just the client
+       * yum install postgresql93.x86_64
+       * #find out where pg_dump was put
+       * rpm -ql postgresql93.x86_64|grep bin
+       * #save the pg_dump path in the repository config file
+       */
       if(file_exists($restoreFile)) {
          try {
             $this->logH->log(3, $this->TAG, "Restoring '$databaseName' to state defined in '$restoreFile'");
@@ -522,14 +555,17 @@ class Database {
             /*$command = "export PGPASSWORD=".$this->config['testbed_pass'].";dropdb -U ".$this->config['testbed_user']." {$databaseName}";
             shell_exec($command);*/
             //drop all the tables
-            $db2 = new Database($this->config, $databaseName);
-            $db2->dropAllOtherConnections();
-            $db2->runGenericQuery("drop schema public cascade");
-            $db2->runGenericQuery("create schema public");
-            $db2->close();
-            $this->runDropDatabaseQuery($databaseName);
+            if($databaseExists == true) {
+               $db2 = new Database($this->config, $databaseName);
+               $db2->dropAllOtherConnections();
+               $db2->runGenericQuery("drop schema public cascade");
+               $db2->runGenericQuery("create schema public");
+               $db2->close();
+               $this->runDropDatabaseQuery($databaseName);
+            }
             $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
-            $command = "export PGPASSWORD=".$this->config['testbed_pass'].";psql -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile";
+            //$command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
+            $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['psql']." -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile -h {$this->config['testbed_dbloc']}";
             $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);
             $output = shell_exec($command);
             $this->logH->log(4, $this->TAG, "Message from pg_restore is ".$output);
@@ -545,10 +581,10 @@ class Database {
    }
    
    public function dropAllOtherConnections() {
-      $query = "SELECT pg_terminate_backend(pg_stat_activity.procpid)
+      $query = "SELECT pg_terminate_backend(pg_stat_activity.pid)
                FROM pg_stat_activity
                WHERE datname = current_database()
-               AND procpid <> pg_backend_pid()";
+               AND pid <> pg_backend_pid()";
       //change procpid to pid when updating to PostgreSQL 9.2 and above
       try {
          $this->runGenericQuery($query);
@@ -560,33 +596,111 @@ class Database {
    /**
     * This function alters a table column
     * 
-    * @param type $tableName
-    * @param type $currName
-    * @param type $newName
-    * @param type $type
-    * @param type $length
-    * @param type $nullable
-    * @param type $default
-    * @param type $key
+    * @param type $tableName  Name of the table where column is
+    * @param type $existing   All properties for the existing column
+    * @param type $new        All properties for the column after altering
     */
-   public function runAlterColumnQuery($tableName, $currName, $newName, $type, $length, $nullable, $default, $key) {
+   public function runAlterColumnQuery($tableName, $existing, $new) {
       //instead of altering the current column, add new column after existing then drop existing
+      $isSpecial = false;
+      if($existing['key'] === Database::$KEY_PRIMARY || $existing['key'] === Database::$KEY_UNIQUE) $isSpecial = true;
       try {
-         //if column was previously part of the primary key, the primary key will be deleted
-         //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
-         $tmpName = $currName."_odk_w_delete";
-         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$currName.Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-         $this->runGenericQuery($query);
-         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
-         $query .= $this->getColumnExpression($newName, $type, $length, $key, $default, $nullable);
-         $this->runGenericQuery($query);
-         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-         $this->runGenericQuery($query);
-         if($key == Database::$KEY_PRIMARY){
-            $this->addColumnsToPrimaryKey($tableName, array($newName));
+         if($isSpecial == false) {//column considered special if it is currently part of a key
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            //if column was previously part of the primary key, the primary key will be deleted
+            //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
+            $tmpName = $existing['name']."_odk_w_delete";
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
+            $query .= $this->getColumnExpression($new['name'], $new['type'], $new['length'], $new['key'], $new['default'], $new['nullable']);
+            $this->runGenericQuery($query);
+            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+            if($new['key'] == Database::$KEY_PRIMARY){
+               $this->addColumnsToPrimaryKey($tableName, array($new['name']));
+            }
+         }
+         else {//column is special. That means the previous method (deleting existing column and replacing it with a new one wont work. The case for columns that are already part of a key)
+            //check what needs to change in the column. Make sure you change the name last
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' current details".print_r($existing, true));
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' New details".print_r($new, true));
+            
+            if($new['name'] == $existing['name']) $new['name'] = null;
+            if($new['type'] == $existing['type'] && $new['length'] == $existing['length']) {
+               $new['type'] = null;
+               $new['length'] = null;
+            }
+            if($new['nullable'] == null) $new['nullable'] = "null";
+            if($new['nullable'] == "null" && $existing['nullable'] == null) $new['nullable'] = null;
+            else if($new['nullable'] == $existing['nullable']) $new['nullable'] = null;
+            if($new['default'] == $existing['default']) $new['default'] = null;
+            if($new['key'] == $existing['key']) $new['key'] = null;
+            //type
+            $this->logH->log(4, $this->TAG, "Column '{$existing['name']}' being considered as special during alter");
+            $smFixed = false;
+            if($new['type'] != null) {
+               if($new['type'] == Database::$TYPE_VARCHAR) $new['type'] .= "({$new['length']})";
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " type ".$new['type'];
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing type of {$existing['name']} to {$new['type']}");
+            }
+            //nullable
+            if($new['nullable'] != null) {
+               $nullValue = "set not null";
+               if($new['nullable'] == false) {
+                  $nullValue = "drop not null";
+               }
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " ".$nullValue;
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing nullable of {$existing['name']} to $nullValue");
+            }
+            //default
+            if($new['default'] != null) {//for default value of 'null' use null the string
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " set default {$new['default']}";
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing default value to {$new['default']} of {$existing['name']}");
+            }
+            if($new['key'] == Database::$KEY_PRIMARY) {
+               $this->addColumnsToPrimaryKey($tableName, array($existing['name']));
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Adding {$existing['name']} to primary key");
+            }
+            else if($new['key'] == Database::$KEY_UNIQUE) {
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " add constraint ".Database::$QUOTE_SI.$existing['name'].Workflow::generateRandomID(4).Database::$QUOTE_SI." unique(".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI.")";
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Making {$existing['name']} unique");
+            }
+            //name
+            if($new['name'] != null && $existing['name'] != $new['name']) {
+               $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+                     . " rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
+                     . " to".Database::$QUOTE_SI.$new['name'].Database::$QUOTE_SI;
+               $this->runGenericQuery($query);
+               $smFixed = true;
+               $this->logH->log(4, $this->TAG, "Changing name of {$existing['name']} to {$new['name']}");
+            }
+            if($smFixed == true) {
+               $this->logH->log(3, $this->TAG, "{$new['name']} in $tableName altered");
+            }
+            else {
+               $this->logH->log(3, $this->TAG, "Could not find a reason for altering {$existing['name']} in $tableName");
+            }
          }
       } catch (WAException $ex) {
-         throw new WAException("Unable to get an update column expression for $'currName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+         throw new WAException("Could not alter '{$existing['name']}' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
    
@@ -789,12 +903,12 @@ class Database {
          }
 
          //add default value
-         if($nullable === "null" 
+         if($isNullable == true 
                  && ($default == null || $default == "NULL" || $default == "null")) {
             //column is nullable and default value is null
             $createString .= "default null ";
          }
-         else if($nullable === "not null"
+         else if($isNullable == false
                  && ($default == null || $default == "NULL" || $default == "null")) {
             //column doesn't have a default value
          }
@@ -810,7 +924,7 @@ class Database {
 
          //add nullable
          $nullable = "not null";
-         if($isNullable === true) $nullable = "null";
+         if($isNullable == true) $nullable = "null";
          $createString .= "{$nullable} ";
       }
       /*else if($key == Database::$KEY_PRIMARY){

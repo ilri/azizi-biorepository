@@ -299,6 +299,7 @@ class LabelPrinter extends Repository{
     */
    private function GenerateLabels(){
       $this->Dbase->CreateLogEntry("Generate Labels called", "info");
+      $this->Dbase->CreateLogEntry("Generate Labels post data = ".print_r($_POST, true), "debug");
       if(isset($this->labelPrintingError)){
          $this->HomePage($this->labelPrintingError['message']);
          return;
@@ -389,7 +390,7 @@ class LabelPrinter extends Repository{
       }
       elseif($_POST['sequence'] == 'sequential'){
          //we expecting the prefix and the count
-         if(!preg_match('/^[1-9]([0-9])?|[a-z]{3,4}$/i', $_POST['prefix'])){
+         if(!preg_match('/^[0-9]+|[a-z]{3,4}$/i', $_POST['prefix'])){
             if($_POST['prefix'] == 0 || $_POST['prefix'] == 999){
                $this->labelPrintingError = array('error' => true, 'message' => "Please select the prefix to use for the labels.");
                return;
@@ -400,7 +401,7 @@ class LabelPrinter extends Repository{
             }
          }
 
-         if(preg_match('/^[1-9]([0-9])?$/i', $_POST['prefix'])){
+         if(preg_match('/^[0-9]+$/i', $_POST['prefix'])){
             //get the last printed label, and send the data to the perl script to generate the labels
             $labelSettings = $this->Dbase->GetColumnValues('labels_coding', array('last_count', 'prefix', 'length'), "where id = {$_POST['prefix']}");
             if($labelSettings == 1){
@@ -534,7 +535,7 @@ class LabelPrinter extends Repository{
          $data['project'] = $res;
       }
 
-      if(preg_match('/^[0-9]{1,2}$/', $data['requester'])){
+      if(preg_match('/^[0-9]+/', $data['requester'])){
          $this->Dbase->query = "select a.id as userId, b.id as projectId, d.name from lcmod_projectUsers as a inner join lcmod_projects as b on a.project_id = b.id
          inner join lcmod_users as c on a.user_id = c.id inner join ". Config::$config['azizi_db'] .".contacts as d on c.contact_id=d.count where a.id={$data['requester']} group by a.id";
          $res = $this->Dbase->ExecuteQuery();
