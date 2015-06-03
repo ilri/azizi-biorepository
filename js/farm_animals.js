@@ -18,8 +18,7 @@ function Animals(sub_module){
    this.showAll = false;
 
    // call the respective function
-   if(this.sub_module === 'ownership') this.initiateAnimalsOwnersGrid();
-   else if(this.sub_module === 'experiments') this.initiateExperimentsGrid();
+   if(this.sub_module === 'experiments') this.initiateExperimentsGrid();
 };
 
 /**
@@ -193,7 +192,7 @@ Animals.prototype.saveAnimal = function(){
 Animals.prototype.initiateAnimalsOwnersGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'animal'}, {name: 'owner'}, {name: 'start_date'}, {name: 'end_date'}, {name: 'comments'} ],
+       datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'animal'}, {name: 'owner'}, {name: 'start_date'}, {name: 'end_date'}, {name: 'comments'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'grid'}, url: 'mod_ajax.php?page=farm_animals&do=ownership'
      };
      var ownersAdapter = new $.jqx.dataAdapter(source);
@@ -210,8 +209,12 @@ Animals.prototype.initiateAnimalsOwnersGrid = function(){
             enabletooltips: false,
             pagesize: 20,
             pagesizeoptions: ['20', '50', '100'],
+            rowdetails: true,
+            initrowdetails: animals.initializeOwnershipRowDetails,
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 130, rowdetailshidden: true},
             columns: [
               { datafield: 'system_id', hidden: true },
+              { datefield: 'animal_id', hidden: true },
               { text: 'Animal', datafield: 'animal', width: 100 },
               { text: 'Owner', datafield: 'owner', width: 200 },
               { text: 'Start Date', datafield: 'start_date', width: 150 },
@@ -223,6 +226,32 @@ Animals.prototype.initiateAnimalsOwnersGrid = function(){
      else{
         $("#owners_list").jqxGrid({source: ownersAdapter});
      }
+};
+
+/**
+ * Initiate the place for showing a history of animal ownership
+ * @returns {undefined}
+ */
+Animals.prototype.initializeOwnershipRowDetails = function(index, parentElement, gridElement, dr){
+   var grid = $($(parentElement).children()[0]);
+
+   var ownersSource = {
+       datatype: "json", datafields: [ {name: 'animal'}, {name: 'owner'}, {name: 'start_date'}, {name: 'end_date'}, {name: 'comments'} ], type: 'POST',
+       id: 'id', data: {action: 'history',  animal_id: dr.animal_id },
+       url: 'mod_ajax.php?page=farm_animals&do=ownership'
+    };
+
+    if (grid !== null) {
+      grid.jqxGrid({source: ownersSource, theme: '', width: 840, height: 140,
+      columns: [
+         {text: 'Animal ID', datafield: 'animal', width: 150},
+         {text: 'Owner', datafield: 'owner', width: 100},
+         {text: 'Start Date', datafield: 'start_date', width: 70},
+         {text: 'End Date', datafield: 'end_date', width: 150},
+         {text: 'Comments', datafield: 'comments', width: 200}
+      ]
+      });
+   }
 };
 
 /**

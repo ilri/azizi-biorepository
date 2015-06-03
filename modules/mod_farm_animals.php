@@ -66,6 +66,7 @@ class FarmAnimals{
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ownership'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->animalOwnersHome();
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->animalOwnersList();
+         else if(OPTIONS_REQUESTED_ACTION == 'history') $this->animalOwnersHistory();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalOwners();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'events'){
@@ -617,7 +618,8 @@ class FarmAnimals{
 
 <script type='text/javascript'>
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
-   var animals = new Animals('ownership');
+   var animals = new Animals();
+   animals.initiateAnimalsOwnersGrid();
    animals.movedAnimals = {};
 
    $('#add').bind('click', animals.addOwnership);
@@ -632,8 +634,8 @@ class FarmAnimals{
       $toReturn = array();
       $fields = json_decode($_POST['fields']);
       if($_POST['field'] == 'grid'){
-         $query = 'select a.id, a.owner_id, c.animal_id animal, start_date, end_date, a.comments '
-             . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id '
+         $query = 'select a.id, a.owner_id, c.animal_id animal, a.animal_id, start_date, end_date, a.comments '
+             . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id where end_date is null '
              . 'order by a.animal_id, start_date';
          $ownership = $this->Dbase->ExecuteQuery($query);
          if($ownership == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
@@ -664,6 +666,20 @@ class FarmAnimals{
          $toReturn['animals'] = $res;
       }
       die(json_encode($toReturn));
+   }
+
+   /**
+    * Get a history of the animal owners for this particular animal
+    */
+   private function animalOwnersHistory(){
+      $query = 'select a.animal_id, a.owner_id, c.animal_id animal, start_date, end_date, a.comments, concat(d.sname, " ", d.onames) as owner '
+         . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id '
+         . 'inner join '. Config::$config['lims_extension'] .'.users as d on a.owner_id = d.id '
+         . 'where a.animal_id = :animal_id '
+         . 'order by start_date';
+      $ownership = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
+      if($ownership == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+      die(json_encode($ownership));
    }
 
    /**
