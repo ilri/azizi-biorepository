@@ -123,6 +123,7 @@ class FarmAnimals{
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets/styles/jqx.base.css" type="text/css" />
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/lightGallery/light-gallery/css/lightGallery.css" type="text/css" />
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets/jqxcore.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets/jqxdata.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets/jqxdata.export.js"></script>
@@ -140,6 +141,7 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets/jqxwindow.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets/jqxtabs.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/jqwidgets/jqxgrid.export.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jquery/lightGallery/light-gallery/js/lightGallery.min.js"></script>
 
 <div id="main">
    <div id="inventory"></div>
@@ -1249,6 +1251,15 @@ class FarmAnimals{
               . 'where a.id = :animal_id';
       $res = $this->Dbase->ExecuteQuery($fetchQuery, array('animal_id' => $_POST['animal_id']));
       if($res == 1) die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
+
+      // get the list of animal images
+      $animalId = $res[0]['animal_id'];
+      $grepCommand = "/usr/bin/find ". Config::$farmThumbnailsPath ." -iname '$animalId*' ";
+      exec($grepCommand, $output);
+      $res[0]['imageList'] = array();
+      foreach($output as $image){
+         $res[0]['imageList'][] = pathinfo($image, PATHINFO_BASENAME);
+      }
       die(json_encode(array('error' => 'false', 'data' => $res[0])));
    }
 }

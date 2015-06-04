@@ -390,6 +390,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
 .status_bar_div{ float: left; margin-left: 5px; padding: 4px 0px 0px 4px; }
 .status_bar_span{ margin: 0px 1px 0px 3px; position: relative; top: 2px; }
 #exitTypeId, #eventValuePlaceId{ display: none; }
+#gallery li{ float: left; margin: 2px; list-style-type: none;}
 /* ============================== Farm animals module ============================================== */
 
 #mta_box_list_div{

@@ -1451,7 +1451,7 @@ Animals.prototype.showAnimalDetails = function(that){
          initContent: function () {
             $('#tab .info').html(infoContent);
             $('#tab .others').html('Not defined yet');
-            $('#tab .pic').html('Not set yet');
+            animals.showAnimalImages(curAnimal.imageList);
             $('#tab').jqxTabs({ height: '100%', width:  '100%' });
             $('#animal_info').jqxWindow('open');
             $('#animal_info').jqxWindow('focus');
@@ -1461,11 +1461,38 @@ Animals.prototype.showAnimalDetails = function(that){
    else{
       $('#tab .info').html(infoContent);
       $('#tab .others').html('Not defined yet');
-      $('#tab .pic').html('Not set yet');
+      animals.showAnimalImages(curAnimal.imageList);
       $('#animal_info').jqxWindow('open');
       $('#animal_info').jqxWindow('focus');
    }
    $('#animal_info').jqxWindow('setTitle', curAnimal.animal_id +' information');
+};
+
+/**
+ * Handle when the tab in the animal details window are clicked
+ *
+ * @param {type} event
+ * @returns {undefined}
+ */
+Animals.prototype.animalDetailsTabClicked = function(tabIndex, animalId){
+   var tabTitle = $('#tab').jqxTabs('getTitleAt', tabIndex);
+
+   if(tabTitle === 'Picture'){
+      // get the thumbnails of this animal...
+
+   }
+};
+
+Animals.prototype.showAnimalImages = function(imageList){
+   // create the links for the thumbnails
+   var placeholder = "Images from this animal<br /><ul id='gallery'>";
+   $.each(imageList, function (i, that) {
+      placeholder += "<li data-src='/farmdb_images/" + that + "'> <img src='/farmdb_images/thumbs/" + that + "' /> </li>";
+   });
+   placeholder += "</ul>";
+
+   $('#tab .pic').html(placeholder);
+   $("#gallery").lightGallery({mode: 'slide'});
 };
 
 Animals.prototype.linkrenderer = function (row, column, value) {
