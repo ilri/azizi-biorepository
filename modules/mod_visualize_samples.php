@@ -612,14 +612,14 @@ class VisualizeSamples {
 ?>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/leaflet.css" />
 <script src="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/leaflet.js"></script>
-<script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>jquery/jquery-1.8.3.min.js' /></script>
+<script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>jquery/jquery.min.js' /></script>
 <script src='js/visualize_samples.js'></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/ol.js'></script>
-<script src="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>dygraphs-1.0.1/dygraph-combined.js"></script>
+<script src="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>dygraphs/dygraph-combined.js"></script>
 <link href="css/repository.css" rel="stylesheet" type="text/css" />
 <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css' />
-<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.ui/js/jquery-ui.min.js" /></script>
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery-ui/themes/smoothness/jquery-ui.min.css' />
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-ui/jquery-ui.min.js" /></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/leaflet-heat.js'></script>
 <div id="map"></div>
 <div id="samples_timeline"></div>

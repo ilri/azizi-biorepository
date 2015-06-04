@@ -214,7 +214,7 @@ class Repository3D{
    
    private function home() {
  ?>
-<script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>jquery/jquery-1.8.3.min.js' /></script>
+<script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>jquery/jquery.min.js' /></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/three.min.js'></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/tween.min.js'></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/stats.min.js'></script>
