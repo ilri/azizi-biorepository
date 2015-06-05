@@ -326,7 +326,7 @@ CONTENT;
          $content .= "</div>\n";
       }
 
-      $content .= "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."jqwidgets/jqwidgets/jqxtabs.js'></script>";
+      $content .= "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."bower/jqwidgets/jqwidgets/jqxtabs.js'></script>";
 $content .="
    <script type='text/javascript'>
       $('[name=confirm]').click(LimsUploader.confirmUpload);

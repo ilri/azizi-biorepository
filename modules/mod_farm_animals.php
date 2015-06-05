@@ -122,24 +122,24 @@ class FarmAnimals{
    private function inventoryHome(){
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdata.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdata.export.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxmenu.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxwindow.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxtabs.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.export.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdata.export.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxtabs.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.export.js"></script>
 
 <div id="main">
    <div id="inventory"></div>
@@ -235,9 +235,9 @@ class FarmAnimals{
       }
      $Repository->DateTimePickerFiles();
 ?>
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <div id="add_animals">
    <form class='form-horizontal' id="adding">
@@ -355,16 +355,16 @@ class FarmAnimals{
       $locations = $this->getAnimalLocations($withAnimals);
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttongroup.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxnotification.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxwindow.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxpanel.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttongroup.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxpanel.js"></script>
 <div id="animal_locations">
    <div id="level1_pl">
       <div class="label">Level1 Locations</div>
@@ -595,20 +595,20 @@ class FarmAnimals{
 ?>
 <div id="messageNotification"><div class="">&nbsp;&nbsp;</div></div>
 <script type="text/javascript" src="js/farm_animals.js"></script>
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdata.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxmenu.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
 <div id="ownership">
    <div id="owners_list">&nbsp;</div>
    <div id="links" class="center">
@@ -733,14 +733,14 @@ class FarmAnimals{
       $animalLocations = $this->getAnimalLocations(true);
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttongroup.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttongroup.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
 <div id="move_animals">
    <div id="all_animals">
       <div id='from_filter'></div>
@@ -837,23 +837,23 @@ class FarmAnimals{
    private function animalEvents(){
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdata.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxmenu.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxnotification.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdatetimeinput.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcalendar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/globalization/globalize.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdatetimeinput.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcalendar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/globalization/globalize.js"></script>
 <div id="events">
    <div id="events_grid"></div>
    <div id="actions">
@@ -1078,20 +1078,20 @@ class FarmAnimals{
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/mssg_box.css" />
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdata.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxmenu.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/customMessageBox.js"></script>
 <div id="experiments">
    <div id="exp_grid"></div>

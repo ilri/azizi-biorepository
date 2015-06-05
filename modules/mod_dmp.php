@@ -39,8 +39,8 @@ class DMP extends Repository{
       $this->jqGridFiles();//import vital jqx files
       $sessionId = $this->getAPISessionID();
 ?>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
 <script type="text/javascript" src="js/dmp_home.js"></script>
 <div class="center" style="height: 500px; margin-top: 200px;">
    <input type="button" id="new_project_btn" value="Create a new project" />
@@ -63,21 +63,21 @@ class DMP extends Repository{
       $sessionId = $_GET['session'];
       $project = $_GET['project'];
 ?>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxwindow.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxsplitter.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxfileupload.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxnumberinput.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxnotification.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxmenu.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxtabs.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxsplitter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxfileupload.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxnumberinput.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxtabs.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
 <div id="blanket_cover" style="position: absolute; background-color: white; opacity: 0.6; display: none; z-index: 5;"></div>
