@@ -491,8 +491,8 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
     * @return Integer Returns -1 if excel file does not have an external choices, 0 if able to extract the data, 1 if an error occurred and 2 if itemsets.csv already exists in the media directory
     */
    private function extractExternalItemsets($excelFileLoc, $mediaDirLoc){
-      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
-      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel/IOFactory.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel/IOFactory.php';
       
       try {
          //load the excel file

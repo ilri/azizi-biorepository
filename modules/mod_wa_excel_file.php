@@ -32,8 +32,8 @@ class WAExcelFile {
       $this->sheets = array();
       $this->database = $waFile->getDatabase();
       
-      include_once $this->config['common_folder_path'].'PHPExcel/Classes/PHPExcel.php';
-      include_once $this->config['common_folder_path'].'PHPExcel/Classes/PHPExcel/IOFactory.php';
+      include_once $this->config['common_folder_path'].'bower/PHPExcel/Classes/PHPExcel.php';
+      include_once $this->config['common_folder_path'].'bower/PHPExcel/Classes/PHPExcel/IOFactory.php';
       
       //try reading the excel file
       try {
@@ -196,7 +196,7 @@ class WAExcelFile {
     * @throws WAException
     */
    public static function saveAsExcelFile($config, $workflowID, $workingDir, $database, $title, $data) {
-      include_once $config['common_folder_path'].'PHPExcel/Classes/PHPExcel.php';include_once 'mod_log.php';
+      include_once $config['common_folder_path'].'bower/PHPExcel/Classes/PHPExcel.php';include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_wa_file.php';
       try {

@@ -277,7 +277,7 @@ class Recharges{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
 <script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
-<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/css/smoothness/jquery-ui.css' />
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <div id="box_storage">
    <h3 class="center">Recharge Storage Space</h3>
    <div id="recharge_div">
@@ -687,7 +687,7 @@ class Recharges{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jquery.ui/js/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <div id="labels">
    <h3 class="center">Recharge Barcode Labels</h3>
@@ -1898,7 +1898,7 @@ class Recharges{
     * @return PHPExcel
     */
    private function initExcelSheet($title){
-      require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+      require_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel.php';
       $phpExcel = new PHPExcel();
       $phpExcel->getProperties()->setCreator("Azizi Biorepository");
       $phpExcel->getProperties()->setLastModifiedBy("Azizi Biorepository");

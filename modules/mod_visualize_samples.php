@@ -383,7 +383,7 @@ class VisualizeSamples {
             $caResult[$caIndex]['open_access'] = "No";
          }
 
-         require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+         require_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel.php';
 
          $phpExcel = new PHPExcel();
          $phpExcel->getProperties()->setCreator($email);

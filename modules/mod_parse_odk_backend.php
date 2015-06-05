@@ -262,7 +262,7 @@ class Parser {
       $this->extractSelectMultipleOptions();
       
       $this->loadXML();
-      include_once $this->settings['common_lib_dir'].'PHPExcel/Classes/PHPExcel.php';
+      include_once $this->settings['common_lib_dir'].'bower/PHPExcel/Classes/PHPExcel.php';
 
       $mainSheetKey = "main_sheet";
 

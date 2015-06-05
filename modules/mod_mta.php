@@ -463,7 +463,7 @@ class MTA{
          /*$this->Dbase->CreateLogEntry("ids = ".  implode(",", $stabilateIDs), "debug");
          $this->Dbase->CreateLogEntry("query = ".$query, "debug");*/
 
-         require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+         require_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel.php';
          $phpExcel = new PHPExcel();
          $phpExcel->getProperties()->setCreator($email);
          $phpExcel->getProperties()->setLastModifiedBy($email);
@@ -891,7 +891,7 @@ class MTA{
        */
       
       $templateLocation = "templates/MTA-ILRI-Template.docx";
-      require_once OPTIONS_COMMON_FOLDER_PATH."/PHPWord/PHPWord.php";
+      require_once OPTIONS_COMMON_FOLDER_PATH."bower/PHPWord/Classes/PHPWord.php";
       $PHPWord = new PHPWord();
       $mtaTemplate = $PHPWord->loadTemplate($templateLocation);
       

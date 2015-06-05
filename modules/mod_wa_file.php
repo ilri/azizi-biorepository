@@ -104,7 +104,7 @@ class WAFile {
     * @throws WAException
     */
    public function saveAsExcelFile($excelObject) {
-      include_once $this->config['common_folder_path'].'PHPExcel/Classes/PHPExcel/IOFactory.php';
+      include_once $this->config['common_folder_path'].'bower/PHPExcel/Classes/PHPExcel/IOFactory.php';
       try {
          $objWriter = new PHPExcel_Writer_Excel2007($excelObject);
          $subDirPath = $this->createWorkingSubdir();
