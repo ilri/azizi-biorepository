@@ -612,7 +612,7 @@ class VisualizeSamples {
 ?>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/leaflet.css" />
 <script src="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/leaflet.js"></script>
-<script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/jquery/jquery.min.js' /></script>
+<script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/jquery/dist/jquery.min.js' /></script>
 <script src='js/visualize_samples.js'></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/ol.js'></script>
 <script src="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/dygraphs/dygraph-combined.js"></script>

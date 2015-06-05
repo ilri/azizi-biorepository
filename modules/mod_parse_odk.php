@@ -19,7 +19,7 @@ class ParseODK extends Repository{
    public function TrafficController() {
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/odk_parser.js'></script>";
-         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery/jquery.min.js' /></script>";
+         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery/dist/jquery.min.js' /></script>";
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bower/bootstrap/dist/js/bootstrap.min.js' /></script>";
          echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."bower/bootstrap/dist/css/bootstrap.min.css'/>";
       }
