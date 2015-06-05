@@ -455,14 +455,6 @@ class Repository extends DBase{
    }
 
    /**
-    * Echos the code for including the files that will be used for auto-complete
-    */
-   public function AutoCompleteFiles(){
-      echo "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."bower/jquery-autocomplete/jquery.autocomplete.js'></script>";
-      echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."bower/jquery-autocomplete/autocomplete.css' />";
-   }
-
-   /**
     * Spits out the javascript that initiates the autocomplete feature once the DOM has finished loading
     *
     * @param   array    $settings An array with the settings as described below
