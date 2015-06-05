@@ -22,13 +22,13 @@
     "tests"
   ],
   "dependencies": {
-    "jquery": "~2.1.4",
+    "jquery": "1.8.3",
     "jquery-ui": "~1.11.4",
     "jquery-form": "~3.46.0",
     "jquery-json": "~2.5.1",
     "jqwidgets": "*",
     "jsencrypt": "~2.1.0",
-    "bootstrap": "~3.3.4",
+    "bootstrap": "2.3.1",
     "jquery-flexigrid": "~1.1.5",
     "jquery-md5": "*",
     "dygraphs": "~1.1.1"
