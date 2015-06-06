@@ -103,15 +103,21 @@ Animals.prototype.initializeInventoryRowDetails = function(index, parentElement,
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
-       datatype: "json", datafields: [ {name: 'event_id'}, {name: 'event_value'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'record_date'}, {name: 'comments'} ], type: 'POST',
+       datatype: "json", datafields: [ {name: 'event_id'}, {name: 'file_name'}, {name: 'path'}, {name: 'event_value'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'record_date'}, {name: 'comments'} ], type: 'POST',
        id: 'id', data: {action: 'list', field: 'events',  animal_id: dr.id}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
     };
 
     if (grid !== null) {
       grid.jqxGrid({source: eventsSource, theme: '', width: 820, height: 140,
       columns: [
+         {datafield: 'file_name', hidden: true},
+         {datafield: 'path', hidden: true},
          {text: 'EventId', datafield: 'event_id', hidden: true},
-         {text: 'Event Name', datafield: 'event_name', width: 110},
+         {text: 'Event Name', datafield: 'event_name', width: 110, cellsrenderer: function(r,c,v,d,cp,rd){
+               // update the event name with a link to the file(s)
+               if(rd.path === undefined){ return v; }
+               else{ return '<a href="'+ rd.path +'" data-ob="lightbox" class="pdf_href" target="__blank">&nbsp;'+ v +' - Report</a>'; }
+         }},
          {text: 'Event Value', datafield: 'event_value', width: 100},
          {text: 'Event Date', datafield: 'event_date', width: 90},
          {text: 'Record Date', datafield: 'record_date', width: 140},
@@ -831,7 +837,36 @@ Animals.prototype.confirmEventsExtras = function(){
  * @returns    {void}
  */
 Animals.prototype.saveChanges = function (){
-   var  toId;
+   var toId;
+   var formData = new FormData();
+   if($('#pm_report').length === 1){
+      // we have a file to upload... this requires special handling gloves
+      // Create a formdata object and add the pm report
+      $.each(animals.pmReport, function(key, value){
+          formData.append('uploads[]', value);
+      });
+
+//      // now upload the pm report in its own request
+//      $.ajax({
+//        url: 'mod_ajax.php?page=farm_animals', type: 'POST', data: data, cache: false, dataType: 'json',
+//        processData: false, // Don't process the files
+//        contentType: false, // Set content type to false as jQuery will tell the server its a query string request
+//        success: function(data, textStatus, jqXHR) {
+//            if(typeof data.error === 'undefined') {
+//                // Success so continue with the other ajax request
+//            }
+//            else {
+//                // Handle errors here
+//                console.log('ERRORS: ' + data.error);
+//            }
+//        },
+//        error: function(jqXHR, textStatus, errorThrown) {
+//            // Handle errors here
+//            console.log('ERRORS: ' + textStatus);
+//        }
+//    });
+   }
+
    if(this.sub_module === 'events'){
       if(Object.keys(animals.movedAnimals).length === 0){
          animals.showNotification('Please add animals involved in this event.', 'error');
@@ -844,8 +879,14 @@ Animals.prototype.saveChanges = function (){
    else { toId = $('#toComboId').val(); }
 
    var fromId = $('#fromId').val();
+   formData.append('action', 'save');
+   formData.append('from', fromId);
+   formData.append('to', toId);
+   formData.append('animals', $.toJSON(animals.movedAnimals));
+   formData.append('extras', $.toJSON(animals.extraData));
     $.ajax({
-      type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', data: {action: 'save', from: fromId, animals: $.toJSON(animals.movedAnimals), to: toId, extras: $.toJSON(animals.extraData) },
+      type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', cache: false, contentType: false, processData: false,
+      data: formData,
       success: function (data) {
          if(data.error === true){
             animals.showNotification(data.mssg, 'error');
@@ -888,6 +929,8 @@ Animals.prototype.showNotification = function(message, type){
          autoOpen: false, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: type
        });
    }
+   else{ $('#messageNotification').jqxNotification({template: type}); }
+
    $('#messageNotification').jqxNotification('open');
 };
 
@@ -1371,6 +1414,7 @@ Animals.prototype.addEventDetails = function(sender){
    var settings = {name: 'sub_events_by', id: 'sub_events_id', data: animals.allSubEvents, initValue: 'Select One', required: 'true'};
    var subEventsCombo = Common.generateCombo(settings);
    $('#exit_type_pl').html(subEventsCombo);
+   $('#sub_events_id').on('change', animals.subEventChanged);
 
    // hide all the sub types.... this is kind of a hack to ensure the divs are displayed well on selecting an event
    $('#exitTypeId').css({'display': 'none'});
@@ -1382,6 +1426,30 @@ Animals.prototype.addEventDetails = function(sender){
    }
    else if(animals.valueEvents.indexOf(eventName) !== -1){
       $('#eventValuePlaceId').css({'display': 'block'});
+   }
+};
+
+/**
+ * Create the necessary placeholders for the different types of sub events
+ *
+ * @returns {undefined}
+ */
+Animals.prototype.subEventChanged = function(){
+   var sub_event = $('#sub_events_id option:selected').text();
+   if(sub_event === 'Death'){
+      // create a place for uploading a PM report
+      var pmReport = "<div class='control-group' id='pm_report'>\
+         <label class='control-label' for='event_date'>PM Report&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+         <div id='pdf_cont' class='animal_input controls'><input type='file' name='pm_report' /></div>\n\
+      </div>";
+      $('#exitTypeId').after(pmReport);
+      $('[name=pm_report]').on('change', function(event){ animals.pmReport = event.target.files; });
+   }
+   else{
+      // check if the pm report option is active and deactivate it
+      if($('#pm_report').length === 1){
+         $('#pm_report').remove();
+      }
    }
 };
 

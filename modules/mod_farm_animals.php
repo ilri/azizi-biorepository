@@ -204,8 +204,9 @@ class FarmAnimals{
     */
    private function animalEventsList(){
       // get all the events for this animal
-      $query = 'select a.id as event_id, b.event_name, a.event_value, a.event_date, a.record_date, a.comments '
+      $query = 'select a.id as event_id, b.event_name, a.event_value, a.event_date, a.record_date, a.comments, d.file_name, d.path '
               . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id '
+              . 'left join '. Config::$farm_db .'.event_files as c on a.id = c.event_id inner join '. Config::$farm_db .'.uploaded_files as d on c.file_id = d.id '
               . 'where a.animal_id = :animal_id order by a.event_date, a.record_date';
       $res = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
       if($res == 1){
@@ -1002,6 +1003,27 @@ class FarmAnimals{
       $animals = json_decode($_POST['animals']);
       $extras = json_decode($_POST['extras'], true);
       $this->Dbase->StartTrans();
+      $addedFiles = array();
+      // if we have uploaded files... save them..
+      if(count($_FILES) != 0){
+         $files = GeneralTasks::CustomSaveUploads('../farm_uploads/', 'uploads', array('application/pdf'), true);
+         $addFileQuery = 'insert into '. Config::$farm_db .'.uploaded_files(file_name, path) values(:file_name, :path)';
+         if(is_string($files)) die(json_encode(array('error' => 'true', 'mssg' => $files)));
+         elseif($files == 0) $files = array();
+         else{
+            // add the file records to the database and move them to the proper places
+            foreach($files as $index => $file){
+               $fileName = $_FILES['uploads']['name'][0];
+               $res = $this->Dbase->ExecuteQuery($addFileQuery, array('file_name' => $fileName, 'path' => $file));
+               if($res == 1){
+                  $this->Dbase->RollBackTrans();
+                  die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+               }
+               else $addedFiles[] = $this->Dbase->dbcon->lastInsertId();
+            }
+         }
+      }
+
       if(!is_numeric($_POST['to'])){
          // we have a new event name, so lets add it
          $eventId = $this->saveNewEventName($_POST['to']);
@@ -1032,6 +1054,7 @@ class FarmAnimals{
          . 'set status = (SELECT concat(event_name, " >> ", sub_event_name) FROM '. Config::$farm_db .'.farm_events as a inner join '. Config::$farm_db .'.farm_sub_events as b on a.id=b.event_id where b.id = :sub_event_id) '
          . 'where id = :id';
 
+      $addEventFileEntry = 'insert into '. Config::$farm_db .'.event_files(event_id, file_id) values(:event_id, :file_id)';
 
       foreach($animals as $animalId => $animal){
          $colvals = $vals;
@@ -1043,11 +1066,22 @@ class FarmAnimals{
             die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
          }
 
+         $newEventId = $this->Dbase->dbcon->lastInsertId(); // get the system event id for future use ...
+
          // if its an exit event, there is need to update the status of the animal....
          if($eventId == $exitVariable[0]['id']){
             $updateVals = array('sub_event_id' => $extras['exitType'], 'id' => $animalId);
             $res1 = $this->Dbase->ExecuteQuery($updateAnimalStatus, $updateVals);
             if($res1 == 1){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            }
+         }
+
+         // if we have uploaded files.. associate their records to this event
+         foreach ($addedFiles as $addedFile){
+            $res = $this->Dbase->ExecuteQuery($addEventFileEntry, array('event_id' => $newEventId, 'file_id' => $addedFile));
+            if($res == 1){
                $this->Dbase->RollBackTrans();
                die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
             }
