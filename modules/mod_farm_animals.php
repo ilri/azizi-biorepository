@@ -490,7 +490,7 @@ class FarmAnimals{
    private function groupAnimalsByOwners($owners = NULL){
       if($owners == NULL){
          $owners = $this->getAllOwners();
-         if(is_string($owners)){ die(json_encode(array('error' => 'true', 'mssg' => $owners))); }
+         if(is_string($owners)){ die(json_encode(array('error' => true, 'mssg' => $owners))); }
       }
 
       $ownerQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals where current_owner = :owner_id order by animal_id';
@@ -519,7 +519,7 @@ class FarmAnimals{
    private function groupAnimalsByExperiments($experiments = NULL){
       if($experiments == NULL){
          $experiments = $this->getAllExperiments();
-         if(is_string($experiments)) { die(json_encode(array('error' => 'true', 'mssg' => $experiments))); }
+         if(is_string($experiments)) { die(json_encode(array('error' => true, 'mssg' => $experiments))); }
       }
 
       $query = 'select id, animal_id as name from '. Config::$farm_db .'.farm_animals where current_exp = :exp_id order by animal_id';
@@ -543,7 +543,7 @@ class FarmAnimals{
 
       $vals['level1'] = ($_POST['level1name'] == '') ? $_POST['level1'] : $_POST['level1name'];
       $res = $this->Dbase->ExecuteQuery($level1Query, $vals);
-      if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+      if($res == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
       else{
          $locations = $this->getAnimalLocations();
          die(json_encode(array('error' => 'false', 'mssg' => 'The new levels have been successfully saved.', 'data' => $locations)));
@@ -572,7 +572,7 @@ class FarmAnimals{
       $res = $this->Dbase->ExecuteQuery($query, $colvals);
       if($res == 1){
          $this->Dbase->RollBackTrans();
-         die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
       }
       $animalId = $this->Dbase->dbcon->lastInsertId();
 
@@ -583,7 +583,7 @@ class FarmAnimals{
          $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $animalId, 'breed_id' => $_POST['breed']));
          if($res1 == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
       }
       // seem all is ok, lets commit the transaction and go back
@@ -641,11 +641,11 @@ class FarmAnimals{
              . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id where end_date is null '
              . 'order by a.animal_id, start_date';
          $ownership = $this->Dbase->ExecuteQuery($query);
-         if($ownership == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         if($ownership == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
 
          // get all the owners
          $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
-         if(is_string($owners)) die(json_encode(array('error' => 'true', 'mssg' => $owners)));
+         if(is_string($owners)) die(json_encode(array('error' => true, 'mssg' => $owners)));
          foreach($ownership as $id => $owner){
             $ownership[$id]['owner'] = $owners[$owner['owner_id']];
          }
@@ -655,10 +655,10 @@ class FarmAnimals{
       if(in_array('owners', $fields)){
          // get the animals belonging to these owners
          $res = $this->groupAnimalsByOwners();
-         if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
+         if(is_string($res)) { die(json_encode(array('error' => true, 'mssg' => $res))); }
 
          $owners = $this->getAllOwners();
-         if(is_string($owners)) { die(json_encode(array('error' => 'true', 'mssg' => $owners))); }
+         if(is_string($owners)) { die(json_encode(array('error' => true, 'mssg' => $owners))); }
 
          $toReturn['owners'] = $owners;
          $toReturn['animalsByOwners'] = $res['byOwners'];
@@ -681,7 +681,7 @@ class FarmAnimals{
          . 'where a.animal_id = :animal_id '
          . 'order by start_date';
       $ownership = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
-      if($ownership == 1) die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+      if($ownership == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
       die(json_encode($ownership));
    }
 
@@ -700,7 +700,7 @@ class FarmAnimals{
             $res = $this->Dbase->ExecuteQuery($updateQuery, array('owner_id' => $_POST['from'], 'animal_id' => $id, 'end_date' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
             if($res == 1){
                $this->Dbase->RollBackTrans();
-               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+               die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
             }
          }
          // if we are selecting from all, update the previous ownership
@@ -708,21 +708,21 @@ class FarmAnimals{
             $res = $this->Dbase->ExecuteQuery($updateWoOwnerQuery, array('animal_id' => $id, 'end_date' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
             if($res == 1){
                $this->Dbase->RollBackTrans();
-               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+               die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
             }
          }
 
          $res = $this->Dbase->ExecuteQuery($addQuery, array('owner_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'), 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']));
          if($res == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
 
          // update the redudant current owner in animals table
          $res = $this->Dbase->ExecuteQuery($updateOwnerQuery, array('current_owner' => $_POST['to'], 'animal_id' => $id));
          if($res == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
       }
       $this->Dbase->CommitTrans();
@@ -805,20 +805,20 @@ class FarmAnimals{
             $upcols = array('edate' => date('Y-m-d'), 'location_id' => $_POST['from'], 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
             $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
             $res1 = $this->Dbase->ExecuteQuery($updateQuery, $upcols);
-            if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+            if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
          }
          // if the origin is from all, then update the end date of the previous record before adding the new record
          if($_POST['from'] == 'all'){
             $upcols = array('edate' => date('Y-m-d'), 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
             $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
             $res1 = $this->Dbase->ExecuteQuery($updateWOLocationQuery, $upcols);
-            if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError))); }
+            if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
          }
          $colvals = array('location_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'), 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']);
          $res = $this->Dbase->ExecuteQuery($mvmntQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
 
          // update the redundant current animal location
@@ -826,7 +826,7 @@ class FarmAnimals{
          $res = $this->Dbase->ExecuteQuery($updateAnimalLocation, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
       }
       $this->Dbase->CommitTrans();
@@ -963,7 +963,7 @@ class FarmAnimals{
       // by owners
       if(in_array('byOwners', $fields)){
          $res = $this->groupAnimalsByOwners();
-         if(is_string($res)) { die(json_encode(array('error' => 'true', 'mssg' => $res))); }
+         if(is_string($res)) { die(json_encode(array('error' => true, 'mssg' => $res))); }
          $toReturn['byOwners'] = $res['byOwners'];
          $toReturn['allOwners'] = $res['owners'];
       }
@@ -971,24 +971,24 @@ class FarmAnimals{
       // by locations
       if(in_array('byLocations', $fields)){
          $animalsByLocations = $this->getAnimalLocations(true);
-         if(is_string($animalsByLocations)) { die(json_encode(array('error' => 'true', 'mssg' => $animalsByLocations))); }
+         if(is_string($animalsByLocations)) { die(json_encode(array('error' => true, 'mssg' => $animalsByLocations))); }
          $toReturn['byLocations'] = $animalsByLocations;
       }
 
       // get all owners
       if(in_array('allOwners', $fields)){
          $allOwners = $this->getAllOwners();
-         if(is_string($allOwners)) { die(json_encode(array('error' => 'true', 'mssg' => $allOwners))); }
+         if(is_string($allOwners)) { die(json_encode(array('error' => true, 'mssg' => $allOwners))); }
          $toReturn['allOwners'] = $allOwners;
       }
 
       // get animals by experiments
       if(in_array('byExperiments', $fields)){
          $experiments = $this->getAllExperiments();
-         if(is_string($experiments)) { die(json_encode(array('error' => 'true', 'mssg' => $experiments))); }
+         if(is_string($experiments)) { die(json_encode(array('error' => true, 'mssg' => $experiments))); }
 
          $exp = $this->groupAnimalsByExperiments($experiments);
-         if(is_string($exp)) { die(json_encode(array('error' => 'true', 'mssg' => $exp))); }
+         if(is_string($exp)) { die(json_encode(array('error' => true, 'mssg' => $exp))); }
          $toReturn['byExperiments'] = $exp;
          $toReturn['allExperiments'] = $experiments;
       }
@@ -1007,17 +1007,17 @@ class FarmAnimals{
       // if we have uploaded files... save them..
       if(count($_FILES) != 0){
          $files = GeneralTasks::CustomSaveUploads('../farm_uploads/', 'uploads', array('application/pdf'), true);
-         $addFileQuery = 'insert into '. Config::$farm_db .'.uploaded_files(file_name, path) values(:file_name, :path)';
-         if(is_string($files)) die(json_encode(array('error' => 'true', 'mssg' => $files)));
+         $addFileQuery = 'inset into '. Config::$farm_db .'.uploaded_files(file_name, path) values(:file_name, :path)';
+         if(is_string($files)) die(json_encode(array('error' => true, 'mssg' => $files)));
          elseif($files == 0) $files = array();
          else{
             // add the file records to the database and move them to the proper places
             foreach($files as $index => $file){
-               $fileName = $_FILES['uploads']['name'][0];
+               $fileName = $_FILES['uploads']['name'][$index];
                $res = $this->Dbase->ExecuteQuery($addFileQuery, array('file_name' => $fileName, 'path' => $file));
                if($res == 1){
                   $this->Dbase->RollBackTrans();
-                  die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+                  die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
                }
                else $addedFiles[] = $this->Dbase->dbcon->lastInsertId();
             }
@@ -1029,7 +1029,7 @@ class FarmAnimals{
          $eventId = $this->saveNewEventName($_POST['to']);
          if(!is_numeric($eventId)){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $eventId)));
+            die(json_encode(array('error' => true, 'mssg' => $eventId)));
          }
       }
       else $eventId = $_POST['to'];
@@ -1038,7 +1038,7 @@ class FarmAnimals{
       $exitVariable = $this->Dbase->ExecuteQuery($exitVariableQuery, array('event_name' => Config::$farm_exit_name));
       if($exitVariable == 1) {
          $this->Dbase->RollBackTrans();
-         die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+         die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
       }
 
       // so lets save the events
@@ -1063,7 +1063,7 @@ class FarmAnimals{
          $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
 
          $newEventId = $this->Dbase->dbcon->lastInsertId(); // get the system event id for future use ...
@@ -1074,7 +1074,7 @@ class FarmAnimals{
             $res1 = $this->Dbase->ExecuteQuery($updateAnimalStatus, $updateVals);
             if($res1 == 1){
                $this->Dbase->RollBackTrans();
-               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+               die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
             }
          }
 
@@ -1083,7 +1083,7 @@ class FarmAnimals{
             $res = $this->Dbase->ExecuteQuery($addEventFileEntry, array('event_id' => $newEventId, 'file_id' => $addedFile));
             if($res == 1){
                $this->Dbase->RollBackTrans();
-               die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+               die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
             }
          }
       }
@@ -1157,25 +1157,25 @@ class FarmAnimals{
       $fields = json_decode($_POST['fields']);
       if($_POST['field'] == 'experiments'){
          $res = $this->experimentsList();
-         if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $res)));
+         if($res == 1) die(json_encode(array('error' => true, 'mssg' => $res)));
          die(json_encode(array('error' => 'false', 'data' => $res)));
       }
       else if($_POST['field'] == 'pis'){
          // get the list of owners
          $res = $this->getAllOwners();
-         if(is_string($res)) die(json_encode(array('error' => 'true', 'mssg' => $res)));
+         if(is_string($res)) die(json_encode(array('error' => true, 'mssg' => $res)));
          die(json_encode(array('error' => 'false', 'data' => $res)));
       }
       else if(in_array('byOwners', $fields)){
          $query = 'select id, exp_name as name from '. Config::$farm_db .'.experiments order by exp_name';
          $res = $this->Dbase->ExecuteQuery($query);
-         if($res == 1) die(json_encode(array('error' => 'true', 'mssg' => $res)));
+         if($res == 1) die(json_encode(array('error' => true, 'mssg' => $res)));
 
          $res1 = $this->groupAnimalsByOwners();
-         if(is_string($res1)) die(json_encode(array('error' => 'true', 'mssg' => $res1)));
+         if(is_string($res1)) die(json_encode(array('error' => true, 'mssg' => $res1)));
 
          $res2 = $this->groupAnimalsByExperiments();
-         if(is_string($res1)) die(json_encode(array('error' => 'true', 'mssg' => $res1)));
+         if(is_string($res1)) die(json_encode(array('error' => true, 'mssg' => $res1)));
 
          die(json_encode(array('error' => 'false', 'data' => array('byOwners' => $res1, 'experiments' => $res, 'byExperiments' => $res2))));
       }
@@ -1226,7 +1226,7 @@ class FarmAnimals{
          $res = $this->Dbase->ExecuteQuery($updateExpQuery, $updatevals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
 
          $colvals = $vals;
@@ -1234,7 +1234,7 @@ class FarmAnimals{
          $res = $this->Dbase->ExecuteQuery($addQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
-            die(json_encode(array('error' => 'true', 'mssg' => $this->Dbase->lastError)));
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
       }
 
