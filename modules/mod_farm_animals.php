@@ -1009,7 +1009,7 @@ class FarmAnimals{
       // if we have uploaded files... save them..
       if(count($_FILES) != 0){
          $files = GeneralTasks::CustomSaveUploads('../farm_uploads/', 'uploads', array('application/pdf'), true);
-         $addFileQuery = 'inset into '. Config::$farm_db .'.uploaded_files(file_name, path) values(:file_name, :path)';
+         $addFileQuery = 'insert into '. Config::$farm_db .'.uploaded_files(file_name, path) values(:file_name, :path)';
          if(is_string($files)) die(json_encode(array('error' => true, 'mssg' => $files)));
          elseif($files == 0) $files = array();
          else{
