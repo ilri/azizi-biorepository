@@ -115,7 +115,7 @@ Animals.prototype.initializeInventoryRowDetails = function(index, parentElement,
          {text: 'EventId', datafield: 'event_id', hidden: true},
          {text: 'Event Name', datafield: 'event_name', width: 110, cellsrenderer: function(r,c,v,d,cp,rd){
                // update the event name with a link to the file(s)
-               if(rd.path === undefined){ return v; }
+               if(rd.path === null){ return v; }
                else{ return '<a href="'+ rd.path +'" data-ob="lightbox" class="pdf_href" target="__blank">&nbsp;'+ v +' - Report</a>'; }
          }},
          {text: 'Event Value', datafield: 'event_value', width: 100},

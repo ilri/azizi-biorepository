@@ -206,8 +206,9 @@ class FarmAnimals{
       // get all the events for this animal
       $query = 'select a.id as event_id, b.event_name, a.event_value, a.event_date, a.record_date, a.comments, d.file_name, d.path '
               . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id '
-              . 'left join '. Config::$farm_db .'.event_files as c on a.id = c.event_id inner join '. Config::$farm_db .'.uploaded_files as d on c.file_id = d.id '
+              . 'left join '. Config::$farm_db .'.event_files as c on a.id = c.event_id left join '. Config::$farm_db .'.uploaded_files as d on c.file_id = d.id '
               . 'where a.animal_id = :animal_id order by a.event_date, a.record_date';
+
       $res = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
