@@ -209,9 +209,9 @@ class UploadODK extends Repository{
                return "Your form's external_choices sheet and the itemsets.csv file contain similar data. You can use either but not both.";
             }
             
-            $result = exec("/usr/bin/python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
+            $result = exec("/usr/bin/python ".OPTIONS_COMMON_FOLDER_PATH."bower/pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
             $errorOutput = join("\n", $execOutput);
-$this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
+$this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "bower/pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
             if(file_exists($this->xmlFileLoc) && strlen(file_get_contents($this->xmlFileLoc)) > 1){//no error
                $xmlString = file_get_contents($this->xmlFileLoc);
 

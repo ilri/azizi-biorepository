@@ -40,6 +40,7 @@
     "stats.js": "https://github.com/mrdoob/stats.js.git#r12",
     "threex.dynamictexture": "https://github.com/jeromeetienne/threex.dynamictexture.git",
     "azizi-shared-libs": "https://github.com/ilri/azizi-shared-libs.git",
-    "datePicker": "https://github.com/freqdec/datePicker.git"
+    "datePicker": "https://github.com/freqdec/datePicker.git",
+    "pyxform": "https://github.com/uw-ictd/pyxform.git#v0.9.22"
   }
 }
