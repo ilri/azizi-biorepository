@@ -189,11 +189,11 @@ class FarmAnimals{
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
          die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
       }
-      $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
       if(is_string($owners)) die(json_encode(array('error' => true, 'message' => $owners)));
 
       foreach($res as $id => $animal){
-         $res[$id]['owner'] = $owners[$animal['current_owner']];
+         $res[$id]['owner'] = $owners[$animal['current_owner']]['name'];
 //         $res[$id]['animal_id'] = "<a href='javascript:;' id='{$animal['animal_id']}' class='anim_id_href'>{$animal['animal_id']}</a>";
       }
       die(json_encode($res));
@@ -646,10 +646,10 @@ class FarmAnimals{
          if($ownership == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
 
          // get all the owners
-         $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+         $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
          if(is_string($owners)) die(json_encode(array('error' => true, 'mssg' => $owners)));
          foreach($ownership as $id => $owner){
-            $ownership[$id]['owner'] = $owners[$owner['owner_id']];
+            $ownership[$id]['owner'] = $owners[$owner['owner_id']]['name'];
          }
          die(json_encode($ownership));
       }
@@ -895,12 +895,12 @@ class FarmAnimals{
           . 'group by a.event_type_id, a.sub_event_type_id, a.event_date, performed_by order by event_date desc';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
-      $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
       if(is_string($owners)) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
 
       foreach($events as $id => $ev){
-         $events[$id]['performed_by'] = $owners[$ev['performed_by']];
-         $events[$id]['recorded_by'] = $owners[$ev['recorded_by']];
+         $events[$id]['performed_by'] = $owners[$ev['performed_by']]['name'];
+         $events[$id]['recorded_by'] = $owners[$ev['recorded_by']]['name'];
       }
       die(json_encode(array('error' => false, 'data' => $events)));
    }
@@ -930,11 +930,11 @@ class FarmAnimals{
       $events = $this->Dbase->ExecuteQuery($eventsQuery, $vars);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastQuery))); }
 
-      $owners = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
       if(is_string($owners)) { die(json_encode(array('error' => true, 'mssg' => $owners))); }
       foreach($events as $key => $event){
-         $events[$key]['performed_by'] = $owners[$event['performed_by']];
-         $events[$key]['recorded_by'] = $owners[$event['recorded_by']];
+         $events[$key]['performed_by'] = $owners[$event['performed_by']]['name'];
+         $events[$key]['recorded_by'] = $owners[$event['recorded_by']]['name'];
       }
 
       die(json_encode(array('error' => false, 'data' => $events)));
@@ -1193,10 +1193,10 @@ class FarmAnimals{
       $exps = $this->Dbase->ExecuteQuery($query);
       if($exps == 1) return $this->Dbase->lastError;
       // get the list of owners
-      $res1 = $this->getAllOwners(PDO::FETCH_KEY_PAIR);
+      $res1 = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
       if(is_string($res1))  return  $res1;
       foreach ($exps as $id => $exp){
-         $exps[$id]['pi_name'] = $res1[$exp['pi_id']];
+         $exps[$id]['pi_name'] = $res1[$exp['pi_id']]['name'];
       }
       return $exps;
    }
@@ -1252,7 +1252,7 @@ class FarmAnimals{
     * @return  string|array   Returns a string with the error in case of an error, else it returns an array with the defined farm users
     */
    private function getAllOwners($fetchAs = PDO::FETCH_ASSOC){
-      $allUsersQuery = 'SELECT a.id, concat(sname, " ", onames) as `name` '
+      $allUsersQuery = 'SELECT a.id, concat(sname, " ", onames) as `name`, email '
             . 'FROM '. Config::$lims_extension .'.users as a inner join '. Config::$lims_extension .'.user_groups as b on a.id=b.user_id '
             . 'inner join '. Config::$lims_extension .'.groups as c on b.group_id=c.id '
             . 'where c.name in (:farm_module_admin, :farm_module_users)';
