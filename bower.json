@@ -43,7 +43,6 @@
     "datePicker": "https://github.com/freqdec/datePicker.git",
     "pyxform": "https://github.com/uw-ictd/pyxform.git#v0.9.22",
     "leaflet": "https://github.com/Leaflet/Leaflet.git#v0.7.3",
-    "Leaflet.heat": "https://github.com/Leaflet/Leaflet.heat.git#gh-pages",
-    "ol3": "https://github.com/openlayers/ol3.git#v3.0.0"
+    "Leaflet.heat": "https://github.com/Leaflet/Leaflet.heat.git#gh-pages"
   }
 }
