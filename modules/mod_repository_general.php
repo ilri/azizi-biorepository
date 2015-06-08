@@ -439,8 +439,8 @@ class Repository extends DBase{
     */
    public function DateTimePickerFiles(){
       echo '
-      <link rel="stylesheet" type="text/css" href="'. OPTIONS_COMMON_FOLDER_PATH .'freqdec_datePicker/datepicker.css" />
-      <script src="'. OPTIONS_COMMON_FOLDER_PATH .'freqdec_datePicker/datepicker.js" type="text/javascript"></script>';
+      <link rel="stylesheet" type="text/css" href="'. OPTIONS_COMMON_FOLDER_PATH .'bower/datePicker/css/datepicker.min.css" />
+      <script src="'. OPTIONS_COMMON_FOLDER_PATH .'bower/datePicker/js/datepicker.min.js" type="text/javascript"></script>';
    }
 
    /**
