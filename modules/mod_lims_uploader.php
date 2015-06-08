@@ -177,7 +177,7 @@ class LimsUploader{
 
       include 'PHPExcel/IOFactory.php';      //add the PHPExcel_IOFactory
 //      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.2.php';
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_spreadsheet_v0.2.php';//TODO: try migrating to bower
+      require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/mod_spreadsheet/mod_spreadsheet_v0.2.php';
       if($module == 'primers') require_once 'mod_primers.php';
       elseif($module == 'samples') require_once 'mod_samples.php';
       elseif($module == 'elisa') require_once 'mod_elisa.php';
