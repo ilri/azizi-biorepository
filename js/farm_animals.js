@@ -823,6 +823,7 @@ Animals.prototype.confirmEventsExtras = function(){
       err = 'Please select the type of exit for the selected animal(s)';
       errorMsg = (errorMsg === '') ? err : err +'<br />'+ errorMsg;
    }
+   else if(intendedAction !== animals.exitVariable && exitType === '0'){ exitType = undefined; }
    if(animals.valueEvents.indexOf(intendedAction) !== -1 && eventValue === ''){
       isError = true;
       err = 'Please enter the event value for the selected animal';
