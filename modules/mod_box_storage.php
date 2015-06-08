@@ -303,7 +303,7 @@ class BoxStorage extends Repository{
       
       //Repository::jqGridFiles();//load requisite jqGrid javascript files
 ?>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery.ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
 <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <?php
       if(OPTIONS_REQUESTED_ACTION === "submit_request"){
