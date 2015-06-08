@@ -215,11 +215,11 @@ class Repository3D{
    private function home() {
  ?>
 <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/jquery/jquery.min.js' /></script>
-<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/three.min.js'></script>
-<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/tween.min.js'></script>
-<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/stats.min.js'></script>
-<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/threex.dynamictexture.js'></script>
-<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>threejs/OrbitControls.js'></script>
+<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/three.js/build/three.min.js'></script>
+<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/tween.js/build/tween.min.js'></script>
+<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/stats.js/build/stats.min.js'></script>
+<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/threex.dynamictexture/threex.dynamictexture.js'></script>
+<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>OrbitControls/index.js'></script>
 <script src='js/repository_3d.js'></script>
 <script src='js/tank_3d.js'></script>
 <link href="css/repository.css" rel="stylesheet" type="text/css" />

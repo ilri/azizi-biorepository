@@ -33,6 +33,11 @@
     "jquery-md5": "*",
     "dygraphs": "~1.1.1",
     "PHPExcel": "https://github.com/PHPOffice/PHPExcel.git#1.8.0",
-    "PHPWord": "https://github.com/PHPOffice/PHPWord.git#0.7.0"
+    "PHPWord": "https://github.com/PHPOffice/PHPWord.git#0.7.0",
+    "three.js": "https://github.com/mrdoob/three.js.git#r68",
+    "tween.js": "https://github.com/tweenjs/tween.js.git#r7",
+    "OrbitControls": "https://gist.githubusercontent.com/mrflix/8351020/raw/69c24e31729a67cf3cbdbce910bb4c6c3ab1d718/OrbitControls.js",
+    "stats.js": "https://github.com/mrdoob/stats.js.git#r12",
+    "threex.dynamictexture": "https://github.com/jeromeetienne/threex.dynamictexture.git"
   }
 }
