@@ -132,7 +132,7 @@ class LimsUploader{
     * Gets the requested template, processes it and outputs the results as html code
     */
    private function SampleSheet(){
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.1.php';//TODO: Try to migrate to bower
+      require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/excelParser/mod_excel_reader_v0.1.php';//TODO: Try to migrate to bower
 
       if(OPTIONS_REQUESTED_ACTION == 'samples') $file = Config::$samplesTemplate;
       elseif(OPTIONS_REQUESTED_ACTION == 'primers') $file = Config::$primersTemplate;
