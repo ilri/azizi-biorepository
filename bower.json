@@ -38,6 +38,7 @@
     "tween.js": "https://github.com/tweenjs/tween.js.git#r7",
     "OrbitControls": "https://gist.githubusercontent.com/mrflix/8351020/raw/69c24e31729a67cf3cbdbce910bb4c6c3ab1d718/OrbitControls.js",
     "stats.js": "https://github.com/mrdoob/stats.js.git#r12",
-    "threex.dynamictexture": "https://github.com/jeromeetienne/threex.dynamictexture.git"
+    "threex.dynamictexture": "https://github.com/jeromeetienne/threex.dynamictexture.git",
+    "azizi-shared-libs": "https://github.com/ilri/azizi-shared-libs.git"
   }
 }

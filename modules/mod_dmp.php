@@ -266,7 +266,7 @@ class DMP extends Repository{
     * @return string
     */
    private function getAPISessionID() {
-      include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
+      include_once OPTIONS_COMMON_FOLDER_PATH."bower/azizi-shared-libs/authmodules/mod_security_v0.1.php";
       $security = new Security($this->Dbase);
       /*$cypherSecret = $_SESSION['password'];
       $username = $_SESSION['username'];

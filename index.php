@@ -9,8 +9,8 @@
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery/jquery.min.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-form/jquery.form.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-json/dist/jquery.json.min.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>common_v0.3.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>notification.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/azizi-shared-libs/common/common_v0.3.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/azizi-shared-libs/notification/notification.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jsencrypt/bin/jsencrypt.min.js'></script>
       <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/bootstrap/docs/assets/js/bootstrap.min.js' /></script>
       <script type='text/javascript' src='js/repository.js'></script>

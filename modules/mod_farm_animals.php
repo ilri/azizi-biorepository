@@ -1077,22 +1077,22 @@ class FarmAnimals{
      $Repository->DateTimePickerFiles();
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/mssg_box.css" />
-<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcore.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdata.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>/customMessageBox.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/azizi-shared-libs/customMessageBox/mssg_box.css" />
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>bower/azizi-shared-libs/customMessageBox/customMessageBox.js"></script>
 <div id="experiments">
    <div id="exp_grid"></div>
    <div id="grid_actions">

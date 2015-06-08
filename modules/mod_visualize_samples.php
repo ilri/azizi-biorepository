@@ -7,8 +7,8 @@ class VisualizeSamples {
       $logSettings = Config::$logSettings;
       $logSettings['workingDir'] = "../";
       
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'dbmodules/mod_objectbased_dbase_v1.0.php';
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_general_v0.6.php';
+      require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.0.php';
+      require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/mod_general/mod_general_v0.6.php';
 
       $this->Dbase = new DBase('mysql');
       $this->Dbase->InitializeConnection();

@@ -224,7 +224,7 @@ class Parser {
       include_once $this->ROOT.'modules/mod_log.php';
       $this->logHandler = new LogHandler();
 
-      include_once $this->settings['common_lib_dir'].'mod_general_v0.6.php';
+      include_once $this->settings['common_lib_dir'].'bower/azizi-shared-libs/mod_general/mod_general_v0.6.php';
       $this->gTasks = new GeneralTasks();
 
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');

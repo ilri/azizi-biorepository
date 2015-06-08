@@ -9,11 +9,11 @@
 
 define('OPTIONS_COMMON_FOLDER_PATH', '../common/');
 
-require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_general_v0.6.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/mod_general/mod_general_v0.6.php';
 require_once 'repository_config';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'dbmodules/mod_objectbased_dbase_v1.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_messages_v0.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'authmodules/mod_security_v0.1.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/mod_messages/mod_messages_v0.1.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/authmodules/mod_security_v0.1.php';
 
 
 //setting the date settings
