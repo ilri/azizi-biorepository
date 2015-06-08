@@ -219,7 +219,7 @@ class Repository3D{
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/tween.js/build/tween.min.js'></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/stats.js/build/stats.min.js'></script>
 <script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/threex.dynamictexture/threex.dynamictexture.js'></script>
-<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>OrbitControls/index.js'></script>
+<script src='<?php echo OPTIONS_COMMON_FOLDER_PATH;?>bower/OrbitControls/index.js'></script>
 <script src='js/repository_3d.js'></script>
 <script src='js/tank_3d.js'></script>
 <link href="css/repository.css" rel="stylesheet" type="text/css" />
