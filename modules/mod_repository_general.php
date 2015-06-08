@@ -568,5 +568,17 @@ class Repository extends DBase{
       else $box_detail = chr(65+floor($position/$sideLen)).$position%$sideLen;
       return $box_detail;
    }
+
+   /*
+    * This function loads settings from the main ini file
+    */
+   public function loadSettings() {
+      $settingsDir = $this->ROOT."config/";
+      if(file_exists($settingsDir."main.ini")) {
+         $emailSettings = parse_ini_file($settingsDir."main.ini");
+         return $emailSettings;
+      }
+      else return 'The file config/main.ini doesnt exist';
+   }
 }
 ?>

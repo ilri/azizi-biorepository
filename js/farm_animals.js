@@ -96,6 +96,45 @@ Animals.prototype.animalGridStatusBar = function(statusbar){
 };
 
 /**
+ * Initiate the rendering of the status bar in the animal grid
+ * @returns {undefined}
+ */
+Animals.prototype.eventsGridStatusBar = function(statusbar){
+   var container = $("<div style='overflow: hidden; position: relative; margin: 5px;'></div>");
+   var excelButton = $("<div class='status_bar_div'><img style='position: relative; margin-top: 2px;' src='images/excel.png'/><span class='status_bar_span'>Export</span></div>");
+   var showAllCheck = $("<div class='status_bar_div'><input type='checkbox' id='showAllId' name='showAll' /><span class='status_bar_span'>Show All</span></div>");
+   var sendEmail = $("<div class='status_bar_div'><span class='status_bar_span'>Send Email</span></div>");
+   container.append(excelButton);
+   container.append(showAllCheck);
+   container.append(sendEmail);
+   excelButton.jqxButton({  width: 80, height: 20 });
+   showAllCheck.jqxButton({  width: 80, height: 20 });
+   sendEmail.jqxButton({  width: 80, height: 20 });
+   statusbar.append(container);
+
+   sendEmail.click(function (event) {
+      $.ajax({
+         type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'send_email'},
+         success: function (data) {
+            if(data.error === true){
+               animals.showNotification(data.mssg, 'error');
+               return;
+            }
+        }
+     });
+   });
+
+   excelButton.click(function (event) {
+       $("#inventory").jqxGrid('exportdata', 'xls', 'jqxGrid', false);
+   });
+
+   $('#showAllId').on('change', function(){
+      animals.showAll = $('#showAllId')[0].checked;
+      animals.initiateAnimalsGrid();
+   });
+};
+
+/**
  * Initializes the row details for the expanded row
  * @returns {void}
  */
@@ -979,7 +1018,7 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
             rowdetails: true,
             autoshowfiltericon: true,
             showstatusbar: true,
-            renderstatusbar: animals.animalGridStatusBar,
+            renderstatusbar: animals.eventsGridStatusBar,
             filterable: true,
             touchmode: false,
             pagesize: 15,
