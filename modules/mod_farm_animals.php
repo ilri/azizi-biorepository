@@ -471,7 +471,7 @@ class FarmAnimals{
             }
 
             // get the unattached animals
-            $unattachedAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals as a where a.id not in (select animal_id from '. Config::$farm_db .'.farm_animal_locations where a.status like "Alive" and end_date is null) order by animal_id';
+            $unattachedAnimalsQuery = 'select id, animal_id as `name` from '. Config::$farm_db .'.farm_animals  where current_location is null and status like "Alive"';
             $res3 = $this->Dbase->ExecuteQuery($unattachedAnimalsQuery);
             if($res3 == 1) return $this->Dbase->lastError;
             $animalLocations['floating'] = $res3;
