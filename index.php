@@ -4,15 +4,15 @@
    <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
       <title>Azizi Biorepository</title>
-      <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/bootstrap/docs/assets/css/bootstrap.css'/>
+      <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bootstrap/docs/assets/css/bootstrap.css'/>
       <link rel='stylesheet' type='text/css' href='css/repository.css'>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery/jquery.min.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-form/jquery.form.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-json/dist/jquery.json.min.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/azizi-shared-libs/common/common_v0.3.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/azizi-shared-libs/notification/notification.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jsencrypt/bin/jsencrypt.min.js'></script>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/bootstrap/docs/assets/js/bootstrap.min.js' /></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jquery.min.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-form/jquery.form.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-json/dist/jquery.json.min.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>azizi-shared-libs/common/common_v0.3.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>azizi-shared-libs/notification/notification.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jsencrypt/bin/jsencrypt.min.js'></script>
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bootstrap/docs/assets/js/bootstrap.min.js' /></script>
       <script type='text/javascript' src='js/repository.js'></script>
    </head>
    <body>

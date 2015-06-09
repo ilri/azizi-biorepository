@@ -141,16 +141,16 @@ class Recharges{
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
 ?>
 <script type="text/javascript" src="js/recharges.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxtabs.js"></script>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
-<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxtabs.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <div id="manage_prices">
    <?php echo $addInfo;?>
    <h3 class="center">Manage Prices</h3>
@@ -269,15 +269,15 @@ class Recharges{
       }
 ?>
 <script type="text/javascript" src="js/recharges.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
-<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <div id="box_storage">
    <h3 class="center">Recharge Storage Space</h3>
    <div id="recharge_div">
@@ -324,15 +324,15 @@ class Recharges{
       Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
 <script type="text/javascript" src="js/recharges.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
-<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <div id="inventory">
    <h3 class="center">Recharge Repository Resources</h3>
    <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
@@ -502,15 +502,15 @@ class Recharges{
       Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
 <script type="text/javascript" src="js/recharges.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
-<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <div id="ln2">
    <h3 class="center">Recharge Liquid Nitrogen</h3>
    <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
@@ -680,15 +680,15 @@ class Recharges{
       Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
 <script type="text/javascript" src="js/recharges.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
-<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
-<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.aggregates.js"></script>
+<script type='text/javascript' src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-ui/jquery-ui.min.js" /></script> <!-- used by autocomplete for the boxes label text field -->
+<link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH ?>jquery-ui/themes/smoothness/jquery-ui.min.css' />
 <div id="labels">
    <h3 class="center">Recharge Barcode Labels</h3>
    <div class="form-group left-align" style="margin-top: 20px;margin-left: 8px;margin-bottom: 20px;">
@@ -1898,7 +1898,7 @@ class Recharges{
     * @return PHPExcel
     */
    private function initExcelSheet($title){
-      require_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel.php';
+      require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
       $phpExcel = new PHPExcel();
       $phpExcel->getProperties()->setCreator("Azizi Biorepository");
       $phpExcel->getProperties()->setLastModifiedBy("Azizi Biorepository");

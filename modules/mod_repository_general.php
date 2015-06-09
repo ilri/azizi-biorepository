@@ -240,7 +240,7 @@ class Repository extends DBase{
       if ($addinfo == '')
          $addinfo = 'Please enter your ILRI username and password to access this System.';
       if (OPTIONS_REQUEST_TYPE == 'normal')
-         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery-md5/jquery.md5.js'></script>";
+         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery-md5/jquery.md5.js'></script>";
       if ($count == Config::$psswdSettings['maxNoofTries']) {
          $this->LockAccount();
          $addinfo .= "<br />You have had $count attempts. <b>Your account is disabled.</b>" . Config::$contact;
@@ -439,8 +439,8 @@ class Repository extends DBase{
     */
    public function DateTimePickerFiles(){
       echo '
-      <link rel="stylesheet" type="text/css" href="'. OPTIONS_COMMON_FOLDER_PATH .'bower/datePicker/css/datepicker.min.css" />
-      <script src="'. OPTIONS_COMMON_FOLDER_PATH .'bower/datePicker/js/datepicker.min.js" type="text/javascript"></script>';
+      <link rel="stylesheet" type="text/css" href="'. OPTIONS_COMMON_FOLDER_PATH .'datePicker/css/datepicker.min.css" />
+      <script src="'. OPTIONS_COMMON_FOLDER_PATH .'datePicker/js/datepicker.min.js" type="text/javascript"></script>';
    }
 
    /**
@@ -522,8 +522,8 @@ class Repository extends DBase{
     */
    public function FlexigridFiles(){
 ?>
-      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-flexigrid/js/flexigrid.pack.js' /></script>
-      <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jquery-flexigrid/css/flexigrid.pack.css' />
+      <script type='text/javascript' src='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-flexigrid/js/flexigrid.pack.js' /></script>
+      <link rel='stylesheet' type='text/css' href='<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery-flexigrid/css/flexigrid.pack.css' />
 <?php
    }
 
@@ -532,18 +532,18 @@ class Repository extends DBase{
     */
    public function jqGridFiles(){
 ?>
-   <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxcore.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxdata.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxbuttons.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxscrollbar.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxlistbox.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxpanel.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxmenu.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
-   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>bower/jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+   <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcore.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdata.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxpanel.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+   <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
 <?php
    }
 

@@ -56,7 +56,7 @@ class Database {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_wa_file.php';
-      //include_once $config['common_folder_path'].'bower/azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
+      //include_once $config['common_folder_path'].'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
       
       $this->config = $config;
       

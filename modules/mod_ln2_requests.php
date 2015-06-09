@@ -21,11 +21,11 @@ class Ln2Requests extends Repository{
 
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/ln2_requests.js'></script>";
-         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery-form/jquery.form.js' /></script>";
-         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery-flexigrid/js/flexigrid.pack.js' /></script>";
-         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery-ui/jquery-ui.min.js' /></script>";
-         echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery-flexigrid/css/flexigrid.pack.css' />";
-         echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "bower/jquery-ui/themes/smoothness/jquery-ui.min.css' />";
+         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery-form/jquery.form.js' /></script>";
+         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery-flexigrid/js/flexigrid.pack.js' /></script>";
+         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery-ui/jquery-ui.min.js' /></script>";
+         echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "jquery-flexigrid/css/flexigrid.pack.css' />";
+         echo "<link rel='stylesheet' type='text/css' href='" . OPTIONS_COMMON_FOLDER_PATH . "jquery-ui/themes/smoothness/jquery-ui.min.css' />";
       }
 
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();

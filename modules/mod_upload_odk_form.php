@@ -209,9 +209,9 @@ class UploadODK extends Repository{
                return "Your form's external_choices sheet and the itemsets.csv file contain similar data. You can use either but not both.";
             }
             
-            $result = exec("/usr/bin/python ".OPTIONS_COMMON_FOLDER_PATH."bower/pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
+            $result = exec("/usr/bin/python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
             $errorOutput = join("\n", $execOutput);
-$this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "bower/pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
+$this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
             if(file_exists($this->xmlFileLoc) && strlen(file_get_contents($this->xmlFileLoc)) > 1){//no error
                $xmlString = file_get_contents($this->xmlFileLoc);
 
@@ -491,8 +491,8 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "bower/pyx
     * @return Integer Returns -1 if excel file does not have an external choices, 0 if able to extract the data, 1 if an error occurred and 2 if itemsets.csv already exists in the media directory
     */
    private function extractExternalItemsets($excelFileLoc, $mediaDirLoc){
-      include_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel.php';
-      include_once OPTIONS_COMMON_FOLDER_PATH.'bower/PHPExcel/Classes/PHPExcel/IOFactory.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel/IOFactory.php';
       
       try {
          //load the excel file
