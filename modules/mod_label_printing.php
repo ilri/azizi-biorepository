@@ -51,7 +51,7 @@ class LabelPrinter extends Repository{
     */
    private function HomePage($addinfo = ''){
       Repository::jqGridFiles();//Really important if you want jqx to load
-      
+
       $res = $this->Dbase->GetColumnValues('labels_settings', array('id', 'label_type'));
       if(is_array($res)){
          $ids=array(); $vals=array();
@@ -99,10 +99,10 @@ class LabelPrinter extends Repository{
       $prefixes = GeneralTasks::PopulateCombo($settings);
 
       $labelTypes = "$labelTypes <a href='javascript:;' onClick='LabelPrinter.labelSetup();'>Setup</a>";
-      
+
       $query = "select project, sum(total) as total, type from labels_printed where rc_timestamp is null group by project, type";
       $projectLabels = $this->Dbase->ExecuteQuery($query);
-      
+
       $query = "select id, label_type from labels_settings";
       $realLabelTypes = $this->Dbase->ExecuteQuery($query);
 
@@ -192,15 +192,15 @@ class LabelPrinter extends Repository{
      <div class="center" style="margin-left: 300px; margin-top: 10px;">
         <button type="button" id="download_recharge_btn" class='btn btn-primary'>Download Recharge Sheet</button>
      </div>
-     
+
   </div>
 
 <script type='text/javascript'>
       $('[name=purpose]').bind('click', LabelPrinter.labelsPurpose);
-      
+
       Main.projectLabels = <?php echo json_encode($projectLabels);?>;
       Main.chargeCodes = <?php echo json_encode($projects); ?>;
-      
+
       //changing the prefix
       $('#prefixId').live('change', function(){
          if($('#prefixId').val() == 999){
@@ -245,7 +245,7 @@ class LabelPrinter extends Repository{
          height: 260,
          singleSelect: true
       });
-      
+
       $("#recharge_cancel_btn").click(function(){
          $("#recharge_projects").hide();
       });
@@ -261,7 +261,7 @@ class LabelPrinter extends Repository{
          var projectId = $("#selected_recharge_project").val();
          console.log(projectId);
          console.log(Main.lastRecharges);
-         
+
          for(var i = 0; i < Main.chargeCodes.length; i++){
             if(Main.chargeCodes[i].id = projectId){
                $("#charge_code").val(Main.chargeCodes[i].charge_code);
@@ -348,7 +348,7 @@ class LabelPrinter extends Repository{
       $labelFile = $_COOKIE['labels_printer']. '_' .date('YmdHis') .'.xlsx';
       if($_POST['sequence'] == 'random'){
          //we are expecting a file with the labels to generate
-         $uploadedLabels = GeneralTasks::CustomSaveUploads('uploads/', 'labels', array('text/plain'), 10485760, array('uploaded_labels.txt'));
+         $uploadedLabels = GeneralTasks::CustomSaveUploads('uploads/', 'labels', array('text/plain'), false, 10485760, array('uploaded_labels.txt'));
 //      $this->Dbase->CreateLogEntry("Curated Data: \n".print_r($uploadedLabels, true), 'debug');
          if(is_string($uploadedLabels)){
             $this->labelPrintingError = array('error' => true, 'message' => $uploadedLabels);
@@ -431,7 +431,7 @@ class LabelPrinter extends Repository{
          $data['last_count'] = $labelSettings['last_count'] + $data['count'];
          $padding = str_pad($data['last_count'], 9 - strlen($data['prefix']), '0', STR_PAD_LEFT);
          $data['last_label'] = $data['prefix'] . $padding;
-         
+
          //we cool now, just send the labels to the perl script to be generated
          $command = "./printLabelsLinux.pl {$_POST['sequence']} {$_POST['purpose']} {$_POST['labelTypes']} $labelFile {$labelSettings['prefix']} {$labelSettings['last_count']} {$_POST['count']} {$labelSettings['length']}";//TODO: change this
          $cool_filename = "{$data['first_label']}-{$data['last_label']}.xlsx";
@@ -600,18 +600,18 @@ class LabelPrinter extends Repository{
 
       die(json_encode($content));
    }
-   
+
    /**
     * This function generates a csv file containing the recharges to a project
     */
    private function downloadRechargeSheet(){
-      
+
       //var url = "mod_ajax.php?page=labels&do=ajax&action=download_recharge_file&project="+projectID+"&type="+type+"&charge_code="+chargeCode+"&price="+price;
       $project = $_REQUEST['project'];
       $type = $_REQUEST['type'];
       $chargeCode = $_REQUEST['charge_code'];
       $price = $_REQUEST['price'];
-      
+
       if(isset($_SESSION['user_type']) && (in_array("Biorepository Manager", $_SESSION['user_type']) || in_array("Super Administrator", $_SESSION['user_type']))) {//check if user is authed to charge barcodes
          if(strlen($project) > 0 && strlen($type) > 0 && strlen($chargeCode) > 0 && strlen($price) > 0){
             //get all barcodes
@@ -621,21 +621,21 @@ class LabelPrinter extends Repository{
                     . " inner join labels_settings as c on a.type = c.id"
                     . " where a.project = :project and a.type = :type and rc_timestamp is null";
             $result = $this->Dbase->ExecuteQuery($query, array("project" => $project, "type" => $type));
-            
+
             if(is_array($result)){
                for($i = 0; $i < count($result); $i++){
                   $result[$i]['cost_per_label'] = $price;
                   $result[$i]['total_price'] = $price * $result[$i]['labels_printed'];
                   $result[$i]['charge_code'] = $chargeCode;
-                  
+
                   //TODO: run query for updating recharging data
                   $query = "update labels_printed"
                           . " set rc_timestamp = now(), rc_price = :price, rc_charge_code = :charge_code"
                           . " where id = :id";
                   $this->Dbase->ExecuteQuery($query, array("price" => $price, "charge_code" => $chargeCode, "id" => $result[$i]['printing_id']));
-                  
+
                }
-               
+
                if(count($result) > 0){
                   $headings = array(
                       "printing_id" => "Printing ID",
@@ -652,16 +652,16 @@ class LabelPrinter extends Repository{
                else {
                   $csv = "No labels for recharging found";
                }
-               
+
                $fileName = "labels_recharge_".$project."_".$type.".csv";
                $this->Dbase->CreateLogEntry("File name for labels recharging = ".$fileName, "info");
                $this->Dbase->CreateLogEntry("Size of file = ".filesize("/tmp/".$fileName), "info");
-               
+
                file_put_contents("/tmp/".$fileName, $csv);
                header('Content-type: document');
                header('Content-Disposition: attachment; filename='. $fileName);
-               header("Expires: 0"); 
-               header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+               header("Expires: 0");
+               header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
                header("Content-length: " . filesize("/tmp/".$fileName));
                header('Content-Transfer-Encoding: binary');
                header('Pragma: public');
@@ -669,7 +669,7 @@ class LabelPrinter extends Repository{
                ob_clean();
                flush();
                readfile("/tmp/" . $fileName);
-               
+
                if(count($result) > 0){//if we actually have at least one item to recharge
                   $emailSubject = "Recharging ".$result[0]['label_type']." Labels to ".$result[0]['project_name'];
                   $emailMessage = "Find attached a spreadsheet containing recharges made to ".$result[0]['project_name']." on ".date("F jS, Y")." for ".$result[0]['label_type']." labels.";
@@ -678,12 +678,12 @@ class LabelPrinter extends Repository{
                else{
                   $lTypeName = $this->Dbase->ExecuteQuery("select label_type from labels_settings where id = :id", array("id" => $type));
                   $projectName = $this->Dbase->ExecuteQuery("select project_name from lcmod_projects where id = :id", array("id" => $project));
-                  
+
                   $emailSubject = "Recharging ".$lTypeName[0]['label_type']." Labels to ".$projectName[0]['project_name'];
                   $emailMessage = "No ".$lTypeName[0]['label_type']." labels to be recharged to ".$projectName[0]['project_name']." found.";
                   $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailMessage);
                }
-               
+
                unlink("/tmp/" . $fileName);
             }
             else {
@@ -698,10 +698,10 @@ class LabelPrinter extends Repository{
          $this->Dbase->CreateLogEntry("User is not permitted to recharge labels","fatal");
       }
    }
-   
+
    /**
     * This function generates a csv string from a two dimensional associative array
-    * 
+    *
     * @param type $array            The two dimensional array to be used to generate the csv string
     * @param type $headingsFromKeys Set to true if you want to get headings from the keys in the associative array
     * @return string                Comma seperated string corresponding to the array. Will be empty if array is empty or something goes wrong
@@ -710,23 +710,23 @@ class LabelPrinter extends Repository{
       $csv = "";
       if(count($array) > 0){
          $colNum = count($array[0]);
-         
+
          if($headingsFromKeys === true){
             $keys = array_keys($array[0]);
             $csv .= "\"".implode("\",\"", $keys)."\"\n";
          }
-         
+
          foreach($array as $currRow){
             $csv .= "\"".implode("\",\"", $currRow)."\"\n";
          }
       }
-      
+
       return $csv;
    }
-   
+
    /**
     * This function sends emails using the biorepository's email address. Duh
-    * 
+    *
     * @param type $address Email address of the recipient
     * @param type $subject Email's subject
     * @param type $message Email's body/message

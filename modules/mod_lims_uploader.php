@@ -253,7 +253,7 @@ class LimsUploader{
       $module = $_POST['module'];
       //some crazy shit happening here! An excel file saved by libre office gets an application/pdf attribute..... STRANGE BED FELLOWS
       $allowedFiles = array('application/vnd.ms-excel', 'application/ms-excel', 'application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      $dataToUpload = GeneralTasks::CustomSaveUploads('uploads/', 'data', $allowedFiles, 10485760, array(session_id() .'.xls'));
+      $dataToUpload = GeneralTasks::CustomSaveUploads('uploads/', 'data', $allowedFiles, false, 10485760, array(session_id() .'.xls'));
       if(is_string($dataToUpload)){
          $this->HomePage($dataToUpload, '', $module);
          return;
