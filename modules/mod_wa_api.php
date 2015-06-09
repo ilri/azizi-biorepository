@@ -24,7 +24,7 @@ class ODKWorkflowAPI extends Repository {
       $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
       //$this->config['timeout'] = Config::$timeout;//TODO: uncomment when deploying
       $this->config['timeout'] = 100000000;
-      include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
+      include_once OPTIONS_COMMON_FOLDER_PATH."bower/azizi-shared-libs/authmodules/mod_security_v0.1.php";
       $this->lH = new LogHandler("./");
       $this->Dbase = new DBase("mysql");
       $this->Dbase->InitializeConnection($this->config);

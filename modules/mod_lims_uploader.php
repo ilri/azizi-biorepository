@@ -132,7 +132,7 @@ class LimsUploader{
     * Gets the requested template, processes it and outputs the results as html code
     */
    private function SampleSheet(){
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.1.php';
+      require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/excelParser/mod_excel_reader_v0.1.php';//TODO: Try to migrate to bower
 
       if(OPTIONS_REQUESTED_ACTION == 'samples') $file = Config::$samplesTemplate;
       elseif(OPTIONS_REQUESTED_ACTION == 'primers') $file = Config::$primersTemplate;
@@ -177,7 +177,7 @@ class LimsUploader{
 
       include 'PHPExcel/IOFactory.php';      //add the PHPExcel_IOFactory
 //      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.2.php';
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_spreadsheet_v0.2.php';
+      require_once OPTIONS_COMMON_FOLDER_PATH . 'bower/azizi-shared-libs/mod_spreadsheet/mod_spreadsheet_v0.2.php';
       if($module == 'primers') require_once 'mod_primers.php';
       elseif($module == 'samples') require_once 'mod_samples.php';
       elseif($module == 'elisa') require_once 'mod_elisa.php';
@@ -326,7 +326,7 @@ CONTENT;
          $content .= "</div>\n";
       }
 
-      $content .= "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."jquery/jqwidgets/jqxtabs.js'></script>";
+      $content .= "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."bower/jqwidgets/jqwidgets/jqxtabs.js'></script>";
 $content .="
    <script type='text/javascript'>
       $('[name=confirm]').click(LimsUploader.confirmUpload);
