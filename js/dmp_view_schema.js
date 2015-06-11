@@ -1924,7 +1924,6 @@ DMPVSchema.prototype.initColumnGrid = function() {
          return window.dvs.columnGridAdapter.records;
       },
       columns: [
-         {text: '', columntype: 'checkbox', datafield: 'present', width:10},
          {text: 'Name', datafield: 'name', width: gridWidth*0.2647 - 10},
          {text: 'Type', columntype: 'dropdownlist', datafield: 'type', width: gridWidth*0.2206,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: columnTypes});
@@ -1937,10 +1936,32 @@ DMPVSchema.prototype.initColumnGrid = function() {
          {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1471*0.5,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: keyTypes});
          }},
-         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.1471*0.5,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.047,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
                if(value == false) return "Add";
                else return "Edit";
-         },buttonclick:window.dvs.foreignKeyButtonClicked}
+         },buttonclick:window.dvs.foreignKeyButtonClicked},
+         {text: 'Delete', columntype: 'button', datafield: 'present', width: gridWidth*0.047,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+               return "Delete";
+         },buttonclick:function(rowIndex, event){
+            var sheetData = window.dvs.schema.sheets[$("#sheets").jqxListBox('selectedIndex')];
+            if(typeof sheetData != 'undefined') {
+               var sheetName = sheetData.name;
+               var sheetIndex = $("#sheets").jqxListBox('selectedIndex');
+               var columnData = window.dvs.schema.sheets[sheetIndex].columns[rowIndex];
+               var currValue = columnData.present;
+               var newValue = false;//new value defaults as delete
+               if(currValue == false) newValue = true;
+               var columnChanged = window.dvs.changeColumnDetails(sheetName, rowIndex, "present", currValue, newValue, columnData);
+               if(columnChanged == true) {
+                  if(newValue == true) {
+                     $(event.target).val("Delete");
+                  }
+                  else {
+                     $(event.target).val("Restore");
+                  }
+               }
+            }
+         }}
       ]
    });
    
@@ -2129,8 +2150,9 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
       var sheetData = window.dvs.schema.sheets[$("#sheets").jqxListBox('selectedIndex')];
       if(typeof sheetData !== 'undefined') {
          var sheetName = sheetData.name;
-         var columnName = null;
-         if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
+         var columnChanged = window.dvs.changeColumnDetails(sheetName, event.args.rowindex, event.args.datafield, event.args.oldvalue, event.args.value, columnData);
+         
+         /*if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
             window.dvs.schemaChanges[sheetName] = {};
          }
          
@@ -2180,9 +2202,9 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
                   columnName = columnData.name;
                }
             }
-         }
+         }*/
          
-         console.log("Original column name is "+columnName);
+         /*console.log("Original column name is "+columnName);
          
          if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
             window.dvs.schemaChanges[sheetName][columnName] = {};
@@ -2194,10 +2216,90 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
          $("#cancel_btn").prop('disabled', false);
          $("#update_btn").prop('disabled', false);
          
-         console.log(window.dvs.schemaChanges);
+         console.log(window.dvs.schemaChanges);*/
       }
    }
    
+};
+
+/**
+ * This function prepares the data structures in this object before a column in
+ * the schema being displayed is updated. The original name given to the column
+ * being updated is returned
+ * 
+ * @param {String} sheetName     The name of the sheet that contains the column being edited
+ * @param {Integer} rowIndex     The index of the column in the sheet's object
+ * @param {String} changedField  The column's property being changed
+ * @param {String} oldValue      The property's old value
+ * @param {String} newValue      The property's new value
+ * @param {Object} columnData    The data corresponding to the column before property update. Only set to null if changedField is 'present'
+ * @returns {Boolean}   True if able to change column data
+ */
+DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changedField, oldValue, newValue, columnData) {
+   console.log("Changing column details");
+   var columnName = null;
+   if(changedField == 'name') {//name of the field is what changed
+      console.log("oldvalue "+oldValue);
+      console.log("value "+newValue);
+      if(typeof window.dvs.columnDictionary[sheetName] === 'undefined') {
+         window.dvs.columnDictionary[sheetName] = [];
+      }
+
+      var found = false;
+
+      for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
+         if(window.dvs.columnDictionary[sheetName][i].new_name === oldValue) {
+            window.dvs.columnDictionary[sheetName][i].new_name = newValue;
+            found = true;
+            columnName = window.dvs.columnDictionary[sheetName][i].old_name;
+            break;
+         }
+      }
+      if(found == false) {
+         window.dvs.columnDictionary[sheetName][window.dvs.columnDictionary[sheetName].length] = {old_name:oldValue, new_name:newValue};
+         columnName = oldValue;
+      }
+   }
+   else {//something else apart from the name changed. Look for the columns original name
+      if(changedField == 'present') {
+         var columnIndex = rowIndex;
+         var sheetIndex = $("#sheets").jqxListBox('selectedIndex');
+         columnData = window.dvs.schema.sheets[sheetIndex].columns[columnIndex];
+         columnData.present = newValue;
+      }
+      if(typeof window.dvs.columnDictionary[sheetName] === 'undefined') {//none the columns in the current sheet have their column names edited yet
+         columnName = columnData.name;
+      }
+      else {//at least one column in the current sheet has a modified name
+         var found = false;
+         for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
+            if(window.dvs.columnDictionary[sheetName][i].new_name === columnData.name) {
+               columnName = window.dvs.columnDictionary[sheetName][i].old_name;
+               found = true;
+               break;
+            }
+         }
+
+         if(found == false) {//current column's name has not been edited
+            columnName = columnData.name;
+         }
+      }
+   }
+   if(columnName != null) {
+      if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
+         window.dvs.schemaChanges[sheetName] = {};
+      }
+      if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
+         window.dvs.schemaChanges[sheetName][columnName] = {};
+      }
+      
+      window.dvs.schemaChanges[sheetName][columnName] = columnData;
+      window.dvs.schemaChanges[sheetName][columnName].original_name = columnName;
+      $("#cancel_btn").prop('disabled', false);
+      $("#update_btn").prop('disabled', false);
+      return true;
+   }
+   return false;
 };
 
 /**
