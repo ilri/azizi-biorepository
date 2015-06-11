@@ -401,10 +401,10 @@ class WAColumn {
       return false;
    }
    
-   public static function getOriginalColumnName($database, $sheetName, $currentName) {
+   public static function getOriginalColumnName($database, $file, $sheetName, $currentName) {
       include_once 'mod_wa_exception.php';
       try {
-         $query = "select original_column from ".Workflow::$TABLE_META_CHANGES." where current_column = '$currentName' and current_sheet = '$sheetName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
+         $query = "select original_column from ".Workflow::$TABLE_META_CHANGES." where current_column = '$currentName' and current_sheet = '$sheetName' and change_type = '".Workflow::$CHANGE_COLUMN."' and file = '$file'";
          $result = $database->runGenericQuery($query, TRUE);
          if(is_array($result)) {
             if(count($result) == 1) {

@@ -223,7 +223,8 @@ class Workflow {
                      array("name" => "original_sheet" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "original_column" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "current_sheet" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                     array("name" => "current_column" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true , "default"=>null , "key"=>Database::$KEY_NONE)
+                     array("name" => "current_column" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "file" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      )
                  );
       } catch (WAException $ex) {
@@ -897,23 +898,35 @@ class Workflow {
               && $this->instanceId == $this->database->getDatabaseName()){
          try {
             $this->lH->log(3, $this->TAG, "Recording sheet name change from '$previousName' to '$currentName'");
-            $query = "select id from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName'";
+            $query = "select id,file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName'";
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
-               if(count($result) == 1) {//sheet has already changed name before
-                  $id = $result[0]['id'];
-                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName', change_time = '{$this->database->getMySQLTime()}', submitted_by = '{$this->currUser}' where id = $id";
+               $recordedFiles = array();//an array containing names of files for which the name change has already been recorded
+               if(count($result) > 0) {//sheet has already changed name before
+                  $in = "";
+                  foreach($result as $currRes) {
+                     if(strlen($in) == 0)$in = $currRes['id'];
+                     else $in .= ", ".$currRes['id'];
+                     $recordedFiles[] = $currRes['file'];
+                  }
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName', change_time = '{$this->database->getMySQLTime()}', submitted_by = '{$this->currUser}' where id IN($in)";
                   $this->database->runGenericQuery($query);
                }
-               else if(count($result) == 0) {
-                  $columns = array(
-                      "change_time" => "'".$this->database->getMySQLTime()."'",
-                      "submitted_by" => "'".$this->currUser."'",
-                      "change_type" => "'".Workflow::$CHANGE_SHEET."'",
-                      "original_sheet" => "'".$previousName."'",
-                      "current_sheet" => "'".$currentName."'"
-                  );
-                  $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
+               //get a list of all raw files for which the name change has not been recorded
+               $rawFiles = $this->getRawDataFiles();
+               foreach($rawFiles as $currFile) {
+                  $fileDetails = $currFile->getFileDetails();
+                  if(array_search($fileDetails['filename'], $recordedFiles) === false) {//we have not recorded the name change for this file
+                     $columns = array(
+                        "change_time" => "'".$this->database->getMySQLTime()."'",
+                        "submitted_by" => "'".$this->currUser."'",
+                        "change_type" => "'".Workflow::$CHANGE_SHEET."'",
+                        "original_sheet" => "'".$previousName."'",
+                        "current_sheet" => "'".$currentName."'",
+                        "file" => $fileDetails['filename']
+                      );
+                      $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
+                  }
                }
                //update all changed columns in change table to the current sheet name
                $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
@@ -949,28 +962,37 @@ class Workflow {
               && $this->instanceId == $this->database->getDatabaseName()){
          try {
             $this->lH->log(3, $this->TAG, "Recording column name change from '$previousName' to '$currentName'");
-            $query = "select id from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName'";
+            $query = "select id, file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName'";
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
-               if(count($result) == 1) {//sheet has already changed name before
-                  $id = $result[0]['id'];
-                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_column = '$currentName', change_time = '{$this->database->getMySQLTime()}', submitted_by = '{$this->currUser}' where id = $id";
+               $recordedFiles = array();
+               if(count($result) > 0) {//column has already changed name before
+                  $in = "";
+                  foreach($result as $currRes) {
+                     if(strlen($in) == 0)$in = $currRes['id'];
+                     else $in .= ", ".$currRes['id'];
+                     $recordedFiles[] = $currRes['file'];
+                  }
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_column = '$currentName', change_time = '{$this->database->getMySQLTime()}', submitted_by = '{$this->currUser}' where id  IN($in)";
                   $this->database->runGenericQuery($query);
                }
-               else if(count($result) == 0) {
-                  $columns = array(
-                      "change_time" => "'".$this->database->getMySQLTime()."'",
-                      "submitted_by" => "'".$this->currUser."'",
-                      "change_type" => "'".Workflow::$CHANGE_COLUMN."'",
-                      "original_sheet" => "'".$sheetName."'",
-                      "original_column" => "'".$previousName."'",
-                      "current_sheet" => "'".$sheetName."'",
-                      "current_column" => "'".$currentName."'"
-                  );
-                  $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
-               }
-               else {
-                  
+               //get a list of all raw files for which the name change has not been recorded
+               $rawFiles = $this->getRawDataFiles();
+               foreach($rawFiles as $currFile) {
+                  $fileDetails = $currFile->getFileDetails();
+                  if(array_search($fileDetails['filename'], $recordedFiles) === false) {//we have not recorded the name change for this file
+                     $columns = array(
+                        "change_time" => "'".$this->database->getMySQLTime()."'",
+                        "submitted_by" => "'".$this->currUser."'",
+                        "change_type" => "'".Workflow::$CHANGE_COLUMN."'",
+                        "original_sheet" => "'".$sheetName."'",
+                        "original_column" => "'".$previousName."'",
+                        "current_sheet" => "'".$sheetName."'",
+                        "current_column" => "'".$currentName."'",
+                        "file" => $fileDetails['filename']
+                     );
+                     $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
+                  }
                }
             }
             else {

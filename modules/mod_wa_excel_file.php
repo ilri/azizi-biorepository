@@ -77,6 +77,18 @@ class WAExcelFile {
    }
    
    /**
+    * This function returns the details of the underlying file this object has 
+    * bound to. Refer to WAFile::getFileDetails() for information on which details
+    * are returned.
+    * 
+    * @return Array An associative array with the file details
+    */
+   public function getFileDetails() {
+      $fileDetails = $this->waFile->getFileDetails();
+      return $fileDetails;
+   }
+   
+   /**
     * This function loads WA Sheets from the files into memory.
     * Function might be time consuming so call after returning response to client
     * then let client check back periodically
@@ -90,7 +102,7 @@ class WAExcelFile {
          if($sheetNames[0] != "main_sheet") $linkSheets = false;
          for($index = 0; $index < count($sheetNames); $index++){
             try {
-               $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
+               $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index], $this->waFile->getFileDetails());
                $primaryKeyThere = $currSheet->processColumns();
                if($sheetNames[$index] == "main_sheet" && $linkSheets == true) {
                   $linkSheets = $primaryKeyThere;
@@ -120,7 +132,7 @@ class WAExcelFile {
       try {
          if($this->excelObject != null) {
             try {
-               $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetName);
+               $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetName, $this->waFile->getFileDetails());
                $data = $currSheet->getData();
                return $data;
             } catch (WAException $ex) {
@@ -146,7 +158,6 @@ class WAExcelFile {
          if($this->excelObject != null) {
             $sheetNames = WASheet::getAllWASheets($this->config, $this->database->getDatabaseName(), $this->database);
             $this->lH->log(4, $this->TAG, "Sheet names  = ".print_r($sheetNames, true));
-            //$sheetName = WASheet::getSheetOriginalName($this->database, $sheetName);
             try {
                //delete data from the sheets (start from last index)
                if(count($sheetNames) > 0 && $deleteData == true) {
@@ -160,7 +171,7 @@ class WAExcelFile {
                //dump data into database tables (start from first)
                for($index = 0; $index < count($sheetNames); $index++){
                   if(in_array($sheetNames[$index], $fileSheetNames)){//is the current sheet in the current raw data file?
-                     $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index]);
+                     $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index], $this->waFile->getFileDetails());
                      $currSheet->dumpData();
                   }
                   else {
