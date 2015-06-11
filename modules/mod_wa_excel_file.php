@@ -49,6 +49,14 @@ class WAExcelFile {
             $cacheSettings = array( 
                 'dir' => $this->cachePath
             );
+            /*
+             * since the cache type being used creates very large temporary files,
+             * add a cronjob to periodically delete these temporary files
+             * 
+             *    0 0 * * * /bin/find /var/www/html/azizi.ilri.org/odk_workflow/ -type d -iname "phpexcel_cache" ! -newermt "1 day ago" -exec rm -rf {} \;
+             * 
+             * The previous find command will delete all phpexcel_cache directories that were last accessed more than one day ago
+             */
             PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings);
             
             //read file into object
