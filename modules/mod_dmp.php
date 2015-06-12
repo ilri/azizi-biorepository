@@ -96,6 +96,7 @@ class DMP extends Repository{
                   </ul>
               </li>
               <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
+              <li><a id="merge_version_menu_btn" style="text-decoration: none; color: black;">Combine with another version</a></li>
               <li><a id="merge_schema_menu_btn" style="text-decoration: none; color: black;">Merge with another project</a></li>
               <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Schema (and project)</a></li>
           </ul>
@@ -213,11 +214,32 @@ class DMP extends Repository{
       <div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_project_list"></select></div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="merge_version_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
             <button type="button" id="merge_schema_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
          </div>
       </div>
    </div>
-   <div id="project_diff_wndw" style="display: none; z-index: 6;">
+   <div id="merge_sheet_wndw" style="display: none; z-index: 6;">
+      <div>Select the common columns</div>
+      <div>
+         <div style="margin-left: 20px;">
+            <div style="display: inline-block; width: 45%;">
+               <div id="curr_project_name" style="margin-bottom: 10px;"></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="curr_sheet_list"></select></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="curr_column_list"></select></div>
+            </div>
+            <div style="display: inline-block; width: 45%;">
+               <div id="other_project_name" style="margin-bottom: 10px;"></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_sheet_list"></select></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_column_list"></select></div>
+            </div>
+         </div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="merge_sheet_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
+         </div>
+      </div>
+   </div>
+   <div id="version_diff_wndw" style="display: none; z-index: 6;">
       <div>Resolve Schema Conflicts</div>
       <div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">

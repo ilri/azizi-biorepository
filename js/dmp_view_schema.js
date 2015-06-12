@@ -18,11 +18,11 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.lastSavePoint = null;
    window.dvs.uploadFileLoc = null;
    window.dvs.diffProject = null;//holds project id for the project chosen to be merged with this one
+   window.dvs.diffProjectSchema = null;
    $("#whoisme").hide();
    //initialize source for project_list_box
-   $(document).ready(function(){
-      window.dvs.documentReady();
-   });
+   $(document).ready(window.dvs.documentReady);
+   $(window).resize(window.dvs.documentReady);
    
    if(window.dvs.project == null || window.dvs.project.length == 0) {//if project is not set
       //show create project popup
@@ -85,9 +85,16 @@ DMPVSchema.prototype.documentReady = function() {
       y:window.innerHeight/2 - (window.innerHeight * 0.9)/2,
       x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
    };
-   $("#project_diff_wndw").jqxWindow({height: window.innerHeight * 0.9, width: window.innerWidth * 0.8, position: diffWindowPos, theme: ''});
-   $("#project_diff_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#project_diff_wndw").on("hide", function(){$("#blanket_cover").hide();});
+   $("#version_diff_wndw").jqxWindow({height: window.innerHeight * 0.9, width: window.innerWidth * 0.8, position: diffWindowPos, theme: ''});
+   $("#version_diff_wndw").on("show", function(){$("#blanket_cover").show();});
+   $("#version_diff_wndw").on("hide", function(){$("#blanket_cover").hide();});
+   var mergeSheetWindowPos = {
+      y:window.innerHeight/2 - 200/2,
+      x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
+   };
+   $("#merge_sheet_wndw").jqxWindow({height: 200, width: window.innerWidth * 0.8, position: mergeSheetWindowPos, theme: ''});
+   $("#merge_sheet_wndw").on("show", function(){$("#blanket_cover").show();});
+   $("#merge_sheet_wndw").on("hide", function(){$("#blanket_cover").hide();});
    var renameSheetWindowPos = {
       y:window.innerHeight/2 - (window.innerHeight * 0.8)/2 - window.innerHeight*0.1,
       x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
@@ -137,7 +144,9 @@ DMPVSchema.prototype.documentReady = function() {
    $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
    $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
    $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
-   $("#merge_schema_menu_btn").click(window.dvs.mergeSchemaMenuButtonClicked);
+   $("#merge_version_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("version");});
+   $("#merge_schema_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("schema");});
+   $("#merge_version_btn").click(window.dvs.mergeVersionButtonClicked);
    $("#merge_schema_btn").click(window.dvs.mergeSchemaButtonClicked);
    $("#menu_bar").jqxMenu({autoOpen: false});
    $("#right_click_menu").jqxMenu({mode: "popup", width: "200px", autoOpenPopup: false});
@@ -234,7 +243,7 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
                   console.log("Successfully resolved trivial changes");
                   wasSuccessful = true;//this will prevent this function from refreshing save points in onComplete
                   window.dvs.applySchemaChanges();//calling this function will trigger refreshSavePoints at some point
-                  $("#project_diff_wndw").hide();
+                  $("#version_diff_wndw").hide();
                }
             }
             else {
@@ -420,7 +429,15 @@ DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
    }
 };
 
-DMPVSchema.prototype.mergeSchemaMenuButtonClicked = function() {
+DMPVSchema.prototype.mergeVSMenuButtonClicked = function(type) {
+   if(type == "version") {
+      $("#merge_schema_btn").hide();
+      $("#merge_version_btn").show();
+   }
+   else if(type == "schema") {
+      $("#merge_schema_btn").show();
+      $("#merge_version_btn").hide();
+   }
    if(window.dvs.project != null && window.dvs.project.length > 0) {//make sure at least we have an active project
       $("#loading_box").show();
       var sToken = JSON.stringify({
@@ -483,14 +500,15 @@ DMPVSchema.prototype.mergeSchemaMenuButtonClicked = function() {
    }
 };
 
-DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
+DMPVSchema.prototype.mergeVersionButtonClicked = function(){
    console.log("selected option = ", $("#other_project_list").val());
    if(window.dvs.project != null && window.dvs.project.length > 0) {
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
          "workflow_id_2": $("#other_project_list").val(),
-         "type": "non_trivial"
+         "type": "all",
+         "type": "all"
       });//get only non-trivial diffs
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -498,7 +516,7 @@ DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
          "session": window.dvs.session
       });
       $.ajax({
-         url: "mod_ajax.php?page=odk_workflow&do=get_schema_diff",
+         url: "mod_ajax.php?page=odk_workflow&do=get_merge_diff",
          type: "POST",
          async: true,
          data: {data: sData, token: sToken},
@@ -533,7 +551,7 @@ DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
                   $("#other_projects_wndw").hide();
                   window.dvs.diffProject = jsonResult.workflow_2;
                   window.dvs.initDiffGrid(jsonResult.workflow_2, jsonResult.diff);
-                  $("#project_diff_wndw").show();
+                  $("#version_diff_wndw").show();
                }
             }
             else {
@@ -548,6 +566,133 @@ DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
    }
 };
 
+DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
+   console.log("selected option = ", $("#other_project_list").val());
+   if(window.dvs.project != null && window.dvs.project.length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": $("#other_project_list").val()
+      });//get only non-trivial diffs
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_workflow_schema",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get the difference in schemas");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get schema differences for the two projects");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_workflow_schema endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get the difference in schemas"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#other_projects_wndw").hide();
+                  console.log(jsonResult);
+                  window.dvs.diffProjectSchema = jsonResult.schema;
+                  window.dvs.diffProject = $("#other_project_list").val();
+                  window.dvs.initMergeSheetWindow();
+                  $("#merge_sheet_wndw").show();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not get the difference in schemas");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.initMergeSheetWindow = function() {
+   //init section on other schema
+   var otherSchema = window.dvs.diffProjectSchema;
+   $("#other_project_name").html(otherSchema.title);
+   var html = "";
+   for(var index = 0; index < otherSchema.sheets.length; index++) {
+      html = html + "<option value='"+otherSchema.sheets[index].name+"'>"+otherSchema.sheets[index].name+"</option>";
+   }
+   $("#other_sheet_list").html(html);
+   html = "";
+   if(otherSchema.sheets.length > 0) {
+      for(var index = 0; index < otherSchema.sheets[0].columns.length; index++) {
+         html = html + "<option value='"+otherSchema.sheets[0].columns[index].name+"'>"+otherSchema.sheets[0].columns[index].name+"</option>";
+      }
+      $("#other_column_list").html(html);
+   }
+   $("#other_sheet_list").change(function() {
+      var currSheet = $("#other_sheet_list").val();
+      var otherSchema = window.dvs.diffProjectSchema;//reinitialize schema
+      for(var index = 0; index < otherSchema.sheets.length; index++) {
+         if(otherSchema.sheets[index].name == currSheet) {
+            var html = "";
+            for(var cIndex = 0; cIndex < otherSchema.sheets[index].columns.length; cIndex++) {
+               html = html + "<option value='"+otherSchema.sheets[index].columns[cIndex].name+"'>"+otherSchema.sheets[index].columns[cIndex].name+"</option>";
+            }
+            $("#other_column_list").html(html);
+            break;
+         }
+      }
+   });
+   
+   //init section on current schema
+   var currSchema = window.dvs.schema;
+   $("#curr_project_name").html(currSchema.title);
+   var html = "";
+   for(var index = 0; index < currSchema.sheets.length; index++) {
+      html = html + "<option value='"+currSchema.sheets[index].name+"'>"+currSchema.sheets[index].name+"</option>";
+   }
+   $("#curr_sheet_list").html(html);
+   html = "";
+   if(currSchema.sheets.length > 0) {
+      for(var index = 0; index < currSchema.sheets[0].columns.length; index++) {
+         html = html + "<option value='"+currSchema.sheets[0].columns[index].name+"'>"+currSchema.sheets[0].columns[index].name+"</option>";
+      }
+      $("#curr_column_list").html(html);
+   }
+   $("#curr_sheet_list").change(function() {
+      var currSheet = $("#curr_sheet_list").val();
+      var currSchema = window.dvs.schema;//reinitialize schema
+      for(var index = 0; index < currSchema.sheets.length; index++) {
+         if(currSchema.sheets[index].name == currSheet) {
+            var html = "";
+            for(var cIndex = 0; cIndex < currSchema.sheets[index].columns.length; cIndex++) {
+               html = html + "<option value='"+currSchema.sheets[index].columns[cIndex].name+"'>"+currSchema.sheets[index].columns[cIndex].name+"</option>";
+            }
+            $("#curr_column_list").html(html);
+            break;
+         }
+      }
+   });
+};
+
 /**
  * This function initializes the jqxGrid displaying schema links
  * 
@@ -559,11 +704,11 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       diffs: []
    };
    if(diffs.length > 0) {
-      $("#project_diff_wndw").jqxWindow({height: window.innerHeight * 0.9});
+      $("#version_diff_wndw").jqxWindow({height: window.innerHeight * 0.9});
       $("#diff_grid").show();
    }
    else {
-      $("#project_diff_wndw").jqxWindow({height: '150px'});
+      $("#version_diff_wndw").jqxWindow({height: '150px'});
       $("#diff_grid").hide();
    }
    for(var diffIndex = 0; diffIndex < diffs.length; diffIndex++){
@@ -626,7 +771,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       'primary',
       'unique'
    ];
-   var gridWidth = $("#project_diff_wndw").width() * 0.95;
+   var gridWidth = $("#version_diff_wndw").width() * 0.95;
    $("#diff_grid").jqxGrid({
       width: window.dvs.rightSideWidth,
       height: '80%',
