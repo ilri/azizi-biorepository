@@ -240,15 +240,28 @@ class DMP extends Repository{
       </div>
    </div>
    <div id="version_diff_wndw" style="display: none; z-index: 6;">
-      <div>Resolve Schema Conflicts</div>
+      <div>Resolve Version Differences</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">
+            <label for="merged_version_name">Merged Project Name</label>
+            <input type="text" id="merged_version_name" style="height: 25px; width: 300px;" />
+         </div>
+         <div id="version_diff_grid" style="width: 90%"></div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="apply_version_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
+         </div>
+      </div>
+   </div>
+   <div id="merge_diff_wndw" style="display: none; z-index: 6;">
+      <div>Resolve Schema Differences</div>
       <div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">
             <label for="merged_schema_name">Merged Schema Name</label>
             <input type="text" id="merged_schema_name" style="height: 25px; width: 300px;" />
          </div>
-         <div id="diff_grid" style="width: 90%"></div>
+         <div id="merge_diff_grid" style="width: 90%"></div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
-            <button type="button" id="apply_diff_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
+            <button type="button" id="apply_merge_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
          </div>
       </div>
    </div>
