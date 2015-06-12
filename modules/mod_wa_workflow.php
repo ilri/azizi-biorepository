@@ -923,7 +923,7 @@ class Workflow {
                         "change_type" => "'".Workflow::$CHANGE_SHEET."'",
                         "original_sheet" => "'".$previousName."'",
                         "current_sheet" => "'".$currentName."'",
-                        "file" => $fileDetails['filename']
+                        "file" => "'".$fileDetails['filename']."'"
                       );
                       $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
                   }
@@ -989,7 +989,7 @@ class Workflow {
                         "original_column" => "'".$previousName."'",
                         "current_sheet" => "'".$sheetName."'",
                         "current_column" => "'".$currentName."'",
-                        "file" => $fileDetails['filename']
+                        "file" => "'".$fileDetails['filename']."'"
                      );
                      $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
                   }
@@ -1986,31 +1986,33 @@ class Workflow {
                   $col1Names = array_keys($col1Indexes);
                   $col2Names = array_keys($col2Indexes);
                   //make sure everything is fine with the merging columns
-                  if($mergeSheet1['column'] != $mergeSheet2['column']) {
-                     //check if there is a column in the first sheet with the name $mergeSheet2['column']
-                     if(array_search($mergeSheet2['column'], $col1Names) !== false) {//this will most definately lead to a conflict
+                  if($mergeSheet1['sheet'] == $currSheetName1) {
+                     if($mergeSheet1['column'] != $mergeSheet2['column']) {
+                        //check if there is a column in the first sheet with the name $mergeSheet2['column']
+                        if(array_search($mergeSheet2['column'], $col1Names) !== false) {//this will most definately lead to a conflict
+                           $healthy = false;
+                           $error = new WAException("There exists a column with the name '{$mergeSheet2['column']}' in '{$workflow1->getInstanceId()}'", WAException::$CODE_WF_PROCESSING_ERROR, null);
+                           array_push($errors, $error);
+                        }
+                        //do the same thing for the reverse
+                        if(array_search($mergeSheet1['column'], $col2Names) !== false) {//this will most definately lead to a conflict
+                           $healthy = false;
+                           $error = new WAException("There exists a sheet with the name '{$mergeSheet1['column']}' in '{$workflow2->getInstanceId()}'", WAException::$CODE_WF_INSTANCE_ERROR, null);
+                           array_push($errors, $error);
+                        }
+                     }
+                     //make sure the first column exists in the first sheet
+                     if(array_search($mergeSheet1['column'], $col1Names) === false) {
                         $healthy = false;
-                        $error = new WAException("There exists a column with the name '{$mergeSheet2['column']}' in '{$workflow1->getInstanceId()}'", WAException::$CODE_WF_PROCESSING_ERROR, null);
+                        $error = new WAException("'{$mergeSheet1['column']}' does not exist in '$currSheetName1' of '{$workflow1->getInstanceId()}'", WAException::$CODE_WF_INSTANCE_ERROR, null);
                         array_push($errors, $error);
                      }
                      //do the same thing for the reverse
-                     if(array_search($mergeSheet1['column'], $col2Names) !== false) {//this will most definately lead to a conflict
+                     if(array_search($mergeSheet2['column'], $col2Names) === false) {
                         $healthy = false;
-                        $error = new WAException("There exists a sheet with the name '{$mergeSheet1['column']}' in '{$workflow2->getInstanceId()}'", WAException::$CODE_WF_INSTANCE_ERROR, null);
+                        $error = new WAException("'{$mergeSheet2['column']}' does not exist in '$currSheetName2' of '{$workflow2->getInstanceId()}'", WAException::$CODE_WF_INSTANCE_ERROR, null);
                         array_push($errors, $error);
                      }
-                  }
-                  //make sure the first column exists in the first sheet
-                  if(array_search($mergeSheet1['column'], $col1Names) === false) {
-                     $healthy = false;
-                     $error = new WAException("'{$mergeSheet1['column']}' does not exist in '{$workflow1->getInstanceId()}'", WAException::$CODE_WF_INSTANCE_ERROR, null);
-                     array_push($errors, $error);
-                  }
-                  //do the same thing for the reverse
-                  if(array_search($mergeSheet2['column'], $col2Names) === false) {
-                     $healthy = false;
-                     $error = new WAException("'{$mergeSheet2['column']}' does not exist in '{$workflow2->getInstanceId()}'", WAException::$CODE_WF_INSTANCE_ERROR, null);
-                     array_push($errors, $error);
                   }
                   if($healthy == true) {
                      $commonColumnNames = array();
