@@ -1413,7 +1413,7 @@ class Workflow {
     * @param type $newName
     * @param type $workflow2Id
     */
-   public function resolveMergeDiff($newName, $workflow2Id) {
+   public function resolveMergeDiff($newName, $workflow2Id, $key1, $key2) {
       $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
       $savePoint = $this->save("Resolve trivial merge differences with ".$workflow2->getWorkflowName());
       $instanceId2 = $this->generateInstanceID();
@@ -1428,44 +1428,28 @@ class Workflow {
                $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
                $this->database->runGenericQuery($query);
             }
-            $rawDiff = Workflow::getMergeDifferences($this->currUser, $this->config, $this->instanceId, $workflow2Id, "all");//get all the merge differences
+            $rawDiff = Workflow::getMergeDifferences($this->currUser, $this->config, $this->instanceId, $workflow2Id, "all", $key1, $key2);//get all the merge differences
+            $this->lH->log(4, $this->TAG, "Merge diff = ".print_r($rawDiff, true));
             $diff = $rawDiff['diff'];
-            $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
             $diffCount = count($diff);
             for($index = 0; $index < $diffCount; $index++) {//only work on differences that are not conflicts
                $currDiff = $diff[$index];
-               if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing"  && is_null($currDiff[$this->instanceId])){
+               if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])){
                   $missingSheet = $currDiff[$workflow2Id];
                   $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
                   $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
                   $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
-                  $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet['name'], true));
+                  $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet, true));
                }
-               /*else if($currDiff['level'] == "column" && $currDiff['type'] == "conflict") {
-                  //check what trivial change should be made (can either be length or nullable)
-                  $column = $currDiff[$this->instanceId];
-                  if($currDiff[$this->instanceId]['nullable'] != $currDiff[$workflow2Id]['nullable'] && $currDiff[$this->instanceId]['nullable'] == false) {//nullable value does not match
-                     $column['nullable'] = true;
-                  }
-                  if($currDiff[$this->instanceId]['length'] < $currDiff[$workflow2Id]['length']) {//lenght of the column in this workflow is less than that of the reference workflow
-                     $column['length'] = $currDiff[$workflow2Id]['length'];
-                  }
-                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet']);
-                  $column['original_name'] = $column['name'];
-                  $column['delete'] = false;
-                  $sheetObject->alterColumn($column);
-                  $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
-                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
-               }*/
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
-                  $this->database->runCreateTableQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
-                  $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
+                  $this->database->runCreateTableQuery($currDiff['sheet'][$this->instanceId], $currDiff[$workflow2Id]);
+                  $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet'][$this->instanceId]} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
                }
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$workflow2Id])) {
                   $column = $currDiff[$this->instanceId];
                   $column['nullable'] = true;
-                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet']);
+                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet'][$this->instanceId]);
                   $column['original_name'] = $column['name'];
                   $column['delete'] = false;
                   $sheetObject->alterColumn($column);
@@ -2134,7 +2118,7 @@ class Workflow {
                               $diff[] = array(
                                  "level" => "column",
                                  "type" => "missing",
-                                 "sheet" => array($workflowID1 => $currSheetName1, $workflowID2 => null),
+                                 "sheet" => array($workflowID1 => $currSheetName1, $workflowID2 => $currSheetName2),
                                  $workflowID1 => $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]],
                                  $workflowID2 => null
                               );
@@ -2154,7 +2138,7 @@ class Workflow {
                               $diff[] = array(
                                  "level" => "column",
                                  "type" => "missing",
-                                 "sheet" => array($workflowID1 => null, $workflowID2 => $currSheetName2),
+                                 "sheet" => array($workflowID1 => $currSheetName1, $workflowID2 => $currSheetName2),
                                  $workflowID1 => null,
                                  $workflowID2 => $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]
                               );

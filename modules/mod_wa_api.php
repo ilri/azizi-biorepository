@@ -907,9 +907,13 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("workflow_id_2", $json)
-               && array_key_exists("name", $json)) {
+               && array_key_exists("name", $json)
+               && array_key_exists("key_1", $json)
+               && (is_array($json['key_1']) && array_key_exists("sheet", $json['key_1']) && array_key_exists("column", $json['key_1']))
+               && array_key_exists("key_2", $json)
+               && (is_array($json['key_2']) && array_key_exists("sheet", $json['key_2']) && array_key_exists("column", $json['key_2']))) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            $savePoint = $workflow->resolveMergeDiff($json['name'], $json['workflow_id_2']);
+            $savePoint = $workflow->resolveMergeDiff($json['name'], $json['workflow_id_2'], $json['key_1'], $json['key_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "save_point" => $savePoint,
