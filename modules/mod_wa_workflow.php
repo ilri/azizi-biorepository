@@ -1310,7 +1310,7 @@ class Workflow {
     */
    public function resolveTrivialSchemaDiff($newName, $workflow2Id){
       $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
-      $savePoint = $this->save("Resolve trivial differences with ".$workflow2->getWorkflowName());
+      $savePoint = $this->save("Resolve trivial version differences with ".$workflow2->getWorkflowName());
       $instanceId2 = $this->generateInstanceID();
       $workingDir2 = Workflow::$WORKFLOW_ROOT_DIR.$instanceId2;
       //create a workflow with the schema before the merge
@@ -1379,6 +1379,112 @@ class Workflow {
             //dump variable changes from workflow2
             $workflow2MetaChanges = $workflow2->getMetaChanges();
             foreach ($workflow2MetaChanges as $currChange) {
+               $metaChangesKeys = array_keys($currChange);
+               foreach($metaChangesKeys as $currKey) {
+                  $currChange[$currKey] = "'".$currChange[$currKey]."'";
+               }
+               $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
+            }
+            //rename the workflow
+            $savePoint = $this->modifyName($newName);
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to resolve trivial version changes because of an error");
+         }
+      }
+      else {
+         $this->errors = array_merge($this->errors, $status['errors']);
+         array_push($this->errors, new WAException("Unable to resolve trivial version changes because workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to resolve trivial version changes because workflow with id = '{$this->instanceId}' is unhealthy");
+      }
+      return $savePoint;
+   }
+   
+   /**
+    * This function resolves any merge differences between this workflow and the
+    * workflow identified by $workflow2Id. The difference between this function and
+    * resolveTrivialSchemaDiff is that this function should be called when working with
+    * schemas that are entirely different from each other
+    * @param type $newName
+    * @param type $workflow2Id
+    */
+   public function resolveMergeDiff($newName, $workflow2Id) {
+      $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
+      $savePoint = $this->save("Resolve trivial merge differences with ".$workflow2->getWorkflowName());
+      $instanceId2 = $this->generateInstanceID();
+      $workingDir2 = Workflow::$WORKFLOW_ROOT_DIR.$instanceId2;
+      //create a workflow with the schema before the merge
+      $status = Workflow::copyWorkflow($this->config, $this->instanceId, $instanceId2, $this->workingDir, $workingDir2, $savePoint);
+      if($this->healthy == TRUE && $status['healthy'] == true){
+         try {
+            //truncate data from all the data tables
+            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+            for($index = 0; $index < count($dataTables); $index++) {
+               $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
+               $this->database->runGenericQuery($query);
+            }
+            $rawDiff = Workflow::getMergeDifferences($this->currUser, $this->config, $this->instanceId, $workflow2Id, "all");//get all the merge differences
+            $diff = $rawDiff['diff'];
+            $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
+            $diffCount = count($diff);
+            for($index = 0; $index < $diffCount; $index++) {//only work on differences that are not conflicts
+               $currDiff = $diff[$index];
+               if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing"  && is_null($currDiff[$this->instanceId])){
+                  $missingSheet = $currDiff[$workflow2Id];
+                  $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
+                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
+                  $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet['name'], true));
+               }
+               /*else if($currDiff['level'] == "column" && $currDiff['type'] == "conflict") {
+                  //check what trivial change should be made (can either be length or nullable)
+                  $column = $currDiff[$this->instanceId];
+                  if($currDiff[$this->instanceId]['nullable'] != $currDiff[$workflow2Id]['nullable'] && $currDiff[$this->instanceId]['nullable'] == false) {//nullable value does not match
+                     $column['nullable'] = true;
+                  }
+                  if($currDiff[$this->instanceId]['length'] < $currDiff[$workflow2Id]['length']) {//lenght of the column in this workflow is less than that of the reference workflow
+                     $column['length'] = $currDiff[$workflow2Id]['length'];
+                  }
+                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet']);
+                  $column['original_name'] = $column['name'];
+                  $column['delete'] = false;
+                  $sheetObject->alterColumn($column);
+                  $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
+               }*/
+               else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
+                  $this->database->runCreateTableQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
+                  $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
+               }
+               else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$workflow2Id])) {
+                  $column = $currDiff[$this->instanceId];
+                  $column['nullable'] = true;
+                  $sheetObject = new WASheet($this->config, $this->database, null, $currDiff['sheet']);
+                  $column['original_name'] = $column['name'];
+                  $column['delete'] = false;
+                  $sheetObject->alterColumn($column);
+                  $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
+                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
+               }
+            }
+            
+            //copy the raw data files from workflow_2 to this workflow
+            $dataFiles = $workflow2->getRawDataFiles();
+            for($index = 0; $index < count($dataFiles); $index++) {
+               $name = basename($dataFiles[$index]->getFSLocation());
+               $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
+            }
+            
+            //dump variable changes from workflow2
+            $workflow2MetaChanges = $workflow2->getMetaChanges();
+            foreach ($workflow2MetaChanges as $currChange) {
+               $metaChangesKeys = array_keys($currChange);
+               foreach($metaChangesKeys as $currKey) {
+                  $currChange[$currKey] = "'".$currChange[$currKey]."'";
+               }
                $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
             }
             //rename the workflow
@@ -1391,9 +1497,9 @@ class Workflow {
       }
       else {
          $this->errors = array_merge($this->errors, $status['errors']);
-         array_push($this->errors, new WAException("Unable to resolve trivial changes because workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         array_push($this->errors, new WAException("Unable to resolve trivial merge changes because workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
          $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "Unable to resolve trivial changes because workflow with id = '{$this->instanceId}' is unhealthy");
+         $this->lH->log(1, $this->TAG, "Unable to resolve trivial merge changes because workflow with id = '{$this->instanceId}' is unhealthy");
       }
       return $savePoint;
    }

@@ -145,6 +145,9 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_trivial_diff") {
                         $this->handleResolveTrivialDiffEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_merge_diff") {
+                        $this->handleResolveMergeDiffEndpoint();
+                     }
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "get_data") {
                         $this->handleGetDataEndpoint();
                      }
@@ -871,6 +874,42 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("name", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $savePoint = $workflow->resolveTrivialSchemaDiff( $json['name'], $json['workflow_id_2']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "save_point" => $savePoint,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id or workflow_id_2 not set in data provided to resolve_trivial_diff endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to resolve_trivial_diff endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the resolve_trivial_diff endpoint
+    * The resolve_merge_diff endpoint tries to resolve trivial differences in schema
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id    :  "Instance id for the main workflow"
+    *    workflow_id_2  :  "Instance id for the workflow you are comparing main workflow with"
+    *    "name"         :  "Name"
+    * }
+    */
+   private function handleResolveMergeDiffEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("workflow_id_2", $json)
+               && array_key_exists("name", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->resolveMergeDiff($json['name'], $json['workflow_id_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "save_point" => $savePoint,
