@@ -802,7 +802,7 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("workflow_id_2", $json)
                && array_key_exists("type", $json)
                && ($json['type'] == 'all' || $json['type'] == 'trivial' || $json['type'] == 'non_trivial')) {
-            $diff = Workflow::getSchemaDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type']);
+            $diff = Workflow::getVersionDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type']);
             $this->returnResponse($diff);
          }
          else {

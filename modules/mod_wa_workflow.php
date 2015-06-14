@@ -1326,7 +1326,7 @@ class Workflow {
                $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
                $this->database->runGenericQuery($query);
             }
-            $rawDiff = Workflow::getSchemaDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
+            $rawDiff = Workflow::getVersionDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
             $diff = $rawDiff['diff'];
             $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
             $diffCount = count($diff);
@@ -1730,7 +1730,7 @@ class Workflow {
     * 
     * @return Array  An array containing the differences plus status
     */
-   public static function getSchemaDifference($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all") {
+   public static function getVersionDifference($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all") {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
