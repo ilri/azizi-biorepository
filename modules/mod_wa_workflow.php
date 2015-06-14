@@ -1311,7 +1311,7 @@ class Workflow {
     * @param type $workflow2Id   The Instance id for the second workflow
     * @return type
     */
-   public function resolveTrivialSchemaDiff($newName, $workflow2Id){
+   public function resolveVersionSchemaDiff($newName, $workflow2Id){
       $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
       $savePoint = $this->save("Resolve trivial version differences with ".$workflow2->getWorkflowName());
       $instanceId2 = $this->generateInstanceID();
