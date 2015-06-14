@@ -1708,7 +1708,7 @@ class Workflow {
          $database = new Database($config);
          $database->restore($newWorkflowId, WAFile::getSavePointFilePath($oldWorkingDir, $savePoint), false);//create the database for $newWorkflowId using $savePoint
          $database2 = new Database($config, $newWorkflowId);
-         $query = "update ".Workflow::$TABLE_META_DOCUMENT." set workflow_id = '$newWorkflowId', working_dir = '$newWorkingDir'";
+         $query = "update ".Workflow::$TABLE_META_DOCUMENT." set workflow_id = '$newWorkflowId', working_dir = '$newWorkingDir', time_created = '".Database::getMySQLTime()."'";
          $database2->runGenericQuery($query);
       } catch (WAException $ex) {
          array_push($errors, $ex);
