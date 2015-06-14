@@ -201,6 +201,18 @@ class WAExcelFile {
       WAFile::rmDir($this->cachePath);
    }
    
+   public function doesFileHaveSheet($sheetName) {
+      $fileDetails = $this->waFile->getFileDetails();
+      $originalName = WASheet::getSheetOriginalName($this->database, $fileDetails['filename'], $sheetName);
+      $sheetNames = $this->excelObject->getSheetNames();
+      foreach($sheetNames as $currSheetName) {
+         if($currSheetName === $originalName) {
+            return true;
+         }
+      }
+      return false;
+   }
+   
    /**
     * This function dumps data from the data provided into an PHPExcel object
     * 

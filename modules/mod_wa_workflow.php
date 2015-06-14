@@ -1589,9 +1589,14 @@ class Workflow {
          try {
             $dataFiles = $this->getRawDataFiles();
             if(count($dataFiles) > 0) {
-               $excelFile = new WAExcelFile($dataFiles[0]);
-               $data = $excelFile->getSheetData($sheetName);
-               return $data;
+               //check get data from the first file that has the sheet
+               foreach($dataFiles as $currFile) {
+                  $excelFile = new WAExcelFile($currFile);
+                  if($excelFile->doesFileHaveSheet($sheetName)) {
+                     $data = $excelFile->getSheetData($sheetName);
+                     return $data;
+                  }
+               }
             }
             else {//should not happen
                array_push($this->errors, new WAException("Workflow does not have data files", WAException::$CODE_WF_INSTANCE_ERROR, null));

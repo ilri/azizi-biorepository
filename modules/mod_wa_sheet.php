@@ -295,10 +295,6 @@ class WASheet {
          }
 
          if($column != null) {
-            $this->lH->log(4, $this->TAG, "*****************************************");
-            $this->lH->log(4, $this->TAG, print_r($column, true));
-            $this->lH->log(4, $this->TAG, print_r($columnDetails, true));
-            $this->lH->log(4, $this->TAG, "*****************************************");
             if($columnDetails['delete'] === false) {
                $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' in '{$this->sheetName}'");
                try {
@@ -367,19 +363,19 @@ class WASheet {
     */
    public function saveAsMySQLTable($linkSheets, $mysqlColumns = array()) {
       try {
-         //$this->processColumns();
-         if(is_array($this->columnArray) 
-                 && count($this->columnArray) > 0) {
-            $columnNames = array_keys($this->columnArray);
-            $columnsProvided = false;
-            if(count($mysqlColumns) > 0){
-               $columnsProvided = true;
-            }
-            if($linkSheets == true) {
-               $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
-               array_push($mysqlColumns, $primayKey);
-            }
-            if($columnsProvided == false){
+         $columnNames = array_keys($this->columnArray);
+         $columnsProvided = false;
+         if(count($mysqlColumns) > 0){
+            $columnsProvided = true;
+         }
+         if($linkSheets == true) {
+            $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
+            array_push($mysqlColumns, $primayKey);
+         }
+         if($columnsProvided == false){
+            $this->processColumns();
+            if(is_array($this->columnArray) 
+              && count($this->columnArray) > 0) {
                $this->switchToThisSheet();
                for($index = 0; $index < count($columnNames); $index++) {
                   if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
@@ -393,26 +389,27 @@ class WASheet {
                   }
                }
             }
-            
-            $columnCount = count($columnNames);
-            if($linkSheets) $columnCount++;
-            if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
-               $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
-               throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
-            }
-            else {//everything seems to be fine with the data to be pushed to the MySQL database
-               try {
-                  
-                  $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns, $linkSheets);
-                  
-               } catch (WAException $ex) {
-                  $this->lH->log(1, $this->TAG, "Unable to create database table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
-                  throw new WAException("Unable to create MySQL table for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
-               }
+            else {
+               $this->lH->log(1, $this->TAG, "Unable to get column details for sheet with name '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
+               throw new WAException("Unable to get column details for sheet with name '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, null);
             }
          }
-         else {
-            $this->lH->log(2, $this->TAG, "Unable to get column details for sheet with name '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
+
+         $columnCount = count($columnNames);
+         if($linkSheets) $columnCount++;
+         if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
+            $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
+            throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+         else {//everything seems to be fine with the data to be pushed to the MySQL database
+            try {
+
+               $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns, $linkSheets);
+
+            } catch (WAException $ex) {
+               $this->lH->log(1, $this->TAG, "Unable to create database table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
+               throw new WAException("Unable to create MySQL table for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+            }
          }
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to process columns for sheet with name = '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
