@@ -20,6 +20,7 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.uploadFileLoc = null;
    window.dvs.diffProject = null;//holds project id for the project chosen to be merged with this one
    window.dvs.diffProjectSchema = null;
+   window.dvs.mergeKeys = null;
    $("#whoisme").hide();
    //initialize source for project_list_box
    $(document).ready(function() {
@@ -289,7 +290,7 @@ DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
 };
 
 DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
-   if(window.dvs.diffProject != null && window.dvs.project != null && $("#merged_schema_name").val().length > 0) {
+   if(window.dvs.diffProject != null && window.dvs.project != null && $("#merged_schema_name").val().length > 0 && window.dvs.mergeKeys != null) {
       $("#apply_merge_changes").prop('disabled', true);
       //first resolve the non-trivial conflicts before merging the two schemas
       var success = window.dvs.applySchemaChanges(false);//apply schema changes but do not refresh the sheet list
@@ -298,7 +299,9 @@ DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
          var sData = JSON.stringify({
             "workflow_id": window.dvs.project,
             "workflow_id_2": window.dvs.diffProject,
-            "name": $("#merged_schema_name").val()
+            "name": $("#merged_schema_name").val(),
+            "key_1": window.dvs.mergeKeys.key_1,
+            "key_2": window.dvs.mergeKeys.key_2
          });
          var sToken = JSON.stringify({
             "server":window.dvs.server,
@@ -672,6 +675,7 @@ DMPVSchema.prototype.mergeVersionButtonClicked = function(){
 
 DMPVSchema.prototype.mergeSheetButtonClicked = function(){
    console.log("merge_sheet_btn clicked");
+   window.dvs.mergeKeys = null;
    if(window.dvs.project != null 
            && window.dvs.project.length > 0
            && window.dvs.diffProjectSchema != null
@@ -731,10 +735,19 @@ DMPVSchema.prototype.mergeSheetButtonClicked = function(){
                   $("#enotification_pp").jqxNotification("open");
                }
                else {
-                  //TODO: continue editing
                   $("#merge_sheet_wndw").hide();
                   window.dvs.diffProject = jsonResult.workflow_2;
                   window.dvs.initMergeDiffGrid(jsonResult.workflow_2, jsonResult.diff);
+                  window.dvs.mergeKeys = {
+                     "key_1": {
+                        "sheet": $("#curr_sheet_list").val(),
+                        "column": $("#curr_column_list").val()
+                     },
+                     "key_2": {
+                        "sheet": $("#other_sheet_list").val(),
+                        "column": $("#other_column_list").val()
+                     }
+                  };
                   $("#merge_diff_wndw").show();
                }
             }
