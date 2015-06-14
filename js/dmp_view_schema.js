@@ -232,7 +232,7 @@ DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
       });
       var wasSuccessful = false;
       $.ajax({
-         url: "mod_ajax.php?page=odk_workflow&do=resolve_trivial_diff",
+         url: "mod_ajax.php?page=odk_workflow&do=resolve_version_diff",
          type: "POST",
          async: true,
          data: {data: sData, token: sToken},
@@ -251,7 +251,7 @@ DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
-            console.log("Response from resolve_trivial_diff endpoint = ", jsonResult);
+            console.log("Response from resolve_version_diff endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == false) {
                   var message = "";
@@ -326,7 +326,7 @@ DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
                }
             },
             success: function(jsonResult, textStatus, jqXHR){
-               console.log("Response from resolve_trivial_diff endpoint = ", jsonResult);
+               console.log("Response from resolve_merge_diff endpoint = ", jsonResult);
                if(jsonResult !== null) {
                   if(jsonResult.status.healthy == false) {
                      var message = "";
@@ -2066,6 +2066,8 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
    if(canContinue == true) {
       $("#inotification_pp").html("Columns updated successfully");
       $("#inotification_pp").jqxNotification("open");
+      $("#cancel_btn").prop('disabled', true);
+      $("#update_btn").prop('disabled', true);
       window.dvs.schemaChanges = {};
       window.dvs.columnDictionary = {};
    }
