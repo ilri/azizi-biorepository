@@ -1592,7 +1592,7 @@ class Workflow {
                //check get data from the first file that has the sheet
                foreach($dataFiles as $currFile) {
                   $excelFile = new WAExcelFile($currFile);
-                  if($excelFile->doesFileHaveSheet($sheetName)) {
+                  if($excelFile->isSheetInFile($sheetName)) {
                      $data = $excelFile->getSheetData($sheetName);
                      return $data;
                   }

@@ -99,7 +99,7 @@ class WAExcelFile {
       if($this->excelObject != null) {
          $sheetNames = $this->excelObject->getSheetNames();
          $this->lH->log(4, $this->TAG, "{$this->waFile->getFSLocation()} has the following sheets ".print_r($sheetNames, true));
-         if($sheetNames[0] != "main_sheet") $linkSheets = false;
+         if($sheetNames[0] != "main_sheet") $linkSheets = false;//TODO: update code to work with WASheet::getOriginalName()
          for($index = 0; $index < count($sheetNames); $index++){
             try {
                $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index], $this->waFile->getFileDetails());
@@ -167,10 +167,9 @@ class WAExcelFile {
                      $this->database->runGenericQuery($query);
                   }
                }
-               $fileSheetNames = $this->excelObject->getSheetNames();
                //dump data into database tables (start from first)
                for($index = 0; $index < count($sheetNames); $index++){
-                  if(in_array($sheetNames[$index], $fileSheetNames)){//is the current sheet in the current raw data file?
+                  if($this->isSheetInFile($sheetNames[$index])){//is the current sheet in the current raw data file?
                      $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index], $this->waFile->getFileDetails());
                      $currSheet->dumpData();
                   }
@@ -201,7 +200,7 @@ class WAExcelFile {
       WAFile::rmDir($this->cachePath);
    }
    
-   public function doesFileHaveSheet($sheetName) {
+   public function isSheetInFile($sheetName) {
       $fileDetails = $this->waFile->getFileDetails();
       $originalName = WASheet::getSheetOriginalName($this->database, $fileDetails['filename'], $sheetName);
       $sheetNames = $this->excelObject->getSheetNames();
