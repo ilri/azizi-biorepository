@@ -189,7 +189,7 @@ class Database {
                }
             }
             else {
-               $this->logH->log(2, $this->TAG, "Database '$name' already exists. Not creating it");
+               $this->logH->log(3, $this->TAG, "Database '$name' already exists. Not creating it");
             }
          } catch (WAException $ex) {
             //die(print_r($ex->getPrevious()->getPrevious()->getTrace(), true));
@@ -865,7 +865,7 @@ class Database {
             }
          }
          else {
-            $this->logH->log(2, $this->TAG, "Table '$name' already exists. Not creating it");
+            $this->logH->log(3, $this->TAG, "Table '$name' already exists. Not creating it");
          }
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "An error occurred while trying to check wheter the table '$name' exists");

@@ -868,6 +868,7 @@ class Workflow {
    public static function delete($config, $instanceId) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
+      include_once 'mod_wa_file.php';
       include_once 'mod_log.php';
       $lH = new LogHandler("./");
       $healthy = true;
@@ -875,8 +876,10 @@ class Workflow {
       $lH->log(3, "waworkflow_static", "Deleting workflow with id = '{$instanceId}'");
       try {
          $database = new Database($config);
+         $lH->log(2, "waworkflow_static", "About to drop database for workflow with instance id = '$instanceId'");
          $database->runDropDatabaseQuery($instanceId);
-         rmdir(Workflow::$WORKFLOW_ROOT_DIR.$instanceId);
+         $lH->log(2, "waworkflow_static", "About to delete filesystem directory corresponding to workflow with instance id = '$instanceId'");
+         WAFile::rmDir(Workflow::$WORKFLOW_ROOT_DIR.$instanceId);
       } catch (WAException $ex) {
          array_push($errors, $ex);
          $healthy = false;
