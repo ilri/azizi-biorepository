@@ -35,6 +35,9 @@ function DMPVSchema(server, user, session, project) {
       $("#new_project_wndw").show();
       $("#project_title").html("New Project");
    }
+   else {
+      window.dvs.refreshSavePoints();
+   }
 }
 
 /**
@@ -279,6 +282,10 @@ DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
          }
       });
    }
+   else if($("#merged_version_name").val().length == 0) {//the user did not define the merged sheet name
+      $("#enotification_pp").html("Please specify the new name to be given to this project");
+      $("#enotification_pp").jqxNotification("open");
+   }
 };
 
 DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
@@ -335,6 +342,7 @@ DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
                      console.log("Successfully resolved trivial changes");
                      wasSuccessful = true;//this will prevent this function from refreshing save points in onComplete
                      $("#merge_diff_wndw").hide();
+                     window.dvs.reload();
                   }
                }
                else {
@@ -350,6 +358,14 @@ DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
          });
       }
    }
+   else if($("#merged_schema_name").val().length == 0) {//the user did not define the merged sheet name
+      $("#enotification_pp").html("Please specify the new name to be given to this project");
+      $("#enotification_pp").jqxNotification("open");
+   }
+};
+
+DMPVSchema.prototype.reload = function() {
+   window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
 };
 
 DMPVSchema.prototype.getProjectGroups = function() {
@@ -1020,6 +1036,7 @@ DMPVSchema.prototype.initMergeDiffGrid = function(project2, diffs) {
             currDiffData['vlength'] = diffs[diffIndex][window.dvs.project]['length'];
             currDiffData['nullable'] = diffs[diffIndex][window.dvs.project].nullable;
             currDiffData['default'] = diffs[diffIndex][window.dvs.project].default;
+            currDiffData['key'] = diffs[diffIndex][window.dvs.project].key;
             currDiffData['sheet_2'] = diffs[diffIndex].sheet[project2];
             currDiffData['name_2'] = diffs[diffIndex][project2].name;
             currDiffData['type_2'] = diffs[diffIndex][project2].type;
@@ -1045,7 +1062,8 @@ DMPVSchema.prototype.initMergeDiffGrid = function(project2, diffs) {
          {name: 'nullable'},
          {name: 'nullable_2'},
          {name: 'default'},
-         {name: 'default_2'}
+         {name: 'default_2'},
+         {name: 'key'}
       ],
       root: 'diffs',
       localdata: data
@@ -1181,13 +1199,14 @@ DMPVSchema.prototype.mergeDiffGridCellValueChanged = function(event) {
       if(window.dvs.schema != null && event.args.oldvalue !== event.args.value) {
          console.log("Change is to this project");
          var columnData = event.args.row;
+         columnData.present = true;
          if(typeof columnData.sheet != 'undefined' && typeof columnData.name != 'undefined') {
             //search for the index of the column in the schema object
             var rowIndex = -1;
             var sheetName = columnData.sheet;
             var columnName = columnData.name;
             for(var sIndex = 0; sIndex < window.dvs.schema.sheets.length; sIndex++) {
-               if(window.dvs.schema.sheets[sIndex].name = sheetName) {
+               if(window.dvs.schema.sheets[sIndex].name == sheetName) {
                   for(var cIndex = 0; cIndex < window.dvs.schema.sheets[sIndex].columns.length; cIndex++) {
                      if(window.dvs.schema.sheets[sIndex].columns[cIndex].name == columnName) {
                         rowIndex = cIndex;
@@ -1198,7 +1217,7 @@ DMPVSchema.prototype.mergeDiffGridCellValueChanged = function(event) {
                }
             }
             if(rowIndex != -1) {
-               var columnChanged = window.dvs.changeColumnDetails(sheetName, rowIndex, even.args.datafield, event.args.oldvalue, event.args.value, columnData);
+               var columnChanged = window.dvs.changeColumnDetails(sheetName, rowIndex, event.args.datafield, event.args.oldvalue, event.args.value, columnData);
                if(columnChanged == true) {
                   console.log("column changed");
                }
@@ -1277,6 +1296,7 @@ DMPVSchema.prototype.dumpDataButtonClicked = function() {
          },
          complete: function() {
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
@@ -1330,7 +1350,7 @@ DMPVSchema.prototype.renameProjectButtonClicked = function() {
                else {
                   $("#inotification_pp").html("Successfully renamed project");
                   $("#inotification_pp").jqxNotification("open");
-                  window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
+                  window.dvs.reload();
                }
             }
             else {
@@ -1422,6 +1442,7 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function (oldSheetName, newShee
          },
          complete: function() {
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
@@ -1499,6 +1520,7 @@ DMPVSchema.prototype.deleteSheetButtonClicked = function() {
          },
          complete: function() {
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
@@ -1729,7 +1751,7 @@ DMPVSchema.prototype.processProjectSchema = function() {
                   $("#inotification_pp").jqxNotification("open");
                   //window.dvs.updateSheetList();
                   //don't try to be a genious. reload the page
-                  window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
+                  window.dvs.reload();
                }
                else if(jsonResult.status.healthy == false) {
                   var message = "";
@@ -1947,7 +1969,7 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
 };
 
 /**
- * This function is fired whenever the update button (belos the jqxGrid) is clicked
+ * This function is fired whenever the update button (below the jqxGrid) is clicked
  * @param {boolean} updateSheetList Set to TRUE if you want the sheet list to be refresh after the update
  * 
  * @returns {boolean} TRUE if successfully updated all the fields
@@ -1962,11 +1984,10 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
    $("#loading_box").show();
    var canContinue = true;
    var isFirstColumn = true;
-   
    $.each(window.dvs.schemaChanges, function(sheetName, columns){
       if(canContinue) {
          $.each(columns, function(columnName, details){
-            if(canContinue) {
+            if(details != null) {//check if already updated in previous request
                if(details.present == true) {
                   details["delete"] = false;
                }
@@ -2035,16 +2056,18 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
                      }
                   },
                   complete: function() {
-                     $("#loading_box").hide();
                   }
                });
             }
          });
       }
    });
+   window.dvs.refreshSavePoints();
    if(canContinue == true) {
       $("#inotification_pp").html("Columns updated successfully");
       $("#inotification_pp").jqxNotification("open");
+      window.dvs.schemaChanges = {};
+      window.dvs.columnDictionary = {};
    }
    $("#loading_box").hide();
    $("#loading_box").html("Loading..");
@@ -2656,6 +2679,7 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
          complete: function() {
             $("#new_foreign_key_wndw").hide();
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
@@ -2821,6 +2845,7 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
       
       window.dvs.schemaChanges[sheetName][columnName] = columnData;
       window.dvs.schemaChanges[sheetName][columnName].original_name = columnName;
+      console.log("column data = ", window.dvs.schemaChanges[sheetName][columnName]);
       $("#cancel_btn").prop('disabled', false);
       $("#update_btn").prop('disabled', false);
       return true;
