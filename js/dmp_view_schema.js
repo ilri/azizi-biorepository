@@ -71,6 +71,7 @@ DMPVSchema.prototype.documentReady = function() {
       window.dvs.initWindow($("#rename_project_wndw"), 150, 400);
       window.dvs.initWindow($("#db_credentials_wndw"), 110, 250);
       window.dvs.initWindow($("#notes_wndw"), window.innerHeight * 0.7, window.innerWidth * 0.9);
+      window.dvs.initWindow($("#query_wndw"), 160, 600);
       $("#manual_file_upload").jqxFileUpload({
          width:500,
          fileInputName: "data_file",
@@ -119,6 +120,10 @@ DMPVSchema.prototype.documentReady = function() {
       $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
       $("#apply_version_changes").click(window.dvs.applyVersionDiffButtonClicked);
       $("#apply_merge_changes").click(window.dvs.applyMergeDiffButtonClicked);
+      $("#run_query_menu_btn").click(function(){
+         $("#query_wndw").show();
+      });
+      $("#run_query_btn").click(window.dvs.runQueryButtonClicked);
       $("#get_data_btn").click(function() {
          //get the project groups
          var projectGroups = window.dvs.getProjectGroups();
@@ -151,6 +156,67 @@ DMPVSchema.prototype.documentReady = function() {
    }
    else {
       console.log("ignoring documentReady call");
+   }
+};
+
+DMPVSchema.prototype.runQueryButtonClicked = function() {
+   if(window.dvs.project != null && $("#query_box").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "query":$("#query_box").val()
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=run_query",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to run the query");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to run queries");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from run_query endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not run the query"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#inotification_pp").html("Successfully run query");
+                  $("#inotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not run the query");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            window.dvs.refreshSavePoints();
+         }
+      });
    }
 };
 

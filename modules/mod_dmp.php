@@ -104,6 +104,7 @@ class DMP extends Repository{
       </li>
       <li>Data
          <ul style='width: 250px;'>
+            <li><a id="run_query_menu_btn" style="text-decoration: none; color: black;">Run cleaning query</a></li>
             <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
             <li><a id="db_credentials_btn" style="text-decoration: none; color: black;">Get Database Credentials</a></li>
             <li><a id="get_data_btn" style="text-decoration: none; color: black;">Get Data</a></li>
@@ -209,6 +210,15 @@ class DMP extends Repository{
             <label for="new_note">Add a note</label>
             <textarea type="text" id="new_note" rows="2" style="width: 85%;"></textarea>
             <button type="button" id="add_new_note" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
+         </div>
+      </div>
+   </div>
+   <div id="query_wndw" style="display: none; z-index: 6;">
+      <div>Cleaning query</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px;margin-right: 5%;margin-left: 5%;">
+            <textarea type="text" id="query_box" rows="2" style="width: 100%;"></textarea>
+            <button type="button" id="run_query_btn" class="btn btn-primary" style="margin-left: 90%; margin-top: 10px;">Run</button>
          </div>
       </div>
    </div>
