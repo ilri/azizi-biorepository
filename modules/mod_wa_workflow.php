@@ -473,6 +473,30 @@ class Workflow {
    }
    
    /**
+    * This function runs a generic non-select query in the database corresponding
+    * to this workflow. The workflow is backed up before running the query
+    * 
+    * @param string $query The query to be run
+    */
+   public function runNonSelectQuery($query) {
+      $savePoint = null;
+      try {
+         $queryParts = explode(" ", $query);
+         $description = "Run ".$queryParts[0]." ".$queryParts[1]." ".$queryParts[2]." query";
+         $savePoint = $this->save($description);
+         if($this->healthy == true) {
+            $this->database->runGenericQuery($query);
+         }
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to run a generic query on the workflow");
+         array_push($this->errors, new WAException("Unable to run the given query", WAException::$CODE_DB_QUERY_ERROR, $ex));
+         $this->healthy = false;
+         return;
+      }
+      return $savePoint;
+   }
+   
+   /**
     * This function generates a random alpha numeric ID that will always start with
     * an alphabetical character
     * 
