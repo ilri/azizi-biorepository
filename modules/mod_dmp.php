@@ -95,6 +95,7 @@ class DMP extends Repository{
                  <ul id="undo_container" style='color: black; min-width: 300px;'>
                   </ul>
               </li>
+              <li><a id="add_note_menu_btn" style="text-decoration: none; color: black;">Add Note</a></li>
               <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
               <li><a id="merge_version_menu_btn" style="text-decoration: none; color: black;">Combine with another version</a></li>
               <li><a id="merge_schema_menu_btn" style="text-decoration: none; color: black;">Merge with another project</a></li>
@@ -198,6 +199,17 @@ class DMP extends Repository{
             <input type="text" id="new_project_name" style="height: 25px; width: 300px;" />
          </div>
          <button type="button" id="rename_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
+      </div>
+   </div>
+   <div id="notes_wndw" style="display: none; z-index: 6;">
+      <div>Project notes</div>
+      <div>
+         <div id="notes_grid" style="width: 90%"></div>
+         <div style="position: relative; width: 90%; margin-top: 10px;">
+            <label for="new_note">Add a note</label>
+            <textarea type="text" id="new_note" rows="2" style="width: 85%;"></textarea>
+            <button type="button" id="add_new_note" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
+         </div>
       </div>
    </div>
    <div id="delete_project_wndw" style="display: none; z-index: 6;">

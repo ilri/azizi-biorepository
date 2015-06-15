@@ -9,6 +9,7 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.sheetListAdapter = null;
    window.dvs.columnGridAdapter = null;
    window.dvs.versionDiffGridAdapter = null;
+   window.dvs.notesGridAdapter = null;
    window.dvs.mergeDiffGridAdapter = null;
    window.dvs.dataGridAdapter = null;
    window.dvs.schemaChanges={};
@@ -52,92 +53,24 @@ DMPVSchema.prototype.documentReady = function() {
    if(typeof window.dvs.lastDocumentReload == 'undefined' || (currTime - window.dvs.lastDocumentReload) > 1000) {
       console.log("documentReady called");
       window.dvs.lastDocumentReload = currTime;
-      (function ($) {
-        $.each(['show', 'hide'], function (i, ev) {
-          var el = $.fn[ev];
-          $.fn[ev] = function () {
-            this.trigger(ev);
-            return el.apply(this, arguments);
-          };
-        });
-      })(jQuery);
       var pWidth = window.innerWidth*0.942;//split_window width
       window.dvs.leftSideWidth = pWidth*0.2;//30% of split_window
       window.dvs.rightSideWidth = pWidth - window.dvs.leftSideWidth;
       $("#blanket_cover").position({y:0, x:0});
       $("#blanket_cover").css("height", window.innerHeight * 0.9);
       $("#blanket_cover").css("width", $("#repository").width());
-      var newProjectWindowPos = {
-         y:window.innerHeight/2 - 220/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - 600/2
-      };
-      $("#new_project_wndw").jqxWindow({height: 220, width: 600, position:newProjectWindowPos, theme: ''});
-      $("#new_project_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#new_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var getDataWindowPos = {
-         y:window.innerHeight/2 - 160/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - 600/2
-      };
-      $("#get_data_wndw").jqxWindow({height: 160, width: 600, position:getDataWindowPos, theme: ''});
-      $("#get_data_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#get_data_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var deleteProjectWindowPos = {
-         y:window.innerHeight/2 - 100/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - 300/2
-      };
-      $("#delete_project_wndw").jqxWindow({height: 100, width: 300, position: deleteProjectWindowPos, theme: ''});
-      $("#delete_project_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#delete_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var otherProjectsWindowPos = {
-         y:window.innerHeight/2 - 130/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - 300/2
-      };
-      $("#other_projects_wndw").jqxWindow({height: 130, width: 300, position: otherProjectsWindowPos, theme: ''});
-      $("#other_projects_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#other_projects_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var diffWindowPos = {
-         y:window.innerHeight/2 - (window.innerHeight * 0.9)/2,
-         x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
-      };
-      $("#version_diff_wndw").jqxWindow({height: window.innerHeight * 0.9, width: window.innerWidth * 0.8, position: diffWindowPos, theme: ''});
-      $("#version_diff_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#version_diff_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      $("#merge_diff_wndw").jqxWindow({height: window.innerHeight * 0.9, width: window.innerWidth * 0.8, position: diffWindowPos, theme: '', resizable: true});
-      $("#merge_diff_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#merge_diff_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var mergeSheetWindowPos = {
-         y:window.innerHeight/2 - 200/2,
-         x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
-      };
-      $("#merge_sheet_wndw").jqxWindow({height: 200, width: window.innerWidth * 0.95, position: mergeSheetWindowPos, theme: ''});
-      $("#merge_sheet_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#merge_sheet_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var renameSheetWindowPos = {
-         y:window.innerHeight/2 - (window.innerHeight * 0.8)/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
-      };
-      $("#rename_sheet_wndw").jqxWindow({height: 150, width: 400, position: renameSheetWindowPos, theme: ''});
-      $("#rename_sheet_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#rename_sheet_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var newForeignKeyWindowPos = {
-         y:window.innerHeight/2 - 230/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - 400/2
-      };
-      $("#new_foreign_key_wndw").jqxWindow({height: 230, width: 400, position: newForeignKeyWindowPos, theme: ''});
-      $("#new_foreign_key_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#new_foreign_key_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var renameProjectWindowPos = {
-         y:window.innerHeight/2 - 150/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - 400/2
-      };
-      $("#rename_project_wndw").jqxWindow({height: 150, width: 400, position: renameProjectWindowPos, theme: ''});
-      $("#rename_project_wndw").on("show", function(){$("#blanket_cover").show();});
-      $("#rename_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
-      var dbCredentailsWindowPos = {
-         y:window.innerHeight/2 - 110/2 - window.innerHeight*0.1,
-         x:window.innerWidth/2 - 250/2
-      };
-      $("#db_credentials_wndw").jqxWindow({height: 110, width: 250, position: dbCredentailsWindowPos, theme: ''});
+      window.dvs.initWindow($("#new_project_wndw"), 220, 600);
+      window.dvs.initWindow($("#get_data_wndw"), 220, 600);
+      window.dvs.initWindow($("#delete_project_wndw"), 100, 300);
+      window.dvs.initWindow($("#other_projects_wndw"), 130, 300);
+      window.dvs.initWindow($("#version_diff_wndw"), (window.innerHeight * 0.9), (window.innerWidth * 0.8));
+      window.dvs.initWindow($("#merge_diff_wndw"), window.innerHeight * 0.9, window.innerWidth * 0.8);
+      window.dvs.initWindow($("#merge_sheet_wndw"), 200, (window.innerWidth * 0.8));
+      window.dvs.initWindow($("#rename_sheet_wndw"), window.innerHeight * 0.8, window.innerWidth * 0.8);
+      window.dvs.initWindow($("#new_foreign_key_wndw"), 230, 400);
+      window.dvs.initWindow($("#rename_project_wndw"), 150, 400);
+      window.dvs.initWindow($("#db_credentials_wndw"), 110, 250);
+      window.dvs.initWindow($("#notes_wndw"), window.innerHeight * 0.7, window.innerWidth * 0.9);
       $("#manual_file_upload").jqxFileUpload({
          width:500,
          fileInputName: "data_file",
@@ -161,6 +94,11 @@ DMPVSchema.prototype.documentReady = function() {
       $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
       $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
       $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
+      $("#add_note_menu_btn").click(function(){
+         window.dvs.refreshNotes();
+         $("#notes_wndw").show();
+      });
+      $("#add_new_note").click(window.dvs.addNoteButtonClicked);
       $("#merge_version_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("version");});
       $("#merge_schema_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("schema");});
       $("#merge_version_btn").click(window.dvs.mergeVersionButtonClicked);
@@ -213,6 +151,151 @@ DMPVSchema.prototype.documentReady = function() {
    }
    else {
       console.log("ignoring documentReady call");
+   }
+};
+
+/**
+ * This function records a project note
+ * 
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.addNoteButtonClicked = function() {
+   if(window.dvs.project != null && $("#new_note").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "note":$("#new_note").val()
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=add_note",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to add the note");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to add notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from add_note endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not add note"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  console.log("Successfully added note");
+                  window.dvs.refreshNotes();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not add the note");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.initWindow = function(wndw, height, width) {
+   (function ($) {
+      $.each(['show', 'hide'], function (i, ev) {
+        var el = $.fn[ev];
+        $.fn[ev] = function () {
+          this.trigger(ev);
+          return el.apply(this, arguments);
+        };
+      });
+   })(jQuery);
+   var windowPos = {
+      y:window.innerHeight/2 - height/2,
+      x:window.innerWidth/2 - width/2
+   };
+   wndw.jqxWindow({height: height, width: width, position: windowPos, theme: ''});
+   wndw.on("show", function(){$("#blanket_cover").show();});
+   wndw.on("hide", function(){$("#blanket_cover").hide();});
+};
+
+DMPVSchema.prototype.refreshNotes = function() {
+   if(window.dvs.project != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_notes",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_notes endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get notes"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  console.log("Successfully gotten notes");
+                  window.dvs.initNotesGrid(jsonResult.notes);
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not resolve trivial differences between projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
    }
 };
 
@@ -1018,6 +1101,49 @@ DMPVSchema.prototype.initVersionDiffGrid = function(project2, diffs) {
       last_row: -1
    };
    $("#version_diff_grid").on('cellendedit', window.dvs.versionDiffGridCellValueChanged);
+};
+
+/**
+ * This function initializes the jqxGrid displaying notes
+ * 
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.initNotesGrid = function(notes) {
+   console.log("initializing notes grid");
+   
+   var source = {
+      datatype: "json",
+      datafields: [
+         {name: 'user'},
+         {name: 'time_added'},
+         {name: 'message'}
+      ],
+      localdata: notes
+   };
+   
+   window.dvs.notesGridAdapter = new $.jqx.dataAdapter(source);
+   var gridWidth = $("#notes_wndw").width() * 0.95;
+   $("#notes_grid").jqxGrid({
+      width: gridWidth,
+      autoheight: true,
+      autorowheight: true,
+      source: window.dvs.notesGridAdapter,
+      columnsresize: true,
+      theme: '',
+      selectionmode: "singlerow",
+      pageable: false,
+      editable: false,
+      rendergridrows: function() {
+         return window.dvs.notesGridAdapter.records;
+      },
+      columns: [
+         {text: 'Time', datafield: 'time_added', editable:false, width: gridWidth * 0.2},
+         {text: 'User', datafield: 'user', editable:false, width: gridWidth * 0.15},
+         {text: 'Note', datafield: 'message', editable:false, width: gridWidth * 0.65, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties) {
+            return '<div style="white-space: normal;">' + value + '</div>';
+         }}
+      ]
+   });
 };
 
 /**
