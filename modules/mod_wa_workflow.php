@@ -2445,18 +2445,17 @@ class Workflow {
                $tableNames = $newDatabase->getTableNames($currDbName);
                
                $metaTables = 0;
-               
+               $allMetaTables = Workflow::getAllMetaTables();
                if($tableNames !== false) {
                   //check each of the table names to see if the meta tables exist
-                  $allMetaTables = Workflow::getAllMetaTables();
                   for($tIndex = 0; $tIndex < count($tableNames); $tIndex++) {
-                     if(in_array($tableNames[$tIndex], $allMetaTables)) {
+                     if(in_array($tableNames[$tIndex], $allMetaTables)== true) {
                         $metaTables++;
                      }
                   }
                }
                
-               if($metaTables == 4) {//database has all the meta tables
+               if($metaTables == count($allMetaTables)) {//database has all the meta tables
                   //check whether the user has access to this database
                   $query = "select *"
                           . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
