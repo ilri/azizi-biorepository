@@ -592,13 +592,7 @@ class WASheet {
             $result = $database->getTableNames($workflowId);
             if(is_array($result)) {
                $tables = array();
-               $metaTables = array();
-               array_push($metaTables, WAFile::$TABLE_META_FILES);
-               array_push($metaTables, Workflow::$TABLE_META_ACCESS);
-               array_push($metaTables, Workflow::$TABLE_META_CHANGES);
-               array_push($metaTables, Workflow::$TABLE_META_DOCUMENT);
-               array_push($metaTables, Workflow::$TABLE_META_ERRORS);
-               array_push($metaTables, Workflow::$TABLE_META_VAR_NAMES);
+               $metaTables = Workflow::getAllMetaTables();
                
                for($index = 0; $index < count($result); $index++) {
                   if(!in_array($result[$index], $metaTables)) {

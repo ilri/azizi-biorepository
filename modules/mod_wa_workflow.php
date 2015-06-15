@@ -23,6 +23,7 @@ class Workflow {
    public static $TABLE_META_ACCESS = "__meta_access";
    public static $TABLE_META_DOCUMENT = "__meta_document";
    public static $TABLE_META_ERRORS = "__meta_errors";
+   public static $TABLE_META_NOTES = "__meta_notes";
    public static $WORKFLOW_ROOT_DIR = "../odk_workflow/";
    public static $CHANGE_SHEET = "sheet";
    public static $CHANGE_COLUMN = "column";
@@ -200,6 +201,7 @@ class Workflow {
          $this->createMetaDocumentTable();
          $this->createMetaVarNamesTable();
          $this->createMetaErrorsTable();
+         $this->createMetaNotesTable();
       }
       else {
          $this->lH->log(1, $this->TAG, "Unable to create meta tables because database object connected to the wrong database ('{$this->database->getDatabaseName()}')");
@@ -317,8 +319,25 @@ class Workflow {
                      )
                  );
       } catch (WAException $ex) {
-         $this->lH->log(1, $this->TAG, "An error occurred while trying to create the ".Workflow::$TABLE_META_DOCUMENT." table");
-         array_push($this->errors, new WAException("Unable to create the ".Workflow::$TABLE_META_DOCUMENT." table", WAException::$CODE_DB_CREATE_ERROR, $ex));
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to create the ".Workflow::$TABLE_META_ERRORS." table");
+         array_push($this->errors, new WAException("Unable to create the ".Workflow::$TABLE_META_ERRORS." table", WAException::$CODE_DB_CREATE_ERROR, $ex));
+         $this->healthy = false;
+      }
+   }
+   
+   private function createMetaNotesTable(){
+      try {
+         $this->database->runCreateTableQuery(Workflow::$TABLE_META_NOTES,
+                 array(
+                     array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                     array("name" => "message" , "type"=>Database::$TYPE_VARCHAR , "length"=>1000 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "user" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
+                     )
+                 );
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to create the ".Workflow::$TABLE_META_NOTES." table");
+         array_push($this->errors, new WAException("Unable to create the ".Workflow::$TABLE_META_ERRORS." table", WAException::$CODE_DB_CREATE_ERROR, $ex));
          $this->healthy = false;
       }
    }
@@ -404,6 +423,53 @@ class Workflow {
             return;
          }
       }
+   }
+   
+   /**
+    * This function adds a note to the workflow
+    * 
+    * @param type $note
+    */
+   public function addNote($note) {
+      try {
+         $this->database->runInsertQuery(Workflow::$TABLE_META_NOTES, array(
+            "message" => "'".$note."'",
+            "user" => "'".$this->currUser."'",
+            "time_added" => "'".Database::getMySQLTime()."'"
+         ));
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to add a note to the workflow");
+         array_push($this->errors, new WAException("Unable to add the note provided", WAException::$CODE_DB_QUERY_ERROR, $ex));
+         $this->healthy = false;
+         return;
+      }
+   }
+   
+   /**
+    * This function fetches all the workflow notes
+    * 
+    * @return Array  An array of all the notes 
+    */
+   public function getAllNotes($pruneServer = true) {
+      $notes = array();
+      try {
+         $query = "select * from ".Workflow::$TABLE_META_NOTES." order by time_added";
+         $results = $this->database->runGenericQuery($query, true);
+         foreach ($results as $currResult) {//remove the server component of the user field
+            if($pruneServer == true) {
+               $userDetails = ODKWorkflowAPI::explodeUserUUID($currResult['user']);
+               $currResult['user'] = $userDetails['user'];
+            }
+            unset($currResult['id']);
+            $notes[] = $currResult;
+         }
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to fetch all workflow notes");
+         array_push($this->errors, new WAException("Unable to fetch notes for the workflow", WAException::$CODE_DB_QUERY_ERROR, $ex));
+         $this->healthy = false;
+         return;
+      }
+      return $notes;
    }
    
    /**
@@ -1371,23 +1437,7 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
             }
-            
-            //copy the raw data files from workflow_2 to this workflow
-            $dataFiles = $workflow2->getRawDataFiles();
-            for($index = 0; $index < count($dataFiles); $index++) {
-               $name = basename($dataFiles[$index]->getFSLocation());
-               $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
-            }
-            
-            //dump variable changes from workflow2
-            $workflow2MetaChanges = $workflow2->getMetaChanges();
-            foreach ($workflow2MetaChanges as $currChange) {
-               $metaChangesKeys = array_keys($currChange);
-               foreach($metaChangesKeys as $currKey) {
-                  $currChange[$currKey] = "'".$currChange[$currKey]."'";
-               }
-               $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
-            }
+            $this->copyData($workflow2);
             //rename the workflow
             $savePoint = $this->modifyName($newName);
          } catch (WAException $ex) {
@@ -1403,6 +1453,40 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to resolve trivial version changes because workflow with id = '{$this->instanceId}' is unhealthy");
       }
       return $savePoint;
+   }
+   
+   private function copyData($originWorkflow) {
+      //dump variable changes from workflow2
+      try {
+         //copy the raw data files from workflow_2 to this workflow
+         $dataFiles = $originWorkflow->getRawDataFiles();
+         for($index = 0; $index < count($dataFiles); $index++) {
+            $name = basename($dataFiles[$index]->getFSLocation());
+            $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
+         }
+         
+         //copy the changes
+         $originMetaChanges = $originWorkflow->getMetaChanges();
+         foreach ($originMetaChanges as $currChange) {
+            $metaChangesKeys = array_keys($currChange);
+            foreach($metaChangesKeys as $currKey) {
+               $currChange[$currKey] = "'".$currChange[$currKey]."'";
+            }
+            $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
+         }
+         
+         //copy the notes
+         $notes = $originWorkflow->getAllNotes(false);
+         foreach($notes as $currNote) {
+            $noteKeys = array_keys($currNote);
+            foreach($noteKeys as $currKey) {
+               $currNote[$currKey] = "'".$currNote[$currKey]."'";
+            }
+            $this->database->runInsertQuery(Workflow::$TABLE_META_NOTES, $currNote);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to copy metadata from {$originWorkflow->getInstanceId()} to {$targetWorkflow->getInstanceId()}", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
    }
    
    /**
@@ -1457,23 +1541,7 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
             }
-            
-            //copy the raw data files from workflow_2 to this workflow
-            $dataFiles = $workflow2->getRawDataFiles();
-            for($index = 0; $index < count($dataFiles); $index++) {
-               $name = basename($dataFiles[$index]->getFSLocation());
-               $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
-            }
-            
-            //dump variable changes from workflow2
-            $workflow2MetaChanges = $workflow2->getMetaChanges();
-            foreach ($workflow2MetaChanges as $currChange) {
-               $metaChangesKeys = array_keys($currChange);
-               foreach($metaChangesKeys as $currKey) {
-                  $currChange[$currKey] = "'".$currChange[$currKey]."'";
-               }
-               $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
-            }
+            $this->copyData($workflow2);
             //rename the workflow
             $savePoint = $this->modifyName($newName);
          } catch (WAException $ex) {
@@ -2328,6 +2396,20 @@ class Workflow {
       return $result;
    }
    
+   public static function getAllMetaTables() {
+      include_once 'mod_wa_file.php';
+      $tables = array(
+         Workflow::$TABLE_META_CHANGES,
+         Workflow::$TABLE_META_VAR_NAMES,
+         Workflow::$TABLE_META_ACCESS,
+         Workflow::$TABLE_META_DOCUMENT,
+         Workflow::$TABLE_META_ERRORS,
+         Workflow::$TABLE_META_NOTES,
+         WAFile::$TABLE_META_FILES
+      );
+      return $tables;
+   }
+   
    /**
     * This function returns an array containing details of workflows that the
     * specified user has access to
@@ -2366,17 +2448,9 @@ class Workflow {
                
                if($tableNames !== false) {
                   //check each of the table names to see if the meta tables exist
+                  $allMetaTables = Workflow::getAllMetaTables();
                   for($tIndex = 0; $tIndex < count($tableNames); $tIndex++) {
-                     /*if($tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_ACCESS
-                             || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_CHANGES
-                             || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_DOCUMENT
-                             || $tableNames[$tIndex]['Tables_in_'.$currDbName] == Workflow::$TABLE_META_VAR_NAMES) {
-                        $metaTables++;
-                     }*/
-                     if($tableNames[$tIndex] == Workflow::$TABLE_META_ACCESS
-                             || $tableNames[$tIndex] == Workflow::$TABLE_META_CHANGES
-                             || $tableNames[$tIndex] == Workflow::$TABLE_META_DOCUMENT
-                             || $tableNames[$tIndex] == Workflow::$TABLE_META_VAR_NAMES) {
+                     if(in_array($tableNames[$tIndex], $allMetaTables)) {
                         $metaTables++;
                      }
                   }
