@@ -1182,7 +1182,8 @@ DMPVSchema.prototype.initNotesGrid = function(notes) {
       datafields: [
          {name: 'user'},
          {name: 'time_added'},
-         {name: 'message'}
+         {name: 'message'},
+         {name: 'id'}
       ],
       localdata: notes
    };
@@ -1210,6 +1211,87 @@ DMPVSchema.prototype.initNotesGrid = function(notes) {
          }}
       ]
    });
+   $("#notes_grid").on('rowclick', function (event) {
+      if (event.args.rightclick) {
+         var rowIndex = event.args.rowindex;
+         $("#notes_grid").jqxGrid('selectrow', rowIndex);
+         $("#right_click_menu").html('<ul><li><a href="#" id="delete_note_btn">Delete note</a></li></ul>');
+         var scrollTop = $(window).scrollTop();
+         var scrollLeft = $(window).scrollLeft();
+         $("#right_click_menu").jqxMenu('open',  parseInt(event.args.originalEvent.clientX) + 5 + scrollLeft, parseInt(event.args.originalEvent.clientY) + 5 + scrollTop);
+         $("#delete_note_btn").click(window.dvs.deleteNoteButtonClicked);
+         return false;
+      }
+  });
+};
+
+DMPVSchema.prototype.deleteNoteButtonClicked = function() {
+   var noteData = $("#notes_grid").jqxGrid('getrowdata', $("#notes_grid").jqxGrid('selectedrowindex'));
+   if(typeof noteData != 'undefined') {
+      window.dvs.deleteNote(noteData.id);
+   }
+   $("#right_click_menu").jqxMenu('close');
+};
+
+DMPVSchema.prototype.deleteNote = function($noteId) {
+   if(window.dvs.project != null && $noteId != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "note_id": $noteId
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=delete_note",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to delete note");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to delete notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from delete_note endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get notes"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  window.dvs.refreshNotes();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not resolve trivial differences between projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
+         }
+      });
+   }
 };
 
 /**
