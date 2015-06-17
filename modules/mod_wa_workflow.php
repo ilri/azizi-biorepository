@@ -433,7 +433,7 @@ class Workflow {
    public function addNote($note) {
       try {
          $this->database->runInsertQuery(Workflow::$TABLE_META_NOTES, array(
-            "message" => "'".$note."'",
+            "message" => $this->database->quote($note),
             "user" => "'".$this->currUser."'",
             "time_added" => "'".Database::getMySQLTime()."'"
          ));
@@ -460,7 +460,7 @@ class Workflow {
                $userDetails = ODKWorkflowAPI::explodeUserUUID($currResult['user']);
                $currResult['user'] = $userDetails['user'];
             }
-            unset($currResult['id']);
+            //unset($currResult['id']);
             $notes[] = $currResult;
          }
       } catch (WAException $ex) {
@@ -470,6 +470,26 @@ class Workflow {
          return;
       }
       return $notes;
+   }
+   
+   /**
+    * This function deletes a note using it's id
+    * 
+    * @param type $noteId  The note's id
+    */
+   public function deleteNote($noteId) {
+      $savePoint = null;
+      try {
+         $savePoint = $this->save("Delete note");
+         $query = "delete from ".Workflow::$TABLE_META_NOTES." where id = $noteId";
+         $this->database->runGenericQuery($query);
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to delete a note");
+         array_push($this->errors, new WAException("Unable to delete the note", WAException::$CODE_DB_QUERY_ERROR, $ex));
+         $this->healthy = false;
+         return;
+      }
+      return $savePoint;
    }
    
    /**

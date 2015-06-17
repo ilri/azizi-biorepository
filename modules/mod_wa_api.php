@@ -157,6 +157,9 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "get_notes") {
                         $this->handleGetNotesEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "delete_note") {
+                        $this->handleDeleteNoteEndpoint();
+                     }
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "run_query") {
                         $this->handleRunQueryEndpoint();
                      }
@@ -1039,6 +1042,40 @@ class ODKWorkflowAPI extends Repository {
       }
       else {
          $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the delete_note endpoint
+    * The delete_note endpoint deletes a note using its id
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow",
+    *    "note_id"   :  "The id corresponding to the note"
+    * }
+    */
+   private function handleDeleteNoteEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("note_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->deleteNote($json['note_id']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "save_point" => $savePoint,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to delete_note endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to delete_note endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
