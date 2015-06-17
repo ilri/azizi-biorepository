@@ -2150,7 +2150,7 @@ DMPVSchema.prototype.refreshSavePoints = function() {
                      var timeString = day + month + year;
                      if(timeString.length > 0)timeString = "on the "+timeString+" at ";
                      else timeString = "at ";
-                     timeString = timeString + (savePointDate.getHours()+1).timePad() + ":" + savePointDate.getMinutes().timePad() + ":" + savePointDate.getSeconds().timePad();
+                     timeString = timeString + (savePointDate.getHours()).timePad() + ":" + savePointDate.getMinutes().timePad() + ":" + savePointDate.getSeconds().timePad();
                      html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].comment+" "+timeString+"</li>";
                   }
                   $("#undo_container").html(html);
