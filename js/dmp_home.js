@@ -55,15 +55,47 @@ DMPHome.prototype.initProjectList = function() {
       type: "POST",
       id: "workflow_id",
       beforeprocessing: function(data) {
-         console.log("project data = ", data);
+         //console.log("project data = ", data);
          
          //TODO: alert user if data is null
          if(data != null) {
             console.log(data);
+            Number.prototype.toOrdinal = function() {
+               var n = this.valueOf(),
+               s = [ 'th', 'st', 'nd', 'rd' ],
+               v = n % 100;
+               return n + (s[(v-20)%10] || s[v] || s[0]);
+            };
+            Number.prototype.timePad = function() {
+               var n = this.valueOf()+"";//convert to string
+               if(n.length == 1) n = "0"+n;
+               return n;
+            };
+            var months = ["Jan", "Feb", "March", "April", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"];
+
             for(var index = 0; index < data.workflows.length; index++) {
+               
+               var today = new Date();
+               var workflowDate = new Date(data.workflows[index].time_created);
+               var year = -1;
+               if(today.getFullYear() != workflowDate.getFullYear()) year = workflowDate.getFullYear();
+               var month = -1;
+               if(today.getMonth() != workflowDate.getMonth() || year != -1) month = workflowDate.getMonth();
+               var day = -1;
+               if(today.getDate() != workflowDate.getDate() || month != -1) day = workflowDate.getDate();
+               if(day != -1) day = " " + day.toOrdinal();
+               else day = "";
+               if(month == -1) month = "";
+               else month = " " + months[month];
+               if(year == -1) year = "";
+               else year = " " + year;
+               var timeString = day + month + year;
+               if(timeString.length > 0)timeString = "on the "+timeString+" at ";
+               else timeString = "at ";
+               timeString = timeString + (workflowDate.getHours()).timePad() + ":" + workflowDate.getMinutes().timePad() + ":" + workflowDate.getSeconds().timePad();
                console.log(data.workflows[index]);
-               var creationDate = new Date(data.workflows[index].time_created);
-               data.workflows[index].workflow_name = data.workflows[index].workflow_name + " created on " + creationDate.toDateString();
+               //var creationDate = new Date(data.workflows[index].time_created);
+               data.workflows[index].workflow_name = data.workflows[index].workflow_name + " created " + timeString;
             }
          }
       }
