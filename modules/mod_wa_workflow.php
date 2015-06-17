@@ -1141,28 +1141,36 @@ class Workflow {
     * @param type $columnDetails Details of the column to be modified
     */
    public function modifyColumn($sheetName, $columnDetails){
-      $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
-      //try saving the workflow instance first
-      $description = "Modify $sheetName -> {$columnDetails['original_name']}";
-      if($columnDetails['delete'] == true) {
-         $description = "Delete $sheetName -> {$columnDetails['original_name']}";
-      }
-      $savePoint = $this->save($description);
-      if($this->healthy == true) {
-         try {
-            $sheet = new WASheet($this->config, $this->database, null, $sheetName);
-            $sheet->alterColumn($columnDetails);
-            if($columnDetails['delete'] == false) $this->recordColumnNameChange($sheetName, $columnDetails['original_name'], $columnDetails['name']);
-         } catch (WAException $ex) {
-            array_push($this->errors, $ex);
-            $this->healthy = false;
-            $this->lH->log(1, $this->TAG, "Could not modify column details for '{$columnDetails['original_name']}' in '$sheetName' in the workflow with instance '{$this->instanceId}'");
+      $savePoint = null;
+      try {
+         $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
+         //try saving the workflow instance first
+         $description = "Modify $sheetName -> {$columnDetails['original_name']}";
+         if($columnDetails['delete'] == true) {
+            $description = "Delete $sheetName -> {$columnDetails['original_name']}";
          }
-      }
-      else {
-         array_push($this->errors, new WAException("Unable to modify column because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $savePoint = $this->save($description);
+         $this->truncateWorkflow();
+         if($this->healthy == true) {
+            try {
+               $sheet = new WASheet($this->config, $this->database, null, $sheetName);
+               $sheet->alterColumn($columnDetails);
+               if($columnDetails['delete'] == false) $this->recordColumnNameChange($sheetName, $columnDetails['original_name'], $columnDetails['name']);
+            } catch (WAException $ex) {
+               array_push($this->errors, $ex);
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Could not modify column details for '{$columnDetails['original_name']}' in '$sheetName' in the workflow with instance '{$this->instanceId}'");
+            }
+         }
+         else {
+            array_push($this->errors, new WAException("Unable to modify column because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to modify column because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+         }
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
          $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "Unable to modify column because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+         $this->lH->log(1, $this->TAG, "Unable to modify column in workflow with instance id = '{$this->instanceId}'");
       }
       
       $this->setIsProcessing(false);
@@ -1213,42 +1221,49 @@ class Workflow {
    public function modifySheet($sheetDetails) {
       $this->lH->log(3, $this->TAG, "Modifying sheet in workflow with id = '{$this->instanceId}'. Sheet details = ".  print_r($sheetDetails, true));
       $savePoint = null;
-      if(array_key_exists("original_name", $sheetDetails)
-              && array_key_exists("name", $sheetDetails)
-              && array_key_exists("delete", $sheetDetails)) {
-         $description = "Modify ".$sheetDetails['original_name'];
-         if($sheetDetails['delete'] == true) {
-            $description = "Delete ".$sheetDetails['original_name'];
-         }
-         $savePoint = $this->save($description);
-         if($this->healthy == true) {
-            try {
-               $sheet = new WASheet($this->config, $this->database, null, $sheetDetails['original_name']);
-               if($sheetDetails['delete'] == true){
-                  $this->lH->log(3, $this->TAG, "Going to delete '".$sheetDetails['original_name']."' in '{$this->instanceId}' workflow");
-                  $sheet->delete();
+      try {
+         if(array_key_exists("original_name", $sheetDetails)
+                  && array_key_exists("name", $sheetDetails)
+                  && array_key_exists("delete", $sheetDetails)) {
+            $description = "Modify ".$sheetDetails['original_name'];
+            if($sheetDetails['delete'] == true) {
+               $description = "Delete ".$sheetDetails['original_name'];
+            }
+            $savePoint = $this->save($description);
+            $this->truncateWorkflow();
+            if($this->healthy == true) {
+               try {
+                  $sheet = new WASheet($this->config, $this->database, null, $sheetDetails['original_name']);
+                  if($sheetDetails['delete'] == true){
+                     $this->lH->log(3, $this->TAG, "Going to delete '".$sheetDetails['original_name']."' in '{$this->instanceId}' workflow");
+                     $sheet->delete();
+                  }
+                  else {
+                     $this->lH->log(3, $this->TAG, "Going to rename '".$sheetDetails['original_name']."' to '".$sheetDetails['name']."' in the '{$this->instanceId}' workflow");
+                     $sheet->rename($sheetDetails['name']);
+                     $this->recordSheetNameChange($sheetDetails['original_name'], $sheetDetails['name']);
+                  }
+               } catch (WAException $ex) {
+                  array_push($this->errors, new WAException("Unable to modify sheet because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
+                  $this->healthy = false;
+                  $this->lH->log(1, $this->TAG, "Unable to modify sheet because sheet object wasn't initialized correctly in workflow with instance id = '{$this->instanceId}'");
                }
-               else {
-                  $this->lH->log(3, $this->TAG, "Going to rename '".$sheetDetails['original_name']."' to '".$sheetDetails['name']."' in the '{$this->instanceId}' workflow");
-                  $sheet->rename($sheetDetails['name']);
-                  $this->recordSheetNameChange($sheetDetails['original_name'], $sheetDetails['name']);
-               }
-            } catch (WAException $ex) {
-               array_push($this->errors, new WAException("Unable to modify sheet because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
+            }
+            else {
+               array_push($this->errors, new WAException("Unable to modify sheet because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
                $this->healthy = false;
-               $this->lH->log(1, $this->TAG, "Unable to modify sheet because sheet object wasn't initialized correctly in workflow with instance id = '{$this->instanceId}'");
+               $this->lH->log(1, $this->TAG, "Unable to modify sheet because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
             }
          }
          else {
-            array_push($this->errors, new WAException("Unable to modify sheet because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+            array_push($this->errors, new WAException("Unable to modify sheet because provided sheet details are mulformed", WAException::$CODE_WF_INSTANCE_ERROR, null));
             $this->healthy = false;
-            $this->lH->log(1, $this->TAG, "Unable to modify sheet because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+            $this->lH->log(1, $this->TAG, "Unable to modify sheet because provided sheet details are mulformed for workflow with instance id = '{$this->instanceId}'");
          }
-      }
-      else {
-         array_push($this->errors, new WAException("Unable to modify sheet because provided sheet details are mulformed", WAException::$CODE_WF_INSTANCE_ERROR, null));
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
          $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "Unable to modify sheet because provided sheet details are mulformed for workflow with instance id = '{$this->instanceId}'");
+         $this->lH->log(1, $this->TAG, "Unable to modify sheet in workflow with instance id = '{$this->instanceId}'");
       }
       
       $this->setIsProcessing(false);
@@ -1439,11 +1454,7 @@ class Workflow {
       if($this->healthy == TRUE && $status['healthy'] == true){
          try {
             //truncate data from all the data tables
-            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-            for($index = 0; $index < count($dataTables); $index++) {
-               $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
-               $this->database->runGenericQuery($query);
-            }
+            $this->truncateWorkflow();
             $rawDiff = Workflow::getVersionDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
             $diff = $rawDiff['diff'];
             $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
@@ -1555,6 +1566,23 @@ class Workflow {
    }
    
    /**
+    * This function deletes all the data in the workflow's database
+    * 
+    * @throws WAException
+    */
+   private function truncateWorkflow() {
+      try {
+         $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+         for($index = 0; $index < count($dataTables); $index++) {
+            $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
+            $this->database->runGenericQuery($query);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Was unable to truncate the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
     * This function resolves any merge differences between this workflow and the
     * workflow identified by $workflow2Id. The difference between this function and
     * resolveTrivialSchemaDiff is that this function should be called when working with
@@ -1572,11 +1600,7 @@ class Workflow {
       if($this->healthy == TRUE && $status['healthy'] == true){
          try {
             //truncate data from all the data tables
-            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-            for($index = 0; $index < count($dataTables); $index++) {
-               $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
-               $this->database->runGenericQuery($query);
-            }
+            $this->truncateWorkflow();
             $rawDiff = Workflow::getMergeDifferences($this->currUser, $this->config, $this->instanceId, $workflow2Id, "all", $key1, $key2);//get all the merge differences
             $this->lH->log(4, $this->TAG, "Merge diff = ".print_r($rawDiff, true));
             $diff = $rawDiff['diff'];
