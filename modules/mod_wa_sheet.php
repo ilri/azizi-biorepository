@@ -14,7 +14,7 @@ class WASheet {
    private $columns;//array of WAColumns in this object
    private $sheetName;
    private $columnArray;//this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
-   private $originalName;//what the sheet is called in the data files
+   private $fileDetails;
    
    /**
     * Default constructor for this class
@@ -25,7 +25,7 @@ class WASheet {
     * @param string   $sheetName    Name of the sheet in the excelObject to process
     * 
     */
-   public function __construct($config, $database, $excelObject, $sheetName) {
+   public function __construct($config, $database, $excelObject, $sheetName, $fileDetails = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
@@ -36,8 +36,8 @@ class WASheet {
       $this->database = $database;
       $this->excelObject = $excelObject;
       $this->sheetName = $sheetName;
-      $this->originalName = WASheet::getSheetOriginalName($this->database, $sheetName);
       $this->columns = array();
+      $this->fileDetails = $fileDetails;
       
       if($this->excelObject == null) {//means data already stored in database
          $this->getCachedCopy();//this function will not initialize $this->excelObject but instead will initialize $this->$columnSchemas
@@ -159,8 +159,8 @@ class WASheet {
    public function dumpData() {
       $this->getCachedCopy();
       if($this->sheetName != null
-              && $this->originalName != null
-              && $this->columns != null) {
+              && $this->columns != null
+              && $this->fileDetails != null) {
          try {
             $this->lH->log(3, $this->TAG, "Dumping data for '{$this->sheetName}'");
             //get the list of columns in the database table. Only dump columns that are in the database
@@ -169,7 +169,8 @@ class WASheet {
             $dataColumns = array();
             for($index = 0; $index < count($this->columns); $index++) {
                $currColumn = $this->columns[$index];
-               $oColumnName = WAColumn::getOriginalColumnName($this->database, $this->sheetName, $currColumn->getName());
+               
+               $oColumnName = WAColumn::getOriginalColumnName($this->database, $this->fileDetails['filename'], $this->sheetName, $currColumn->getName());
                $this->lH->log(4, $this->TAG, "Current original column name = ".$oColumnName);
                $currColumn->setData($this->columnArray[$oColumnName]);
                $dataColumns[] = $currColumn;
@@ -237,7 +238,6 @@ class WASheet {
       else {
          $this->lH->log(1, $this->TAG, "Could not dump data into '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}' because sheet object was not initialized correctly");
          $this->lH->log(4, $this->TAG, "Sheet name = {$this->sheetName}");
-         $this->lH->log(4, $this->TAG, "Original name = {$this->originalName}");
          $this->lH->log(4, $this->TAG, "Columns = ".  print_r($this->columns, true));
          throw new WAException("Could not dump data into '{$this->sheetName}' because the sheet object wasn't initialized correctly", WAException::$CODE_WF_PROCESSING_ERROR, null);
       }
@@ -295,10 +295,6 @@ class WASheet {
          }
 
          if($column != null) {
-            $this->lH->log(4, $this->TAG, "*****************************************");
-            $this->lH->log(4, $this->TAG, print_r($column, true));
-            $this->lH->log(4, $this->TAG, print_r($columnDetails, true));
-            $this->lH->log(4, $this->TAG, "*****************************************");
             if($columnDetails['delete'] === false) {
                $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' in '{$this->sheetName}'");
                try {
@@ -367,19 +363,19 @@ class WASheet {
     */
    public function saveAsMySQLTable($linkSheets, $mysqlColumns = array()) {
       try {
-         //$this->processColumns();
-         if(is_array($this->columnArray) 
-                 && count($this->columnArray) > 0) {
-            $columnNames = array_keys($this->columnArray);
-            $columnsProvided = false;
-            if(count($mysqlColumns) > 0){
-               $columnsProvided = true;
-            }
-            if($linkSheets == true) {
-               $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
-               array_push($mysqlColumns, $primayKey);
-            }
-            if($columnsProvided == false){
+         $columnNames = array_keys($this->columnArray);
+         $columnsProvided = false;
+         if(count($mysqlColumns) > 0){
+            $columnsProvided = true;
+         }
+         if($linkSheets == true) {
+            $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
+            array_push($mysqlColumns, $primayKey);
+         }
+         if($columnsProvided == false){
+            $this->processColumns();
+            if(is_array($this->columnArray) 
+              && count($this->columnArray) > 0) {
                $this->switchToThisSheet();
                for($index = 0; $index < count($columnNames); $index++) {
                   if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
@@ -393,26 +389,27 @@ class WASheet {
                   }
                }
             }
-            
-            $columnCount = count($columnNames);
-            if($linkSheets) $columnCount++;
-            if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
-               $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
-               throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
-            }
-            else {//everything seems to be fine with the data to be pushed to the MySQL database
-               try {
-                  
-                  $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns, $linkSheets);
-                  
-               } catch (WAException $ex) {
-                  $this->lH->log(1, $this->TAG, "Unable to create database table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
-                  throw new WAException("Unable to create MySQL table for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
-               }
+            else {
+               $this->lH->log(1, $this->TAG, "Unable to get column details for sheet with name '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
+               throw new WAException("Unable to get column details for sheet with name '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, null);
             }
          }
-         else {
-            $this->lH->log(2, $this->TAG, "Unable to get column details for sheet with name '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
+
+         $columnCount = count($columnNames);
+         if($linkSheets) $columnCount++;
+         if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
+            $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
+            throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+         else {//everything seems to be fine with the data to be pushed to the MySQL database
+            try {
+
+               $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns, $linkSheets);
+
+            } catch (WAException $ex) {
+               $this->lH->log(1, $this->TAG, "Unable to create database table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
+               throw new WAException("Unable to create MySQL table for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+            }
          }
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to process columns for sheet with name = '{$this->sheetName}' in workflow with id = '{$this->database->getDatabaseName()}'");
@@ -554,12 +551,13 @@ class WASheet {
     */
    private function switchToThisSheet() {
       if($this->excelObject != null
-              && $this->originalName != null) {
-         $this->excelObject->setActiveSheetIndexByName($this->originalName);
+            && $this->fileDetails != null) {
+         $originalName = $this->getSheetOriginalName($this->database, $this->fileDetails['filename'], $this->sheetName);
+         $this->excelObject->setActiveSheetIndexByName($originalName);
       }
       else {
-         $this->lH->log(1, $this->TAG, "Unable to switch to sheet with name = '{$this->originalName}' for workflow with id = '{$this->database->getDatabaseName()}'");
-         throw new WAException("Unable to switch to sheet with name as '{$this->originalName}'", WAException::$CODE_WF_CREATE_ERROR, null);
+         $this->lH->log(1, $this->TAG, "Unable to switch to sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
+         throw new WAException("Unable to switch to sheet with name as '{$this->sheetName}'", WAException::$CODE_WF_CREATE_ERROR, null);
       }
    }
    
@@ -594,13 +592,7 @@ class WASheet {
             $result = $database->getTableNames($workflowId);
             if(is_array($result)) {
                $tables = array();
-               $metaTables = array();
-               array_push($metaTables, WAFile::$TABLE_META_FILES);
-               array_push($metaTables, Workflow::$TABLE_META_ACCESS);
-               array_push($metaTables, Workflow::$TABLE_META_CHANGES);
-               array_push($metaTables, Workflow::$TABLE_META_DOCUMENT);
-               array_push($metaTables, Workflow::$TABLE_META_ERRORS);
-               array_push($metaTables, Workflow::$TABLE_META_VAR_NAMES);
+               $metaTables = Workflow::getAllMetaTables();
                
                for($index = 0; $index < count($result); $index++) {
                   if(!in_array($result[$index], $metaTables)) {
@@ -634,10 +626,10 @@ class WASheet {
       }
    }
    
-   public static function getSheetOriginalName($database, $currentName) {
+   public static function getSheetOriginalName($database, $file, $currentName) {
       include_once 'mod_wa_exception.php';
       try {
-         $query = "select original_sheet from ".Workflow::$TABLE_META_CHANGES." where current_sheet = '$currentName' and change_type = '".Workflow::$CHANGE_SHEET."'";
+         $query = "select original_sheet from ".Workflow::$TABLE_META_CHANGES." where current_sheet = '$currentName' and change_type = '".Workflow::$CHANGE_SHEET."' and file = '".$file."'";
          $result = $database->runGenericQuery($query, TRUE);
          if(is_array($result)) {
             if(count($result) == 1) {
@@ -658,20 +650,22 @@ class WASheet {
       }
    }
    
-   public static function getSheetCurrentName($database, $originalName){
+   public static function getSheetCurrentName($database, $originalName, $file = null){
       include_once 'mod_wa_exception.php';
       try {
-         $query = "select current_sheet from ".Workflow::$TABLE_META_CHANGES." where original_sheet = '$originalName' and change_type = '".Workflow::$CHANGE_SHEET."'";
+         if($file != null) {
+            $query = "select current_sheet from ".Workflow::$TABLE_META_CHANGES." where original_sheet = '$originalName' and change_type = '".Workflow::$CHANGE_SHEET."' and file = '$file'";
+         }
+         else {
+            $query = "select current_sheet from ".Workflow::$TABLE_META_CHANGES." where original_sheet = '$originalName' and change_type = '".Workflow::$CHANGE_SHEET."'";
+         }
          $result = $database->runGenericQuery($query, TRUE);
          if(is_array($result)) {
-            if(count($result) == 1) {
+            if(count($result) > 0) {
                return $result[0]['current_sheet'];
             }
             else if(count($result) == 0) {
                return $originalName;
-            }
-            else {
-               throw new WAException("Multiple records in the database indicating name change for '$currentName'", WAException::$CODE_DB_ZERO_RESULT_ERROR, null);
             }
          }
          else {

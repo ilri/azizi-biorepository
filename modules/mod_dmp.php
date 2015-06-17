@@ -39,8 +39,8 @@ class DMP extends Repository{
       $this->jqGridFiles();//import vital jqx files
       $sessionId = $this->getAPISessionID();
 ?>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxnotification.js"></script>
 <script type="text/javascript" src="js/dmp_home.js"></script>
 <div class="center" style="height: 500px; margin-top: 200px;">
    <input type="button" id="new_project_btn" value="Create a new project" />
@@ -63,21 +63,21 @@ class DMP extends Repository{
       $sessionId = $_GET['session'];
       $project = $_GET['project'];
 ?>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxwindow.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxsplitter.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxlistbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.selection.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.edit.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxfileupload.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxcheckbox.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxdropdownlist.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxnumberinput.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxnotification.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxmenu.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxtabs.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jquery/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxsplitter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxfileupload.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxnumberinput.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxtabs.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
 <div id="blanket_cover" style="position: absolute; background-color: white; opacity: 0.6; display: none; z-index: 5;"></div>
@@ -95,13 +95,16 @@ class DMP extends Repository{
                  <ul id="undo_container" style='color: black; min-width: 300px;'>
                   </ul>
               </li>
+              <li><a id="add_note_menu_btn" style="text-decoration: none; color: black;">Add Note</a></li>
               <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
+              <li><a id="merge_version_menu_btn" style="text-decoration: none; color: black;">Combine with another version</a></li>
               <li><a id="merge_schema_menu_btn" style="text-decoration: none; color: black;">Merge with another project</a></li>
               <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Schema (and project)</a></li>
           </ul>
       </li>
       <li>Data
          <ul style='width: 250px;'>
+            <li><a id="run_query_menu_btn" style="text-decoration: none; color: black;">Run cleaning query</a></li>
             <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
             <li><a id="db_credentials_btn" style="text-decoration: none; color: black;">Get Database Credentials</a></li>
             <li><a id="get_data_btn" style="text-decoration: none; color: black;">Get Data</a></li>
@@ -199,6 +202,26 @@ class DMP extends Repository{
          <button type="button" id="rename_project_btn" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Rename</button>
       </div>
    </div>
+   <div id="notes_wndw" style="display: none; z-index: 6;">
+      <div>Project notes</div>
+      <div>
+         <div id="notes_grid" style="width: 90%"></div>
+         <div style="position: relative; width: 90%; margin-top: 10px;">
+            <label for="new_note">Add a note</label>
+            <textarea type="text" id="new_note" rows="2" style="width: 85%;"></textarea>
+            <button type="button" id="add_new_note" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
+         </div>
+      </div>
+   </div>
+   <div id="query_wndw" style="display: none; z-index: 6;">
+      <div>Cleaning query</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px;margin-right: 5%;margin-left: 5%;">
+            <textarea type="text" id="query_box" rows="2" style="width: 100%;"></textarea>
+            <button type="button" id="run_query_btn" class="btn btn-primary" style="margin-left: 90%; margin-top: 10px;">Run</button>
+         </div>
+      </div>
+   </div>
    <div id="delete_project_wndw" style="display: none; z-index: 6;">
       <div>Delete Project</div>
       <div>
@@ -213,20 +236,54 @@ class DMP extends Repository{
       <div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_project_list"></select></div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="merge_version_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
             <button type="button" id="merge_schema_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
          </div>
       </div>
    </div>
-   <div id="project_diff_wndw" style="display: none; z-index: 6;">
-      <div>Resolve Schema Conflicts</div>
+   <div id="merge_sheet_wndw" style="display: none; z-index: 6;">
+      <div>Select the common columns</div>
+      <div>
+         <div style="margin-left: 20px;">
+            <div style="display: inline-block; width: 45%;">
+               <div id="curr_project_name" style="margin-bottom: 10px;"></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="curr_sheet_list"></select></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="curr_column_list"></select></div>
+            </div>
+            <div style="display: inline-block; width: 45%;">
+               <div id="other_project_name" style="margin-bottom: 10px;"></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_sheet_list"></select></div>
+               <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;"><select id="other_column_list"></select></div>
+            </div>
+         </div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="merge_sheet_btn" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Okay</button>
+         </div>
+      </div>
+   </div>
+   <div id="version_diff_wndw" style="display: none; z-index: 6;">
+      <div>Resolve Version Differences</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">
+            <label for="merged_version_name">Merged Project Name</label>
+            <input type="text" id="merged_version_name" style="height: 25px; width: 300px;" />
+         </div>
+         <div id="version_diff_grid" style="width: 90%"></div>
+         <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
+            <button type="button" id="apply_version_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
+         </div>
+      </div>
+   </div>
+   <div id="merge_diff_wndw" style="display: none; z-index: 6;">
+      <div>Resolve Schema Differences</div>
       <div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%;">
             <label for="merged_schema_name">Merged Schema Name</label>
             <input type="text" id="merged_schema_name" style="height: 25px; width: 300px;" />
          </div>
-         <div id="diff_grid" style="width: 90%"></div>
+         <div id="merge_diff_grid" style="width: 90%"></div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
-            <button type="button" id="apply_diff_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
+            <button type="button" id="apply_merge_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
          </div>
       </div>
    </div>
@@ -266,7 +323,7 @@ class DMP extends Repository{
     * @return string
     */
    private function getAPISessionID() {
-      include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
+      include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
       $security = new Security($this->Dbase);
       /*$cypherSecret = $_SESSION['password'];
       $username = $_SESSION['username'];

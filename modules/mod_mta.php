@@ -891,7 +891,7 @@ class MTA{
        */
       
       $templateLocation = "templates/MTA-ILRI-Template.docx";
-      require_once OPTIONS_COMMON_FOLDER_PATH."/PHPWord/PHPWord.php";
+      require_once OPTIONS_COMMON_FOLDER_PATH."PHPWord/Classes/PHPWord.php";
       $PHPWord = new PHPWord();
       $mtaTemplate = $PHPWord->loadTemplate($templateLocation);
       

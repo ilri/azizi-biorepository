@@ -56,7 +56,7 @@ class Database {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_wa_file.php';
-      //include_once $config['common_folder_path'].'dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
+      //include_once $config['common_folder_path'].'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
       
       $this->config = $config;
       
@@ -189,7 +189,7 @@ class Database {
                }
             }
             else {
-               $this->logH->log(2, $this->TAG, "Database '$name' already exists. Not creating it");
+               $this->logH->log(3, $this->TAG, "Database '$name' already exists. Not creating it");
             }
          } catch (WAException $ex) {
             //die(print_r($ex->getPrevious()->getPrevious()->getTrace(), true));
@@ -865,7 +865,7 @@ class Database {
             }
          }
          else {
-            $this->logH->log(2, $this->TAG, "Table '$name' already exists. Not creating it");
+            $this->logH->log(3, $this->TAG, "Table '$name' already exists. Not creating it");
          }
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "An error occurred while trying to check wheter the table '$name' exists");

@@ -24,7 +24,7 @@ class ODKWorkflowAPI extends Repository {
       $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
       //$this->config['timeout'] = Config::$timeout;//TODO: uncomment when deploying
       $this->config['timeout'] = 100000000;
-      include_once OPTIONS_COMMON_FOLDER_PATH."authmodules/mod_security_v0.1.php";
+      include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
       $this->lH = new LogHandler("./");
       $this->Dbase = new DBase("mysql");
       $this->Dbase->InitializeConnection($this->config);
@@ -139,11 +139,26 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "get_schema_diff") {
                         $this->handleGetSchemaDiffEndpoint();
                      }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_trivial_diff") {
-                        $this->handleResolveTrivialDiffEndpoint();
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_merge_diff") {
+                        $this->handleGetMergeDiffEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_version_diff") {
+                        $this->handleResolveVersionDiffEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_merge_diff") {
+                        $this->handleResolveMergeDiffEndpoint();
                      }
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "get_data") {
                         $this->handleGetDataEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "add_note") {
+                        $this->handleAddNoteEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_notes") {
+                        $this->handleGetNotesEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "run_query") {
+                        $this->handleRunQueryEndpoint();
                      }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
@@ -796,7 +811,7 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("workflow_id_2", $json)
                && array_key_exists("type", $json)
                && ($json['type'] == 'all' || $json['type'] == 'trivial' || $json['type'] == 'non_trivial')) {
-            $diff = Workflow::getSchemaDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type']);
+            $diff = Workflow::getVersionDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type']);
             $this->returnResponse($diff);
          }
          else {
@@ -811,8 +826,47 @@ class ODKWorkflowAPI extends Repository {
    }
    
    /**
-    * This function handles the resolve_trivial_diff endpoint
-    * The resolve_trivial_diff endpoint tries to resolve trivial differences in schema
+    * This function handles the diff_schema endpoint
+    * The diff_schema endpoint checkes for the differences in schema structure for
+    * the specified workflows
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id    :  "Instance id for the main workflow"
+    *    workflow_id_2  :  "Instance id for the workflow you are comparing main workflow with"
+    *    type           :  "Can either be 'all', 'trivial' or 'non_trivial' "
+    *    key_1          :  "Key to be used in the first workflow for merging. Should be an array with the sheet and column name"
+    *    key_2          :  "Key to be used in the second workflow for merging. Should be an array with the sheet and column name"
+    * }
+    */
+   private function handleGetMergeDiffEndpoint(){
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("workflow_id_2", $json)
+               && array_key_exists("type", $json)
+               && ($json['type'] == 'all' || $json['type'] == 'trivial' || $json['type'] == 'non_trivial')
+               && array_key_exists("key_1", $json)
+               && (is_array($json['key_1']) && array_key_exists("sheet", $json['key_1']) && array_key_exists("column", $json['key_1']))
+               && array_key_exists("key_2", $json)
+               && (is_array($json['key_2']) && array_key_exists("sheet", $json['key_2']) && array_key_exists("column", $json['key_2']))) {
+            $diff = Workflow::getMergeDifferences($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type'], $json['key_1'], $json['key_2']);
+            $this->returnResponse($diff);
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id or workflow_id_2 not set in data provided to diff_schema endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to diff_schema endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the resolve_version_diff endpoint
+    * The resolve_version_diff endpoint tries to resolve trivial differences in schema
     * 
     * $_REQUEST['data'] variable
     * {
@@ -821,14 +875,14 @@ class ODKWorkflowAPI extends Repository {
     *    "name"         :  "Name"
     * }
     */
-   private function handleResolveTrivialDiffEndpoint() {
+   private function handleResolveVersionDiffEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("workflow_id_2", $json)
                && array_key_exists("name", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            $savePoint = $workflow->resolveTrivialSchemaDiff( $json['name'], $json['workflow_id_2']);
+            $savePoint = $workflow->resolveVersionSchemaDiff( $json['name'], $json['workflow_id_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "save_point" => $savePoint,
@@ -836,12 +890,52 @@ class ODKWorkflowAPI extends Repository {
             ));
          }
          else {
-            $this->lH->log(2, $this->TAG, "workflow_id or workflow_id_2 not set in data provided to resolve_trivial_diff endpoint");
+            $this->lH->log(2, $this->TAG, "workflow_id or workflow_id_2 not set in data provided to resolve_version_diff endpoint");
             $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          }
       }
       else {
-         $this->lH->log(2, $this->TAG, "data variable not set in data provided to resolve_trivial_diff endpoint");
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to resolve_version_diff endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the resolve_merge_diff endpoint
+    * The resolve_merge_diff endpoint tries to resolve trivial differences in schema
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id    :  "Instance id for the main workflow"
+    *    workflow_id_2  :  "Instance id for the workflow you are comparing main workflow with"
+    *    "name"         :  "Name"
+    * }
+    */
+   private function handleResolveMergeDiffEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("workflow_id_2", $json)
+               && array_key_exists("name", $json)
+               && array_key_exists("key_1", $json)
+               && (is_array($json['key_1']) && array_key_exists("sheet", $json['key_1']) && array_key_exists("column", $json['key_1']))
+               && array_key_exists("key_2", $json)
+               && (is_array($json['key_2']) && array_key_exists("sheet", $json['key_2']) && array_key_exists("column", $json['key_2']))) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->resolveMergeDiff($json['name'], $json['workflow_id_2'], $json['key_1'], $json['key_2']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "save_point" => $savePoint,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "workflow_id or workflow_id_2 not set in data provided to resolve_merge_diff endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to resolve_merge_diff endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
@@ -880,6 +974,105 @@ class ODKWorkflowAPI extends Repository {
       }
       else {
          $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_data endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the add_note endpoint
+    * The add_note endpoint adds any form of note to the workflow
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    *    note        :  "The note text"
+    * }
+    */
+   private function handleAddNoteEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("note", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow->addNote($json['note']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to add_note endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to add_note endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_notes endpoint
+    * The get_notes endpoint gets all notes corresponding to a workflow
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    * }
+    */
+   private function handleGetNotesEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $notes = $workflow->getAllNotes();
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "notes" => $notes,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_notes endpoint
+    * The get_notes endpoint gets all notes corresponding to a workflow
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    *    query       :  "The non-select query to be run"
+    * }
+    */
+   private function handleRunQueryEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("query", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->runNonSelectQuery($json['query']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "save_point" => $savePoint,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }

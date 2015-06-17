@@ -1,0 +1,49 @@
+{
+  "name": "azizi-repository",
+  "version": "1.0",
+  "authors": [
+    "Absolomon Kihara <a.kihara@cgiar.org>",
+    "Jason Rogena <j.rogena@cgiar.org>"
+  ],
+  "description": "Azizi's web system for managing the biorepository activities",
+  "main": "index.php",
+  "keywords": [
+    "Azizi",
+    "ILRI",
+    "Biorepository"
+  ],
+  "license": "GPLv3",
+  "homepage": "http://azizi.ilri.org/repository",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "1.8.3",
+    "jquery-ui": "~1.11.4",
+    "jquery-form": "~3.46.0",
+    "jquery-json": "~2.5.1",
+    "jqwidgets": "*",
+    "jsencrypt": "~2.1.0",
+    "bootstrap": "2.3.1",
+    "jquery-flexigrid": "~1.1.5",
+    "jquery-md5": "*",
+    "dygraphs": "~1.1.1",
+    "PHPExcel": "https://github.com/PHPOffice/PHPExcel.git#1.8.0",
+    "PHPWord": "https://github.com/PHPOffice/PHPWord.git#0.7.0",
+    "three.js": "https://github.com/mrdoob/three.js.git#r68",
+    "tween.js": "https://github.com/tweenjs/tween.js.git#r7",
+    "OrbitControls": "https://gist.githubusercontent.com/mrflix/8351020/raw/69c24e31729a67cf3cbdbce910bb4c6c3ab1d718/OrbitControls.js",
+    "stats.js": "https://github.com/mrdoob/stats.js.git#r12",
+    "threex.dynamictexture": "https://github.com/jeromeetienne/threex.dynamictexture.git",
+    "azizi-shared-libs": "https://github.com/ilri/azizi-shared-libs.git",
+    "datePicker": "https://github.com/freqdec/datePicker.git",
+    "pyxform": "https://github.com/uw-ictd/pyxform.git#v0.9.22",
+    "leaflet": "https://github.com/Leaflet/Leaflet.git#v0.7.3",
+    "Leaflet.heat": "https://github.com/Leaflet/Leaflet.heat.git#gh-pages",
+    "lightgallery": "~1.1.5"
+  }
+}

@@ -8,7 +8,9 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.sheetData = {};
    window.dvs.sheetListAdapter = null;
    window.dvs.columnGridAdapter = null;
-   window.dvs.diffGridAdapter = null;
+   window.dvs.versionDiffGridAdapter = null;
+   window.dvs.notesGridAdapter = null;
+   window.dvs.mergeDiffGridAdapter = null;
    window.dvs.dataGridAdapter = null;
    window.dvs.schemaChanges={};
    window.dvs.columnDictionary={};//object storing the original and new column names
@@ -18,9 +20,15 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.lastSavePoint = null;
    window.dvs.uploadFileLoc = null;
    window.dvs.diffProject = null;//holds project id for the project chosen to be merged with this one
+   window.dvs.diffProjectSchema = null;
+   window.dvs.mergeKeys = null;
    $("#whoisme").hide();
    //initialize source for project_list_box
-   $(document).ready(function(){
+   $(document).ready(function() {
+      window.dvs.documentReady();
+   });
+   $(window).resize(function() {
+      console.log("window resized");
       window.dvs.documentReady();
    });
    
@@ -28,6 +36,9 @@ function DMPVSchema(server, user, session, project) {
       //show create project popup
       $("#new_project_wndw").show();
       $("#project_title").html("New Project");
+   }
+   else {
+      window.dvs.refreshSavePoints();
    }
 }
 
@@ -38,159 +49,331 @@ function DMPVSchema(server, user, session, project) {
  * @returns {undefined}
  */
 DMPVSchema.prototype.documentReady = function() {
-   (function ($) {
-	  $.each(['show', 'hide'], function (i, ev) {
-	    var el = $.fn[ev];
-	    $.fn[ev] = function () {
-	      this.trigger(ev);
-	      return el.apply(this, arguments);
-	    };
-	  });
-	})(jQuery);
-   var pWidth = window.innerWidth*0.942;//split_window width
-   window.dvs.leftSideWidth = pWidth*0.2;//30% of split_window
-   window.dvs.rightSideWidth = pWidth - window.dvs.leftSideWidth;
-   $("#blanket_cover").position({y:0, x:0});
-   $("#blanket_cover").css("height", window.innerHeight * 0.9);
-   $("#blanket_cover").css("width", $("#repository").width());
-   var newProjectWindowPos = {
-      y:window.innerHeight/2 - 220/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - 600/2
-   };
-   $("#new_project_wndw").jqxWindow({height: 220, width: 600, position:newProjectWindowPos, theme: ''});
-   $("#new_project_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#new_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var getDataWindowPos = {
-      y:window.innerHeight/2 - 160/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - 600/2
-   };
-   $("#get_data_wndw").jqxWindow({height: 160, width: 600, position:getDataWindowPos, theme: ''});
-   $("#get_data_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#get_data_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var deleteProjectWindowPos = {
-      y:window.innerHeight/2 - 100/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - 300/2
-   };
-   $("#delete_project_wndw").jqxWindow({height: 100, width: 300, position: deleteProjectWindowPos, theme: ''});
-   $("#delete_project_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#delete_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var otherProjectsWindowPos = {
-      y:window.innerHeight/2 - 130/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - 300/2
-   };
-   $("#other_projects_wndw").jqxWindow({height: 130, width: 300, position: otherProjectsWindowPos, theme: ''});
-   $("#other_projects_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#other_projects_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var diffWindowPos = {
-      y:window.innerHeight/2 - (window.innerHeight * 0.9)/2,
-      x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
-   };
-   $("#project_diff_wndw").jqxWindow({height: window.innerHeight * 0.9, width: window.innerWidth * 0.8, position: diffWindowPos, theme: ''});
-   $("#project_diff_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#project_diff_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var renameSheetWindowPos = {
-      y:window.innerHeight/2 - (window.innerHeight * 0.8)/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - (window.innerWidth * 0.8)/2
-   };
-   $("#rename_sheet_wndw").jqxWindow({height: 150, width: 400, position: renameSheetWindowPos, theme: ''});
-   $("#rename_sheet_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#rename_sheet_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var newForeignKeyWindowPos = {
-      y:window.innerHeight/2 - 230/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - 400/2
-   };
-   $("#new_foreign_key_wndw").jqxWindow({height: 230, width: 400, position: newForeignKeyWindowPos, theme: ''});
-   $("#new_foreign_key_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#new_foreign_key_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var renameProjectWindowPos = {
-      y:window.innerHeight/2 - 150/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - 400/2
-   };
-   $("#rename_project_wndw").jqxWindow({height: 150, width: 400, position: renameProjectWindowPos, theme: ''});
-   $("#rename_project_wndw").on("show", function(){$("#blanket_cover").show();});
-   $("#rename_project_wndw").on("hide", function(){$("#blanket_cover").hide();});
-   var dbCredentailsWindowPos = {
-      y:window.innerHeight/2 - 110/2 - window.innerHeight*0.1,
-      x:window.innerWidth/2 - 250/2
-   };
-   $("#db_credentials_wndw").jqxWindow({height: 110, width: 250, position: dbCredentailsWindowPos, theme: ''});
-   $("#manual_file_upload").jqxFileUpload({
-      width:500,
-      fileInputName: "data_file",
-      uploadUrl: "mod_ajax.php?page=dmp&do=ajax&action=upload_data_file",
-      autoUpload: true
-   });
-   $("#tabs").jqxTabs({width:"100%", height: "100%", position: "top"});
-   $("#manual_file_upload").on("uploadEnd", window.dvs.fileUploadEnd);
-   $("#manual_file_upload").on("uploadStart", window.dvs.fileUploadStart);
-   $("#split_window").jqxSplitter({  width: pWidth, height: window.innerHeight*0.8, panels: [{ size: window.dvs.leftSideWidth, min: '10%' }, {size: window.dvs.rightSideWidth, min: '50%'}] });
-   $("#loading_box").css("top", (window.innerHeight/2 - (window.innerHeight*0.1))-($("#loading_box").height()/2)+"px");
-   $("#loading_box").css("left", (window.innerWidth/2)-($("#loading_box").width()/2)+"px");
-   $("#inotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: true, template:"info"});
-   $("#enotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: false, template:"error"});
-   window.dvs.initSheetList();
-   window.dvs.initColumnGrid();
-   //window.dvs.initFileDropArea();
-   $("#cancel_btn").click(window.dvs.cancelButtonClicked);
-   $("#update_btn").click(window.dvs.applySchemaChanges);
-   $("#create_project_btn").click(window.dvs.createProjectButtonClicked);
-   $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
-   $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
-   $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
-   $("#merge_schema_menu_btn").click(window.dvs.mergeSchemaMenuButtonClicked);
-   $("#merge_schema_btn").click(window.dvs.mergeSchemaButtonClicked);
-   $("#menu_bar").jqxMenu({autoOpen: false});
-   $("#right_click_menu").jqxMenu({mode: "popup", width: "200px", autoOpenPopup: false});
-   $("#rename_sheet_btn2").click(window.dvs.renameSheetButton2Clicked);
-   $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
-   $("#dump_data_btn").click(window.dvs.dumpDataButtonClicked);
-   $("#project_title").dblclick(function() {
-      $("#new_project_name").val(window.dvs.schema.title);
-      $("#rename_project_wndw").show();
-   });
-   $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
-   $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
-   $("#apply_diff_changes").click(window.dvs.applyDiffButtonClicked);
-   $("#get_data_btn").click(function() {
-      //get the project groups
-      var projectGroups = window.dvs.getProjectGroups();
-      var html = "";
-      for(var gIndex = 0; gIndex < projectGroups.length; gIndex++) {
-         html = html + "<input type='checkbox' name='project_groups' id='"+projectGroups[gIndex]+"' value='"+projectGroups[gIndex]+"' />"+projectGroups[gIndex]+"<br />";
-      }
-      $("#data_project_groups_div").html(html);
-      $("#get_data_wndw").show();
-   });
-   $("#data_filter_type").change(function() {
-      var wHeight = 160;
-      if($("#data_filter_type").val() == "all") {
-         $("#filter_query_div").hide();
-         $("#filter_prefix_div").hide();
-      }
-      else if($("#data_filter_type").val() == "query") {
-         wHeight = 230;
-         $("#filter_query_div").show();
-         $("#filter_prefix_div").hide();
-      }
-      else if($("#data_filter_type").val() == "prefix") {
-         wHeight = 280;
-         $("#filter_query_div").hide();
-         $("#filter_prefix_div").show();
-      }
-      $("#get_data_wndw").jqxWindow({height: wHeight});
-   });
-   $("#get_data_btn2").click(window.dvs.getDataButtonClicked);
+   var currTime = new Date().getTime();
+   if(typeof window.dvs.lastDocumentReload == 'undefined' || (currTime - window.dvs.lastDocumentReload) > 1000) {
+      console.log("documentReady called");
+      window.dvs.lastDocumentReload = currTime;
+      var pWidth = window.innerWidth*0.942;//split_window width
+      window.dvs.leftSideWidth = pWidth*0.2;//30% of split_window
+      window.dvs.rightSideWidth = pWidth - window.dvs.leftSideWidth;
+      $("#blanket_cover").position({y:0, x:0});
+      $("#blanket_cover").css("height", window.innerHeight * 0.9);
+      $("#blanket_cover").css("width", $("#repository").width());
+      window.dvs.initWindow($("#new_project_wndw"), 220, 600);
+      window.dvs.initWindow($("#get_data_wndw"), 220, 600);
+      window.dvs.initWindow($("#delete_project_wndw"), 100, 300);
+      window.dvs.initWindow($("#other_projects_wndw"), 130, 300);
+      window.dvs.initWindow($("#version_diff_wndw"), (window.innerHeight * 0.9), (window.innerWidth * 0.8));
+      window.dvs.initWindow($("#merge_diff_wndw"), window.innerHeight * 0.9, window.innerWidth * 0.8);
+      window.dvs.initWindow($("#merge_sheet_wndw"), 200, (window.innerWidth * 0.8));
+      window.dvs.initWindow($("#rename_sheet_wndw"), window.innerHeight * 0.8, window.innerWidth * 0.8);
+      window.dvs.initWindow($("#new_foreign_key_wndw"), 230, 400);
+      window.dvs.initWindow($("#rename_project_wndw"), 150, 400);
+      window.dvs.initWindow($("#db_credentials_wndw"), 110, 250);
+      window.dvs.initWindow($("#notes_wndw"), window.innerHeight * 0.7, window.innerWidth * 0.9);
+      window.dvs.initWindow($("#query_wndw"), 160, 600);
+      $("#manual_file_upload").jqxFileUpload({
+         width:500,
+         fileInputName: "data_file",
+         uploadUrl: "mod_ajax.php?page=dmp&do=ajax&action=upload_data_file",
+         autoUpload: true
+      });
+      $("#tabs").jqxTabs({width:"100%", height: "100%", position: "top"});
+      $("#manual_file_upload").on("uploadEnd", window.dvs.fileUploadEnd);
+      $("#manual_file_upload").on("uploadStart", window.dvs.fileUploadStart);
+      $("#split_window").jqxSplitter({  width: pWidth, height: window.innerHeight*0.8, panels: [{ size: window.dvs.leftSideWidth, min: '10%' }, {size: window.dvs.rightSideWidth, min: '50%'}] });
+      $("#loading_box").css("top", (window.innerHeight/2 - (window.innerHeight*0.1))-($("#loading_box").height()/2)+"px");
+      $("#loading_box").css("left", (window.innerWidth/2)-($("#loading_box").width()/2)+"px");
+      $("#inotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: true, template:"info"});
+      $("#enotification_pp").jqxNotification({position: "top-right", opacity: 0.9, autoOpen: false, autoClose: false, template:"error"});
+      window.dvs.initSheetList();
+      window.dvs.initColumnGrid();
+      //window.dvs.initFileDropArea();
+      $("#cancel_btn").click(window.dvs.cancelButtonClicked);
+      $("#update_btn").click(window.dvs.applySchemaChanges);
+      $("#create_project_btn").click(window.dvs.createProjectButtonClicked);
+      $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
+      $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
+      $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
+      $("#add_note_menu_btn").click(function(){
+         window.dvs.refreshNotes();
+         $("#notes_wndw").show();
+      });
+      $("#add_new_note").click(window.dvs.addNoteButtonClicked);
+      $("#merge_version_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("version");});
+      $("#merge_schema_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("schema");});
+      $("#merge_version_btn").click(window.dvs.mergeVersionButtonClicked);
+      $("#merge_schema_btn").click(window.dvs.mergeSchemaButtonClicked);
+      $("#merge_sheet_btn").click(window.dvs.mergeSheetButtonClicked);
+      $("#menu_bar").jqxMenu({autoOpen: false});
+      $("#right_click_menu").jqxMenu({mode: "popup", width: "200px", autoOpenPopup: false});
+      $("#rename_sheet_btn2").click(function() {
+         window.dvs.renameSheetButton2Clicked($("#sheet_old_name").val(), $("#sheet_name").val());
+      });
+      $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
+      $("#dump_data_btn").click(window.dvs.dumpDataButtonClicked);
+      $("#project_title").dblclick(function() {
+         $("#new_project_name").val(window.dvs.schema.title);
+         $("#rename_project_wndw").show();
+      });
+      $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
+      $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
+      $("#apply_version_changes").click(window.dvs.applyVersionDiffButtonClicked);
+      $("#apply_merge_changes").click(window.dvs.applyMergeDiffButtonClicked);
+      $("#run_query_menu_btn").click(function(){
+         $("#query_wndw").show();
+      });
+      $("#run_query_btn").click(window.dvs.runQueryButtonClicked);
+      $("#get_data_btn").click(function() {
+         //get the project groups
+         var projectGroups = window.dvs.getProjectGroups();
+         var html = "";
+         for(var gIndex = 0; gIndex < projectGroups.length; gIndex++) {
+            html = html + "<input type='checkbox' name='project_groups' id='"+projectGroups[gIndex]+"' value='"+projectGroups[gIndex]+"' />"+projectGroups[gIndex]+"<br />";
+         }
+         $("#data_project_groups_div").html(html);
+         $("#get_data_wndw").show();
+      });
+      $("#data_filter_type").change(function() {
+         var wHeight = 160;
+         if($("#data_filter_type").val() == "all") {
+            $("#filter_query_div").hide();
+            $("#filter_prefix_div").hide();
+         }
+         else if($("#data_filter_type").val() == "query") {
+            wHeight = 230;
+            $("#filter_query_div").show();
+            $("#filter_prefix_div").hide();
+         }
+         else if($("#data_filter_type").val() == "prefix") {
+            wHeight = 280;
+            $("#filter_query_div").hide();
+            $("#filter_prefix_div").show();
+         }
+         $("#get_data_wndw").jqxWindow({height: wHeight});
+      });
+      $("#get_data_btn2").click(window.dvs.getDataButtonClicked);
+   }
+   else {
+      console.log("ignoring documentReady call");
+   }
 };
 
-DMPVSchema.prototype.applyDiffButtonClicked = function() {
-   if(window.dvs.diffProject != null && window.dvs.project != null && $("#merged_schema_name").val().length > 0) {
-      $("#apply_diff_changes").prop('disabled', true);
+DMPVSchema.prototype.runQueryButtonClicked = function() {
+   if(window.dvs.project != null && $("#query_box").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "query":$("#query_box").val()
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=run_query",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to run the query");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to run queries");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from run_query endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not run the query"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#inotification_pp").html("Successfully run query");
+                  $("#inotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not run the query");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            window.dvs.refreshSavePoints();
+         }
+      });
+   }
+};
+
+/**
+ * This function records a project note
+ * 
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.addNoteButtonClicked = function() {
+   if(window.dvs.project != null && $("#new_note").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "note":$("#new_note").val()
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=add_note",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to add the note");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to add notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from add_note endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not add note"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  console.log("Successfully added note");
+                  window.dvs.refreshNotes();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not add the note");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.initWindow = function(wndw, height, width) {
+   (function ($) {
+      $.each(['show', 'hide'], function (i, ev) {
+        var el = $.fn[ev];
+        $.fn[ev] = function () {
+          this.trigger(ev);
+          return el.apply(this, arguments);
+        };
+      });
+   })(jQuery);
+   var windowPos = {
+      y:window.innerHeight/2 - height/2,
+      x:window.innerWidth/2 - width/2
+   };
+   wndw.jqxWindow({height: height, width: width, position: windowPos, theme: ''});
+   wndw.on("show", function(){$("#blanket_cover").show();});
+   wndw.on("hide", function(){$("#blanket_cover").hide();});
+};
+
+DMPVSchema.prototype.refreshNotes = function() {
+   if(window.dvs.project != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_notes",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_notes endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get notes"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  console.log("Successfully gotten notes");
+                  window.dvs.initNotesGrid(jsonResult.notes);
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not resolve trivial differences between projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
+   if(window.dvs.diffProject != null && window.dvs.project != null && $("#merged_version_name").val().length > 0) {
+      $("#apply_version_changes").prop('disabled', true);
       //first resolve the trivial conflicts then apply the non trivial ones one by one
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
          "workflow_id_2": window.dvs.diffProject,
-         "name": $("#merged_schema_name").val()
+         "name": $("#merged_version_name").val()
       });
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -199,7 +382,7 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
       });
       var wasSuccessful = false;
       $.ajax({
-         url: "mod_ajax.php?page=odk_workflow&do=resolve_trivial_diff",
+         url: "mod_ajax.php?page=odk_workflow&do=resolve_version_diff",
          type: "POST",
          async: true,
          data: {data: sData, token: sToken},
@@ -218,7 +401,7 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
             }
          },
          success: function(jsonResult, textStatus, jqXHR){
-            console.log("Response from resolve_trivial_diff endpoint = ", jsonResult);
+            console.log("Response from resolve_version_diff endpoint = ", jsonResult);
             if(jsonResult !== null) {
                if(jsonResult.status.healthy == false) {
                   var message = "";
@@ -234,7 +417,7 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
                   console.log("Successfully resolved trivial changes");
                   wasSuccessful = true;//this will prevent this function from refreshing save points in onComplete
                   window.dvs.applySchemaChanges();//calling this function will trigger refreshSavePoints at some point
-                  $("#project_diff_wndw").hide();
+                  $("#version_diff_wndw").hide();
                }
             }
             else {
@@ -243,15 +426,98 @@ DMPVSchema.prototype.applyDiffButtonClicked = function() {
             }
          },
          complete: function() {
-            $("#apply_diff_changes").prop('disabled', false);
+            $("#apply_version_changes").prop('disabled', false);
             $("#loading_box").hide();
-            if(wasSuccessful == false) {//could not resolve trivial conflicts
-               //refresh save points
-               window.dvs.refreshSavePoints();
-            }
+            window.dvs.refreshSavePoints();
          }
       });
    }
+   else if($("#merged_version_name").val().length == 0) {//the user did not define the merged sheet name
+      $("#enotification_pp").html("Please specify the new name to be given to this project");
+      $("#enotification_pp").jqxNotification("open");
+   }
+};
+
+DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
+   if(window.dvs.diffProject != null && window.dvs.project != null && $("#merged_schema_name").val().length > 0 && window.dvs.mergeKeys != null) {
+      $("#apply_merge_changes").prop('disabled', true);
+      //first resolve the non-trivial conflicts before merging the two schemas
+      var success = window.dvs.applySchemaChanges(false);//apply schema changes but do not refresh the sheet list
+      if(success == true) {
+         $("#loading_box").show();
+         var sData = JSON.stringify({
+            "workflow_id": window.dvs.project,
+            "workflow_id_2": window.dvs.diffProject,
+            "name": $("#merged_schema_name").val(),
+            "key_1": window.dvs.mergeKeys.key_1,
+            "key_2": window.dvs.mergeKeys.key_2
+         });
+         var sToken = JSON.stringify({
+            "server":window.dvs.server,
+            "user": window.dvs.user,
+            "session": window.dvs.session
+         });
+         var wasSuccessful = false;
+         $.ajax({
+            url: "mod_ajax.php?page=odk_workflow&do=resolve_merge_diff",
+            type: "POST",
+            async: true,
+            data: {data: sData, token: sToken},
+            statusCode: {
+               400: function() {//bad request
+                  $("#enotification_pp").html("Was unable to apply schema changes");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               403: function() {//forbidden
+                  $("#enotification_pp").html("User not allowed to make schema changes");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               500: function() {//forbidden
+                  $("#enotification_pp").html("An error occurred in the server");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            },
+            success: function(jsonResult, textStatus, jqXHR){
+               console.log("Response from resolve_merge_diff endpoint = ", jsonResult);
+               if(jsonResult !== null) {
+                  if(jsonResult.status.healthy == false) {
+                     var message = "";
+                     if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                        if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                           message = "<br />"+jsonResult.status.errors[0].message;
+                        }
+                     }
+                     $("#enotification_pp").html("Could not resolve trivial differences"+message);
+                     $("#enotification_pp").jqxNotification("open");
+                  }
+                  else {
+                     console.log("Successfully resolved trivial changes");
+                     wasSuccessful = true;//this will prevent this function from refreshing save points in onComplete
+                     $("#merge_diff_wndw").hide();
+                     window.dvs.reload();
+                  }
+               }
+               else {
+                  $("#enotification_pp").html("Could not resolve trivial differences between projects");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            },
+            complete: function() {
+               $("#apply_merge_changes").prop('disabled', false);
+               $("#loading_box").hide();
+               window.dvs.refreshSavePoints();
+            }
+         });
+      }
+   }
+   else if($("#merged_schema_name").val().length == 0) {//the user did not define the merged sheet name
+      $("#enotification_pp").html("Please specify the new name to be given to this project");
+      $("#enotification_pp").jqxNotification("open");
+   }
+};
+
+DMPVSchema.prototype.reload = function() {
+   window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
 };
 
 DMPVSchema.prototype.getProjectGroups = function() {
@@ -282,7 +548,7 @@ DMPVSchema.prototype.getDataButtonClicked = function() {
    if(filterType == "prefix" && prefixes.length == 0) correct = false;
    if(window.dvs.project != null && correct == true) {
       $("#get_data_btn2").attr("disabled", true);
-      $("#apply_diff_changes").prop('disabled', true);
+      $("#apply_version_changes").prop('disabled', true);
       //first resolve the trivial conflicts then apply the non trivial ones one by one
       $("#loading_box").show();
       var sDataObj = {};
@@ -420,7 +686,15 @@ DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
    }
 };
 
-DMPVSchema.prototype.mergeSchemaMenuButtonClicked = function() {
+DMPVSchema.prototype.mergeVSMenuButtonClicked = function(type) {
+   if(type == "version") {
+      $("#merge_schema_btn").hide();
+      $("#merge_version_btn").show();
+   }
+   else if(type == "schema") {
+      $("#merge_schema_btn").show();
+      $("#merge_version_btn").hide();
+   }
    if(window.dvs.project != null && window.dvs.project.length > 0) {//make sure at least we have an active project
       $("#loading_box").show();
       var sToken = JSON.stringify({
@@ -483,14 +757,14 @@ DMPVSchema.prototype.mergeSchemaMenuButtonClicked = function() {
    }
 };
 
-DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
+DMPVSchema.prototype.mergeVersionButtonClicked = function(){
    console.log("selected option = ", $("#other_project_list").val());
    if(window.dvs.project != null && window.dvs.project.length > 0) {
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
          "workflow_id_2": $("#other_project_list").val(),
-         "type": "non_trivial"
+         "type": "all"
       });//get only non-trivial diffs
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -532,8 +806,8 @@ DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
                else {
                   $("#other_projects_wndw").hide();
                   window.dvs.diffProject = jsonResult.workflow_2;
-                  window.dvs.initDiffGrid(jsonResult.workflow_2, jsonResult.diff);
-                  $("#project_diff_wndw").show();
+                  window.dvs.initVersionDiffGrid(jsonResult.workflow_2, jsonResult.diff);
+                  $("#version_diff_wndw").show();
                }
             }
             else {
@@ -548,23 +822,240 @@ DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
    }
 };
 
+DMPVSchema.prototype.mergeSheetButtonClicked = function(){
+   console.log("merge_sheet_btn clicked");
+   window.dvs.mergeKeys = null;
+   if(window.dvs.project != null 
+           && window.dvs.project.length > 0
+           && window.dvs.diffProjectSchema != null
+           && $("#curr_sheet_list").val().length > 0
+           && $("#curr_column_list").val().length > 0
+           && $("#other_sheet_list").val().length > 0
+           && $("#other_column_list").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "workflow_id_2": window.dvs.diffProjectSchema.workflow_id,
+         "type": "all",
+         "key_1": {
+            "sheet": $("#curr_sheet_list").val(),
+            "column": $("#curr_column_list").val()
+         },
+         "key_2": {
+            "sheet": $("#other_sheet_list").val(),
+            "column": $("#other_column_list").val()
+         }
+      });//get only non-trivial diffs
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_merge_diff",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get the difference in schemas");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get schema differences for the two projects");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from dump_data endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get the difference in schemas"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#merge_sheet_wndw").hide();
+                  window.dvs.diffProject = jsonResult.workflow_2;
+                  window.dvs.initMergeDiffGrid(jsonResult.workflow_2, jsonResult.diff);
+                  window.dvs.mergeKeys = {
+                     "key_1": {
+                        "sheet": $("#curr_sheet_list").val(),
+                        "column": $("#curr_column_list").val()
+                     },
+                     "key_2": {
+                        "sheet": $("#other_sheet_list").val(),
+                        "column": $("#other_column_list").val()
+                     }
+                  };
+                  $("#merge_diff_wndw").show();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not get the difference in schemas");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.mergeSchemaButtonClicked = function(){
+   console.log("selected option = ", $("#other_project_list").val());
+   if(window.dvs.project != null && window.dvs.project.length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": $("#other_project_list").val()
+      });//get only non-trivial diffs
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_workflow_schema",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get the difference in schemas");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get schema differences for the two projects");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_workflow_schema endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get the difference in schemas"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#other_projects_wndw").hide();
+                  console.log(jsonResult);
+                  window.dvs.diffProjectSchema = jsonResult.schema;
+                  window.dvs.diffProject = $("#other_project_list").val();
+                  window.dvs.initMergeSheetWindow();
+                  $("#merge_sheet_wndw").show();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not get the difference in schemas");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.initMergeSheetWindow = function() {
+   //init section on other schema
+   var otherSchema = window.dvs.diffProjectSchema;
+   $("#other_project_name").html(otherSchema.title);
+   var html = "";
+   for(var index = 0; index < otherSchema.sheets.length; index++) {
+      html = html + "<option value='"+otherSchema.sheets[index].name+"'>"+otherSchema.sheets[index].name+"</option>";
+   }
+   $("#other_sheet_list").html(html);
+   html = "";
+   if(otherSchema.sheets.length > 0) {
+      for(var index = 0; index < otherSchema.sheets[0].columns.length; index++) {
+         html = html + "<option value='"+otherSchema.sheets[0].columns[index].name+"'>"+otherSchema.sheets[0].columns[index].name+"</option>";
+      }
+      $("#other_column_list").html(html);
+   }
+   $("#other_sheet_list").change(function() {
+      var currSheet = $("#other_sheet_list").val();
+      var otherSchema = window.dvs.diffProjectSchema;//reinitialize schema
+      for(var index = 0; index < otherSchema.sheets.length; index++) {
+         if(otherSchema.sheets[index].name == currSheet) {
+            var html = "";
+            for(var cIndex = 0; cIndex < otherSchema.sheets[index].columns.length; cIndex++) {
+               html = html + "<option value='"+otherSchema.sheets[index].columns[cIndex].name+"'>"+otherSchema.sheets[index].columns[cIndex].name+"</option>";
+            }
+            $("#other_column_list").html(html);
+            break;
+         }
+      }
+   });
+   
+   //init section on current schema
+   var currSchema = window.dvs.schema;
+   $("#curr_project_name").html(currSchema.title);
+   var html = "";
+   for(var index = 0; index < currSchema.sheets.length; index++) {
+      html = html + "<option value='"+currSchema.sheets[index].name+"'>"+currSchema.sheets[index].name+"</option>";
+   }
+   $("#curr_sheet_list").html(html);
+   html = "";
+   if(currSchema.sheets.length > 0) {
+      for(var index = 0; index < currSchema.sheets[0].columns.length; index++) {
+         html = html + "<option value='"+currSchema.sheets[0].columns[index].name+"'>"+currSchema.sheets[0].columns[index].name+"</option>";
+      }
+      $("#curr_column_list").html(html);
+   }
+   $("#curr_sheet_list").change(function() {
+      var currSheet = $("#curr_sheet_list").val();
+      var currSchema = window.dvs.schema;//reinitialize schema
+      for(var index = 0; index < currSchema.sheets.length; index++) {
+         if(currSchema.sheets[index].name == currSheet) {
+            var html = "";
+            for(var cIndex = 0; cIndex < currSchema.sheets[index].columns.length; cIndex++) {
+               html = html + "<option value='"+currSchema.sheets[index].columns[cIndex].name+"'>"+currSchema.sheets[index].columns[cIndex].name+"</option>";
+            }
+            $("#curr_column_list").html(html);
+            break;
+         }
+      }
+   });
+};
+
 /**
  * This function initializes the jqxGrid displaying schema links
  * 
  * @returns {undefined}
  */
-DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
+DMPVSchema.prototype.initVersionDiffGrid = function(project2, diffs) {
    console.log("initializing diff grid");
    var data = {
       diffs: []
    };
    if(diffs.length > 0) {
-      $("#project_diff_wndw").jqxWindow({height: window.innerHeight * 0.9});
-      $("#diff_grid").show();
+      $("#version_diff_wndw").jqxWindow({height: window.innerHeight * 0.9});
+      $("#version_diff_grid").show();
    }
    else {
-      $("#project_diff_wndw").jqxWindow({height: '150px'});
-      $("#diff_grid").hide();
+      $("#version_diff_wndw").jqxWindow({height: '150px'});
+      $("#version_diff_grid").hide();
    }
    for(var diffIndex = 0; diffIndex < diffs.length; diffIndex++){
       var currDiffData = {};
@@ -605,7 +1096,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       localdata: data
    };
    
-   window.dvs.diffGridAdapter = new $.jqx.dataAdapter(source);
+   window.dvs.versionDiffGridAdapter = new $.jqx.dataAdapter(source);
    
    var columnTypes = [
          'varchar',
@@ -626,18 +1117,18 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       'primary',
       'unique'
    ];
-   var gridWidth = $("#project_diff_wndw").width() * 0.95;
-   $("#diff_grid").jqxGrid({
+   var gridWidth = $("#version_diff_wndw").width() * 0.95;
+   $("#version_diff_grid").jqxGrid({
       width: window.dvs.rightSideWidth,
       height: '80%',
-      source: window.dvs.diffGridAdapter,
+      source: window.dvs.versionDiffGridAdapter,
       columnsresize: true,
       theme: '',
       selectionmode: "singlerow",
       pageable: false,
       editable: true,
       rendergridrows: function() {
-         return window.dvs.diffGridAdapter.records;
+         return window.dvs.versionDiffGridAdapter.records;
       },
       columns: [
          {text: 'Sheet', datafield: 'sheet', editable:false, width: gridWidth * 0.1},
@@ -645,7 +1136,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
          {text: 'Type', columntype: 'dropdownlist', width: gridWidth * 0.1 , datafield: 'type',initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: columnTypes});
          }, cellsrenderer: function(row, column, value) {
-            var rowData = $("#diff_grid").jqxGrid('getrowdata', row);
+            var rowData = $("#version_diff_grid").jqxGrid('getrowdata', row);
             var color = "";
             if(rowData.type != rowData.type_2){
                color = "color:#FF3D3D; font-weight:bold;";
@@ -660,7 +1151,7 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
          }},
          {text: 'Conflict Nullable', datafield: 'nullable_2', width: gridWidth * 0.08, editable: false},
          {text: 'Default', datafield: 'default', width: gridWidth * 0.1, cellsrenderer: function(row, column, value) {
-            var rowData = $("#diff_grid").jqxGrid('getrowdata', row);
+            var rowData = $("#version_diff_grid").jqxGrid('getrowdata', row);
             var color = "";
             if(rowData.default != rowData.default_2){
                color = "color:#FF3D3D; font-weight:bold;";
@@ -675,10 +1166,208 @@ DMPVSchema.prototype.initDiffGrid = function(project2, diffs) {
       last_time: new Date(),
       last_row: -1
    };
-   $("#diff_grid").on('cellendedit', window.dvs.diffGridCellValueChanged);
+   $("#version_diff_grid").on('cellendedit', window.dvs.versionDiffGridCellValueChanged);
 };
 
-DMPVSchema.prototype.diffGridCellValueChanged = function(event) {
+/**
+ * This function initializes the jqxGrid displaying notes
+ * 
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.initNotesGrid = function(notes) {
+   console.log("initializing notes grid");
+   
+   var source = {
+      datatype: "json",
+      datafields: [
+         {name: 'user'},
+         {name: 'time_added'},
+         {name: 'message'}
+      ],
+      localdata: notes
+   };
+   
+   window.dvs.notesGridAdapter = new $.jqx.dataAdapter(source);
+   var gridWidth = $("#notes_wndw").width() * 0.95;
+   $("#notes_grid").jqxGrid({
+      width: gridWidth,
+      autoheight: true,
+      autorowheight: true,
+      source: window.dvs.notesGridAdapter,
+      columnsresize: true,
+      theme: '',
+      selectionmode: "singlerow",
+      pageable: false,
+      editable: false,
+      rendergridrows: function() {
+         return window.dvs.notesGridAdapter.records;
+      },
+      columns: [
+         {text: 'Time', datafield: 'time_added', editable:false, width: gridWidth * 0.2},
+         {text: 'User', datafield: 'user', editable:false, width: gridWidth * 0.15},
+         {text: 'Note', datafield: 'message', editable:false, width: gridWidth * 0.65, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties) {
+            return '<div style="white-space: normal;">' + value + '</div>';
+         }}
+      ]
+   });
+};
+
+/**
+ * This function initializes the jqxGrid displaying schema links
+ * 
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.initMergeDiffGrid = function(project2, diffs) {
+   console.log("initializing diff grid");
+   var data = {
+      diffs: []
+   };
+   if(diffs.length > 0) {
+      $("#merge_diff_wndw").jqxWindow({height: window.innerHeight * 0.9});
+      $("#merge_diff_grid").show();
+   }
+   else {
+      $("#merge_diff_wndw").jqxWindow({height: '150px'});
+      $("#merge_diff_grid").hide();
+   }
+   for(var diffIndex = 0; diffIndex < diffs.length; diffIndex++){
+      var currDiffData = {};
+      if(diffs[diffIndex].level == "column"){
+         //check if diff is missing or conflict
+         if(diffs[diffIndex].type == "conflict") {
+            currDiffData['sheet'] = diffs[diffIndex].sheet[window.dvs.project];
+            currDiffData['name'] = diffs[diffIndex][window.dvs.project].name;
+            currDiffData['type'] = diffs[diffIndex][window.dvs.project].type;
+            currDiffData['vlength'] = diffs[diffIndex][window.dvs.project]['length'];
+            currDiffData['nullable'] = diffs[diffIndex][window.dvs.project].nullable;
+            currDiffData['default'] = diffs[diffIndex][window.dvs.project].default;
+            currDiffData['key'] = diffs[diffIndex][window.dvs.project].key;
+            currDiffData['sheet_2'] = diffs[diffIndex].sheet[project2];
+            currDiffData['name_2'] = diffs[diffIndex][project2].name;
+            currDiffData['type_2'] = diffs[diffIndex][project2].type;
+            currDiffData['length_2'] = diffs[diffIndex][project2]['length'];
+            currDiffData['nullable_2'] = diffs[diffIndex][project2].nullable;
+            currDiffData['default_2'] = diffs[diffIndex][project2].default;
+            data.diffs[data.diffs.length] = currDiffData;
+         }
+      }
+   }
+   console.log("diffs", data.diffs);
+   var source = {
+      datatype: "json",
+      datafields: [
+         {name: 'sheet'},
+         {name: 'sheet_2'},
+         {name: 'name'},
+         {name: 'name_2'},
+         {name: 'type'},
+         {name: 'type_2'},
+         {name: 'vlength'},
+         {name: 'length_2'},
+         {name: 'nullable'},
+         {name: 'nullable_2'},
+         {name: 'default'},
+         {name: 'default_2'},
+         {name: 'key'}
+      ],
+      root: 'diffs',
+      localdata: data
+   };
+   
+   window.dvs.mergeDiffGridAdapter = new $.jqx.dataAdapter(source);
+   
+   var columnTypes = [
+         'varchar',
+         'numeric',
+         'double precision',
+         'smallint',
+         'time without time zone',
+         'date',
+         'timestamp without time zone',
+         'boolean'
+   ];
+   var nullableTypes = [
+      'true',
+      'false'
+   ];
+   var keyTypes = [
+      '',
+      'primary',
+      'unique'
+   ];
+   var gridWidth = $("#merge_diff_wndw").width() * 0.95;
+   $("#merge_diff_grid").jqxGrid({
+      width: '100%',
+      height: '80%',
+      source: window.dvs.mergeDiffGridAdapter,
+      columnsresize: true,
+      theme: '',
+      selectionmode: "singlerow",
+      pageable: false,
+      editable: true,
+      rendergridrows: function() {
+         return window.dvs.mergeDiffGridAdapter.records;
+      },
+      columns: [
+         {text: 'Sheet', datafield: 'sheet', editable:false, width: gridWidth * 0.1},
+         {text: 'Sheet', datafield: 'sheet_2', editable:false, width: gridWidth * 0.1, cellclassname: 'column_diff_project'},
+         {text: 'Name', datafield: 'name', editable:true, width: gridWidth * 0.18},
+         {text: 'Name', datafield: 'name_2', editable:false, width: gridWidth * 0.18, cellclassname: 'column_diff_project'},
+         {text: 'Type', columntype: 'dropdownlist', width: gridWidth * 0.1 , datafield: 'type',initeditor: function (row, cellvalue, editor) {
+               editor.jqxDropDownList({ source: columnTypes});
+         }, cellsrenderer: function(row, column, value) {
+            var rowData = $("#merge_diff_grid").jqxGrid('getrowdata', row);
+            var color = "";
+            if(rowData.type != rowData.type_2){
+               color = "color:#FF3D3D; font-weight:bold;";
+            }
+            return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px; '+color+'">' + value + '</div>';
+         }},
+         {text: 'Type', columntype: 'dropdownlist', editable: false, cellclassname: 'column_diff_project', width: gridWidth * 0.1 , datafield: 'type_2',initeditor: function (row, cellvalue, editor) {
+               editor.jqxDropDownList({ source: columnTypes});
+         }, cellsrenderer: function(row, column, value) {
+            var rowData = $("#merge_diff_grid").jqxGrid('getrowdata', row);
+            var color = "";
+            if(rowData.type != rowData.type_2){
+               color = "color:#FF3D3D; font-weight:bold;";
+            }
+            return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px; '+color+'">' + value + '</div>';
+         }},
+         {text: 'Length', columntype: 'numberinput', datafield: 'vlength', width: gridWidth * 0.08},
+         {text: 'Length', columntype: 'numberinput', editable: false, datafield: 'length_2', width: gridWidth * 0.08, cellclassname: 'column_diff_project'},
+         {text: 'Nullable', columntype: 'dropdownlist', width: gridWidth * 0.08, datafield: 'nullable',initeditor: function (row, cellvalue, editor) {
+               editor.jqxDropDownList({ source: nullableTypes});
+         }},
+         {text: 'Nullable', columntype: 'dropdownlist', cellclassname: 'column_diff_project', editable: false, width: gridWidth * 0.08, datafield: 'nullable_2',initeditor: function (row, cellvalue, editor) {
+               editor.jqxDropDownList({ source: nullableTypes});
+         }},
+         {text: 'Default', datafield: 'default', width: gridWidth * 0.1, cellsrenderer: function(row, column, value) {
+            var rowData = $("#merge_diff_grid").jqxGrid('getrowdata', row);
+            var color = "";
+            if(rowData.default != rowData.default_2){
+               color = "color:#FF3D3D; font-weight:bold;";
+            }
+            return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px; '+color+'">' + value + '</div>';
+         }},
+         {text: 'Default', datafield: 'default_2', cellclassname: 'column_diff_project', editable: false, width: gridWidth * 0.1, cellsrenderer: function(row, column, value) {
+            var rowData = $("#merge_diff_grid").jqxGrid('getrowdata', row);
+            var color = "";
+            if(rowData.default != rowData.default_2){
+               color = "color:#FF3D3D; font-weight:bold;";
+            }
+            return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px; '+color+'">' + value + '</div>';
+         }}
+      ]
+   });
+   window.dvs.click = {
+      time: new Date(),
+      last_time: new Date(),
+      last_row: -1
+   };
+   $("#merge_diff_grid").on('cellendedit', window.dvs.mergeDiffGridCellValueChanged);
+};
+
+DMPVSchema.prototype.versionDiffGridCellValueChanged = function(event) {
    console.log("Cell in diff grid changed");
    if(window.dvs.schema != null && event.args.oldvalue !== event.args.value) {
       console.log(event);
@@ -701,6 +1390,59 @@ DMPVSchema.prototype.diffGridCellValueChanged = function(event) {
          console.log(window.dvs.schemaChanges);
       }
    }
+   
+};
+
+DMPVSchema.prototype.mergeDiffGridCellValueChanged = function(event) {
+   //check if change is for this project or the other project
+   console.log("Event", event);
+   if(event.args.datafield == "name"
+           || event.args.datafield == "type"
+           || event.args.datafield == "vlength"
+           || event.args.datafield == "nullable"
+           || event.args.datafield == "default") {//change is for this project
+      if(window.dvs.schema != null && event.args.oldvalue !== event.args.value) {
+         console.log("Change is to this project");
+         var columnData = event.args.row;
+         columnData.present = true;
+         if(typeof columnData.sheet != 'undefined' && typeof columnData.name != 'undefined') {
+            //search for the index of the column in the schema object
+            var rowIndex = -1;
+            var sheetName = columnData.sheet;
+            var columnName = columnData.name;
+            for(var sIndex = 0; sIndex < window.dvs.schema.sheets.length; sIndex++) {
+               if(window.dvs.schema.sheets[sIndex].name == sheetName) {
+                  for(var cIndex = 0; cIndex < window.dvs.schema.sheets[sIndex].columns.length; cIndex++) {
+                     if(window.dvs.schema.sheets[sIndex].columns[cIndex].name == columnName) {
+                        rowIndex = cIndex;
+                        break;
+                     }
+                  }
+                  break;
+               }
+            }
+            if(rowIndex != -1) {
+               var columnChanged = window.dvs.changeColumnDetails(sheetName, rowIndex, event.args.datafield, event.args.oldvalue, event.args.value, columnData);
+               if(columnChanged == true) {
+                  console.log("column changed");
+               }
+               else {
+                  console.log("could not change column")
+               }
+            }
+            else {
+               console.log("could not get the row index for the current column");
+            }
+         }
+      }
+   }
+   /*else if(event.args.datafield == "sheet") {
+      var sheetChanged = window.dvs.renameSheetButton2Clicked(event.args.oldvalue, event.args.value);
+      
+   }
+   else {//should be considere change in the diff project
+      console.log("Change is to the other project");
+   }*/
    
 };
 
@@ -759,6 +1501,7 @@ DMPVSchema.prototype.dumpDataButtonClicked = function() {
          },
          complete: function() {
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
@@ -812,7 +1555,7 @@ DMPVSchema.prototype.renameProjectButtonClicked = function() {
                else {
                   $("#inotification_pp").html("Successfully renamed project");
                   $("#inotification_pp").jqxNotification("open");
-                  window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
+                  window.dvs.reload();
                }
             }
             else {
@@ -845,14 +1588,14 @@ DMPVSchema.prototype.renameSheetButtonClicked = function (event) {
  * 
  * @returns {undefined}
  */
-DMPVSchema.prototype.renameSheetButton2Clicked = function () {
-   if($("#sheet_old_name").val().length > 0 && $("#sheet_name").val().length > 0 && window.dvs.project != null) {
+DMPVSchema.prototype.renameSheetButton2Clicked = function (oldSheetName, newSheetName) {
+   if(oldSheetName.length > 0 && newSheetName.length > 0 && window.dvs.project != null) {
       var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
       var sheet = window.dvs.schema.sheets[selectedSheetIndex];
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
-         "sheet":{"original_name":$("#sheet_old_name").val(), "name":$("#sheet_name").val(), "delete":false}
+         "sheet":{"original_name":oldSheetName, "name":newSheetName, "delete":false}
       });
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -904,15 +1647,17 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function () {
          },
          complete: function() {
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
       if(canContinue == true) {
          $("#rename_sheet_wndw").hide();
-         $("#inotification_pp").html(" successfully renamed "+$("#sheet_old_name").val()+" to "+$("#sheet_name").val());
+         $("#inotification_pp").html(" successfully renamed "+oldSheetName+" to "+newSheetName);
          $("#inotification_pp").jqxNotification("open");
       }
    }
+   return canContinue;
 };
 
 /**
@@ -980,6 +1725,7 @@ DMPVSchema.prototype.deleteSheetButtonClicked = function() {
          },
          complete: function() {
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
@@ -1210,7 +1956,7 @@ DMPVSchema.prototype.processProjectSchema = function() {
                   $("#inotification_pp").jqxNotification("open");
                   //window.dvs.updateSheetList();
                   //don't try to be a genious. reload the page
-                  window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
+                  window.dvs.reload();
                }
                else if(jsonResult.status.healthy == false) {
                   var message = "";
@@ -1428,22 +2174,25 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
 };
 
 /**
- * This function is fired whenever the update button (belos the jqxGrid) is clicked
+ * This function is fired whenever the update button (below the jqxGrid) is clicked
+ * @param {boolean} updateSheetList Set to TRUE if you want the sheet list to be refresh after the update
  * 
- * @returns {undefined}
+ * @returns {boolean} TRUE if successfully updated all the fields
  */
-DMPVSchema.prototype.applySchemaChanges = function() {
+DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
+   if(typeof updateSheetList == "undefined") {
+      updateSheetList = true;
+   }
    console.log("Update button clicked");
    //go through each and every changed sheet
    $("#loading_box").html("Loading. Please don't close this tab");
    $("#loading_box").show();
    var canContinue = true;
    var isFirstColumn = true;
-   
    $.each(window.dvs.schemaChanges, function(sheetName, columns){
       if(canContinue) {
          $.each(columns, function(columnName, details){
-            if(canContinue) {
+            if(details != null) {//check if already updated in previous request
                if(details.present == true) {
                   details["delete"] = false;
                }
@@ -1512,20 +2261,27 @@ DMPVSchema.prototype.applySchemaChanges = function() {
                      }
                   },
                   complete: function() {
-                     $("#loading_box").hide();
                   }
                });
             }
          });
       }
    });
+   window.dvs.refreshSavePoints();
    if(canContinue == true) {
       $("#inotification_pp").html("Columns updated successfully");
       $("#inotification_pp").jqxNotification("open");
+      $("#cancel_btn").prop('disabled', true);
+      $("#update_btn").prop('disabled', true);
+      window.dvs.schemaChanges = {};
+      window.dvs.columnDictionary = {};
    }
    $("#loading_box").hide();
    $("#loading_box").html("Loading..");
-   window.dvs.updateSheetList();
+   if(updateSheetList == true) {
+      window.dvs.updateSheetList();
+   }
+   return canContinue;
 };
 
 /**
@@ -1924,7 +2680,6 @@ DMPVSchema.prototype.initColumnGrid = function() {
          return window.dvs.columnGridAdapter.records;
       },
       columns: [
-         {text: '', columntype: 'checkbox', datafield: 'present', width:10},
          {text: 'Name', datafield: 'name', width: gridWidth*0.2647 - 10},
          {text: 'Type', columntype: 'dropdownlist', datafield: 'type', width: gridWidth*0.2206,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: columnTypes});
@@ -1937,10 +2692,32 @@ DMPVSchema.prototype.initColumnGrid = function() {
          {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1471*0.5,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: keyTypes});
          }},
-         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.1471*0.5,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.047,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
                if(value == false) return "Add";
                else return "Edit";
-         },buttonclick:window.dvs.foreignKeyButtonClicked}
+         },buttonclick:window.dvs.foreignKeyButtonClicked},
+         {text: 'Delete', columntype: 'button', datafield: 'present', width: gridWidth*0.047,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+               return "Delete";
+         },buttonclick:function(rowIndex, event){
+            var sheetData = window.dvs.schema.sheets[$("#sheets").jqxListBox('selectedIndex')];
+            if(typeof sheetData != 'undefined') {
+               var sheetName = sheetData.name;
+               var sheetIndex = $("#sheets").jqxListBox('selectedIndex');
+               var columnData = window.dvs.schema.sheets[sheetIndex].columns[rowIndex];
+               var currValue = columnData.present;
+               var newValue = false;//new value defaults as delete
+               if(currValue == false) newValue = true;
+               var columnChanged = window.dvs.changeColumnDetails(sheetName, rowIndex, "present", currValue, newValue, columnData);
+               if(columnChanged == true) {
+                  if(newValue == true) {
+                     $(event.target).val("Delete");
+                  }
+                  else {
+                     $(event.target).val("Restore");
+                  }
+               }
+            }
+         }}
       ]
    });
    
@@ -2109,6 +2886,7 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
          complete: function() {
             $("#new_foreign_key_wndw").hide();
             $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
             window.dvs.updateSheetList();
          }
       });
@@ -2129,8 +2907,9 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
       var sheetData = window.dvs.schema.sheets[$("#sheets").jqxListBox('selectedIndex')];
       if(typeof sheetData !== 'undefined') {
          var sheetName = sheetData.name;
-         var columnName = null;
-         if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
+         var columnChanged = window.dvs.changeColumnDetails(sheetName, event.args.rowindex, event.args.datafield, event.args.oldvalue, event.args.value, columnData);
+         
+         /*if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
             window.dvs.schemaChanges[sheetName] = {};
          }
          
@@ -2180,9 +2959,9 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
                   columnName = columnData.name;
                }
             }
-         }
+         }*/
          
-         console.log("Original column name is "+columnName);
+         /*console.log("Original column name is "+columnName);
          
          if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
             window.dvs.schemaChanges[sheetName][columnName] = {};
@@ -2194,10 +2973,91 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
          $("#cancel_btn").prop('disabled', false);
          $("#update_btn").prop('disabled', false);
          
-         console.log(window.dvs.schemaChanges);
+         console.log(window.dvs.schemaChanges);*/
       }
    }
    
+};
+
+/**
+ * This function prepares the data structures in this object before a column in
+ * the schema being displayed is updated. The original name given to the column
+ * being updated is returned
+ * 
+ * @param {String} sheetName     The name of the sheet that contains the column being edited
+ * @param {Integer} rowIndex     The index of the column in the sheet's object
+ * @param {String} changedField  The column's property being changed
+ * @param {String} oldValue      The property's old value
+ * @param {String} newValue      The property's new value
+ * @param {Object} columnData    The data corresponding to the column before property update. Only set to null if changedField is 'present'
+ * @returns {Boolean}   True if able to change column data
+ */
+DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changedField, oldValue, newValue, columnData) {
+   console.log("Changing column details");
+   var columnName = null;
+   if(changedField == 'name') {//name of the field is what changed
+      console.log("oldvalue "+oldValue);
+      console.log("value "+newValue);
+      if(typeof window.dvs.columnDictionary[sheetName] === 'undefined') {
+         window.dvs.columnDictionary[sheetName] = [];
+      }
+
+      var found = false;
+
+      for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
+         if(window.dvs.columnDictionary[sheetName][i].new_name === oldValue) {
+            window.dvs.columnDictionary[sheetName][i].new_name = newValue;
+            found = true;
+            columnName = window.dvs.columnDictionary[sheetName][i].old_name;
+            break;
+         }
+      }
+      if(found == false) {
+         window.dvs.columnDictionary[sheetName][window.dvs.columnDictionary[sheetName].length] = {old_name:oldValue, new_name:newValue};
+         columnName = oldValue;
+      }
+   }
+   else {//something else apart from the name changed. Look for the columns original name
+      if(changedField == 'present') {
+         var columnIndex = rowIndex;
+         var sheetIndex = $("#sheets").jqxListBox('selectedIndex');
+         columnData = window.dvs.schema.sheets[sheetIndex].columns[columnIndex];
+         columnData.present = newValue;
+      }
+      if(typeof window.dvs.columnDictionary[sheetName] === 'undefined') {//none the columns in the current sheet have their column names edited yet
+         columnName = columnData.name;
+      }
+      else {//at least one column in the current sheet has a modified name
+         var found = false;
+         for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
+            if(window.dvs.columnDictionary[sheetName][i].new_name === columnData.name) {
+               columnName = window.dvs.columnDictionary[sheetName][i].old_name;
+               found = true;
+               break;
+            }
+         }
+
+         if(found == false) {//current column's name has not been edited
+            columnName = columnData.name;
+         }
+      }
+   }
+   if(columnName != null) {
+      if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
+         window.dvs.schemaChanges[sheetName] = {};
+      }
+      if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
+         window.dvs.schemaChanges[sheetName][columnName] = {};
+      }
+      
+      window.dvs.schemaChanges[sheetName][columnName] = columnData;
+      window.dvs.schemaChanges[sheetName][columnName].original_name = columnName;
+      console.log("column data = ", window.dvs.schemaChanges[sheetName][columnName]);
+      $("#cancel_btn").prop('disabled', false);
+      $("#update_btn").prop('disabled', false);
+      return true;
+   }
+   return false;
 };
 
 /**

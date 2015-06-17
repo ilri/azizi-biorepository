@@ -9,3 +9,4 @@ download
 tmp
 push_to_test_server.sh
 run.sh
+*.sw*

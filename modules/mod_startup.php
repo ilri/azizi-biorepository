@@ -7,13 +7,13 @@
  * @since v0.2
  */
 
-define('OPTIONS_COMMON_FOLDER_PATH', '../common/');
+define('OPTIONS_COMMON_FOLDER_PATH', '../bower/');
 
-require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_general_v0.7.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.7.php';
 require_once 'repository_config';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'dbmodules/mod_objectbased_dbase_v1.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'mod_messages_v0.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'authmodules/mod_security_v0.1.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_messages/mod_messages_v0.1.php';
+require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/authmodules/mod_security_v0.1.php';
 
 
 //setting the date settings

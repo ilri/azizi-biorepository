@@ -982,3 +982,9 @@ ul.ui-autocomplete {z-index: 1000!important; }
 .drag_drop_area:hover {
    border: 2px #3d3d3d dashed;
 }
+
+.column_diff_project {
+    background-color: #DBD0E8 !important;
+    color: black !important;
+    font-weight: bold !important;
+}
