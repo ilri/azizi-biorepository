@@ -2273,7 +2273,8 @@ class Workflow {
                      for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                         if(in_array($col1Names[$colIndex], $col2Names) == false){
                            $lH->log(4, "waworkflow_static", "{$col1Names[$colIndex]} not in $workflowID2");
-                           if($diffType == "all" || $diffType == "trivial"){
+                           if($diffType == "all" || $diffType == "trivial"
+                                 && ($currSheetIn1['name'] != $mergeSheet1['sheet'] || ($currSheetIn1['name'] == $mergeSheet1['sheet'] && $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]]['name'] != $mergeSheet1['column']))){
                               $diff[] = array(
                                  "level" => "column",
                                  "type" => "missing",
@@ -2292,7 +2293,8 @@ class Workflow {
                      //check which columns are in workflow2 and not workflow1
                      if($diffType == "all" || $diffType == "trivial"){
                         for($colIndex = 0; $colIndex < $colSize; $colIndex++){
-                           if(in_array($col2Names[$colIndex], $col1Names) == false){
+                           if(in_array($col2Names[$colIndex], $col1Names) == false 
+                                 && ($currSheetIn2['name'] != $mergeSheet2['sheet'] || ($currSheetIn2['name'] == $mergeSheet2['sheet'] && $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]['name'] != $mergeSheet2['column']))){
                               $lH->log(4, "waworkflow_static", "{$col2Names[$colIndex]} not in $workflowID1");
                               $diff[] = array(
                                  "level" => "column",
@@ -2303,10 +2305,6 @@ class Workflow {
                               );
                            }
                         }
-                     }
-                     //make sure the merging columns are in the commonColumnNames array
-                     if(array_search($mergeSheet1['column'], $commonColumnNames) === false) {
-                        $commonColumnNames[] = $mergeSheet1['column'];
                      }
                      //for each of the common columns, check which ones are different
                      $colSize = count($commonColumnNames);
