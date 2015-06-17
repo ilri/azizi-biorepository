@@ -2621,6 +2621,9 @@ class Workflow {
          $result = $database->runGenericQuery($query, true);
          if($result !== false) {
             if(count($result) > 0) {
+               //change the time format
+               $timeObject = new DateTime($result[0]['time_created']);
+               $result[0]['time_created'] = $timeObject->format(DateTime::ISO8601);
                return $result[0];
             }
             else {
