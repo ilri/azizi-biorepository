@@ -550,7 +550,7 @@ class Workflow {
     * 
     * @param String $url The URL where the data file exists
     */
-   public function addRawDataFile($url, $name = null) {
+   public function addRawDataFile($url, $name = null, $mergeSheet = null, $mergeColumn = null) {
       if($name == null) $name = $this->instanceId.".xlsx";
       $this->lH->log(3, $this->TAG, "Adding '$name' in '$url' to the list of raw datafiles for '{$this->instanceId}'");
       //$this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
@@ -560,6 +560,9 @@ class Workflow {
          try {
             $file = new WAFile($this->config, $this->instanceId, $this->database, $this->workingDir, WAFile::$TYPE_RAW);
             $file->downloadFile($name, $url, $this->currUser);
+            if($mergeSheet != null && $mergeColumn != null) {
+               $file->setMergeColumn($mergeSheet, $mergeColumn);
+            }
             array_push($this->files, $file);
          } catch (Exception $ex) {
             $this->lH->log(1, $this->TAG, "An error occurred while trying to add a new file to the workflow");
@@ -986,12 +989,18 @@ class Workflow {
     * @param type $previousName  The current sheet name (should exist)
     * @param type $currentName   The new name for the sheet
     */
-    private function recordSheetNameChange($previousName, $currentName){
+    private function recordSheetNameChange($previousName, $currentName, $files = null){
       if($this->database != null
               && $this->instanceId == $this->database->getDatabaseName()){
          try {
             $this->lH->log(3, $this->TAG, "Recording sheet name change from '$previousName' to '$currentName'");
-            $query = "select id,file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName'";
+            if($files != null) {
+               $queryFiles = "'".implode("', '", $files)."'";
+               $query = "select id,file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName' and file in($queryFiles)";
+            }
+            else {
+               $query = "select id,file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName'";
+            }
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
                $recordedFiles = array();//an array containing names of files for which the name change has already been recorded
@@ -1009,7 +1018,8 @@ class Workflow {
                $rawFiles = $this->getRawDataFiles();
                foreach($rawFiles as $currFile) {
                   $fileDetails = $currFile->getFileDetails();
-                  if(array_search($fileDetails['filename'], $recordedFiles) === false) {//we have not recorded the name change for this file
+                  if(array_search($fileDetails['filename'], $recordedFiles) === false 
+                        && ($files == null || in_array($fileDetails['filename'], $files) == true)) {//we have not recorded the name change for this file
                      $columns = array(
                         "change_time" => "'".$this->database->getMySQLTime()."'",
                         "submitted_by" => "'".$this->currUser."'",
@@ -1022,7 +1032,16 @@ class Workflow {
                   }
                }
                //update all changed columns in change table to the current sheet name
-               $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
+               if($files != null) {
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."' and file in('".implode("', '", $files)."')";
+               }
+               else {
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
+               }
+               $this->database->runGenericQuery($query);
+               
+               //update the merge_table value for all rows in the meta files table
+               $query = "update ".WAFile::$TABLE_META_FILES." set merge_table = '$currentName' where merge_table = '$previousName'";
                $this->database->runGenericQuery($query);
             }
             else {
@@ -1050,12 +1069,17 @@ class Workflow {
     * @param type $previousName  The current name for the column
     * @param type $currentName   The new name given to the column
     */
-   private function recordColumnNameChange($sheetName, $previousName, $currentName){
+   private function recordColumnNameChange($sheetName, $previousName, $currentName, $files = null){
       if($this->database != null
               && $this->instanceId == $this->database->getDatabaseName()){
          try {
             $this->lH->log(3, $this->TAG, "Recording column name change from '$previousName' to '$currentName'");
-            $query = "select id, file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName'";
+            if($files != null) {
+               $query = "select id, file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName' and file in('".implode("', '", $files)."')";
+            }
+            else {
+               $query = "select id, file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName'";
+            }
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
                $recordedFiles = array();
@@ -1073,7 +1097,8 @@ class Workflow {
                $rawFiles = $this->getRawDataFiles();
                foreach($rawFiles as $currFile) {
                   $fileDetails = $currFile->getFileDetails();
-                  if(array_search($fileDetails['filename'], $recordedFiles) === false) {//we have not recorded the name change for this file
+                  if(array_search($fileDetails['filename'], $recordedFiles) === false
+                        && ($files == null || in_array($fileDetails['filename'], $files) == true)) {//we have not recorded the name change for this file
                      $columns = array(
                         "change_time" => "'".$this->database->getMySQLTime()."'",
                         "submitted_by" => "'".$this->currUser."'",
@@ -1087,6 +1112,9 @@ class Workflow {
                      $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
                   }
                }
+               //update the merge_column value for all rows in the meta files table
+               $query = "update ".WAFile::$TABLE_META_FILES." set merge_column = '$currentName' where merge_table = '$sheetName' and merge_column = '$previousName'";
+               $this->database->runGenericQuery($query);
             }
             else {
                array_push($this->errors, new WAException("Unable to check if column has changed name before", WAException::$CODE_DB_QUERY_ERROR, null));
@@ -1446,7 +1474,8 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
-                  $this->database->runCreateTableQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
+                  $currDiff[$workflow2Id]['nullable'] = true;
+                  $this->database->runAddColumnQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
                   $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
                }
@@ -1479,16 +1508,9 @@ class Workflow {
       return $savePoint;
    }
    
-   private function copyData($originWorkflow) {
+   private function copyData($originWorkflow, $originMergeKey = null, $destMergeKey = null) {
       //dump variable changes from workflow2
       try {
-         //copy the raw data files from workflow_2 to this workflow
-         $dataFiles = $originWorkflow->getRawDataFiles();
-         for($index = 0; $index < count($dataFiles); $index++) {
-            $name = basename($dataFiles[$index]->getFSLocation());
-            $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
-         }
-         
          //copy the changes
          $originMetaChanges = $originWorkflow->getMetaChanges();
          foreach ($originMetaChanges as $currChange) {
@@ -1499,6 +1521,25 @@ class Workflow {
             $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
          }
          
+         //copy the raw data files from workflow_2 to this workflow
+         $dataFiles = $originWorkflow->getRawDataFiles();
+         $mergeKeyFiles = array();
+         for($index = 0; $index < count($dataFiles); $index++) {
+            $name = basename($dataFiles[$index]->getFSLocation());
+            $mergeSheet = null;
+            $mergeColumn = null;
+            if($destMergeKey != null) {
+               $mergeSheet = $destMergeKey['sheet'];
+               $mergeColumn = $destMergeKey['column'];
+            }
+            $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name, $mergeSheet, $mergeColumn);
+            if($originMergeKey != null && $destMergeKey != null && in_array($name, $mergeKeyFiles) == false) {//check if current file has a recording for the merge change
+               //record the column first before the sheet
+               $this->recordColumnNameChange($originMergeKey['sheet'], $originMergeKey['column'], $destMergeKey['column'], array($name));
+               $this->recordSheetNameChange($originMergeKey['sheet'], $destMergeKey['sheet'], array($name));
+               $mergeKeyFiles[] = $name;
+            }
+         }
          //copy the notes
          $notes = $originWorkflow->getAllNotes(false);
          foreach($notes as $currNote) {
@@ -1550,7 +1591,8 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet, true));
                }
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
-                  $this->database->runCreateTableQuery($currDiff['sheet'][$this->instanceId], $currDiff[$workflow2Id]);
+                  $currDiff[$workflow2Id]['nullable'] = true;
+                  $this->database->runAddColumnQuery($currDiff['sheet'][$this->instanceId], $currDiff[$workflow2Id]);
                   $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet'][$this->instanceId]} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
                }
@@ -1565,7 +1607,7 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
             }
-            $this->copyData($workflow2);
+            $this->copyData($workflow2, $key2, $key1);
             //rename the workflow
             $savePoint = $this->modifyName($newName);
          } catch (WAException $ex) {
@@ -2108,7 +2150,7 @@ class Workflow {
                //check which sheets are in workflow1 and not in workflow2
                $noNames = count($schema1SheetNames);
                for($index = 0; $index < $noNames; $index++){
-                  if(in_array($schema1SheetNames[$index], $schema2SheetNames) == false){
+                  if(in_array($schema1SheetNames[$index], $schema2SheetNames) == false && $schema1SheetNames[$index] != $mergeSheet1['sheet']){
                      $lH->log(4, "waworkflow_static", "Sheet {$schema1SheetNames[$index]} not in $workflowID2");
                      if($diffType == "all" || $diffType == "trivial"){
                         $diff[] = array(
@@ -2128,7 +2170,7 @@ class Workflow {
                if($diffType == "all" || $diffType == "trivial"){
                   $noNames = count($schema2SheetNames);
                   for($index = 0; $index < $noNames; $index++){
-                     if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false){
+                     if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false && $schema2SheetNames[$index] != $mergeSheet2['sheet']){
                         $lH->log(4, "waworkflow_static", "Sheet {$schema2SheetNames[$index]} not in $workflowID1");
                         $diff[] = array(
                            "level" => "sheet",
@@ -2138,10 +2180,6 @@ class Workflow {
                         );
                      }
                   }
-               }
-               //make sure the merging sheets are in the commonSheets array
-               if(array_search($mergeSheet1['sheet'], $commonSheetNames) === false){
-                  $commonSheetNames[] = $mergeSheet1['sheet'];
                }
                //for each of the common sheets
                $noCommonSheets = count($commonSheetNames);

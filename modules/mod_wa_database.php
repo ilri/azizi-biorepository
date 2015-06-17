@@ -379,6 +379,30 @@ class Database {
       }
    }
    
+   public function runUpdateQuery($table, $columns, $condition) {
+      try {
+         $this->logH->log(4, $this->TAG, "runUpdateQuery called");
+         $this->logH->log(4, $this->TAG, "columns = ".print_r($columns, true));
+
+         $keys = array_keys($columns);
+         $columnValues = "";
+         foreach($keys as $currKey) {
+            if(strlen($columnValues) == 0) {
+               $columnValues = Database::$QUOTE_SI.$currKey.Database::$QUOTE_SI." = ".$columns[$currKey];
+            }
+            else {
+               $columnValues .= ", ".Database::$QUOTE_SI.$currKey.Database::$QUOTE_SI." = ".$columns[$currKey];
+            }
+         }
+         $query = "update ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." set ".$columnValues." where ".$condition;
+         $this->logH->log(4, $this->TAG, "Update query = ".$query);
+         $this->runGenericQuery($query);
+      } 
+      catch (WAException $ex) {
+         throw new WAException("An error occurred while trying to run insert query in '$table'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
    /**
     * This function gets the primary keys corresponding to a table
     * @param type $tableName  Name of the table to get the keys
@@ -698,6 +722,25 @@ class Database {
             else {
                $this->logH->log(3, $this->TAG, "Could not find a reason for altering {$existing['name']} in $tableName");
             }
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not alter '{$existing['name']}' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function adds a column to an already existing table
+    * 
+    * @param type $tableName     Name of the table where column is
+    * @param type $columnDetails All properties for the column
+    */
+   public function runAddColumnQuery($tableName, $columnDetails) {
+      try {
+         $columnExpression = $this->getColumnExpression($columnDetails['name'], $columnDetails['type'], $columnDetails['length'], $columnDetails['key'], $columnDetails['default'], $columnDetails['nullable']);
+         $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ".$columnExpression;
+         $this->runGenericQuery($query);
+         if($columnDetails['key'] == Database::$KEY_PRIMARY) {
+            $this->addColumnsToPrimaryKey($tableName, array($columnDetails['name']));
          }
       } catch (WAException $ex) {
          throw new WAException("Could not alter '{$existing['name']}' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
