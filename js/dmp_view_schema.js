@@ -384,7 +384,10 @@ DMPVSchema.prototype.initUsersGrid = function(users) {
          {text: 'User', datafield: 'name', editable:false, width: gridWidth * 0.2},
          {text: 'Access level', datafield: 'access_level', editable:false, width: gridWidth * 0.1},
          {text: 'Granted by', datafield: 'granted_by', editable:false, width: gridWidth * 0.2},
-         {text: 'Time granted', datafield: 'time_granted', editable:false, width: gridWidth * 0.3},
+         {text: 'Time granted', datafield: 'time_granted', editable:false, width: gridWidth * 0.3, cellsrenderer: function(row, column, value) {
+               var date = new Date(value);
+               return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px;">' + date.toLocaleString() + '</div>';
+         }},
          {text: 'Access revoked', datafield: 'access_revoked', editable:false, width: gridWidth * 0.2}
       ]
    });
