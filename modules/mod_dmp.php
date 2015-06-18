@@ -110,6 +110,13 @@ class DMP extends Repository{
             <li id="get_data_btn">Get Data</li>
           </ul>
       </li>
+      <li id="admin_menu_btn">Admin
+         <ul style='width: 250px;'>
+            <li  id="grant_access_menu_btn">Grant access</li>
+            <li id="revoke_access_menu_btn">Revoke access</li>
+            <li id="show_users_menu_btn">Show users</li>
+          </ul>
+      </li>
   </ul>
 </div>
 <div style="margin-top: 10px;">
@@ -210,6 +217,45 @@ class DMP extends Repository{
             <label for="new_note">Add a note</label>
             <textarea type="text" id="new_note" rows="2" style="width: 85%;"></textarea>
             <button type="button" id="add_new_note" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
+         </div>
+      </div>
+   </div>
+   <div id="grant_access_wndw" style="display: none; z-index: 6;">
+      <div>Grant access</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <label for="grant_access_user">User</label>
+            <input type="text" id="grant_access_user" style="height: 25px; width: 300px;" />
+         </div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <label for="grant_access_level">Access level</label>
+            <select type="text" id="grant_access_level"style="width: 85%;">
+               <option value="normal">Normal</option>
+               <option value="admin">Admin</option>
+            </select>
+         </div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <button type="button" id="grant_access_btn" class="btn btn-primary" style="margin-left: 90%; margin-top: 10px;">Grant</button>
+         </div>
+      </div>
+   </div>
+   <div id="revoke_access_wndw" style="display: none; z-index: 6;">
+      <div>Revoke access</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <label for="revoke_access_user">User</label>
+            <select type="text" id="revoke_access_user" style="height: 25px; width: 300px;"></select>
+         </div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <button type="button" id="revoke_access_btn" class="btn btn-primary" style="margin-left: 90%; margin-top: 10px;">Revoke</button>
+         </div>
+      </div>
+   </div>
+   <div id="users_wndw" style="display: none; z-index: 6;">
+      <div>Project users</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <div id="users_grid"></div>
          </div>
       </div>
    </div>
