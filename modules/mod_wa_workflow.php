@@ -4,6 +4,7 @@
  * This class implements the Workflow clas in the ODK Workflow API
  */
 class Workflow {
+   private $VERSION = 1;
    private $TAG = "workflow";
    private $config;
    private $workflowName;
@@ -74,7 +75,7 @@ class Workflow {
          //make sure meta tables have been created
          $this->initMetaDBTables();
 
-         $this->grantUserAccess($this->currUser);
+         $this->grantUserAccess($this->currUser, true, true);//this user will automatically become the admin
          $this->saveWorkflowDetails();
       }
       else {
@@ -134,15 +135,28 @@ class Workflow {
     * 
     * @param type $user       The user to be granted access to the workflow
     */
-   public function grantUserAccess($user) {
-      $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
-      $columns = array(
-          "user_granted" => "'{$user}'",
-          "time_granted" => "'".Database::getMySQLTime()."'",
-          "granted_by" => "'{$this->currUser}'"
-      );
+   public function grantUserAccess($user, $isAdmin, $isNewWorkflow = false) {
+      //first check if this user is allowed to grant access
       try {
-         $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+         $query = "select id from ".  Workflow::$TABLE_META_ACCESS." where user_granted = '{$this->currUser}' and is_admin = '".Database::$BOOL_TRUE."' and access_revoked = '".Database::$BOOL_FALSE."'";
+         $result = $this->database->runGenericQuery($query, true);
+         if(count($result) > 0 || $isNewWorkflow == true) {
+            $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
+            $admin = Database::$BOOL_FALSE;
+            if($isAdmin == true) $admin = Database::$BOOL_TRUE;
+            $columns = array(
+                "user_granted" => "'{$user}'",
+                "time_granted" => "'".Database::getMySQLTime()."'",
+                "granted_by" => "'{$this->currUser}'",
+                "is_admin" => "'".$admin."'"
+            );
+            $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+         }
+         else {//the user is not allowed to grant access
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Current user is not allowed to grant access");
+         }
       } catch (WAException $ex) {
          array_push($this->errors, $ex);
          $this->healthy = false;
@@ -159,10 +173,19 @@ class Workflow {
    public function revokeUserAccess($user) {
       $this->lH->log(3, $this->TAG, "Revoking '$user' access to workflow with id = '{$this->instanceId}'");
       try {
-         $query = "update ".Workflow::$TABLE_META_ACCESS
-               ." set access_revoked = '".Database::$BOOL_TRUE."', revoked_by = '{$this->currUser}', time_revoked = '".Database::getMySQLTime()."'"
-                     ." where user_granted = '$user'";
-         $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+         $query = "select id from ".  Workflow::$TABLE_META_ACCESS." where user_granted = '{$this->currUser}' and is_admin = '".Database::$BOOL_TRUE."' and access_revoked = '".Database::$BOOL_FALSE."'";
+         $result = $this->database->runGenericQuery($query, true);
+         if(count($result) > 0) {
+            $query = "update ".Workflow::$TABLE_META_ACCESS
+                  ." set access_revoked = '".Database::$BOOL_TRUE."', revoked_by = '{$this->currUser}', time_revoked = '".Database::getMySQLTime()."'"
+                        ." where user_granted = '$user'";
+            $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+         }
+         else {//the user is not allowed to revoke access
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Current user is not allowed to revoke access");
+         }
       } catch (WAException $ex) {
          array_push($this->errors, $ex);
          $this->healthy = false;
@@ -197,7 +220,8 @@ class Workflow {
           "workflow_id" => "'{$this->instanceId}'",
           "working_dir" => "'{$this->workingDir}'",
           "processing" => "'{$processing}'",
-          "health" => "'{$healthy}'"
+          "health" => "'{$healthy}'",
+          "version" => $this->VERSION
       );
       
       try {
@@ -289,9 +313,10 @@ class Workflow {
                      array("name" => "user_granted" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "time_granted" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "granted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                     array("name" => "access_revoked" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false, "default"=> 'Database::$BOOL_FALSE' , "key"=>Database::$KEY_NONE),
+                     array("name" => "access_revoked" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false, "default"=> "'".Database::$BOOL_FALSE."'" , "key"=>Database::$KEY_NONE),
                      array("name" => "revoked_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true, "default"=> null , "key"=>Database::$KEY_NONE),
-                     array("name" => "time_revoked" , "type"=>Database::$TYPE_DATETIME, "length"=>null , "nullable"=>true, "default"=> null , "key"=>Database::$KEY_NONE)
+                     array("name" => "time_revoked" , "type"=>Database::$TYPE_DATETIME, "length"=>null , "nullable"=>true, "default"=> null , "key"=>Database::$KEY_NONE),
+                     array("name" => "is_admin" , "type"=>Database::$TYPE_BOOLEAN, "length"=>null , "nullable"=>false, "default"=> "'".Database::$BOOL_FALSE."'", "key"=>Database::$KEY_NONE)
                  )
          );
       } catch (WAException $ex) {
@@ -316,7 +341,8 @@ class Workflow {
                      array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>30 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "processing" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'false' , "key"=>Database::$KEY_NONE),
-                     array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'true' , "key"=>Database::$KEY_NONE)
+                     array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'true' , "key"=>Database::$KEY_NONE),
+                     array("name" => "version" , "type"=>Database::$TYPE_INT , "length"=>null , "nullable"=>false , "default"=> -1 , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -2588,23 +2614,45 @@ class Workflow {
                
                if($metaTables == count($allMetaTables)) {//database has all the meta tables
                   $lH->log(3, "static_workflow", "'$currDbName' complies to the DMP Structure");
-                  //check whether the user has access to this database
-                  $query = "select *"
-                       . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
-                       . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user' and access_revoked = '".Database::$BOOL_FALSE."'";
-                  $access = $newDatabase->runGenericQuery($query, true);
-                  $lH->log(3, "static_workflow", "access = ''$access' and access = ".print_r($access, true));
-                  if($admin == true || count($access) > 0) {
-                     try {
-                        $details = Workflow::getWorkflowDetails($config, $currDbName);
-                        array_push($accessibleDbs, $details);
-                     } catch (WAException $ex) {
-                        $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
-                        return $jsonReturn;  
+                  //check if the database has a workflow version
+                  $metaDocColumns = $newDatabase->getTableDetails($currDbName, Workflow::$TABLE_META_DOCUMENT);
+                  $workflowHasVersion = false;
+                  foreach($metaDocColumns as $currColumn) {
+                     if($currColumn['name'] == "version") {
+                        $workflowHasVersion = true;
+                        break;
+                     }
+                  }
+                  if($workflowHasVersion == true) {
+                     //check if the database's workflow version is compatible with the current version
+                     $query = "select id from ".Workflow::$TABLE_META_DOCUMENT." where version = ".$this->VERSION;
+                     $goodVersions = $newDatabase->runGenericQuery($query, true);
+                     //check whether the user has access to this database
+                     if(count($goodVersions) > 0) {
+                        $query = "select *"
+                            . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
+                            . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user' and access_revoked = '".Database::$BOOL_FALSE."'";
+                        $access = $newDatabase->runGenericQuery($query, true);
+                        $lH->log(3, "static_workflow", "access = ''$access' and access = ".print_r($access, true));
+                        if($admin == true || count($access) > 0) {
+                           try {
+                              $details = Workflow::getWorkflowDetails($config, $currDbName);
+                              array_push($accessibleDbs, $details);
+                           } catch (WAException $ex) {
+                              $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
+                              return $jsonReturn;  
+                           }
+                        }
+                        else {
+                           $lH->log(4, "static_workflow", "User '$user' does not have access to '$currDbName'");
+                        }  
+                     }
+                     else {
+                        $lH->log(2, "static_workflow", "'$currDbName' has a workflow version that is not compatible with current code");
                      }
                   }
                   else {
-                     $lH->log(4, "static_workflow", "User '$user' does not have access to '$currDbName'");
+                     $lH->log(2, "static_workflow", "'$currDbName' does not have a workflow version");
                   }
                }
                else {//database not usable with this API

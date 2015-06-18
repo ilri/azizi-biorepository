@@ -1137,9 +1137,10 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
-               && array_key_exists("user", $json)) {
+               && array_key_exists("user", $json)
+               && array_key_exists("is_admin", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']));
+            $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']), $json['is_admin']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "status" => $status
