@@ -314,7 +314,7 @@ class ODKWorkflowAPI extends Repository {
     * This function handles the get_workflow endpoint of the API.
     */
    private function handleGetWorkflowsEndpoint() {
-      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->userUUID));
+      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->userUUID), $this->isUserAdmin($this->userUUID));
    }
    
    /**
@@ -1365,6 +1365,31 @@ class ODKWorkflowAPI extends Repository {
          throw new WAException("Unable to authenticate client because of a system error", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
       
+      return false;
+   }
+   
+   /**
+    * This function checks if the user is an admin
+    * 
+    * @param type $userURI The user's URI
+    */
+   private function isUserAdmin($userURI) {
+      try {
+         $database = new Database($this->config);
+         $query = "select is_admin from clients where uri = '$userURI'";
+         $result = $database->runGenericQuery($query, true);
+         if(count($result) == 1) {
+            if($result[0]['is_admin'] == 1) {
+               $this->lH->log(3, $this->TAG, $userURI." is an admin account");
+               return true;
+            }
+         }
+         else {
+            throw new WAException("Inconsistent number of records returned while trying to determing if user is an admin", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not check if user is an admin", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
       return false;
    }
    

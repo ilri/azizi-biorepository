@@ -2520,8 +2520,9 @@ class Workflow {
     * 
     * @param array   $config  repository_config object to be used
     * @param string  $user    user we are getting access for
+    * @param boolean $admin   set to TRUE if you want to get all the workflows
     */
-   public static function getUserWorkflows($config, $user) {
+   public static function getUserWorkflows($config, $user, $admin) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
@@ -2536,9 +2537,13 @@ class Workflow {
       //get all the databases that look like store workflow details
       //$query = "show databases";
       try {
+         if($admin == true) {
+            $lH->log(3, "static_workflow", "User '$user' is admin. Listing all the workflows");
+         }
          $result = $database->getDatabaseNames();
          if($result !== false){
             $accessibleDbs = array();//array to store details for all the databases user has access to
+            $lH->log(4, "static_workflow","All the databases = ".print_r($result, true));
             for($index = 0; $index < count($result); $index++) {
                //$currDbName = $result[$index]['Database'];
                $currDbName = $result[$index];
@@ -2560,26 +2565,24 @@ class Workflow {
                }
                
                if($metaTables == count($allMetaTables)) {//database has all the meta tables
+                  $lH->log(3, "static_workflow", "'$currDbName' complies to the DMP Structure");
                   //check whether the user has access to this database
                   $query = "select *"
-                          . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
-                          . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user'";
+                       . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
+                       . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user'";
                   $access = $newDatabase->runGenericQuery($query, true);
-                  if($access !== false) {
-                     if(count($access) > 0) {//user has access to the workflow
-                        try {
-                           $details = Workflow::getWorkflowDetails($config, $currDbName);
-                           array_push($accessibleDbs, $details);
-                           
-                        } catch (WAException $ex) {
-                           $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
-                           return $jsonReturn;
-                        }
+                  $lH->log(3, "static_workflow", "access = ''$access' and access = ".print_r($access, true));
+                  if($admin == true || count($access) > 0) {
+                     try {
+                        $details = Workflow::getWorkflowDetails($config, $currDbName);
+                        array_push($accessibleDbs, $details);
+                     } catch (WAException $ex) {
+                        $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
+                        return $jsonReturn;  
                      }
                   }
                   else {
-                     $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database", WAException::$CODE_DB_QUERY_ERROR, NULL)));
-                     return $jsonReturn;
+                     $lH->log(4, "static_workflow", "User '$user' does not have access to '$currDbName'");
                   }
                }
                else {//database not usable with this API
@@ -2593,7 +2596,7 @@ class Workflow {
             return $jsonReturn;
          }
          else {
-            $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database", WAException::$CODE_DB_QUERY_ERROR, NULL)));
+            $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database2", WAException::$CODE_DB_QUERY_ERROR, NULL)));
             return $jsonReturn;
          }
       } catch (WAException $ex) {
