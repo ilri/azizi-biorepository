@@ -130,10 +130,9 @@ class Workflow {
    }
    
    /**
-    * This function saves the user's access level in the MySQL database
+    * This function saves the user's access level in the database
     * 
     * @param type $user       The user to be granted access to the workflow
-    * @param type $grantedBy  The user granting the access
     */
    public function grantUserAccess($user) {
       $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
@@ -143,6 +142,26 @@ class Workflow {
           "granted_by" => "'{$this->currUser}'"
       );
       try {
+         $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to grant '$user' access to the workflow '{$this->instanceId}'");
+      }
+   }
+   
+   /**
+    * This function revokes the user's access level in the database
+    * 
+    * @param type $user       The user to be granted access to the workflow
+    * @param type $grantedBy  The user granting the access
+    */
+   public function revokeUserAccess($user) {
+      $this->lH->log(3, $this->TAG, "Revoking '$user' access to workflow with id = '{$this->instanceId}'");
+      try {
+         $query = "update ".Workflow::$TABLE_META_ACCESS
+               ." set access_revoked = '".Database::$BOOL_TRUE."', revoked_by = '{$this->currUser}', time_revoked = '".Database::getMySQLTime()."'"
+                     ." where user_granted = '$user'";
          $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
       } catch (WAException $ex) {
          array_push($this->errors, $ex);
@@ -269,9 +288,12 @@ class Workflow {
                      array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
                      array("name" => "user_granted" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "time_granted" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                     array("name" => "granted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
-                     )
-                 );
+                     array("name" => "granted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "access_revoked" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false, "default"=> 'Database::$BOOL_FALSE' , "key"=>Database::$KEY_NONE),
+                     array("name" => "revoked_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true, "default"=> null , "key"=>Database::$KEY_NONE),
+                     array("name" => "time_revoked" , "type"=>Database::$TYPE_DATETIME, "length"=>null , "nullable"=>true, "default"=> null , "key"=>Database::$KEY_NONE)
+                 )
+         );
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to create the ".Workflow::$TABLE_META_ACCESS." table");
          array_push($this->errors, new WAException("Unable to create the ".Workflow::$TABLE_META_ACCESS." table", WAException::$CODE_DB_CREATE_ERROR, $ex));
@@ -2569,7 +2591,7 @@ class Workflow {
                   //check whether the user has access to this database
                   $query = "select *"
                        . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
-                       . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user'";
+                       . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user' and access_revoked = '".Database::$BOOL_FALSE."'";
                   $access = $newDatabase->runGenericQuery($query, true);
                   $lH->log(3, "static_workflow", "access = ''$access' and access = ".print_r($access, true));
                   if($admin == true || count($access) > 0) {

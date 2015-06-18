@@ -169,6 +169,9 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "grant_user_access") {
                         $this->handleGrantUserAccessEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "revoke_user_access") {
+                        $this->handleRevokeUserAccessEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -1122,7 +1125,7 @@ class ODKWorkflowAPI extends Repository {
    
    /**
     * This function handles the grant_user_access endpoint
-    * The get_notes endpoint gets all notes corresponding to a workflow
+    * The grant_user_access endpoint grants a user access to a workflow
     * 
     * $_REQUEST['data'] variable
     * {
@@ -1137,6 +1140,39 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("user", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']));
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the revoke_user_access endpoint
+    * The revoke_user_access endpoint revokes all access a user has to a workflow
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    *    user       :  "The non-select query to be run"
+    * }
+    */
+   private function handleRevokeUserAccessEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("user", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow->revokeUserAccess($this->generateUserUUID($this->server, $json['user']));
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "status" => $status
