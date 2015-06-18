@@ -28,6 +28,8 @@ class Workflow {
    public static $WORKFLOW_ROOT_DIR = "../odk_workflow/";
    public static $CHANGE_SHEET = "sheet";
    public static $CHANGE_COLUMN = "column";
+   public static $ACCESS_LEVEL_NORMAL = "normal";
+   public static $ACCESS_LEVEL_ADMIN = "admin";
    
    /**
     * Default class contructor
@@ -75,7 +77,7 @@ class Workflow {
          //make sure meta tables have been created
          $this->initMetaDBTables();
 
-         $this->grantUserAccess($this->currUser, true, true);//this user will automatically become the admin
+         $this->grantUserAccess($this->currUser, Workflow::$ACCESS_LEVEL_ADMIN, true);//this user will automatically become the admin
          $this->saveWorkflowDetails();
       }
       else {
@@ -130,20 +132,34 @@ class Workflow {
       return $this->workflowName;
    }
    
+   public function getAccessLevel($user) {
+      try {
+         $query = "select id from ".  Workflow::$TABLE_META_ACCESS." where user_granted = '$user' and is_admin = '".Database::$BOOL_TRUE."' and access_revoked = '".Database::$BOOL_FALSE."'";
+         $result = $this->database->runGenericQuery($query, true);
+         if(count($result) > 0) {
+            return Workflow::$ACCESS_LEVEL_ADMIN;
+         }
+         return Workflow::$ACCESS_LEVEL_NORMAL;
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "Could not get the user's access level in '{$this->instanceIds}'");
+         $this->healthy = false;
+         array_push($this->errors, new WAException("Could not get the user's access level", WAException::$CODE_DB_QUERY_ERROR, $ex));
+      }
+   }
+   
    /**
     * This function saves the user's access level in the database
     * 
     * @param type $user       The user to be granted access to the workflow
     */
-   public function grantUserAccess($user, $isAdmin, $isNewWorkflow = false) {
+   public function grantUserAccess($user, $userAccessLevel, $isNewWorkflow = false) {
       //first check if this user is allowed to grant access
       try {
-         $query = "select id from ".  Workflow::$TABLE_META_ACCESS." where user_granted = '{$this->currUser}' and is_admin = '".Database::$BOOL_TRUE."' and access_revoked = '".Database::$BOOL_FALSE."'";
-         $result = $this->database->runGenericQuery($query, true);
-         if(count($result) > 0 || $isNewWorkflow == true) {
+         $accessLevel = $this->getAccessLevel($this->currUser);
+         if($accessLevel == Workflow::$ACCESS_LEVEL_ADMIN || $isNewWorkflow == true) {
             $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
             $admin = Database::$BOOL_FALSE;
-            if($isAdmin == true) $admin = Database::$BOOL_TRUE;
+            if($userAccessLevel == Workflow::$ACCESS_LEVEL_ADMIN) $admin = Database::$BOOL_TRUE;
             $columns = array(
                 "user_granted" => "'{$user}'",
                 "time_granted" => "'".Database::getMySQLTime()."'",
@@ -164,6 +180,44 @@ class Workflow {
       }
    }
    
+   public function getUsers() {
+      //first check if this user is allowed to see all users
+      $users = array();
+      try {
+         $query = "select * from ".Workflow::$TABLE_META_ACCESS;
+         $result = $this->database->runGenericQuery($query, true);
+         foreach($result as $currUser) {
+            $currUser['name'] = $currUser['user_granted'];
+            unset($currUser['user_granted']);
+            $rawUserUUID = ODKWorkflowAPI::explodeUserUUID($currUser['name']);
+            $currUser['name'] = $rawUserUUID['user'];
+            $rawGrantedByUUID = ODKWorkflowAPI::explodeUserUUID($currUser['granted_by']);
+            $currUser['granted_by'] = $rawGrantedByUUID['user'];
+            if($currUser['revoked_by'] != null) {
+               $rawRevokedBy = ODKWorkflowAPI::explodeUserUUID($currUser['revoked_by']);
+               $currUser['revoked_by'] = $rawRevokedBy['user'];
+               $timeRevoked = new DateTime($currUser['time_revoked']);
+               $currUser['time_revoked'] = $timeRevoked->format(DateTime::ISO8601);
+            }
+            $timeGranted = new DateTime($currUser['time_granted']);
+            $currUser['time_granted'] = $timeGranted->format(DateTime::ISO8601);
+            if($currUser['is_admin'] == Database::$BOOL_TRUE) {
+               $currUser['access_level'] = Workflow::$ACCESS_LEVEL_ADMIN;
+            }
+            else {
+               $currUser['access_leve'] = Workflow::$ACCESS_LEVEL_NORMAL;
+            }
+            unset($currUser['is_admin']);
+            $users[] = $currUser;
+         }
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to get users that have access to the workflow '{$this->instanceId}'");
+      }
+      return $users;
+   }
+   
    /**
     * This function revokes the user's access level in the database
     * 
@@ -173,9 +227,8 @@ class Workflow {
    public function revokeUserAccess($user) {
       $this->lH->log(3, $this->TAG, "Revoking '$user' access to workflow with id = '{$this->instanceId}'");
       try {
-         $query = "select id from ".  Workflow::$TABLE_META_ACCESS." where user_granted = '{$this->currUser}' and is_admin = '".Database::$BOOL_TRUE."' and access_revoked = '".Database::$BOOL_FALSE."'";
-         $result = $this->database->runGenericQuery($query, true);
-         if(count($result) > 0) {
+         $accessLevel = $this->getAccessLevel($this->currUser);
+         if($accessLevel == Workflow::$ACCESS_LEVEL_ADMIN) {
             $query = "update ".Workflow::$TABLE_META_ACCESS
                   ." set access_revoked = '".Database::$BOOL_TRUE."', revoked_by = '{$this->currUser}', time_revoked = '".Database::getMySQLTime()."'"
                         ." where user_granted = '$user'";

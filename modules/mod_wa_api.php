@@ -172,6 +172,12 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "revoke_user_access") {
                         $this->handleRevokeUserAccessEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_access_level") {
+                        $this->handleGetAccessLevelEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_users") {
+                        $this->handleGetUsersEndpoint();
+                     }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -1138,9 +1144,9 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("user", $json)
-               && array_key_exists("is_admin", $json)) {
+               && array_key_exists("access_level", $json)) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']), $json['is_admin']);
+            $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']), $json['access_level']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "status" => $status
@@ -1176,6 +1182,72 @@ class ODKWorkflowAPI extends Repository {
             $workflow->revokeUserAccess($this->generateUserUUID($this->server, $json['user']));
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_access_level endpoint
+    * The get_access_level endpoint check what the access level for the current user
+    * in the specified workflow is
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    * }
+    */
+   private function handleGetAccessLevelEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $accessLevel = $workflow->getAccessLevel($this->userUUID);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "access_level" => $accessLevel,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_access_level endpoint
+    * The get_access_level endpoint check what the access level for the current user
+    * in the specified workflow is
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    * }
+    */
+   private function handleGetUsersEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $users = $workflow->getUsers();
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "users" => $users,
                "status" => $status
             ));
          }
