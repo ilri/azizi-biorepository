@@ -4,7 +4,7 @@
  * This class implements the Workflow clas in the ODK Workflow API
  */
 class Workflow {
-   private $VERSION = 1;
+   private static $VERSION = 1;
    private $TAG = "workflow";
    private $config;
    private $workflowName;
@@ -221,7 +221,7 @@ class Workflow {
           "working_dir" => "'{$this->workingDir}'",
           "processing" => "'{$processing}'",
           "health" => "'{$healthy}'",
-          "version" => $this->VERSION
+          "version" => Workflow::$VERSION
       );
       
       try {
@@ -2625,7 +2625,7 @@ class Workflow {
                   }
                   if($workflowHasVersion == true) {
                      //check if the database's workflow version is compatible with the current version
-                     $query = "select id from ".Workflow::$TABLE_META_DOCUMENT." where version = ".$this->VERSION;
+                     $query = "select id from ".Workflow::$TABLE_META_DOCUMENT." where version = ".  Workflow::$VERSION;
                      $goodVersions = $newDatabase->runGenericQuery($query, true);
                      //check whether the user has access to this database
                      if(count($goodVersions) > 0) {
