@@ -85,8 +85,8 @@ class DMP extends Repository{
    <ul>
       <li>DMP
          <ul style="width: 250px;">
-            <li><a href="?page=dmp">Home</a></li>
-            <li><a style="text-decoration: none; color: black;" href="?page=dmp&do=view_schema&project=&session=<?php echo $sessionId;?>">Create New Project</a></li>
+            <li id="home_menu_btn">Home</li>
+            <li id="create_project_menu_btn">Create New Project</li>
          </ul>
       </li>
       <li>Schema
@@ -95,19 +95,19 @@ class DMP extends Repository{
                  <ul id="undo_container" style='color: black; min-width: 300px;'>
                   </ul>
               </li>
-              <li><a id="add_note_menu_btn" style="text-decoration: none; color: black;">Notes</a></li>
-              <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
-              <li><a id="merge_version_menu_btn" style="text-decoration: none; color: black;">Combine with another version</a></li>
-              <li><a id="merge_schema_menu_btn" style="text-decoration: none; color: black;">Merge with another project</a></li>
-              <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Schema (and project)</a></li>
+              <li id="add_note_menu_btn">Notes</li>
+              <li id="regen_schema_menu_btn">Regenerate Schema</li>
+              <li id="merge_version_menu_btn">Combine with another version</li>
+              <li id="merge_schema_menu_btn">Merge with another project</li>
+              <li id="delete_project_menu_btn">Delete Schema (and project)</li>
           </ul>
       </li>
       <li>Data
          <ul style='width: 250px;'>
-            <li><a id="run_query_menu_btn" style="text-decoration: none; color: black;">Run cleaning query</a></li>
-            <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
-            <li><a id="db_credentials_btn" style="text-decoration: none; color: black;">Get Database Credentials</a></li>
-            <li><a id="get_data_btn" style="text-decoration: none; color: black;">Get Data</a></li>
+            <li  id="run_query_menu_btn">Run cleaning query</li>
+            <li id="dump_data_btn">Dump data into database</li>
+            <li id="db_credentials_btn">Get Database Credentials</li>
+            <li id="get_data_btn">Get Data</li>
           </ul>
       </li>
   </ul>

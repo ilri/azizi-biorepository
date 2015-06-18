@@ -92,16 +92,8 @@ DMPVSchema.prototype.documentReady = function() {
       $("#cancel_btn").click(window.dvs.cancelButtonClicked);
       $("#update_btn").click(window.dvs.applySchemaChanges);
       $("#create_project_btn").click(window.dvs.createProjectButtonClicked);
-      $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
       $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
-      $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
-      $("#add_note_menu_btn").click(function(){
-         window.dvs.refreshNotes();
-         $("#notes_wndw").show();
-      });
       $("#add_new_note").click(window.dvs.addNoteButtonClicked);
-      $("#merge_version_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("version");});
-      $("#merge_schema_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("schema");});
       $("#merge_version_btn").click(window.dvs.mergeVersionButtonClicked);
       $("#merge_schema_btn").click(window.dvs.mergeSchemaButtonClicked);
       $("#merge_sheet_btn").click(window.dvs.mergeSheetButtonClicked);
@@ -111,29 +103,14 @@ DMPVSchema.prototype.documentReady = function() {
          window.dvs.renameSheetButton2Clicked($("#sheet_old_name").val(), $("#sheet_name").val());
       });
       $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
-      $("#dump_data_btn").click(window.dvs.dumpDataButtonClicked);
       $("#project_title").dblclick(function() {
          $("#new_project_name").val(window.dvs.schema.title);
          $("#rename_project_wndw").show();
       });
       $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
-      $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
       $("#apply_version_changes").click(window.dvs.applyVersionDiffButtonClicked);
       $("#apply_merge_changes").click(window.dvs.applyMergeDiffButtonClicked);
-      $("#run_query_menu_btn").click(function(){
-         $("#query_wndw").show();
-      });
       $("#run_query_btn").click(window.dvs.runQueryButtonClicked);
-      $("#get_data_btn").click(function() {
-         //get the project groups
-         var projectGroups = window.dvs.getProjectGroups();
-         var html = "";
-         for(var gIndex = 0; gIndex < projectGroups.length; gIndex++) {
-            html = html + "<input type='checkbox' name='project_groups' id='"+projectGroups[gIndex]+"' value='"+projectGroups[gIndex]+"' />"+projectGroups[gIndex]+"<br />";
-         }
-         $("#data_project_groups_div").html(html);
-         $("#get_data_wndw").show();
-      });
       $("#data_filter_type").change(function() {
          var wHeight = 160;
          if($("#data_filter_type").val() == "all") {
@@ -153,9 +130,55 @@ DMPVSchema.prototype.documentReady = function() {
          $("#get_data_wndw").jqxWindow({height: wHeight});
       });
       $("#get_data_btn2").click(window.dvs.getDataButtonClicked);
+      $("#menu_bar").on('itemclick', window.dvs.menuItemClicked);
    }
    else {
       console.log("ignoring documentReady call");
+   }
+};
+
+DMPVSchema.prototype.menuItemClicked = function(event) {
+   var itemId = event.args.id;
+   if(itemId == "home_menu_btn") {
+      window.location.href = "?page=dmp";
+   }
+   else if(itemId == "create_project_menu_btn") {
+      window.location.href = "?page=dmp&do=view_schema&project=&session="+window.dvs.session;
+   }
+   else if(itemId == "add_note_menu_btn") {
+      window.dvs.refreshNotes();
+      $("#notes_wndw").show();
+   }
+   else if(itemId == "regen_schema_menu_btn") {
+      window.dvs.processProjectSchema();
+   }
+   else if(itemId == "merge_version_menu_btn") {
+      window.dvs.mergeVSMenuButtonClicked("version");
+   }
+   else if(itemId == "merge_schema_menu_btn") {
+      window.dvs.mergeVSMenuButtonClicked("schema");
+   }
+   else if(itemId == "delete_project_menu_btn") {
+      $("#delete_project_wndw").show();
+   }
+   else if(itemId == "run_query_menu_btn") {
+      $("#query_wndw").show();
+   }
+   else if(itemId == "dump_data_btn") {
+      window.dvs.dumpDataButtonClicked();
+   }
+   else if(itemId == "db_credentials_btn") {
+      window.dvs.dbCredentailsButtonClicked();
+   }
+   else if(itemId == "get_data_btn") {
+      //get the project groups
+      var projectGroups = window.dvs.getProjectGroups();
+      var html = "";
+      for(var gIndex = 0; gIndex < projectGroups.length; gIndex++) {
+         html = html + "<input type='checkbox' name='project_groups' id='"+projectGroups[gIndex]+"' value='"+projectGroups[gIndex]+"' />"+projectGroups[gIndex]+"<br />";
+      }
+      $("#data_project_groups_div").html(html);
+      $("#get_data_wndw").show();
    }
 };
 
