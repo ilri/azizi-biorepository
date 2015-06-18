@@ -12,6 +12,7 @@ class ODKWorkflowAPI extends Repository {
    private static $HEADER_CTYPE_JSON = "Content-Type: application/json";
    private $lH;
    private $config;
+   private $server;
    private $userUUID;
    
    public function __construct() {
@@ -48,6 +49,7 @@ class ODKWorkflowAPI extends Repository {
                     && array_key_exists("auth_mode", $authJson)
                     && ($authJson['auth_mode'] == "local" || $authJson['auth_mode'] == "ldap")) {
                try {
+                  $this->server = $authJson['server'];
                   $sessionId = $this->authUser($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['auth_mode'], $authJson['secret']);
                   $data = array(
                       "session" => $sessionId,
@@ -81,6 +83,7 @@ class ODKWorkflowAPI extends Repository {
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("session", $authJson)) {
+               $this->server = $authJson['server'];
                //check if session id is still valid
                try {
                   $this->userUUID = $this->generateUserUUID($authJson['server'], $authJson['user']);
@@ -162,6 +165,9 @@ class ODKWorkflowAPI extends Repository {
                      }
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "run_query") {
                         $this->handleRunQueryEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "grant_user_access") {
+                        $this->handleGrantUserAccessEndpoint();
                      }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
@@ -1100,6 +1106,39 @@ class ODKWorkflowAPI extends Repository {
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "save_point" => $savePoint,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the grant_user_access endpoint
+    * The get_notes endpoint gets all notes corresponding to a workflow
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    *    user       :  "The non-select query to be run"
+    * }
+    */
+   private function handleGrantUserAccessEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("user", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']));
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
                "status" => $status
             ));
          }

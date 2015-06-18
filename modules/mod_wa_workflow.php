@@ -135,7 +135,7 @@ class Workflow {
     * @param type $user       The user to be granted access to the workflow
     * @param type $grantedBy  The user granting the access
     */
-   private function grantUserAccess($user) {
+   public function grantUserAccess($user) {
       $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
       $columns = array(
           "user_granted" => "'{$user}'",
