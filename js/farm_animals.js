@@ -882,32 +882,19 @@ Animals.prototype.confirmEventsExtras = function(){
 Animals.prototype.saveChanges = function (){
    var toId;
    var formData = new FormData();
-   if($('#pm_report').length === 1){
+
+   // ensure that we have an attachment when we need one
+   if($('#pmReportPlaceId')[0].style.display === 'block' && animals.pmReport === undefined){
+      animals.showNotification('Please add a PM report for this event.', 'error');
+      return;
+   }
+
+   if(animals.pmReport !== undefined){
       // we have a file to upload... this requires special handling gloves
       // Create a formdata object and add the pm report
       $.each(animals.pmReport, function(key, value){
           formData.append('uploads[]', value);
       });
-
-//      // now upload the pm report in its own request
-//      $.ajax({
-//        url: 'mod_ajax.php?page=farm_animals', type: 'POST', data: data, cache: false, dataType: 'json',
-//        processData: false, // Don't process the files
-//        contentType: false, // Set content type to false as jQuery will tell the server its a query string request
-//        success: function(data, textStatus, jqXHR) {
-//            if(typeof data.error === 'undefined') {
-//                // Success so continue with the other ajax request
-//            }
-//            else {
-//                // Handle errors here
-//                console.log('ERRORS: ' + data.error);
-//            }
-//        },
-//        error: function(jqXHR, textStatus, errorThrown) {
-//            // Handle errors here
-//            console.log('ERRORS: ' + textStatus);
-//        }
-//    });
    }
 
    if(this.sub_module === 'events'){
@@ -1418,8 +1405,13 @@ Animals.prototype.addEventDetails = function(sender){
       // if the type of exit field is active and the selected event is not exit, remove it, else just exit
       if($('#eventValuePlaceId')[0].style.display === 'block' && animals.valueEvents.indexOf(eventName) === -1){ $('#eventValuePlaceId').css({'display': 'none'}); }
       else if($('#eventValuePlaceId')[0].style.display === 'none' && animals.valueEvents.indexOf(eventName) !== -1){ $('#eventValuePlaceId').css({'display': 'block'}); }
+
       if($('#exitTypeId')[0].style.display === 'block' && eventName !== animals.exitVariable){ $('#exitTypeId').css({'display': 'none'}); }
       else if($('#exitTypeId')[0].style.display === 'none' && eventName === animals.exitVariable){ $('#exitTypeId').css({'display': 'block'}); }
+
+      if($('#pmReportPlaceId')[0].style.display === 'block' && eventName !== animals.pmReportVariable){ $('#pmReportPlaceId').css({'display': 'none'}); }
+      else if($('#pmReportPlaceId')[0].style.display === 'none' && eventName === animals.pmReportVariable){ $('#pmReportPlaceId').css({'display': 'block'}); }
+
       return;
    }
 
@@ -1433,6 +1425,10 @@ Animals.prototype.addEventDetails = function(sender){
          <div id='event_value_pl' class='animal_input controls'>\n\
             <input type='text' value='' id='eventValueId' />\n\
          </div>\n\
+      </div>\n\
+      <div id='pmReportPlaceId' class='control-group' id='pm_report'>\
+         <label class='control-label' for='event_date'>PM Report&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+         <div id='pdf_cont' class='animal_input controls'><input type='file' name='pm_report' /></div>\n\
       </div>\n\
       <div class='control-group'>\
          <label class='control-label' for='performed'>Performed By&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
@@ -1471,10 +1467,15 @@ Animals.prototype.addEventDetails = function(sender){
    // hide all the sub types.... this is kind of a hack to ensure the divs are displayed well on selecting an event
    $('#exitTypeId').css({'display': 'none'});
    $('#eventValuePlaceId').css({'display': 'none'});
+   $('#pmReportPlaceId').css({'display': 'none'});
 
    // if we are having an exit type, specify the type of exit
    if(eventName === animals.exitVariable){
       $('#exitTypeId').css({'display': 'block'});
+   }
+   else if(eventName === animals.pmReportVariable){
+      $('#pmReportPlaceId').css({'display': 'block'});
+      $('[name=pm_report]').on('change', function(event){ animals.pmReport = event.target.files; });
    }
    else if(animals.valueEvents.indexOf(eventName) !== -1){
       $('#eventValuePlaceId').css({'display': 'block'});
@@ -1488,21 +1489,22 @@ Animals.prototype.addEventDetails = function(sender){
  */
 Animals.prototype.subEventChanged = function(){
    var sub_event = $('#sub_events_id option:selected').text();
-   if(sub_event === 'Death'){
-      // create a place for uploading a PM report
-      var pmReport = "<div class='control-group' id='pm_report'>\
-         <label class='control-label' for='event_date'>PM Report&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
-         <div id='pdf_cont' class='animal_input controls'><input type='file' name='pm_report' /></div>\n\
-      </div>";
-      $('#exitTypeId').after(pmReport);
-      $('[name=pm_report]').on('change', function(event){ animals.pmReport = event.target.files; });
-   }
-   else{
-      // check if the pm report option is active and deactivate it
-      if($('#pm_report').length === 1){
-         $('#pm_report').remove();
-      }
-   }
+
+//   if(sub_event === animals.pmReportVariable){
+//      // create a place for uploading a PM report
+//      var pmReport = "<div class='control-group' id='pm_report'>\
+//         <label class='control-label' for='event_date'>PM Report&nbsp;&nbsp;<img class='mandatory' src='images/mandatory.gif' alt='Required' /></label>\n\
+//         <div id='pdf_cont' class='animal_input controls'><input type='file' name='pm_report' /></div>\n\
+//      </div>";
+//      $('#exitTypeId').after(pmReport);
+//      $('[name=pm_report]').on('change', function(event){ animals.pmReport = event.target.files; });
+//   }
+//   else{
+//      // check if the pm report option is active and deactivate it
+//      if($('#pm_report').length === 1){
+//         $('#pm_report').remove();
+//      }
+//   }
 };
 
 /**
