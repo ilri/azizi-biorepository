@@ -27,7 +27,7 @@ function Animals(sub_module){
 Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
-      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}],
+      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}, {name: 'status'}],
          id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', showAll: this.showAll}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
      var animalsAdapter = new $.jqx.dataAdapter(source);
@@ -59,10 +59,11 @@ Animals.prototype.initiateAnimalsGrid = function(){
               },
               { text: 'Species', datafield: 'species', width: 60 },
               { text: 'Sex', datafield: 'sex', width: 50 },
-              { text: 'Breed', datafield: 'breed', width: 150 },
-              { text: 'Current Owner', datafield: 'owner', width: 140 },
+              { text: 'Breed', datafield: 'breed', width: 110 },
+              { text: 'Current Owner', datafield: 'owner', width: 110 },
               { text: 'Experiment', datafield: 'experiment', width: 190 },
-              { text: 'Location', datafield: 'location', width: 200 }
+              { text: 'Location', datafield: 'location', width: 150 },
+              { text: 'Status', datafield: 'status', width: 120 }
             ]
         });
      }
@@ -78,11 +79,9 @@ Animals.prototype.initiateAnimalsGrid = function(){
 Animals.prototype.animalGridStatusBar = function(statusbar){
    var container = $("<div style='overflow: hidden; position: relative; margin: 5px;'></div>");
    var excelButton = $("<div class='status_bar_div'><img style='position: relative; margin-top: 2px;' src='images/excel.png'/><span class='status_bar_span'>Export</span></div>");
-   var showAllCheck = $("<div class='status_bar_div'><input type='checkbox' id='showAllId' name='showAll' /><span class='status_bar_span'>Show All</span></div>");
+
    container.append(excelButton);
-   container.append(showAllCheck);
    excelButton.jqxButton({  width: 80, height: 20 });
-   showAllCheck.jqxButton({  width: 80, height: 20 });
    statusbar.append(container);
 
    excelButton.click(function (event) {
