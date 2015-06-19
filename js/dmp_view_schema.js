@@ -1138,7 +1138,7 @@ DMPVSchema.prototype.mergeVersionButtonClicked = function(){
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
          "workflow_id_2": $("#other_project_list").val(),
-         "type": "all"
+         "type": "non_trivial"
       });//get only non-trivial diffs
       var sToken = JSON.stringify({
          "server":window.dvs.server,
