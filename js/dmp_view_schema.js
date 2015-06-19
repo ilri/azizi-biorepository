@@ -10,6 +10,7 @@ function DMPVSchema(server, user, session, project) {
    window.dvs.columnGridAdapter = null;
    window.dvs.versionDiffGridAdapter = null;
    window.dvs.notesGridAdapter = null;
+   window.dvs.usersGridAdapter = null;
    window.dvs.mergeDiffGridAdapter = null;
    window.dvs.dataGridAdapter = null;
    window.dvs.schemaChanges={};
@@ -72,6 +73,9 @@ DMPVSchema.prototype.documentReady = function() {
       window.dvs.initWindow($("#db_credentials_wndw"), 110, 250);
       window.dvs.initWindow($("#notes_wndw"), window.innerHeight * 0.7, window.innerWidth * 0.9);
       window.dvs.initWindow($("#query_wndw"), 160, 600);
+      window.dvs.initWindow($("#grant_access_wndw"), 250, 600);
+      window.dvs.initWindow($("#revoke_access_wndw"), 200, 600);
+      window.dvs.initWindow($("#users_wndw"), 300, 700);
       $("#manual_file_upload").jqxFileUpload({
          width:500,
          fileInputName: "data_file",
@@ -89,52 +93,31 @@ DMPVSchema.prototype.documentReady = function() {
       window.dvs.initSheetList();
       window.dvs.initColumnGrid();
       //window.dvs.initFileDropArea();
-      $("#cancel_btn").click(window.dvs.cancelButtonClicked);
-      $("#update_btn").click(window.dvs.applySchemaChanges);
-      $("#create_project_btn").click(window.dvs.createProjectButtonClicked);
-      $("#delete_project_menu_btn").click(function(){$("#delete_project_wndw").show();});
-      $("#delete_project_btn").click(window.dvs.deleteProjectButtonClicked);
-      $("#regen_schema_menu_btn").click(window.dvs.processProjectSchema);
-      $("#add_note_menu_btn").click(function(){
-         window.dvs.refreshNotes();
-         $("#notes_wndw").show();
-      });
-      $("#add_new_note").click(window.dvs.addNoteButtonClicked);
-      $("#merge_version_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("version");});
-      $("#merge_schema_menu_btn").click(function() {window.dvs.mergeVSMenuButtonClicked("schema");});
-      $("#merge_version_btn").click(window.dvs.mergeVersionButtonClicked);
-      $("#merge_schema_btn").click(window.dvs.mergeSchemaButtonClicked);
-      $("#merge_sheet_btn").click(window.dvs.mergeSheetButtonClicked);
+      $("#cancel_btn").unbind('click').click(window.dvs.cancelButtonClicked);
+      $("#update_btn").unbind('click').click(window.dvs.applySchemaChanges);
+      $("#create_project_btn").unbind('click').click(window.dvs.createProjectButtonClicked);
+      $("#delete_project_btn").unbind('click').click(window.dvs.deleteProjectButtonClicked);
+      $("#add_new_note").unbind('click').click(window.dvs.addNoteButtonClicked);
+      $("#merge_version_btn").unbind('click').click(window.dvs.mergeVersionButtonClicked);
+      $("#merge_schema_btn").unbind('click').click(window.dvs.mergeSchemaButtonClicked);
+      $("#merge_sheet_btn").unbind('click').click(window.dvs.mergeSheetButtonClicked);
       $("#menu_bar").jqxMenu({autoOpen: false});
       $("#right_click_menu").jqxMenu({mode: "popup", width: "200px", autoOpenPopup: false});
-      $("#rename_sheet_btn2").click(function() {
+      $("#rename_sheet_btn2").unbind('click').click(function() {
          window.dvs.renameSheetButton2Clicked($("#sheet_old_name").val(), $("#sheet_name").val());
       });
       $("#add_foreign_key_btn").click(window.dvs.addForeignKeyButtonClicked);
-      $("#dump_data_btn").click(window.dvs.dumpDataButtonClicked);
       $("#project_title").dblclick(function() {
          $("#new_project_name").val(window.dvs.schema.title);
          $("#rename_project_wndw").show();
       });
-      $("#rename_project_btn").click(window.dvs.renameProjectButtonClicked);
-      $("#db_credentials_btn").click(window.dvs.dbCredentailsButtonClicked);
-      $("#apply_version_changes").click(window.dvs.applyVersionDiffButtonClicked);
-      $("#apply_merge_changes").click(window.dvs.applyMergeDiffButtonClicked);
-      $("#run_query_menu_btn").click(function(){
-         $("#query_wndw").show();
-      });
-      $("#run_query_btn").click(window.dvs.runQueryButtonClicked);
-      $("#get_data_btn").click(function() {
-         //get the project groups
-         var projectGroups = window.dvs.getProjectGroups();
-         var html = "";
-         for(var gIndex = 0; gIndex < projectGroups.length; gIndex++) {
-            html = html + "<input type='checkbox' name='project_groups' id='"+projectGroups[gIndex]+"' value='"+projectGroups[gIndex]+"' />"+projectGroups[gIndex]+"<br />";
-         }
-         $("#data_project_groups_div").html(html);
-         $("#get_data_wndw").show();
-      });
-      $("#data_filter_type").change(function() {
+      $("#rename_project_btn").unbind('click').click(window.dvs.renameProjectButtonClicked);
+      $("#apply_version_changes").unbind('click').click(window.dvs.applyVersionDiffButtonClicked);
+      $("#apply_merge_changes").unbind('click').click(window.dvs.applyMergeDiffButtonClicked);
+      $("#run_query_btn").unbind('click').click(window.dvs.runQueryButtonClicked);
+      $("#grant_access_btn").unbind('click').click(window.dvs.grantAccessButtonClicked);
+      $("#revoke_access_btn").unbind('click').click(window.dvs.revokeAccessButtonClicked);
+      $("#data_filter_type").unbind('change').change(function() {
          var wHeight = 160;
          if($("#data_filter_type").val() == "all") {
             $("#filter_query_div").hide();
@@ -152,10 +135,401 @@ DMPVSchema.prototype.documentReady = function() {
          }
          $("#get_data_wndw").jqxWindow({height: wHeight});
       });
-      $("#get_data_btn2").click(window.dvs.getDataButtonClicked);
+      $("#get_data_btn2").unbind('click').click(window.dvs.getDataButtonClicked);
+      $("#menu_bar").on('itemclick', window.dvs.menuItemClicked);
    }
    else {
       console.log("ignoring documentReady call");
+   }
+};
+
+DMPVSchema.prototype.menuItemClicked = function(event) {
+   var itemId = event.args.id;
+   if(itemId == "home_menu_btn") {
+      window.location.href = "?page=dmp";
+   }
+   else if(itemId == "create_project_menu_btn") {
+      window.location.href = "?page=dmp&do=view_schema&project=&session="+window.dvs.session;
+   }
+   else if(itemId == "add_note_menu_btn") {
+      window.dvs.refreshNotes();
+      $("#notes_wndw").show();
+   }
+   else if(itemId == "regen_schema_menu_btn") {
+      window.dvs.processProjectSchema();
+   }
+   else if(itemId == "merge_version_menu_btn") {
+      window.dvs.mergeVSMenuButtonClicked("version");
+   }
+   else if(itemId == "merge_schema_menu_btn") {
+      window.dvs.mergeVSMenuButtonClicked("schema");
+   }
+   else if(itemId == "delete_project_menu_btn") {
+      $("#delete_project_wndw").show();
+   }
+   else if(itemId == "run_query_menu_btn") {
+      $("#query_wndw").show();
+   }
+   else if(itemId == "dump_data_btn") {
+      window.dvs.dumpDataButtonClicked();
+   }
+   else if(itemId == "db_credentials_btn") {
+      window.dvs.dbCredentailsButtonClicked();
+   }
+   else if(itemId == "get_data_btn") {
+      //get the project groups
+      var projectGroups = window.dvs.getProjectGroups();
+      var html = "";
+      for(var gIndex = 0; gIndex < projectGroups.length; gIndex++) {
+         html = html + "<input type='checkbox' name='project_groups' id='"+projectGroups[gIndex]+"' value='"+projectGroups[gIndex]+"' />"+projectGroups[gIndex]+"<br />";
+      }
+      $("#data_project_groups_div").html(html);
+      $("#get_data_wndw").show();
+   }
+   else if(itemId == "grant_access_menu_btn") {
+      window.dvs.getAccessLevel(function(accessLevel) {
+         if(accessLevel == "admin") {
+            $("#grant_access_wndw").show();
+         }
+         else {
+            $("#inotification_pp").html("You are not allowed to grant access");
+         }
+      });
+   }
+   else if(itemId == "revoke_access_menu_btn") {
+      window.dvs.getAccessLevel(function(accessLevel) {
+         if(accessLevel == "admin") {
+            window.dvs.getUsers(function(users){
+               var html = "";
+               for(var index = 0; index < users.length; index++) {
+                  if(users[index].name != window.dvs.user) {
+                     html = html + "<option value='"+users[index].name+"'>"+users[index].name+"</option>";
+                  }
+               }
+               $("#revoke_access_user").html(html);
+               $("#revoke_access_wndw").show();
+            });
+         }
+         else {
+            $("#inotification_pp").html("You are not allowed to revoke access");
+         }
+      });
+   }
+   else if(itemId == "show_users_menu_btn") {
+      window.dvs.getUsers(function(users){
+         window.dvs.initUsersGrid(users);
+         $("#users_wndw").show();
+      });
+   }
+};
+
+/**
+ * This function gets the access level for the current user
+ * 
+ * @returns {String} The access level. Can either be 'admin' or 'normal'
+ */
+DMPVSchema.prototype.getAccessLevel = function(accessLevelFunction) {
+   if(window.dvs.project != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_access_level",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get access level");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get access level");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_access_level endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not run the query"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  accessLevelFunction(jsonResult.access_level);
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not get access level");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+/**
+ * This function gets the access level for the current user
+ * 
+ * @returns {String} The access level. Can either be 'admin' or 'normal'
+ */
+DMPVSchema.prototype.getUsers = function(userFunction) {
+   if(window.dvs.project != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=get_users",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to get users");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to get users");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from get_users endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get users"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  userFunction(jsonResult.users);
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not get users");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+DMPVSchema.prototype.initUsersGrid = function(users) {
+   console.log("initializing users grid");
+   
+   var source = {
+      datatype: "json",
+      datafields: [
+         {name: 'name'},
+         {name: 'access_level'},
+         {name: 'granted_by'},
+         {name: 'time_granted'},
+         {name: 'access_revoked'}
+      ],
+      localdata: users
+   };
+   
+   window.dvs.usersGridAdapter = new $.jqx.dataAdapter(source);
+   var gridWidth = $("#users_wndw").width() * 0.95;
+   $("#users_grid").jqxGrid({
+      width: gridWidth,
+      height: '80%',
+      source: window.dvs.usersGridAdapter,
+      columnsresize: true,
+      theme: '',
+      selectionmode: "singlerow",
+      pageable: false,
+      editable: true,
+      rendergridrows: function() {
+         return window.dvs.usersGridAdapter.records;
+      },
+      columns: [
+         {text: 'User', datafield: 'name', editable:false, width: gridWidth * 0.2},
+         {text: 'Access level', datafield: 'access_level', editable:false, width: gridWidth * 0.2},
+         {text: 'Granted by', datafield: 'granted_by', editable:false, width: gridWidth * 0.2},
+         {text: 'Time granted', datafield: 'time_granted', editable:false, width: gridWidth * 0.3, cellsrenderer: function(row, column, value) {
+               var date = new Date(value);
+               return '<div style="overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; text-align: left; margin-right: 2px; margin-left: 4px; margin-top: 4px;">' + date.toLocaleString() + '</div>';
+         }},
+         {text: 'Revoked', datafield: 'access_revoked', editable:false, width: gridWidth * 0.1}
+      ]
+   });
+   window.dvs.click = {
+      time: new Date(),
+      last_time: new Date(),
+      last_row: -1
+   };
+};
+
+/**
+ * This function grants access to the defined user
+ * 
+ * @returns {String} The access level. Can either be 'admin' or 'normal'
+ */
+DMPVSchema.prototype.grantAccessButtonClicked = function() {
+   if(window.dvs.project != null && $("#grant_access_user").val().length > 0 && $("#grant_access_level").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "user": $("#grant_access_user").val(),
+         "access_level": $("#grant_access_level").val()
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=grant_user_access",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to grant access");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to grant access");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from grant_user_access endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not grant access"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#inotification_pp").html("Access granted to "+$("#grant_access_user").val());
+                  $("#inotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#grant_access_wndw").hide();
+               $("#enotification_pp").html("Could not get access level");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
+   }
+};
+
+/**
+ * This function revokes access to the defined user
+ * 
+ * @returns {String} The access level. Can either be 'admin' or 'normal'
+ */
+DMPVSchema.prototype.revokeAccessButtonClicked = function() {
+   if(window.dvs.project != null && $("#revoke_access_user").val().length > 0) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "user": $("#revoke_access_user").val()
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=revoke_user_access",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to revoke access");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to revoke access");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from revoke_user_access endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not revoke access"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  $("#inotification_pp").html("Access revoked from "+$("#revoke_access_user").val());
+                  $("#inotification_pp").jqxNotification("open");
+               }
+            }
+            else {
+               $("#grant_access_wndw").hide();
+               $("#enotification_pp").html("Could not get access level");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+         }
+      });
    }
 };
 
@@ -764,7 +1138,7 @@ DMPVSchema.prototype.mergeVersionButtonClicked = function(){
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
          "workflow_id_2": $("#other_project_list").val(),
-         "type": "all"
+         "type": "non_trivial"
       });//get only non-trivial diffs
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -1182,7 +1556,8 @@ DMPVSchema.prototype.initNotesGrid = function(notes) {
       datafields: [
          {name: 'user'},
          {name: 'time_added'},
-         {name: 'message'}
+         {name: 'message'},
+         {name: 'id'}
       ],
       localdata: notes
    };
@@ -1210,6 +1585,87 @@ DMPVSchema.prototype.initNotesGrid = function(notes) {
          }}
       ]
    });
+   $("#notes_grid").on('rowclick', function (event) {
+      if (event.args.rightclick) {
+         var rowIndex = event.args.rowindex;
+         $("#notes_grid").jqxGrid('selectrow', rowIndex);
+         $("#right_click_menu").html('<ul><li><a href="#" id="delete_note_btn">Delete note</a></li></ul>');
+         var scrollTop = $(window).scrollTop();
+         var scrollLeft = $(window).scrollLeft();
+         $("#right_click_menu").jqxMenu('open',  parseInt(event.args.originalEvent.clientX) + 5 + scrollLeft, parseInt(event.args.originalEvent.clientY) + 5 + scrollTop);
+         $("#delete_note_btn").unbind('click').click(window.dvs.deleteNoteButtonClicked);
+         return false;
+      }
+  });
+};
+
+DMPVSchema.prototype.deleteNoteButtonClicked = function() {
+   var noteData = $("#notes_grid").jqxGrid('getrowdata', $("#notes_grid").jqxGrid('selectedrowindex'));
+   if(typeof noteData != 'undefined') {
+      window.dvs.deleteNote(noteData.id);
+   }
+   $("#right_click_menu").jqxMenu('close');
+};
+
+DMPVSchema.prototype.deleteNote = function($noteId) {
+   if(window.dvs.project != null && $noteId != null) {
+      $("#loading_box").show();
+      var sData = JSON.stringify({
+         "workflow_id": window.dvs.project,
+         "note_id": $noteId
+      });
+      var sToken = JSON.stringify({
+         "server":window.dvs.server,
+         "user": window.dvs.user,
+         "session": window.dvs.session
+      });
+      $.ajax({
+         url: "mod_ajax.php?page=odk_workflow&do=delete_note",
+         type: "POST",
+         async: true,
+         data: {data: sData, token: sToken},
+         statusCode: {
+            400: function() {//bad request
+               $("#enotification_pp").html("Was unable to delete note");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            403: function() {//forbidden
+               $("#enotification_pp").html("User not allowed to delete notes");
+               $("#enotification_pp").jqxNotification("open");
+            },
+            500: function() {//forbidden
+               $("#enotification_pp").html("An error occurred in the server");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         success: function(jsonResult, textStatus, jqXHR){
+            console.log("Response from delete_note endpoint = ", jsonResult);
+            if(jsonResult !== null) {
+               if(jsonResult.status.healthy == false) {
+                  var message = "";
+                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                        message = "<br />"+jsonResult.status.errors[0].message;
+                     }
+                  }
+                  $("#enotification_pp").html("Could not get notes"+message);
+                  $("#enotification_pp").jqxNotification("open");
+               }
+               else {
+                  window.dvs.refreshNotes();
+               }
+            }
+            else {
+               $("#enotification_pp").html("Could not resolve trivial differences between projects");
+               $("#enotification_pp").jqxNotification("open");
+            }
+         },
+         complete: function() {
+            $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
+         }
+      });
+   }
 };
 
 /**
@@ -2068,12 +2524,12 @@ DMPVSchema.prototype.refreshSavePoints = function() {
                      var timeString = day + month + year;
                      if(timeString.length > 0)timeString = "on the "+timeString+" at ";
                      else timeString = "at ";
-                     timeString = timeString + (savePointDate.getHours()+1).timePad() + ":" + savePointDate.getMinutes().timePad() + ":" + savePointDate.getSeconds().timePad();
+                     timeString = timeString + (savePointDate.getHours()).timePad() + ":" + savePointDate.getMinutes().timePad() + ":" + savePointDate.getSeconds().timePad();
                      html = html + "<li id='"+savePoints[index].filename+"'>"+savePoints[index].comment+" "+timeString+"</li>";
                   }
                   $("#undo_container").html(html);
                   $("#undo_container li").css("cursor", "pointer");
-                  $("#undo_container li").click(function(){
+                  $("#undo_container li").unbind('click').click(function(){
                      window.dvs.restoreSavePoint($(this).attr("id"));
                   });
                   $("#undo_container li").mouseover(function(){
@@ -2418,8 +2874,8 @@ DMPVSchema.prototype.initSheetList = function() {
          $("#delete_sheet_btn").html("Delete "+sheet.name);
          $("#rename_sheet_btn").html("Rename "+sheet.name);
          $("#right_click_menu").jqxMenu('open', parseInt(event.clientX) + 5 + scrollLeft, parseInt(event.clientY) + 5 + scrollTop);
-         $("#delete_sheet_btn").click(window.dvs.deleteSheetButtonClicked);
-         $("#rename_sheet_btn").click(window.dvs.renameSheetButtonClicked);
+         $("#delete_sheet_btn").unbind('click').click(window.dvs.deleteSheetButtonClicked);
+         $("#rename_sheet_btn").unbind('click').click(window.dvs.renameSheetButtonClicked);
          return false;
       }
    });

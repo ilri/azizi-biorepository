@@ -12,6 +12,7 @@ class ODKWorkflowAPI extends Repository {
    private static $HEADER_CTYPE_JSON = "Content-Type: application/json";
    private $lH;
    private $config;
+   private $server;
    private $userUUID;
    
    public function __construct() {
@@ -48,6 +49,7 @@ class ODKWorkflowAPI extends Repository {
                     && array_key_exists("auth_mode", $authJson)
                     && ($authJson['auth_mode'] == "local" || $authJson['auth_mode'] == "ldap")) {
                try {
+                  $this->server = $authJson['server'];
                   $sessionId = $this->authUser($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['auth_mode'], $authJson['secret']);
                   $data = array(
                       "session" => $sessionId,
@@ -81,6 +83,7 @@ class ODKWorkflowAPI extends Repository {
             if(array_key_exists("server", $authJson)
                     && array_key_exists("user", $authJson)
                     && array_key_exists("session", $authJson)) {
+               $this->server = $authJson['server'];
                //check if session id is still valid
                try {
                   $this->userUUID = $this->generateUserUUID($authJson['server'], $authJson['user']);
@@ -157,8 +160,23 @@ class ODKWorkflowAPI extends Repository {
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "get_notes") {
                         $this->handleGetNotesEndpoint();
                      }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "delete_note") {
+                        $this->handleDeleteNoteEndpoint();
+                     }
                      else if(OPTIONS_REQUESTED_SUB_MODULE == "run_query") {
                         $this->handleRunQueryEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "grant_user_access") {
+                        $this->handleGrantUserAccessEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "revoke_user_access") {
+                        $this->handleRevokeUserAccessEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_access_level") {
+                        $this->handleGetAccessLevelEndpoint();
+                     }
+                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_users") {
+                        $this->handleGetUsersEndpoint();
                      }
                      else {
                         $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
@@ -311,7 +329,7 @@ class ODKWorkflowAPI extends Repository {
     * This function handles the get_workflow endpoint of the API.
     */
    private function handleGetWorkflowsEndpoint() {
-      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->userUUID));
+      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->userUUID), $this->isUserAdmin($this->userUUID));
    }
    
    /**
@@ -1044,6 +1062,40 @@ class ODKWorkflowAPI extends Repository {
    }
    
    /**
+    * This function handles the delete_note endpoint
+    * The delete_note endpoint deletes a note using its id
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow",
+    *    "note_id"   :  "The id corresponding to the note"
+    * }
+    */
+   private function handleDeleteNoteEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("note_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $savePoint = $workflow->deleteNote($json['note_id']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "save_point" => $savePoint,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to delete_note endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to delete_note endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
     * This function handles the get_notes endpoint
     * The get_notes endpoint gets all notes corresponding to a workflow
     * 
@@ -1063,6 +1115,139 @@ class ODKWorkflowAPI extends Repository {
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "save_point" => $savePoint,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the grant_user_access endpoint
+    * The grant_user_access endpoint grants a user access to a workflow
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    *    user       :  "The non-select query to be run"
+    * }
+    */
+   private function handleGrantUserAccessEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("user", $json)
+               && array_key_exists("access_level", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']), $json['access_level']);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the revoke_user_access endpoint
+    * The revoke_user_access endpoint revokes all access a user has to a workflow
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    *    user       :  "The non-select query to be run"
+    * }
+    */
+   private function handleRevokeUserAccessEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)
+               && array_key_exists("user", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow->revokeUserAccess($this->generateUserUUID($this->server, $json['user']));
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_access_level endpoint
+    * The get_access_level endpoint check what the access level for the current user
+    * in the specified workflow is
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    * }
+    */
+   private function handleGetAccessLevelEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $accessLevel = $workflow->getAccessLevel($this->userUUID);
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "access_level" => $accessLevel,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_notes endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_notes endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
+   }
+   
+   /**
+    * This function handles the get_access_level endpoint
+    * The get_access_level endpoint check what the access level for the current user
+    * in the specified workflow is
+    * 
+    * $_REQUEST['data'] variable
+    * {
+    *    workflow_id :  "The instance id for the workflow"
+    * }
+    */
+   private function handleGetUsersEndpoint() {
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $users = $workflow->getUsers();
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "users" => $users,
                "status" => $status
             ));
          }
@@ -1328,6 +1513,31 @@ class ODKWorkflowAPI extends Repository {
          throw new WAException("Unable to authenticate client because of a system error", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
       
+      return false;
+   }
+   
+   /**
+    * This function checks if the user is an admin
+    * 
+    * @param type $userURI The user's URI
+    */
+   private function isUserAdmin($userURI) {
+      try {
+         $database = new Database($this->config);
+         $query = "select is_admin from clients where uri = '$userURI'";
+         $result = $database->runGenericQuery($query, true);
+         if(count($result) == 1) {
+            if($result[0]['is_admin'] == 1) {
+               $this->lH->log(3, $this->TAG, $userURI." is an admin account");
+               return true;
+            }
+         }
+         else {
+            throw new WAException("Inconsistent number of records returned while trying to determing if user is an admin", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not check if user is an admin", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
       return false;
    }
    

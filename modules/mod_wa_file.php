@@ -27,6 +27,8 @@ class WAFile {
    private $timeCreated;
    private $timeLastModified;
    private $comment;
+   private $mergeTable;
+   private $mergeColumn;
    
    /**
     * Default constructor for this class
@@ -40,10 +42,13 @@ class WAFile {
     * @param string     $creator          URI of the person who created/uploaded the file
     * @param DateTime   $timeCreated      The time the file was created
     * @param DateTime   $timeLastModified Last modification date for the file
+    * @param string     $comment          Comment appended to the file
+    * @param string     $mergeTable       The name of the table to be used to merge data during data dumps
+    * @param string     $mergeColumn      The name of the column in the mergeTable to be used to merge data during data dumps
     * 
     * @throws WAException
     */
-   public function __construct($config, $workflowID, $database, $workingDir, $type, $filename = null, $creator = null, $timeCreated = null, $timeLastModified = null, $comment = null) {
+   public function __construct($config, $workflowID, $database, $workingDir, $type, $filename = null, $creator = null, $timeCreated = null, $timeLastModified = null, $comment = null, $mergeTable = null, $mergeColumn = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       
@@ -58,7 +63,8 @@ class WAFile {
       $this->timeCreated = $timeCreated;
       $this->timeLastModified = $timeLastModified;
       $this->comment = $comment;
-      
+      $this->mergeTable = $mergeTable;
+      $this->mergeColumn = $mergeColumn;
       try {
          $this->createMetaFilesTable();
       } catch (WAException $ex) {
@@ -84,12 +90,14 @@ class WAFile {
       }
       
       $details = array(
-          "filename" => $this->filename,
-          "type" => $this->type,
-          "creator" => $this->creator,
-          "time_created" => $time,
-          "time_last_modified" => $modifiedTime,
-          "comment" => $this->comment
+         "filename" => $this->filename,
+         "type" => $this->type,
+         "creator" => $this->creator,
+         "time_created" => $time,
+         "time_last_modified" => $modifiedTime,
+         "comment" => $this->comment,
+         "merge_table" => $this->mergeTable,
+         "merge_column" => $this->mergeColumn
       );
       
       return $details;
@@ -176,14 +184,16 @@ class WAFile {
          try {//try creating the table
             $this->database->runCreateTableQuery(WAFile::$TABLE_META_FILES,
                      array(
-                         array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
-                         array("name" => "location" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                         array("name" => "added_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                         array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                         array("name" => "last_modified" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                         array("name" => "workflow_type" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                         array("name" => "comment" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>true , "default"=>"''" , "key"=>Database::$KEY_NONE)
-                         )
+                        array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
+                        array("name" => "location" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                        array("name" => "added_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                        array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                        array("name" => "last_modified" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                        array("name" => "workflow_type" , "type"=>Database::$TYPE_VARCHAR , "length"=>20 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                        array("name" => "comment" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>true , "default"=>"''" , "key"=>Database::$KEY_NONE),
+                        array("name" => "merge_table" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>true , "default"=>null , "key"=>Database::$KEY_NONE),
+                        array("name" => "merge_column" , "type"=>Database::$TYPE_VARCHAR , "length"=>100 , "nullable"=>true , "default"=>null , "key"=>Database::$KEY_NONE)
+                     )
            );
          } catch (WAException $ex) {//error occurred while trying to create table
             $this->lH->log(1, $this->TAG, "An error occurred while trying to create the ".WAFile::$TABLE_META_FILES." table");
@@ -253,6 +263,20 @@ class WAFile {
       else {
          $this->lH->log(1, $this->TAG, "Provided URL to data file is not valid for workflow with id = {$this->instanceId}");
          throw new WAException("The provided URL doesn't point to a valid data file", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function sets the table and column to be used for merging data during
+    * data dumps if this file has been imported from another project
+    */
+   public function setMergeColumn($tableName, $columnName) {
+      try {
+         $this->lH->log(3, $this->TAG, "Updating the merge columm for '{$this->filename}' to '$tableName' - '$columnName'");
+         $query = "update ".WAFile::$TABLE_META_FILES." set merge_table = '$tableName', merge_column = '$columnName' where location = '{$this->filename}' and workflow_type = '{$this->type}'";
+         $this->database->runGenericQuery($query);
+      } catch (WAException $ex) {
+         throw new WAException("Unable to record the merge table and column for '{$this->filename}'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
    
@@ -394,7 +418,7 @@ class WAFile {
       
       $database = new Database($config, $workflowId);
       
-      $query = "select ".Database::$QUOTE_SI."location".Database::$QUOTE_SI.",".Database::$QUOTE_SI."workflow_type".Database::$QUOTE_SI.""
+      $query = "select *"
               . " from ".WAFile::$TABLE_META_FILES." order by id";
       try {
          $result = $database->runGenericQuery($query, true);
@@ -403,7 +427,8 @@ class WAFile {
             for($index = 0; $index < count($result); $index++){
                //initialize all the files
                try {
-                  $currFile = new WAFile($config, $workflowId, $database, $workingDir, $result[$index]['workflow_type'], $result[$index]['location']);
+                  //$currFile = new WAFile($config, $workflowId, $database, $workingDir, $result[$index]['workflow_type'], $result[$index]['location']);
+                  $currFile = new WAFile($config, $workflowId, $database, $workingDir, $result[$index]['workflow_type'], $result[$index]['location'], $result[$index]['added_by'], new DateTime($result[$index]['time_added']), new DateTime($result[$index]['last_modified']), $result[$index]['comment'], $result[$index]['merge_table'], $result[$index]['merge_column']);
                   array_push($files, $currFile);
                } catch (WAException $ex) {
                   $lH->log(1, "wafile_static", "An error occurred while trying to initialize one of the workflow files for workflow with id = '$workflowId'");
@@ -437,32 +462,16 @@ class WAFile {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
       $lH = new LogHandler("./");
-      
-      $query = "select location, added_by, time_added, last_modified, comment from ".WAFile::$TABLE_META_FILES." where workflow_type = '".WAFile::$TYPE_BACKUP."'";
       try {
-         $result = $database->runGenericQuery($query, true);
+         $allFiles = WAFile::getAllWorkflowFiles($config, $workflowID, $workingDir);
          $savePoints = array();
-         if($result != null && is_array($result)) {
-            for($index = 0; $index < count($result); $index++) {
-               $currRow = $result[$index];
-               $currSavePoint = new WAFile($config, $workflowID, $database, $workingDir, WAFile::$TYPE_BACKUP, $currRow['location'], $currRow['added_by'], new DateTime($currRow['time_added']), new DateTime($currRow['last_modified']), $currRow['comment']);
-               
-               try {
-                  if($currSavePoint->fileInFilesystem()) {
-                     array_push($savePoints, $currSavePoint);
-                  }
-               } catch (WAException $ex) {
-                  $lH->log(1, "wafile_static", "Unable to check if one of the backup files exists because it's object wasn't initialized correctly for workflow with instance id = '$workflowID'");
-                  throw new WAException("Unable to check if one of the backup files exists", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
-               }
+         foreach($allFiles as $currFile) {
+            $fileDetails = $currFile->getFileDetails();
+            if($fileDetails['type'] == WAFile::$TYPE_BACKUP) {
+               $savePoints[] = $currFile;
             }
-            
-            return $savePoints;
          }
-         else {
-            $lH->log(2, "wafile_static", "Database did not return any results for backup files for workflow with id = '{$workflowID}' ");
-            return array();
-         }
+         return $savePoints;
       } catch (WAException $ex) {
             $lH->log(1, "wafile_static", "Unable to fetch backup file details from the database for workflow with id = '{$workflowID}'");
             throw new WAException("Unable to fetch backup file details from the database", WAException::$CODE_DB_QUERY_ERROR, $ex);

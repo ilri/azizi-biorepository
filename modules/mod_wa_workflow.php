@@ -4,6 +4,7 @@
  * This class implements the Workflow clas in the ODK Workflow API
  */
 class Workflow {
+   private static $VERSION = 1;
    private $TAG = "workflow";
    private $config;
    private $workflowName;
@@ -27,6 +28,8 @@ class Workflow {
    public static $WORKFLOW_ROOT_DIR = "../odk_workflow/";
    public static $CHANGE_SHEET = "sheet";
    public static $CHANGE_COLUMN = "column";
+   public static $ACCESS_LEVEL_NORMAL = "normal";
+   public static $ACCESS_LEVEL_ADMIN = "admin";
    
    /**
     * Default class contructor
@@ -74,7 +77,7 @@ class Workflow {
          //make sure meta tables have been created
          $this->initMetaDBTables();
 
-         $this->grantUserAccess($this->currUser);
+         $this->grantUserAccess($this->currUser, Workflow::$ACCESS_LEVEL_ADMIN, true);//this user will automatically become the admin
          $this->saveWorkflowDetails();
       }
       else {
@@ -129,21 +132,113 @@ class Workflow {
       return $this->workflowName;
    }
    
+   public function getAccessLevel($user) {
+      try {
+         $query = "select id from ".  Workflow::$TABLE_META_ACCESS." where user_granted = '$user' and is_admin = '".Database::$BOOL_TRUE."' and access_revoked = '".Database::$BOOL_FALSE."'";
+         $result = $this->database->runGenericQuery($query, true);
+         if(count($result) > 0) {
+            return Workflow::$ACCESS_LEVEL_ADMIN;
+         }
+         return Workflow::$ACCESS_LEVEL_NORMAL;
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "Could not get the user's access level in '{$this->instanceIds}'");
+         $this->healthy = false;
+         array_push($this->errors, new WAException("Could not get the user's access level", WAException::$CODE_DB_QUERY_ERROR, $ex));
+      }
+   }
+   
    /**
-    * This function saves the user's access level in the MySQL database
+    * This function saves the user's access level in the database
+    * 
+    * @param type $user       The user to be granted access to the workflow
+    */
+   public function grantUserAccess($user, $userAccessLevel, $isNewWorkflow = false) {
+      //first check if this user is allowed to grant access
+      try {
+         $accessLevel = $this->getAccessLevel($this->currUser);
+         if($accessLevel == Workflow::$ACCESS_LEVEL_ADMIN || $isNewWorkflow == true) {
+            $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
+            $admin = Database::$BOOL_FALSE;
+            if($userAccessLevel == Workflow::$ACCESS_LEVEL_ADMIN) $admin = Database::$BOOL_TRUE;
+            $columns = array(
+                "user_granted" => "'{$user}'",
+                "time_granted" => "'".Database::getMySQLTime()."'",
+                "granted_by" => "'{$this->currUser}'",
+                "is_admin" => "'".$admin."'"
+            );
+            $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+         }
+         else {//the user is not allowed to grant access
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Current user is not allowed to grant access");
+         }
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to grant '$user' access to the workflow '{$this->instanceId}'");
+      }
+   }
+   
+   public function getUsers() {
+      //first check if this user is allowed to see all users
+      $users = array();
+      try {
+         $query = "select * from ".Workflow::$TABLE_META_ACCESS;
+         $result = $this->database->runGenericQuery($query, true);
+         foreach($result as $currUser) {
+            $currUser['name'] = $currUser['user_granted'];
+            unset($currUser['user_granted']);
+            $rawUserUUID = ODKWorkflowAPI::explodeUserUUID($currUser['name']);
+            $currUser['name'] = $rawUserUUID['user'];
+            $rawGrantedByUUID = ODKWorkflowAPI::explodeUserUUID($currUser['granted_by']);
+            $currUser['granted_by'] = $rawGrantedByUUID['user'];
+            if($currUser['revoked_by'] != null) {
+               $rawRevokedBy = ODKWorkflowAPI::explodeUserUUID($currUser['revoked_by']);
+               $currUser['revoked_by'] = $rawRevokedBy['user'];
+               $timeRevoked = new DateTime($currUser['time_revoked']);
+               $currUser['time_revoked'] = $timeRevoked->format(DateTime::ISO8601);
+            }
+            $timeGranted = new DateTime($currUser['time_granted']);
+            $currUser['time_granted'] = $timeGranted->format(DateTime::ISO8601);
+            if($currUser['is_admin'] == Database::$BOOL_TRUE) {
+               $currUser['access_level'] = Workflow::$ACCESS_LEVEL_ADMIN;
+            }
+            else {
+               $currUser['access_leve'] = Workflow::$ACCESS_LEVEL_NORMAL;
+            }
+            unset($currUser['is_admin']);
+            $users[] = $currUser;
+         }
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to get users that have access to the workflow '{$this->instanceId}'");
+      }
+      return $users;
+   }
+   
+   /**
+    * This function revokes the user's access level in the database
     * 
     * @param type $user       The user to be granted access to the workflow
     * @param type $grantedBy  The user granting the access
     */
-   private function grantUserAccess($user) {
-      $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
-      $columns = array(
-          "user_granted" => "'{$user}'",
-          "time_granted" => "'".Database::getMySQLTime()."'",
-          "granted_by" => "'{$this->currUser}'"
-      );
+   public function revokeUserAccess($user) {
+      $this->lH->log(3, $this->TAG, "Revoking '$user' access to workflow with id = '{$this->instanceId}'");
       try {
-         $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+         $accessLevel = $this->getAccessLevel($this->currUser);
+         if($accessLevel == Workflow::$ACCESS_LEVEL_ADMIN) {
+            $query = "update ".Workflow::$TABLE_META_ACCESS
+                  ." set access_revoked = '".Database::$BOOL_TRUE."', revoked_by = '{$this->currUser}', time_revoked = '".Database::getMySQLTime()."'"
+                        ." where user_granted = '$user'";
+            $this->database->runInsertQuery(Workflow::$TABLE_META_ACCESS, $columns);
+         }
+         else {//the user is not allowed to revoke access
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Current user is not allowed to revoke access");
+         }
       } catch (WAException $ex) {
          array_push($this->errors, $ex);
          $this->healthy = false;
@@ -178,7 +273,8 @@ class Workflow {
           "workflow_id" => "'{$this->instanceId}'",
           "working_dir" => "'{$this->workingDir}'",
           "processing" => "'{$processing}'",
-          "health" => "'{$healthy}'"
+          "health" => "'{$healthy}'",
+          "version" => Workflow::$VERSION
       );
       
       try {
@@ -269,9 +365,13 @@ class Workflow {
                      array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
                      array("name" => "user_granted" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "time_granted" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
-                     array("name" => "granted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
-                     )
-                 );
+                     array("name" => "granted_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "access_revoked" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false, "default"=> "'".Database::$BOOL_FALSE."'" , "key"=>Database::$KEY_NONE),
+                     array("name" => "revoked_by" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>true, "default"=> null , "key"=>Database::$KEY_NONE),
+                     array("name" => "time_revoked" , "type"=>Database::$TYPE_DATETIME, "length"=>null , "nullable"=>true, "default"=> null , "key"=>Database::$KEY_NONE),
+                     array("name" => "is_admin" , "type"=>Database::$TYPE_BOOLEAN, "length"=>null , "nullable"=>false, "default"=> "'".Database::$BOOL_FALSE."'", "key"=>Database::$KEY_NONE)
+                 )
+         );
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to create the ".Workflow::$TABLE_META_ACCESS." table");
          array_push($this->errors, new WAException("Unable to create the ".Workflow::$TABLE_META_ACCESS." table", WAException::$CODE_DB_CREATE_ERROR, $ex));
@@ -294,7 +394,8 @@ class Workflow {
                      array("name" => "workflow_id" , "type"=>Database::$TYPE_VARCHAR , "length"=>30 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "working_dir" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "processing" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'false' , "key"=>Database::$KEY_NONE),
-                     array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'true' , "key"=>Database::$KEY_NONE)
+                     array("name" => "health" , "type"=>Database::$TYPE_BOOLEAN , "length"=>null , "nullable"=>false , "default"=>'true' , "key"=>Database::$KEY_NONE),
+                     array("name" => "version" , "type"=>Database::$TYPE_INT , "length"=>null , "nullable"=>false , "default"=> -1 , "key"=>Database::$KEY_NONE)
                      )
                  );
       } catch (WAException $ex) {
@@ -433,7 +534,7 @@ class Workflow {
    public function addNote($note) {
       try {
          $this->database->runInsertQuery(Workflow::$TABLE_META_NOTES, array(
-            "message" => "'".$note."'",
+            "message" => $this->database->quote($note),
             "user" => "'".$this->currUser."'",
             "time_added" => "'".Database::getMySQLTime()."'"
          ));
@@ -460,7 +561,7 @@ class Workflow {
                $userDetails = ODKWorkflowAPI::explodeUserUUID($currResult['user']);
                $currResult['user'] = $userDetails['user'];
             }
-            unset($currResult['id']);
+            //unset($currResult['id']);
             $notes[] = $currResult;
          }
       } catch (WAException $ex) {
@@ -470,6 +571,26 @@ class Workflow {
          return;
       }
       return $notes;
+   }
+   
+   /**
+    * This function deletes a note using it's id
+    * 
+    * @param type $noteId  The note's id
+    */
+   public function deleteNote($noteId) {
+      $savePoint = null;
+      try {
+         $savePoint = $this->save("Delete note");
+         $query = "delete from ".Workflow::$TABLE_META_NOTES." where id = $noteId";
+         $this->database->runGenericQuery($query);
+      } catch (WAException $ex) {
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to delete a note");
+         array_push($this->errors, new WAException("Unable to delete the note", WAException::$CODE_DB_QUERY_ERROR, $ex));
+         $this->healthy = false;
+         return;
+      }
+      return $savePoint;
    }
    
    /**
@@ -550,7 +671,7 @@ class Workflow {
     * 
     * @param String $url The URL where the data file exists
     */
-   public function addRawDataFile($url, $name = null) {
+   public function addRawDataFile($url, $name = null, $mergeSheet = null, $mergeColumn = null) {
       if($name == null) $name = $this->instanceId.".xlsx";
       $this->lH->log(3, $this->TAG, "Adding '$name' in '$url' to the list of raw datafiles for '{$this->instanceId}'");
       //$this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
@@ -560,6 +681,9 @@ class Workflow {
          try {
             $file = new WAFile($this->config, $this->instanceId, $this->database, $this->workingDir, WAFile::$TYPE_RAW);
             $file->downloadFile($name, $url, $this->currUser);
+            if($mergeSheet != null && $mergeColumn != null) {
+               $file->setMergeColumn($mergeSheet, $mergeColumn);
+            }
             array_push($this->files, $file);
          } catch (Exception $ex) {
             $this->lH->log(1, $this->TAG, "An error occurred while trying to add a new file to the workflow");
@@ -986,12 +1110,18 @@ class Workflow {
     * @param type $previousName  The current sheet name (should exist)
     * @param type $currentName   The new name for the sheet
     */
-    private function recordSheetNameChange($previousName, $currentName){
+    private function recordSheetNameChange($previousName, $currentName, $files = null){
       if($this->database != null
               && $this->instanceId == $this->database->getDatabaseName()){
          try {
             $this->lH->log(3, $this->TAG, "Recording sheet name change from '$previousName' to '$currentName'");
-            $query = "select id,file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName'";
+            if($files != null) {
+               $queryFiles = "'".implode("', '", $files)."'";
+               $query = "select id,file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName' and file in($queryFiles)";
+            }
+            else {
+               $query = "select id,file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_SHEET."' and current_sheet = '$previousName'";
+            }
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
                $recordedFiles = array();//an array containing names of files for which the name change has already been recorded
@@ -1009,7 +1139,8 @@ class Workflow {
                $rawFiles = $this->getRawDataFiles();
                foreach($rawFiles as $currFile) {
                   $fileDetails = $currFile->getFileDetails();
-                  if(array_search($fileDetails['filename'], $recordedFiles) === false) {//we have not recorded the name change for this file
+                  if(array_search($fileDetails['filename'], $recordedFiles) === false 
+                        && ($files == null || in_array($fileDetails['filename'], $files) == true)) {//we have not recorded the name change for this file
                      $columns = array(
                         "change_time" => "'".$this->database->getMySQLTime()."'",
                         "submitted_by" => "'".$this->currUser."'",
@@ -1022,7 +1153,16 @@ class Workflow {
                   }
                }
                //update all changed columns in change table to the current sheet name
-               $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
+               if($files != null) {
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."' and file in('".implode("', '", $files)."')";
+               }
+               else {
+                  $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
+               }
+               $this->database->runGenericQuery($query);
+               
+               //update the merge_table value for all rows in the meta files table
+               $query = "update ".WAFile::$TABLE_META_FILES." set merge_table = '$currentName' where merge_table = '$previousName'";
                $this->database->runGenericQuery($query);
             }
             else {
@@ -1050,12 +1190,17 @@ class Workflow {
     * @param type $previousName  The current name for the column
     * @param type $currentName   The new name given to the column
     */
-   private function recordColumnNameChange($sheetName, $previousName, $currentName){
+   private function recordColumnNameChange($sheetName, $previousName, $currentName, $files = null){
       if($this->database != null
               && $this->instanceId == $this->database->getDatabaseName()){
          try {
             $this->lH->log(3, $this->TAG, "Recording column name change from '$previousName' to '$currentName'");
-            $query = "select id, file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName'";
+            if($files != null) {
+               $query = "select id, file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName' and file in('".implode("', '", $files)."')";
+            }
+            else {
+               $query = "select id, file from ".Workflow::$TABLE_META_CHANGES." where change_type = '".Workflow::$CHANGE_COLUMN."' and current_sheet = '$sheetName' and current_column = '$previousName'";
+            }
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
                $recordedFiles = array();
@@ -1073,7 +1218,8 @@ class Workflow {
                $rawFiles = $this->getRawDataFiles();
                foreach($rawFiles as $currFile) {
                   $fileDetails = $currFile->getFileDetails();
-                  if(array_search($fileDetails['filename'], $recordedFiles) === false) {//we have not recorded the name change for this file
+                  if(array_search($fileDetails['filename'], $recordedFiles) === false
+                        && ($files == null || in_array($fileDetails['filename'], $files) == true)) {//we have not recorded the name change for this file
                      $columns = array(
                         "change_time" => "'".$this->database->getMySQLTime()."'",
                         "submitted_by" => "'".$this->currUser."'",
@@ -1087,6 +1233,9 @@ class Workflow {
                      $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
                   }
                }
+               //update the merge_column value for all rows in the meta files table
+               $query = "update ".WAFile::$TABLE_META_FILES." set merge_column = '$currentName' where merge_table = '$sheetName' and merge_column = '$previousName'";
+               $this->database->runGenericQuery($query);
             }
             else {
                array_push($this->errors, new WAException("Unable to check if column has changed name before", WAException::$CODE_DB_QUERY_ERROR, null));
@@ -1113,28 +1262,36 @@ class Workflow {
     * @param type $columnDetails Details of the column to be modified
     */
    public function modifyColumn($sheetName, $columnDetails){
-      $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
-      //try saving the workflow instance first
-      $description = "Modify $sheetName -> {$columnDetails['original_name']}";
-      if($columnDetails['delete'] == true) {
-         $description = "Delete $sheetName -> {$columnDetails['original_name']}";
-      }
-      $savePoint = $this->save($description);
-      if($this->healthy == true) {
-         try {
-            $sheet = new WASheet($this->config, $this->database, null, $sheetName);
-            $sheet->alterColumn($columnDetails);
-            if($columnDetails['delete'] == false) $this->recordColumnNameChange($sheetName, $columnDetails['original_name'], $columnDetails['name']);
-         } catch (WAException $ex) {
-            array_push($this->errors, $ex);
-            $this->healthy = false;
-            $this->lH->log(1, $this->TAG, "Could not modify column details for '{$columnDetails['original_name']}' in '$sheetName' in the workflow with instance '{$this->instanceId}'");
+      $savePoint = null;
+      try {
+         $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
+         //try saving the workflow instance first
+         $description = "Modify $sheetName -> {$columnDetails['original_name']}";
+         if($columnDetails['delete'] == true) {
+            $description = "Delete $sheetName -> {$columnDetails['original_name']}";
          }
-      }
-      else {
-         array_push($this->errors, new WAException("Unable to modify column because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $savePoint = $this->save($description);
+         $this->truncateWorkflow();
+         if($this->healthy == true) {
+            try {
+               $sheet = new WASheet($this->config, $this->database, null, $sheetName);
+               $sheet->alterColumn($columnDetails);
+               if($columnDetails['delete'] == false) $this->recordColumnNameChange($sheetName, $columnDetails['original_name'], $columnDetails['name']);
+            } catch (WAException $ex) {
+               array_push($this->errors, $ex);
+               $this->healthy = false;
+               $this->lH->log(1, $this->TAG, "Could not modify column details for '{$columnDetails['original_name']}' in '$sheetName' in the workflow with instance '{$this->instanceId}'");
+            }
+         }
+         else {
+            array_push($this->errors, new WAException("Unable to modify column because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to modify column because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+         }
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
          $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "Unable to modify column because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+         $this->lH->log(1, $this->TAG, "Unable to modify column in workflow with instance id = '{$this->instanceId}'");
       }
       
       $this->setIsProcessing(false);
@@ -1185,42 +1342,49 @@ class Workflow {
    public function modifySheet($sheetDetails) {
       $this->lH->log(3, $this->TAG, "Modifying sheet in workflow with id = '{$this->instanceId}'. Sheet details = ".  print_r($sheetDetails, true));
       $savePoint = null;
-      if(array_key_exists("original_name", $sheetDetails)
-              && array_key_exists("name", $sheetDetails)
-              && array_key_exists("delete", $sheetDetails)) {
-         $description = "Modify ".$sheetDetails['original_name'];
-         if($sheetDetails['delete'] == true) {
-            $description = "Delete ".$sheetDetails['original_name'];
-         }
-         $savePoint = $this->save($description);
-         if($this->healthy == true) {
-            try {
-               $sheet = new WASheet($this->config, $this->database, null, $sheetDetails['original_name']);
-               if($sheetDetails['delete'] == true){
-                  $this->lH->log(3, $this->TAG, "Going to delete '".$sheetDetails['original_name']."' in '{$this->instanceId}' workflow");
-                  $sheet->delete();
+      try {
+         if(array_key_exists("original_name", $sheetDetails)
+                  && array_key_exists("name", $sheetDetails)
+                  && array_key_exists("delete", $sheetDetails)) {
+            $description = "Modify ".$sheetDetails['original_name'];
+            if($sheetDetails['delete'] == true) {
+               $description = "Delete ".$sheetDetails['original_name'];
+            }
+            $savePoint = $this->save($description);
+            $this->truncateWorkflow();
+            if($this->healthy == true) {
+               try {
+                  $sheet = new WASheet($this->config, $this->database, null, $sheetDetails['original_name']);
+                  if($sheetDetails['delete'] == true){
+                     $this->lH->log(3, $this->TAG, "Going to delete '".$sheetDetails['original_name']."' in '{$this->instanceId}' workflow");
+                     $sheet->delete();
+                  }
+                  else {
+                     $this->lH->log(3, $this->TAG, "Going to rename '".$sheetDetails['original_name']."' to '".$sheetDetails['name']."' in the '{$this->instanceId}' workflow");
+                     $sheet->rename($sheetDetails['name']);
+                     $this->recordSheetNameChange($sheetDetails['original_name'], $sheetDetails['name']);
+                  }
+               } catch (WAException $ex) {
+                  array_push($this->errors, new WAException("Unable to modify sheet because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
+                  $this->healthy = false;
+                  $this->lH->log(1, $this->TAG, "Unable to modify sheet because sheet object wasn't initialized correctly in workflow with instance id = '{$this->instanceId}'");
                }
-               else {
-                  $this->lH->log(3, $this->TAG, "Going to rename '".$sheetDetails['original_name']."' to '".$sheetDetails['name']."' in the '{$this->instanceId}' workflow");
-                  $sheet->rename($sheetDetails['name']);
-                  $this->recordSheetNameChange($sheetDetails['original_name'], $sheetDetails['name']);
-               }
-            } catch (WAException $ex) {
-               array_push($this->errors, new WAException("Unable to modify sheet because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
+            }
+            else {
+               array_push($this->errors, new WAException("Unable to modify sheet because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
                $this->healthy = false;
-               $this->lH->log(1, $this->TAG, "Unable to modify sheet because sheet object wasn't initialized correctly in workflow with instance id = '{$this->instanceId}'");
+               $this->lH->log(1, $this->TAG, "Unable to modify sheet because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
             }
          }
          else {
-            array_push($this->errors, new WAException("Unable to modify sheet because workflow instance wasn't successfully backed up", WAException::$CODE_WF_INSTANCE_ERROR, null));
+            array_push($this->errors, new WAException("Unable to modify sheet because provided sheet details are mulformed", WAException::$CODE_WF_INSTANCE_ERROR, null));
             $this->healthy = false;
-            $this->lH->log(1, $this->TAG, "Unable to modify sheet because workflow with instance id = '{$this->instanceId}' wasn't successfully backed up");
+            $this->lH->log(1, $this->TAG, "Unable to modify sheet because provided sheet details are mulformed for workflow with instance id = '{$this->instanceId}'");
          }
-      }
-      else {
-         array_push($this->errors, new WAException("Unable to modify sheet because provided sheet details are mulformed", WAException::$CODE_WF_INSTANCE_ERROR, null));
+      } catch (WAException $ex) {
+         array_push($this->errors, $ex);
          $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "Unable to modify sheet because provided sheet details are mulformed for workflow with instance id = '{$this->instanceId}'");
+         $this->lH->log(1, $this->TAG, "Unable to modify sheet in workflow with instance id = '{$this->instanceId}'");
       }
       
       $this->setIsProcessing(false);
@@ -1411,11 +1575,7 @@ class Workflow {
       if($this->healthy == TRUE && $status['healthy'] == true){
          try {
             //truncate data from all the data tables
-            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-            for($index = 0; $index < count($dataTables); $index++) {
-               $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
-               $this->database->runGenericQuery($query);
-            }
+            $this->truncateWorkflow();
             $rawDiff = Workflow::getVersionDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
             $diff = $rawDiff['diff'];
             $this->lH->log(4, $this->TAG, "Diff = ".print_r($diff, true));
@@ -1446,7 +1606,8 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
-                  $this->database->runCreateTableQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
+                  $currDiff[$workflow2Id]['nullable'] = true;
+                  $this->database->runAddColumnQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
                   $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
                }
@@ -1479,16 +1640,9 @@ class Workflow {
       return $savePoint;
    }
    
-   private function copyData($originWorkflow) {
+   private function copyData($originWorkflow, $originMergeKey = null, $destMergeKey = null) {
       //dump variable changes from workflow2
       try {
-         //copy the raw data files from workflow_2 to this workflow
-         $dataFiles = $originWorkflow->getRawDataFiles();
-         for($index = 0; $index < count($dataFiles); $index++) {
-            $name = basename($dataFiles[$index]->getFSLocation());
-            $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name);
-         }
-         
          //copy the changes
          $originMetaChanges = $originWorkflow->getMetaChanges();
          foreach ($originMetaChanges as $currChange) {
@@ -1499,6 +1653,25 @@ class Workflow {
             $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
          }
          
+         //copy the raw data files from workflow_2 to this workflow
+         $dataFiles = $originWorkflow->getRawDataFiles();
+         $mergeKeyFiles = array();
+         for($index = 0; $index < count($dataFiles); $index++) {
+            $name = basename($dataFiles[$index]->getFSLocation());
+            $mergeSheet = null;
+            $mergeColumn = null;
+            if($destMergeKey != null) {
+               $mergeSheet = $destMergeKey['sheet'];
+               $mergeColumn = $destMergeKey['column'];
+            }
+            $this->addRawDataFile($dataFiles[$index]->getFSLocation(), $name, $mergeSheet, $mergeColumn);
+            if($originMergeKey != null && $destMergeKey != null && in_array($name, $mergeKeyFiles) == false) {//check if current file has a recording for the merge change
+               //record the column first before the sheet
+               $this->recordColumnNameChange($originMergeKey['sheet'], $originMergeKey['column'], $destMergeKey['column'], array($name));
+               $this->recordSheetNameChange($originMergeKey['sheet'], $destMergeKey['sheet'], array($name));
+               $mergeKeyFiles[] = $name;
+            }
+         }
          //copy the notes
          $notes = $originWorkflow->getAllNotes(false);
          foreach($notes as $currNote) {
@@ -1510,6 +1683,23 @@ class Workflow {
          }
       } catch (WAException $ex) {
          throw new WAException("Unable to copy metadata from {$originWorkflow->getInstanceId()} to {$targetWorkflow->getInstanceId()}", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function deletes all the data in the workflow's database
+    * 
+    * @throws WAException
+    */
+   private function truncateWorkflow() {
+      try {
+         $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+         for($index = 0; $index < count($dataTables); $index++) {
+            $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
+            $this->database->runGenericQuery($query);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Was unable to truncate the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
    
@@ -1531,11 +1721,7 @@ class Workflow {
       if($this->healthy == TRUE && $status['healthy'] == true){
          try {
             //truncate data from all the data tables
-            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-            for($index = 0; $index < count($dataTables); $index++) {
-               $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
-               $this->database->runGenericQuery($query);
-            }
+            $this->truncateWorkflow();
             $rawDiff = Workflow::getMergeDifferences($this->currUser, $this->config, $this->instanceId, $workflow2Id, "all", $key1, $key2);//get all the merge differences
             $this->lH->log(4, $this->TAG, "Merge diff = ".print_r($rawDiff, true));
             $diff = $rawDiff['diff'];
@@ -1550,7 +1736,8 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet, true));
                }
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
-                  $this->database->runCreateTableQuery($currDiff['sheet'][$this->instanceId], $currDiff[$workflow2Id]);
+                  $currDiff[$workflow2Id]['nullable'] = true;
+                  $this->database->runAddColumnQuery($currDiff['sheet'][$this->instanceId], $currDiff[$workflow2Id]);
                   $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet'][$this->instanceId]} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
                }
@@ -1565,7 +1752,7 @@ class Workflow {
                   $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
             }
-            $this->copyData($workflow2);
+            $this->copyData($workflow2, $key2, $key1);
             //rename the workflow
             $savePoint = $this->modifyName($newName);
          } catch (WAException $ex) {
@@ -2108,7 +2295,7 @@ class Workflow {
                //check which sheets are in workflow1 and not in workflow2
                $noNames = count($schema1SheetNames);
                for($index = 0; $index < $noNames; $index++){
-                  if(in_array($schema1SheetNames[$index], $schema2SheetNames) == false){
+                  if(in_array($schema1SheetNames[$index], $schema2SheetNames) == false && $schema1SheetNames[$index] != $mergeSheet1['sheet']){
                      $lH->log(4, "waworkflow_static", "Sheet {$schema1SheetNames[$index]} not in $workflowID2");
                      if($diffType == "all" || $diffType == "trivial"){
                         $diff[] = array(
@@ -2128,7 +2315,7 @@ class Workflow {
                if($diffType == "all" || $diffType == "trivial"){
                   $noNames = count($schema2SheetNames);
                   for($index = 0; $index < $noNames; $index++){
-                     if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false){
+                     if(in_array($schema2SheetNames[$index], $schema1SheetNames) == false && $schema2SheetNames[$index] != $mergeSheet2['sheet']){
                         $lH->log(4, "waworkflow_static", "Sheet {$schema2SheetNames[$index]} not in $workflowID1");
                         $diff[] = array(
                            "level" => "sheet",
@@ -2138,10 +2325,6 @@ class Workflow {
                         );
                      }
                   }
-               }
-               //make sure the merging sheets are in the commonSheets array
-               if(array_search($mergeSheet1['sheet'], $commonSheetNames) === false){
-                  $commonSheetNames[] = $mergeSheet1['sheet'];
                }
                //for each of the common sheets
                $noCommonSheets = count($commonSheetNames);
@@ -2211,7 +2394,8 @@ class Workflow {
                      for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                         if(in_array($col1Names[$colIndex], $col2Names) == false){
                            $lH->log(4, "waworkflow_static", "{$col1Names[$colIndex]} not in $workflowID2");
-                           if($diffType == "all" || $diffType == "trivial"){
+                           if($diffType == "all" || $diffType == "trivial"
+                                 && ($currSheetIn1['name'] != $mergeSheet1['sheet'] || ($currSheetIn1['name'] == $mergeSheet1['sheet'] && $currSheetIn1['columns'][$col1Indexes[$col1Names[$colIndex]]]['name'] != $mergeSheet1['column']))){
                               $diff[] = array(
                                  "level" => "column",
                                  "type" => "missing",
@@ -2230,7 +2414,8 @@ class Workflow {
                      //check which columns are in workflow2 and not workflow1
                      if($diffType == "all" || $diffType == "trivial"){
                         for($colIndex = 0; $colIndex < $colSize; $colIndex++){
-                           if(in_array($col2Names[$colIndex], $col1Names) == false){
+                           if(in_array($col2Names[$colIndex], $col1Names) == false 
+                                 && ($currSheetIn2['name'] != $mergeSheet2['sheet'] || ($currSheetIn2['name'] == $mergeSheet2['sheet'] && $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]['name'] != $mergeSheet2['column']))){
                               $lH->log(4, "waworkflow_static", "{$col2Names[$colIndex]} not in $workflowID1");
                               $diff[] = array(
                                  "level" => "column",
@@ -2241,10 +2426,6 @@ class Workflow {
                               );
                            }
                         }
-                     }
-                     //make sure the merging columns are in the commonColumnNames array
-                     if(array_search($mergeSheet1['column'], $commonColumnNames) === false) {
-                        $commonColumnNames[] = $mergeSheet1['column'];
                      }
                      //for each of the common columns, check which ones are different
                      $colSize = count($commonColumnNames);
@@ -2440,8 +2621,9 @@ class Workflow {
     * 
     * @param array   $config  repository_config object to be used
     * @param string  $user    user we are getting access for
+    * @param boolean $admin   set to TRUE if you want to get all the workflows
     */
-   public static function getUserWorkflows($config, $user) {
+   public static function getUserWorkflows($config, $user, $admin) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
@@ -2456,9 +2638,13 @@ class Workflow {
       //get all the databases that look like store workflow details
       //$query = "show databases";
       try {
+         if($admin == true) {
+            $lH->log(3, "static_workflow", "User '$user' is admin. Listing all the workflows");
+         }
          $result = $database->getDatabaseNames();
          if($result !== false){
             $accessibleDbs = array();//array to store details for all the databases user has access to
+            $lH->log(4, "static_workflow","All the databases = ".print_r($result, true));
             for($index = 0; $index < count($result); $index++) {
                //$currDbName = $result[$index]['Database'];
                $currDbName = $result[$index];
@@ -2480,26 +2666,46 @@ class Workflow {
                }
                
                if($metaTables == count($allMetaTables)) {//database has all the meta tables
-                  //check whether the user has access to this database
-                  $query = "select *"
-                          . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
-                          . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user'";
-                  $access = $newDatabase->runGenericQuery($query, true);
-                  if($access !== false) {
-                     if(count($access) > 0) {//user has access to the workflow
-                        try {
-                           $details = Workflow::getWorkflowDetails($config, $currDbName);
-                           array_push($accessibleDbs, $details);
-                           
-                        } catch (WAException $ex) {
-                           $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
-                           return $jsonReturn;
+                  $lH->log(3, "static_workflow", "'$currDbName' complies to the DMP Structure");
+                  //check if the database has a workflow version
+                  $metaDocColumns = $newDatabase->getTableDetails($currDbName, Workflow::$TABLE_META_DOCUMENT);
+                  $workflowHasVersion = false;
+                  foreach($metaDocColumns as $currColumn) {
+                     if($currColumn['name'] == "version") {
+                        $workflowHasVersion = true;
+                        break;
+                     }
+                  }
+                  if($workflowHasVersion == true) {
+                     //check if the database's workflow version is compatible with the current version
+                     $query = "select id from ".Workflow::$TABLE_META_DOCUMENT." where version = ".  Workflow::$VERSION;
+                     $goodVersions = $newDatabase->runGenericQuery($query, true);
+                     //check whether the user has access to this database
+                     if(count($goodVersions) > 0) {
+                        $query = "select *"
+                            . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ACCESS.Database::$QUOTE_SI
+                            . " where ".Database::$QUOTE_SI."user_granted".Database::$QUOTE_SI." = '$user' and access_revoked = '".Database::$BOOL_FALSE."'";
+                        $access = $newDatabase->runGenericQuery($query, true);
+                        $lH->log(3, "static_workflow", "access = ''$access' and access = ".print_r($access, true));
+                        if($admin == true || count($access) > 0) {
+                           try {
+                              $details = Workflow::getWorkflowDetails($config, $currDbName);
+                              array_push($accessibleDbs, $details);
+                           } catch (WAException $ex) {
+                              $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
+                              return $jsonReturn;  
+                           }
                         }
+                        else {
+                           $lH->log(4, "static_workflow", "User '$user' does not have access to '$currDbName'");
+                        }  
+                     }
+                     else {
+                        $lH->log(2, "static_workflow", "'$currDbName' has a workflow version that is not compatible with current code");
                      }
                   }
                   else {
-                     $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database", WAException::$CODE_DB_QUERY_ERROR, NULL)));
-                     return $jsonReturn;
+                     $lH->log(2, "static_workflow", "'$currDbName' does not have a workflow version");
                   }
                }
                else {//database not usable with this API
@@ -2513,7 +2719,7 @@ class Workflow {
             return $jsonReturn;
          }
          else {
-            $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database", WAException::$CODE_DB_QUERY_ERROR, NULL)));
+            $jsonReturn['status'] = Workflow::getStatusArray(false, array(new WAException("Unable to check if user has access to a database2", WAException::$CODE_DB_QUERY_ERROR, NULL)));
             return $jsonReturn;
          }
       } catch (WAException $ex) {
@@ -2541,6 +2747,9 @@ class Workflow {
          $result = $database->runGenericQuery($query, true);
          if($result !== false) {
             if(count($result) > 0) {
+               //change the time format
+               $timeObject = new DateTime($result[0]['time_created']);
+               $result[0]['time_created'] = $timeObject->format(DateTime::ISO8601);
                return $result[0];
             }
             else {

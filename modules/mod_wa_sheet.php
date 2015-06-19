@@ -162,7 +162,7 @@ class WASheet {
               && $this->columns != null
               && $this->fileDetails != null) {
          try {
-            $this->lH->log(3, $this->TAG, "Dumping data for '{$this->sheetName}'");
+            $this->lH->log(3, $this->TAG, "Dumping data for '{$this->sheetName}' from '{$this->fileDetails['filename']}'");
             //get the list of columns in the database table. Only dump columns that are in the database
             $this->processColumns();
             //move what is in columnArray to an sql insert statement
@@ -177,8 +177,14 @@ class WASheet {
             }
             $this->lH->log(4, $this->TAG, "Number of data columns = ".count($dataColumns));
             if(count($dataColumns) > 0) {
-               $this->lH->log(4, $this->TAG, "First column has this rows = ".  print_r($dataColumns[0]->getData(), true));
-               $rowCount = count($dataColumns[count($dataColumns) - 1]->getData());//use the last column since the first column might be blank
+               //get the maximum row count
+               $rowCount = 0;
+               foreach($dataColumns as $currDataColumn) {
+                  if(count($currDataColumn->getData()) > $rowCount) {
+                     $rowCount = count($currDataColumn->getData());
+                  }
+               }
+               //$rowCount = count($dataColumns[count($dataColumns) - 1]->getData());//use the last column since the first column might be blank
                $this->lH->log(4, $this->TAG, "Number of data rows = ".$rowCount);
                $fullQuery = "";
                for($rIndex = 0; $rIndex < $rowCount; $rIndex++) {
@@ -211,7 +217,21 @@ class WASheet {
                         $row[$dataColumns[$cIndex]->getName()] = $cValue;
                      }
                   }
-                  $this->database->runInsertQuery($this->sheetName, $row);
+                  //check if we want to insert or update row
+                  if($this->fileDetails['merge_table'] == $this->sheetName && !is_null($this->fileDetails['merge_column'])) {
+                     $this->lH->log(3, $this->TAG, "Using update query to copy data from '{$this->fileDetails['filename']}' into '{$this->sheetName}'");
+                     if(isset($row[$this->fileDetails['merge_column']])) {
+                        $condition = Database::$QUOTE_SI.$this->fileDetails['merge_column'].Database::$QUOTE_SI." = ".$row[$this->fileDetails['merge_column']];
+                        $this->database->runUpdateQuery($this->sheetName, $row, $condition);
+                     }
+                     else {
+                        throw new WAException("Could not dump data into '{$this->sheetName}' because the value for the merging column is null in the current row", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+                     }
+                  }
+                  else {
+                     $this->lH->log(3, $this->TAG, "Using insert query to copy data from '{$this->fileDetails['filename']}' into '{$this->sheetName}'");
+                     $this->database->runInsertQuery($this->sheetName, $row);
+                  }
                   /*if(strlen($fullQuery) == 0){
                      $fullQuery = $this->database->runInsertQuery($this->sheetName, $row, true)."; \n";
                   }

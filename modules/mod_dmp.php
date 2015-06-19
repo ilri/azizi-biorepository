@@ -85,8 +85,8 @@ class DMP extends Repository{
    <ul>
       <li>DMP
          <ul style="width: 250px;">
-            <li><a href="?page=dmp">Home</a></li>
-            <li><a style="text-decoration: none; color: black;" href="?page=dmp&do=view_schema&project=&session=<?php echo $sessionId;?>">Create New Project</a></li>
+            <li id="home_menu_btn">Home</li>
+            <li id="create_project_menu_btn">Create New Project</li>
          </ul>
       </li>
       <li>Schema
@@ -95,19 +95,26 @@ class DMP extends Repository{
                  <ul id="undo_container" style='color: black; min-width: 300px;'>
                   </ul>
               </li>
-              <li><a id="add_note_menu_btn" style="text-decoration: none; color: black;">Add Note</a></li>
-              <li><a id="regen_schema_menu_btn" style="text-decoration: none; color: black;">Regenerate Schema</a></li>
-              <li><a id="merge_version_menu_btn" style="text-decoration: none; color: black;">Combine with another version</a></li>
-              <li><a id="merge_schema_menu_btn" style="text-decoration: none; color: black;">Merge with another project</a></li>
-              <li><a id="delete_project_menu_btn" style="text-decoration: none; color: black;">Delete Schema (and project)</a></li>
+              <li id="add_note_menu_btn">Notes</li>
+              <li id="regen_schema_menu_btn">Regenerate Schema</li>
+              <li id="merge_version_menu_btn">Combine with another version</li>
+              <li id="merge_schema_menu_btn">Merge with another project</li>
+              <li id="delete_project_menu_btn">Delete Schema (and project)</li>
           </ul>
       </li>
       <li>Data
          <ul style='width: 250px;'>
-            <li><a id="run_query_menu_btn" style="text-decoration: none; color: black;">Run cleaning query</a></li>
-            <li><a id="dump_data_btn" style="text-decoration: none; color: black;">Dump data into database</a></li>
-            <li><a id="db_credentials_btn" style="text-decoration: none; color: black;">Get Database Credentials</a></li>
-            <li><a id="get_data_btn" style="text-decoration: none; color: black;">Get Data</a></li>
+            <li  id="run_query_menu_btn">Run cleaning query</li>
+            <li id="dump_data_btn">Dump data into database</li>
+            <li id="db_credentials_btn">Get Database Credentials</li>
+            <li id="get_data_btn">Get Data</li>
+          </ul>
+      </li>
+      <li id="admin_menu_btn">Admin
+         <ul style='width: 250px;'>
+            <li  id="grant_access_menu_btn">Grant access</li>
+            <li id="revoke_access_menu_btn">Revoke access</li>
+            <li id="show_users_menu_btn">Show users</li>
           </ul>
       </li>
   </ul>
@@ -205,11 +212,50 @@ class DMP extends Repository{
    <div id="notes_wndw" style="display: none; z-index: 6;">
       <div>Project notes</div>
       <div>
-         <div id="notes_grid" style="width: 90%"></div>
-         <div style="position: relative; width: 90%; margin-top: 10px;">
+         <div id="notes_grid" style="width: 90%; margin-left: 1%; margin-top: 10px;"></div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
             <label for="new_note">Add a note</label>
             <textarea type="text" id="new_note" rows="2" style="width: 85%;"></textarea>
             <button type="button" id="add_new_note" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Add</button>
+         </div>
+      </div>
+   </div>
+   <div id="grant_access_wndw" style="display: none; z-index: 6;">
+      <div>Grant access</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <label for="grant_access_user">User</label>
+            <input type="text" id="grant_access_user" style="height: 25px; width: 300px;" />
+         </div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <label for="grant_access_level">Access level</label>
+            <select type="text" id="grant_access_level"style="width: 85%;">
+               <option value="normal">Normal</option>
+               <option value="admin">Admin</option>
+            </select>
+         </div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <button type="button" id="grant_access_btn" class="btn btn-primary" style="margin-left: 90%; margin-top: 10px;">Grant</button>
+         </div>
+      </div>
+   </div>
+   <div id="revoke_access_wndw" style="display: none; z-index: 6;">
+      <div>Revoke access</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <label for="revoke_access_user">User</label>
+            <select type="text" id="revoke_access_user" style="height: 25px; width: 300px;"></select>
+         </div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <button type="button" id="revoke_access_btn" class="btn btn-primary" style="margin-left: 90%; margin-top: 10px;">Revoke</button>
+         </div>
+      </div>
+   </div>
+   <div id="users_wndw" style="display: none; z-index: 6;">
+      <div>Project users</div>
+      <div>
+         <div style="position: relative; width: 90%; margin-top: 10px; margin-left: 1%;">
+            <div id="users_grid"></div>
          </div>
       </div>
    </div>
