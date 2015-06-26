@@ -50,6 +50,13 @@ Animals.prototype.initiateAnimalsGrid = function(){
             pagesizeoptions: ['20', '50', '100'],
             rowdetails: true,
             initrowdetails: animals.initializeInventoryRowDetails,
+            ready: function(){
+                 var filtergroup = new $.jqx.filter(), filtervalue = 'Alive', filtercondition = 'equal';
+                 var filter = filtergroup.createfilter('stringfilter', filtervalue, filtercondition);
+                 filtergroup.addfilter(1, filter);
+                 $("#inventory").jqxGrid('addfilter', 'status', filtergroup);
+                 $("#inventory").jqxGrid('applyfilters');
+            },
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
               { datafield: 'id', hidden: true },
