@@ -25,8 +25,11 @@ class Strains extends SpreadSheet {
          array('name' =>'name', 'regex' => '/^strain\s+name$/i', 'required' => true, 'unique' => true, 'lc_ref' => 'name'),
          array('name' =>'organism', 'regex' => '/^species$/i', 'required' => true, 'lc_ref' => 'org'),
          array('name' =>'origin', 'regex' => '/^country\s+of\s+isolation/i', 'required' => false, 'lc_ref' => 'origin'),
+         array('name' =>'animal_id', 'regex' => '/^animal\s+id/i', 'required' => false, 'lc_ref' => 'Animal_ID'),
          array('name' =>'provider', 'regex' => '/^provider$/i', 'required' => false),
-         array('name' =>'storage_box', 'regex' => '/^storage\s+box$/i', 'data_regex' => '/^[a-z]{4,5}[0-9]{2,5}$/i', 'required' => true),
+         array('name' =>'project', 'regex' => '/^project$/i', 'required' => true, 'lc_ref' => 'Project'),
+         array('name' =>'batch_name', 'regex' => '/^batch\s+name$/i', 'required' => false, 'lc_ref' => 'Batch_Name'),
+         array('name' =>'storage_box', 'regex' => '/^storage\s+box$/i', 'data_regex' => '/^[a-z]{4,5}[0-9]{2,5}|p67b[0-9]{3}$/i', 'required' => true),
          array('name' =>'sample_pos', 'regex' => '/^position\s+in\s+box$/i', 'data_regex' => '/^[1-9]?[0-9]|100|[a-z][0-9]0?$/i', 'required' => true),
          array('name' =>'comments', 'regex' => '/^comments$/i', 'required' => false),
          array('name' =>'owner', 'regex' => '/^owner$/i', 'data_regex' => '/^[a-z\s\']+$/i', 'required' => true)
@@ -107,6 +110,9 @@ class Strains extends SpreadSheet {
             else $this->data[$key]['project'] = $this->allProjects[$t['project']];
           }
 
+          // batch name
+          if(!isset($t['batch_name'])) $this->data[$key]['project'] = NULL;
+
           $this->data[$key]['box_details'] = $Repository->NumericPosition2LCPosition($t['sample_pos'], 100);
 
           //create the comments from the columns which go nowhere
@@ -174,8 +180,8 @@ class Strains extends SpreadSheet {
        //'label, comments, date_created, date_updated, sample_type, origin, org, main_operator, box_id, box_details, Project,
        //SampleID, VisitID, VisitDate, AnimalID, TrayID,  Longitude, Latitude'
        // very strange that we store comments in the origin field
-       $strainsQuery = 'insert into '. Config::$config['azizi_db'] .'.strains(name, genotype, origin, plasmids, org, org2, keeper, box_id, box_details, date_created, date_updated)'
-         . 'values(:name, :genotype, :origin, :plasmids, :org, :org2, :keeper, :box_id, :box_details, :date_created, :date_updated)';
+       $strainsQuery = 'insert into '. Config::$config['azizi_db'] .'.strains(name, genotype, origin, plasmids, org, org2, keeper, box_id, box_details, date_created, date_updated, Project, Batch_Name)'
+         . 'values(:name, :genotype, :origin, :plasmids, :org, :org2, :keeper, :box_id, :box_details, :date_created, :date_updated, :project, :batch_name)';
        //check for already saved samples
        $isUploadedQuery = "select count from ". Config::$config['azizi_db'] .".strains where name = :name and box_id = :box_id and box_details = :box_details";
        //check 4 duplicates
@@ -210,7 +216,8 @@ class Strains extends SpreadSheet {
          }
 
          $colvals = array('name' => $label, 'genotype' => NULL, 'plasmids' => NULL, 'org' => $t['organism'], 'org2' => NULL, 'keeper' => $t['owner'],
-             'box_id' => $this->allTrays[$t['storage_box']], 'box_details' => $t['box_details'], 'date_created' => date('Y-m-d H:i:s'), 'date_updated' => date('Y-m-d H:i:s'), 'origin' => $t['descr']);
+            'box_id' => $this->allTrays[$t['storage_box']], 'box_details' => $t['box_details'], 'date_created' => date('Y-m-d H:i:s'), 'date_updated' => date('Y-m-d H:i:s'),
+            'origin' => $t['descr'], 'project' => $t['project'], 'batch_name' => $t['batch_name']);
 
           $addedStrain = $Repository->Dbase->ExecuteQuery($strainsQuery, $colvals);
           if($addedStrain == 1){
@@ -363,17 +370,17 @@ class Strains extends SpreadSheet {
      */
     private function IsOrganismSaved($organism){
        global $Repository;
-       $organismId = $Repository->Dbase->GetSingleRowValue(Config::$config['azizi_db'] .'.organisms', 'org_id', 'org_name', $organism);
-       if($organismId == -2) return $Repository->Dbase->lastError;
-       elseif(is_null($organismId)){
-         $organismId = $Repository->Dbase->AddSpecies(Config::$config['azizi_db'], $organism);
-         if(!is_numeric($organismId)){
-            if($Repository->Dbase->dbcon->errno == 1062) return $organismId;    //complaining of a duplicate box....lets continue
-            else return $Repository->Dbase->lastError;   //we have an error while adding the tray, so we just return
-         }
-         else return $organismId;
+       $orgQuery = 'select org_id from '. Config::$config['azizi_db'] .'.organisms where org_name = :org_name';
+       $result = $Repository->Dbase->ExecuteQuery($orgQuery, array('org_name' => $organism));
+
+       if($result == 1) return $Repository->Dbase->lastError;
+       elseif(count($result) == 0){
+         $insertQuery = 'insert into '. Config::$config['azizi_db'] .'.organisms(org_name) values(:org_name)';
+         $organismId = $Repository->Dbase->ExecuteQuery($insertQuery, array('org_name' => $organism));
+         if($organismId == 1) return $Repository->Dbase->lastError;   //we have an error while adding the tray, so we just return
+         else return $Repository->Dbase->dbcon->lastInsertId();
        }
-       else return $organismId;
+       else return $result[0]['org_id'];
     }
 }
 ?>
