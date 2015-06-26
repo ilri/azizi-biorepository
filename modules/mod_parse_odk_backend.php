@@ -182,6 +182,27 @@ class Parser {
       else {
          $this->logHandler->log(3, $this->TAG, 'Successfully parsed the form\'s XML file');
       }
+      
+      //support for older odk forms
+      $allInstanceNodes = $xml->getElementsByTagName('instance');
+      $optionsFromOldODK = array();
+      $nodesLength = $allInstanceNodes->length;
+      for($i = 0; $i < $nodesLength; $i++) {
+         //check if instance has <options> child
+         $node = $allInstanceNodes->item($i);
+         $instanceId = $node->attributes->item(0)->value;
+         $optionsInInstance = $node->getElementsByTagName('options');
+         //expecting at most one <options> tag in each instance tag
+         $noOptions = $optionsInInstance->length;
+         if($noOptions == 1) {
+            $rawValues = $optionsInInstance->item(0)->getElementsByTagName('value');
+            $values = array();
+            for($index = 0; $index < $rawValues->length; $index++) {
+               $values[] = $rawValues->item($index)->nodeValue;
+            }
+            $optionsFromOldODK[$instanceId] = $values;
+         }
+      }
 
       $allSelectNodes = $xml->getElementsByTagName('select');
       $nodesLength = $allSelectNodes->length;
@@ -199,15 +220,40 @@ class Parser {
          $nodeName = substr($nodeName, strpos($nodeName, '/', 1)+1);
          $nodeName = str_replace('/', '-', $nodeName);
          $allNodes[$nodeName]['options'] = array();
+         //check if select created using old way of creating ODK forms or new way
+         $itemsets = $node->getElementsByTagName("itemset");
+         if($itemsets->length == 0) {//select defined using the new way
+            // get the number of select options in this particular node by selecting the elements with the item tag
+            $selectNodes = $node->getElementsByTagName('item');
+            $allNodes[$nodeName]['noSelects'] = $selectNodes->length;
 
-         // get the number of select options in this particular node by selecting the elements with the item tag
-         $selectNodes = $node->getElementsByTagName('item');
-         $allNodes[$nodeName]['noSelects'] = $selectNodes->length;
-
-         $this->logHandler->log(3, $this->TAG, "Extracting selects for $nodeName($i/$nodesLength) with {$selectNodes->length} selects");
-         for($j = 0; $j < $selectNodes->length; $j++){
-            // get the actual select options
-            $allNodes[$nodeName]['options'][] = $selectNodes->item($j)->childNodes->item(2)->childNodes->item(0)->nodeValue;
+            $this->logHandler->log(3, $this->TAG, "Extracting selects for $nodeName($i/$nodesLength) with {$selectNodes->length} selects");
+            for($j = 0; $j < $selectNodes->length; $j++){
+               // get the actual select options
+               $allNodes[$nodeName]['options'][] = $selectNodes->item($j)->childNodes->item(2)->childNodes->item(0)->nodeValue;
+            }
+         }
+         else if($itemsets->length == 1) {//select defined using the old way. Expecting only one itemsets tag in a select tag
+            //get the instance id for the itemset
+            $itemset = $itemsets->item(0);
+            $rawInstanceId = $itemset->getAttribute("nodeset");
+            $instanceParts = explode("'", $rawInstanceId);
+            if(count($instanceParts) == 3) {
+               $instanceId = $instanceParts[1];
+               if(isset($optionsFromOldODK[$instanceId])) {
+                  $allNodes[$nodeName]['noSelects'] = count($optionsFromOldODK[$instanceId]);
+                  $allNodes[$nodeName]['options'] = $optionsFromOldODK[$instanceId];
+               }
+               else {
+                  $this->logHandler->log(2, $this->TAG, "Was unable to get options corresponding to option group '$instanceId'");
+               }
+            }
+            else {
+               $this->logHandler->log(2, $this->TAG, "Was unable to extract the instance id from a select tag's nodeset");
+            }
+         }
+         else {
+            $this->logHandler->log(2, $this->TAG, "Select tag has more than one itemset tag. This is not expected");
          }
       }
       $this->selectNodesOptions = $allNodes;
@@ -321,9 +367,9 @@ class Parser {
           for($i=0; $i < count($this->cells[0]); $i++){
              $this->cells[0][$i] = str_replace(":", "-", $this->cells[0][$i]);
           }
-          
-          $this->cells = $this->expandMultiSelectQuestions($this->cells);
-          
+          if(count($this->selectNodesOptions) > 0) {
+             $this->cells = $this->expandMultiSelectQuestions($this->cells);
+          }
           $rowIndex = 0;
           //$cellsLength = sizeof($this->cells);
           while($rowIndex < sizeof($this->cells)){
