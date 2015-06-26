@@ -92,7 +92,7 @@ class FarmAnimals{
       $addInfo = ($addInfo != '') ? "<div id='addinfo'>$addInfo</div>" : '';
       ?>
 <div id='home'>
-   <?php echo $addInfo?>
+   <?php echo $addInfo; ?>
    <h3 class="center">Farm animals management</h3>
    <div class="user_options">
       <ul>
