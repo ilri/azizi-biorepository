@@ -405,6 +405,7 @@ class Parser {
 
       //zip parsed files
       $zipName = 'download/'.$_POST['fileName']."_".$this->sessionID.'.zip';
+      $downloadFileName = 'download/'.rawurlencode($_POST['fileName'])."_".$this->sessionID.'.zip';
       //$this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
       $this->logHandler->log(3, $this->TAG, 'zipping output files into '.$zipName);
       $this->gTasks->zipDir($this->downloadDir, $this->ROOT.$zipName);
@@ -413,7 +414,7 @@ class Parser {
       $this->gTasks->deleteDir($this->downloadDir);
 
       //send zip file to specified email
-      $this->sendZipURL($zipName);
+      $this->sendZipURL($downloadFileName);
    }
    
    private function addColumnsToRows($multiDimensionArray, $columnIndex, $columnsToInsert) {
@@ -1436,7 +1437,7 @@ class Parser {
     */
    private function sendZipURL($zipName) {
       $this->logHandler->log(3, $this->TAG, 'sending email to '.$_POST['email']);
-      $url = "http://".$_SERVER['HTTP_HOST'].$this->rootDirURI.rawurlencode($zipName);
+      $url = "http://".$_SERVER['HTTP_HOST'].$this->rootDirURI.$zipName;
       $this->logHandler->log(3, $this->TAG, 'url to zip file is  '.$url);
       $emailSubject = "ODK Parser finished generating ".$_POST['fileName'];
       $message = "Hi ".$_POST['creator'].",\nODK Parser has finished generating ".$_POST['fileName'].".xlsx. You can download the file along with its companion images as a zip file from the following link ".$url." . This is an auto-generated email, please do not reply to it.";
