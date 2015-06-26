@@ -100,7 +100,7 @@ class Strains extends SpreadSheet {
           //project
           if(isset($t['project']) && !is_numeric($t['project'])){
             if(!array_key_exists($t['project'], $this->allProjects)){
-               $projectId = $Repository->Dbase->AddProject(Config::$config['azizi_db'], $t['project']);
+               $projectId = $Repository->Dbase->AddProject(Config::$config['azizi_db'], $t['project'], 47);
                if(!is_numeric($projectId)) $this->errors[] = $projectId;
                else{
                   $this->allProjects[$t['project']] = $projectId;
