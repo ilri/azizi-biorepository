@@ -1523,6 +1523,9 @@ Animals.prototype.locationOrganiser = function(){
    // organise the animal locations by traversing thru level2 object and getting the locations
    var allLevels = {};
    $.each(animals.byLocations.level2, function(level1, that){
+      if(animals.includeTopLevels === true){
+         allLevels[Object.keys(allLevels).length] = {id: level1, name: level1};
+      }
       $.each(that, function(i, sublevel){
          allLevels[Object.keys(allLevels).length] = {id: sublevel.id, name: level1+ ' >> ' +sublevel.name};
       });

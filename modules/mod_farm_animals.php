@@ -442,7 +442,7 @@ class FarmAnimals{
     * @param   boolean        $withAnimals   Whether to get the locations with animals
     * @return  string|array   Returns a string incase of an error, else it returns an array
     */
-   private function getAnimalLocations($withAnimals = false){
+   private function getAnimalLocations($withAnimals = false, $groupByTopLocations = false){
       // get all the level1 locations
       $query = 'select level1 from '. Config::$farm_db .'.farm_locations group by level1 order by level1';
       $res = $this->Dbase->ExecuteQuery($query);
@@ -468,6 +468,16 @@ class FarmAnimals{
 
          // get the animals in this locations if need be
          if($withAnimals){
+            if($groupByTopLocations){
+               $animalsTopLocationQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a '
+                  . 'inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id '
+                  . 'inner join '. Config::$farm_db .'.farm_locations as c on a.location_id = c.id '
+                  . 'where b.status like "Alive" and c.level1 = :level1 and a.end_date is null order by b.animal_id';
+               $this->Dbase->CreateLogEntry('Getting the animals per the top locations', 'info');
+               $res3 = $this->Dbase->ExecuteQuery($animalsTopLocationQuery, array('level1' => $loc['level1']));
+               if($res3 == 1) return $this->Dbase->lastError;
+               $animalLocations[$loc['level1']] = $res3;
+            }
             $animalsQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where b.status like "Alive" and a.location_id = :id and a.end_date is null order by b.animal_id';
             $this->Dbase->CreateLogEntry('Getting the animals per location', 'info');
             foreach($res1 as $subLoc){
@@ -742,7 +752,7 @@ class FarmAnimals{
     * Move animals between pens
     */
    private function moveAnimals(){
-      $animalLocations = $this->getAnimalLocations(true);
+      $animalLocations = $this->getAnimalLocations(true, true);
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
@@ -783,6 +793,7 @@ class FarmAnimals{
    var animals = new Animals();
    animals.byLocations = <?php echo json_encode($animalLocations); ?>;
    animals.allAnimals = <?php echo json_encode($animalLocations['allAnimals']); ?>;
+   animals.includeTopLevels = true;
    animals.locationOrganiser();
 
    // bind the click functions of the buttons
