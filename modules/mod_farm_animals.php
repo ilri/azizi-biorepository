@@ -83,6 +83,10 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'save_exp') $this->saveNewExperiment();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveExperimentAnimals();      // An ambigous action name....
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'images'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->fileUploadsHome();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->processAndSaveUploads();
+      }
    }
 
    /**
@@ -105,7 +109,8 @@ class FarmAnimals{
                <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
                <li><a href="?page=farm_animals&do=move_animals">Move animals between locations</a></li>
                <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
-               <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>';
+               <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
+               <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>';
          }
 ?>
       </ul>
@@ -1302,7 +1307,7 @@ class FarmAnimals{
       foreach($output as $image){
          $res[0]['imageList'][] = pathinfo($image, PATHINFO_BASENAME);
       }
-      die(json_encode(array('error' => 'false', 'data' => $res[0])));
+      die(json_encode(array('error' => false, 'data' => $res[0])));
    }
 
    /**
@@ -1354,5 +1359,54 @@ class FarmAnimals{
          $this->Dbase->CreateLogEntry("sending an email to {$owners[$owner]['name']} with the daily digest", 'info');
          shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c 'azizibiorepository@cgiar.org' -c 's.kemp@cgiar.org' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- ". Config::$farmManagerEmail);
       }
+   }
+
+   /**
+    * creates the home page for image uploads
+    */
+   private function fileUploadsHome(){
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>azizi-shared-libs/customMessageBox/mssg_box.css" />
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxfileupload.js"></script>
+
+<div id="images">
+   <div id="upload"></div>
+</div>
+<div id="messageNotification"><div></div></div>
+
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   var animals = new Animals();
+   animals.initiateImageUploads();
+</script>
+<?php
+   }
+
+   /**
+    * Process and saves the uploaded images
+    */
+   private function processAndSaveUploads(){
+      // if we have uploaded files... save them..
+      if(count($_FILES) != 0){
+         $files = GeneralTasks::CustomSaveUploads('../farmdb_images/', 'images_2_upload', array('image/jpg', 'image/jpeg', 'image/png'), true);
+         if(is_string($files)) die(json_encode(array('error' => true, 'mssg' => $files)));
+         elseif($files == 0) die(json_encode(array('error' => true, 'mssg' => 'No files were saved.')));
+         else{
+            // add the file records to the database and move them to the proper places
+            foreach($files as $index => $file){
+               // create a thumbnail for the image
+               $thumbNail = GeneralTasks::CreateThumbnail($file, '../farmdb_images/thumbs/', 200);
+               if(is_string($thumbNail)) die(json_encode(array('error' => true, 'mssg' => $thumbNail)));
+            }
+         }
+         die(json_encode(array('error' => false, 'mssg' => 'The images were saved successfully.')));
+      }
+      else die(json_encode(array('error' => true, 'mssg' => 'No files were uploaded')));
    }
 }

@@ -1628,6 +1628,23 @@ Animals.prototype.linkrenderer = function (row, column, value) {
    return html;
 };
 
+Animals.prototype.initiateImageUploads = function(){
+   // create the placeholder for uploading the images
+   $('#upload').jqxFileUpload({
+      browseTemplate: 'success', uploadTemplate: 'primary',  cancelTemplate: 'danger', width: 300,
+      uploadUrl: 'mod_ajax.php?page=farm_animals&do=images&action=save', fileInputName: 'images_2_upload[]',
+      accept: 'image/*'
+   });
+
+   // process the response from the server
+   $('#upload').on('uploadEnd', function (event) {
+      var args = event.args;
+      var fileName = args.file;
+      var response = JSON.parse(args.response);
+      var errorType = (response.error) ? 'error' : 'success';
+      animals.showNotification('<b>'+ fileName + '</b>: ' + response.mssg, errorType);
+   });
+};
 
 // add a trim function
 if (typeof(String.prototype.trim) === "undefined") {
