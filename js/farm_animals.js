@@ -890,17 +890,19 @@ Animals.prototype.saveChanges = function (){
    var formData = new FormData();
 
    // ensure that we have an attachment when we need one
-   if($('#pmReportPlaceId')[0].style.display === 'block' && animals.pmReport === undefined){
-      animals.showNotification('Please add a PM report for this event.', 'error');
-      return;
-   }
+   if($('.addons').length === 1){
+      if($('#pmReportPlaceId')[0].style.display === 'block' && animals.pmReport === undefined){
+         animals.showNotification('Please add a PM report for this event.', 'error');
+         return;
+      }
 
-   if(animals.pmReport !== undefined){
-      // we have a file to upload... this requires special handling gloves
-      // Create a formdata object and add the pm report
-      $.each(animals.pmReport, function(key, value){
-          formData.append('uploads[]', value);
-      });
+      if(animals.pmReport !== undefined){
+         // we have a file to upload... this requires special handling gloves
+         // Create a formdata object and add the pm report
+         $.each(animals.pmReport, function(key, value){
+             formData.append('uploads[]', value);
+         });
+      }
    }
 
    if(this.sub_module === 'events'){
