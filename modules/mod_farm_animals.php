@@ -1387,6 +1387,16 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxfileupload.js"></script>
 
 <div id="images">
+   <div id="info">
+      Use the placeholder below to upload images of the animals.
+      <ol>
+         <li>You can only select 1 image at a time</li>
+         <li>However, you can upload multiple images at the same time</li>
+         <li>The images <b>MUST</b> be jpeg/jpg images</li>
+         <li>The name of the images <b>MUST</b> be the animal name. eg. If the image belongs to animal BL005, the image <b>MUST</b> be BL005.jpg or BL005.jpeg</li>
+         <li>The system does not discriminate images uploaded multiple times, hence great care should be taken while uploading the images</li>
+      </ol>
+   </div>
    <div id="upload"></div>
 </div>
 <div id="messageNotification"><div></div></div>
