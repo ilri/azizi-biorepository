@@ -1337,8 +1337,7 @@ class FarmAnimals{
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
           . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date = :event_date';
-//      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d')));
-      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => '2015-06-06'));
+      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d')));
 
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
