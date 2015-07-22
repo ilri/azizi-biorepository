@@ -1327,8 +1327,9 @@ class FarmAnimals{
     * @todo Define the farm manager email as a setting
     */
    private function emailEventsDigest(){
+      global $Repository;
       // load the settings from the main file
-      $settings = Repository::loadSettings();
+      $settings = $Repository->loadSettings();
 
       // get a list of all the day's events and send them to the concerned user
       $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
@@ -1336,7 +1337,8 @@ class FarmAnimals{
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
           . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date = :event_date';
-      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d')));
+//      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d')));
+      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => '2015-06-06'));
 
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
@@ -1370,6 +1372,7 @@ class FarmAnimals{
          $this->Dbase->CreateLogEntry("sending an email to {$owners[$owner]['name']} with the daily digest", 'info');
          shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c 'azizibiorepository@cgiar.org' -c 's.kemp@cgiar.org' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- ". Config::$farmManagerEmail);
       }
+      die(json_encode(array('error' => false, 'mssg' => 'All processed')));
    }
 
    /**
