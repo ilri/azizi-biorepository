@@ -31,7 +31,7 @@ class ProcODKForm {
    private $csvString;
    private $geopointHeadings;
    private $linkParentSheets;
-   
+   private $tableIndexes;
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
       
@@ -65,7 +65,7 @@ class ProcODKForm {
       if(!file_exists($this->tmpDir)){
          mkdir($this->tmpDir,0777,true);
       }
-      
+      $this->tableIndexes = array();
       $this->tableURL = $_SERVER['HTTP_ORIGIN']."/repository/tmp/".$this->sessionID . "/tables";
       $this->tableDir = $this->tmpDir . "/tables";
       if(!file_exists($this->tableDir)){
@@ -274,12 +274,19 @@ class ProcODKForm {
     *    - preprocessing of repeats
     */
    private function processRows(){
-      preg_match_all("/<repeat\s+nodeset\s*=\s*[\"'](.*)[\"']/", $this->xmlString, $repeats);
+      $xml = new DOMDocument();
+      $xml->loadHTML($this->xmlString);
+      $xmlRepeats = $xml->getElementsByTagName('repeat');
+      $repeats = array();
+      for($xmlI = 0; $xmlI < $xmlRepeats->length; $xmlI++) {
+          $repeats[] = $xmlRepeats->item($xmlI)->getAttribute("nodeset");
+      }
+      //preg_match_all("/<repeat\s+nodeset\s*=\s*[\"'](.*)[\"']/", $this->xmlString, $repeats);
       preg_match_all("/<bind\s+nodeset\s*=\s*[\"']([a-z0-9_\-\.\/]+)[\"'].*type\s*=\s*[\"']geopoint[\"']/i", $this->xmlString, $geopoints);
-      if(isset($repeats[1]))
+      /*if(isset($repeats[1]))
          $repeats = $repeats[1];
       else
-         $repeats = array();
+         $repeats = array();*/
       
       for($repeatIndex = 0; $repeatIndex<count($repeats); $repeatIndex++){
          $repeats[$repeatIndex] = str_replace("/".$this->topElement."/", "", $repeats[$repeatIndex]);
@@ -302,12 +309,13 @@ class ProcODKForm {
       
       $this->geopointHeadings = $geopoints;
       $this->repeatHeadings = $repeats;
+      $this->Dbase->CreateLogEntry("Repeats are ".print_r($repeats, true), "fatal");
       
       for($rowIndex = 0; $rowIndex < count($this->submissionXObjects); $rowIndex++){
          $this->Dbase->CreateLogEntry("currently at ".$rowIndex, "fatal");
          $currRow = (array) $this->submissionXObjects[$rowIndex];
          //$this->Dbase->CreateLogEntry(print_r($currRow, true),"fatal");
-         
+         $this->setLinks = array(); 
          $this->processRow($currRow, "main_sheet", array(), $rowIndex);
          
       }
@@ -321,12 +329,12 @@ class ProcODKForm {
     * This function processes the provided row to make it parseable by the ODK Parser
     * module
     * 
-    * @param type $row
-    * @param type $parentSheet
-    * @param type $parents
-    * @param type $rowIndex
-    * @param type $parentLink
-    * @param type $parentIndex
+    * @param type $row          SimpleXML representation of a single response for and ODK form
+    * @param type $parentSheet  Name of the sheet from where the row is from
+    * @param type $parents      An array of the heirarcy of parents that are parents of $parentSheet
+    * @param type $rowIndex     $row's index in $parentSheet
+    * @param type $parentLink   If $parentSheet will ultimately be converted into a HTML table, the link for the HTML page
+    * @param type $parentIndex  
     */
    private function processRow($row, $parentSheet, $parents, $rowIndex = -1, $parentLink = -1, $parentIndex = -1){
       
@@ -370,18 +378,21 @@ class ProcODKForm {
                $rowValues[$elementIndex] = (array) $rowValues[$elementIndex];
             }
             
-            if(is_array($rowValues[$elementIndex])){
-               $newParentSheet = $parentSheet;
-               if(!is_numeric($rowKeys[$elementIndex]))
+            if(is_array($rowValues[$elementIndex])){//means that current element a group or repeat
+               $newParentSheet = $parentSheet;//new parent sheet will be a combination of the existing parent sheet and question name
+               if(!is_numeric($rowKeys[$elementIndex])){
                   $newParents  = array_merge($parents, array($rowKeys[$elementIndex]));
-               else
-                  $newParents = $parents;
+               }
+               else {//probably means that this is that we are at the topmost heirarchy in a repeat element
+                   $newParents = $parents;
+                   $this->tableIndexes[$parentLink] = $rowKeys[$elementIndex];
+               }
+                  
                $newRowIndex = $rowIndex;
                $link = $parentLink;
                $newParentIndex = $parentIndex;
-               
                //check if current heading is associated to a repeating group
-               if(array_search($currHeading, $this->repeatHeadings) !== false){//means that this particular element is a repeating response
+               if(array_search($currHeading, $this->repeatHeadings) !== false){//means that this particular element is a repeat
                   $csvElementIndex = array_search($currHeading, $this->headingRows[$parentSheet]);
                   if($csvElementIndex === false){//element heading does not exist in array
                      $csvElementIndex = array_push($this->headingRows[$parentSheet], $currHeading) - 1;
@@ -391,17 +402,24 @@ class ProcODKForm {
                   //$newParentSheet = $rowKeys[$elementIndex];
                   $newParentSheet = join("_", $newParents);
                   
-                  if(!isset($this->setLinks[$parentSheet][$newParentSheet][$rowIndex])){
+$this->Dbase->CreateLogEntry("Set links before = ".print_r($this->setLinks, true), "info");
+                  if(!isset($this->setLinks[$newParentSheet])){
+$this->Dbase->CreateLogEntry("Link for $newParentSheet not set. Creating it", "info");
                      $link = $newParentSheet.mt_rand().".html";//a link should be unique for each repeat question answered
-                     $this->setLinks[$parentSheet][$newParentSheet][$rowIndex] = $link;
+                     $this->setLinks[$newParentSheet] = $link;
                      $this->linkParentSheets[$link] = $currHeading;
                   }
                   else{
-                     $link = $this->setLinks[$parentSheet][$newParentSheet][$rowIndex];
+$this->Dbase->CreateLogEntry("Link for $newParentSheet set", "info");
+                     $link = $this->setLinks[$newParentSheet];
                   }
+$this->Dbase->CreateLogEntry("Set links after = ".print_r($this->setLinks, true), "info");
                   
                   $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $this->tableURL . "/" .$link;
-                  
+                  if(!isset($this->tableLinks[$link])){
+                      $this->tableLinks[$link] = array();
+                      $this->tableIndexes[$link] = -1;
+                  }
                   $newParentIndex = $newRowIndex;
                   $newRowIndex = -1;
                }
@@ -448,8 +466,8 @@ class ProcODKForm {
                    */
                    $this->Dbase->CreateLogEntry("** is image ".$rowValues[$elementIndex]." rowIndex = ".($rowIndex)." parentIndex = ".$parentIndex,"fatal");
                    $cId = $rowKeys[$elementIndex];
-                   //if(strlen($parent_heading) == 0){//means we are in the main sheet
-                   if($parentLink == -1){
+                   
+                   if($parentLink == -1){//means we are in the main sheet
                      $submissionID = $this->submissionIDs[$rowIndex];//since the headings also had a rowIndex but submissionIDs started with first response
                      $blobKey = $this->instanceID."[@version=null]/".$this->topElement."[@key=".$submissionID."]/".$cId;
                      $downloadURL = "http://azizi.ilri.cgiar.org/aggregate/view/binaryData?blobKey=".urlencode($blobKey);
@@ -480,18 +498,7 @@ class ProcODKForm {
 
                   $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $rowValues[$elementIndex];
                   if($parentLink != -1){
-                     if(!isset($this->tableLinks[$parentLink])){
-                        $this->tableLinks[$parentLink] = array();
-                        $linkIndex = 0;
-                     }
-                     else{
-                        if($elementIndex == 0)
-                           $linkIndex = count($this->tableLinks[$parentLink]);
-                        else {
-                           $linkIndex = count($this->tableLinks[$parentLink]) - 1;
-                        }
-                     }
-
+                     $linkIndex = $this->tableIndexes[$parentLink];
                      $this->tableLinks[$parentLink][$linkIndex][$rowKeys[$elementIndex]] = $rowValues[$elementIndex];
                   }
                }
