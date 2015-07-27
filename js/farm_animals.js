@@ -890,17 +890,19 @@ Animals.prototype.saveChanges = function (){
    var formData = new FormData();
 
    // ensure that we have an attachment when we need one
-   if($('#pmReportPlaceId')[0].style.display === 'block' && animals.pmReport === undefined){
-      animals.showNotification('Please add a PM report for this event.', 'error');
-      return;
-   }
+   if($('.addons').length === 1){
+      if($('#pmReportPlaceId')[0].style.display === 'block' && animals.pmReport === undefined){
+         animals.showNotification('Please add a PM report for this event.', 'error');
+         return;
+      }
 
-   if(animals.pmReport !== undefined){
-      // we have a file to upload... this requires special handling gloves
-      // Create a formdata object and add the pm report
-      $.each(animals.pmReport, function(key, value){
-          formData.append('uploads[]', value);
-      });
+      if(animals.pmReport !== undefined){
+         // we have a file to upload... this requires special handling gloves
+         // Create a formdata object and add the pm report
+         $.each(animals.pmReport, function(key, value){
+             formData.append('uploads[]', value);
+         });
+      }
    }
 
    if(this.sub_module === 'events'){
@@ -1521,6 +1523,9 @@ Animals.prototype.locationOrganiser = function(){
    // organise the animal locations by traversing thru level2 object and getting the locations
    var allLevels = {};
    $.each(animals.byLocations.level2, function(level1, that){
+      if(animals.includeTopLevels === true){
+         allLevels[Object.keys(allLevels).length] = {id: level1, name: level1};
+      }
       $.each(that, function(i, sublevel){
          allLevels[Object.keys(allLevels).length] = {id: sublevel.id, name: level1+ ' >> ' +sublevel.name};
       });
@@ -1628,6 +1633,23 @@ Animals.prototype.linkrenderer = function (row, column, value) {
    return html;
 };
 
+Animals.prototype.initiateImageUploads = function(){
+   // create the placeholder for uploading the images
+   $('#upload').jqxFileUpload({
+      browseTemplate: 'success', uploadTemplate: 'primary',  cancelTemplate: 'danger', width: 300,
+      uploadUrl: 'mod_ajax.php?page=farm_animals&do=images&action=save', fileInputName: 'images_2_upload[]',
+      accept: 'image/*'
+   });
+
+   // process the response from the server
+   $('#upload').on('uploadEnd', function (event) {
+      var args = event.args;
+      var fileName = args.file;
+      var response = JSON.parse(args.response);
+      var errorType = (response.error) ? 'error' : 'success';
+      animals.showNotification('<b>'+ fileName + '</b>: ' + response.mssg, errorType);
+   });
+};
 
 // add a trim function
 if (typeof(String.prototype.trim) === "undefined") {

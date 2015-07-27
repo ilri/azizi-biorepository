@@ -83,6 +83,10 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'save_exp') $this->saveNewExperiment();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveExperimentAnimals();      // An ambigous action name....
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'images'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->fileUploadsHome();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->processAndSaveUploads();
+      }
    }
 
    /**
@@ -105,7 +109,8 @@ class FarmAnimals{
                <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
                <li><a href="?page=farm_animals&do=move_animals">Move animals between locations</a></li>
                <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
-               <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>';
+               <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
+               <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>';
          }
 ?>
       </ul>
@@ -437,7 +442,7 @@ class FarmAnimals{
     * @param   boolean        $withAnimals   Whether to get the locations with animals
     * @return  string|array   Returns a string incase of an error, else it returns an array
     */
-   private function getAnimalLocations($withAnimals = false){
+   private function getAnimalLocations($withAnimals = false, $groupByTopLocations = false){
       // get all the level1 locations
       $query = 'select level1 from '. Config::$farm_db .'.farm_locations group by level1 order by level1';
       $res = $this->Dbase->ExecuteQuery($query);
@@ -463,6 +468,16 @@ class FarmAnimals{
 
          // get the animals in this locations if need be
          if($withAnimals){
+            if($groupByTopLocations){
+               $animalsTopLocationQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a '
+                  . 'inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id '
+                  . 'inner join '. Config::$farm_db .'.farm_locations as c on a.location_id = c.id '
+                  . 'where b.status like "Alive" and c.level1 = :level1 and a.end_date is null order by b.animal_id';
+               $this->Dbase->CreateLogEntry('Getting the animals per the top locations', 'info');
+               $res3 = $this->Dbase->ExecuteQuery($animalsTopLocationQuery, array('level1' => $loc['level1']));
+               if($res3 == 1) return $this->Dbase->lastError;
+               $animalLocations[$loc['level1']] = $res3;
+            }
             $animalsQuery = 'select b.id, b.animal_id `name` from '. Config::$farm_db .'.farm_animal_locations as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where b.status like "Alive" and a.location_id = :id and a.end_date is null order by b.animal_id';
             $this->Dbase->CreateLogEntry('Getting the animals per location', 'info');
             foreach($res1 as $subLoc){
@@ -737,7 +752,7 @@ class FarmAnimals{
     * Move animals between pens
     */
    private function moveAnimals(){
-      $animalLocations = $this->getAnimalLocations(true);
+      $animalLocations = $this->getAnimalLocations(true, true);
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
@@ -778,6 +793,7 @@ class FarmAnimals{
    var animals = new Animals();
    animals.byLocations = <?php echo json_encode($animalLocations); ?>;
    animals.allAnimals = <?php echo json_encode($animalLocations['allAnimals']); ?>;
+   animals.includeTopLevels = true;
    animals.locationOrganiser();
 
    // bind the click functions of the buttons
@@ -1302,7 +1318,7 @@ class FarmAnimals{
       foreach($output as $image){
          $res[0]['imageList'][] = pathinfo($image, PATHINFO_BASENAME);
       }
-      die(json_encode(array('error' => 'false', 'data' => $res[0])));
+      die(json_encode(array('error' => false, 'data' => $res[0])));
    }
 
    /**
@@ -1311,8 +1327,9 @@ class FarmAnimals{
     * @todo Define the farm manager email as a setting
     */
    private function emailEventsDigest(){
+      global $Repository;
       // load the settings from the main file
-      $settings = Repository::loadSettings();
+      $settings = $Repository->loadSettings();
 
       // get a list of all the day's events and send them to the concerned user
       $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
@@ -1354,5 +1371,65 @@ class FarmAnimals{
          $this->Dbase->CreateLogEntry("sending an email to {$owners[$owner]['name']} with the daily digest", 'info');
          shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c 'azizibiorepository@cgiar.org' -c 's.kemp@cgiar.org' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- ". Config::$farmManagerEmail);
       }
+      die(json_encode(array('error' => false, 'mssg' => 'All processed')));
+   }
+
+   /**
+    * creates the home page for image uploads
+    */
+   private function fileUploadsHome(){
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>azizi-shared-libs/customMessageBox/mssg_box.css" />
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxfileupload.js"></script>
+
+<div id="images">
+   <div id="info">
+      Use the placeholder below to upload images of the animals.
+      <ol>
+         <li>You can only select 1 image at a time</li>
+         <li>However, you can upload multiple images at the same time</li>
+         <li>The images <b>MUST</b> be jpeg/jpg images</li>
+         <li>The name of the images <b>MUST</b> be the animal name. eg. If the image belongs to animal BL005, the image <b>MUST</b> be BL005.jpg or BL005.jpeg</li>
+         <li>The system does not discriminate images uploaded multiple times, hence great care should be taken while uploading the images</li>
+      </ol>
+   </div>
+   <div id="upload"></div>
+</div>
+<div id="messageNotification"><div></div></div>
+
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   var animals = new Animals();
+   animals.initiateImageUploads();
+</script>
+<?php
+   }
+
+   /**
+    * Process and saves the uploaded images
+    */
+   private function processAndSaveUploads(){
+      // if we have uploaded files... save them..
+      if(count($_FILES) != 0){
+         $files = GeneralTasks::CustomSaveUploads('../farmdb_images/', 'images_2_upload', array('image/jpg', 'image/jpeg', 'image/png'), true);
+         if(is_string($files)) die(json_encode(array('error' => true, 'mssg' => $files)));
+         elseif($files == 0) die(json_encode(array('error' => true, 'mssg' => 'No files were saved.')));
+         else{
+            // add the file records to the database and move them to the proper places
+            foreach($files as $index => $file){
+               // create a thumbnail for the image
+               $thumbNail = GeneralTasks::CreateThumbnail($file, '../farmdb_images/thumbs/', 200);
+               if(is_string($thumbNail)) die(json_encode(array('error' => true, 'mssg' => $thumbNail)));
+            }
+         }
+         die(json_encode(array('error' => false, 'mssg' => 'The images were saved successfully.')));
+      }
+      else die(json_encode(array('error' => true, 'mssg' => 'No files were uploaded')));
    }
 }
