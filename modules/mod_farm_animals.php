@@ -76,6 +76,8 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->newEventsData ();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalEvents ();
          else if(OPTIONS_REQUESTED_ACTION == 'send_email') $this->emailEventsDigest ();
+         else if(OPTIONS_REQUESTED_ACTION == 'quick_events') $this->quickEventsHome ();
+         else if(OPTIONS_REQUESTED_ACTION == 'quick_events_list') $this->quickEventsList ();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'experiments'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->experimentsHome();
@@ -109,6 +111,7 @@ class FarmAnimals{
                <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
                <li><a href="?page=farm_animals&do=move_animals">Move animals between locations</a></li>
                <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
+               <li><a href="?page=farm_animals&do=events&action=quick_events">Add Quick Events</a></li>
                <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
                <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>';
          }
@@ -183,7 +186,6 @@ class FarmAnimals{
     * Get a list of all the animals currently in the farm
     */
    private function inventoryList(){
-//      $showAll = ($_POST['showAll'] == 'true') ? '' : 'where a.status not like "%exit%" ';
       $showAll = '';
       $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.iacuc as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed, a.status '
          . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
@@ -201,7 +203,6 @@ class FarmAnimals{
 
       foreach($res as $id => $animal){
          $res[$id]['owner'] = $owners[$animal['current_owner']]['name'];
-//         $res[$id]['animal_id'] = "<a href='javascript:;' id='{$animal['animal_id']}' class='anim_id_href'>{$animal['animal_id']}</a>";
       }
       die(json_encode($res));
    }
@@ -1431,5 +1432,66 @@ class FarmAnimals{
          die(json_encode(array('error' => false, 'mssg' => 'The images were saved successfully.')));
       }
       else die(json_encode(array('error' => true, 'mssg' => 'No files were uploaded')));
+   }
+
+   /**
+    * Creates the home page for adding events quickly
+    */
+   private function quickEventsHome(){
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>lightgallery/light-gallery/css/lightGallery.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>lightgallery/light-gallery/js/lightGallery.min.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.export.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxtabs.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.export.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+
+<div id="quick_events">
+   <div id="quick_events"></div>
+</div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   var animals = new Animals();
+   animals.initiateQuickEventsGrid();
+   animals.info = {};   // an object for holding the animal information
+</script>
+<?php
+   }
+
+   private function quickEventsList(){
+      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.iacuc as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed, a.status '
+         . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
+         . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
+         . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
+         . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id '
+         . 'group by a.animal_id) as f on a.id=f.animal_id where a.status not like "%exit%" order by a.animal_id';
+      $res = $this->Dbase->ExecuteQuery($query);
+      if($res == 1){
+         $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
+         die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
+      }
+      $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
+      if(is_string($owners)) die(json_encode(array('error' => true, 'message' => $owners)));
+
+      foreach($res as $id => $animal){
+         $res[$id]['owner'] = $owners[$animal['current_owner']]['name'];
+      }
+      die(json_encode($res));
    }
 }

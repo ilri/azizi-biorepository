@@ -1651,6 +1651,54 @@ Animals.prototype.initiateImageUploads = function(){
    });
 };
 
+Animals.prototype.initiateQuickEventsGrid = function(){
+   // create the source for the grid
+   var source = {
+      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'owner'},
+         {name: 'experiment'}, {name: 'location'}, {name: 'weight', type: 'number'}, {name: 'temp', type: 'number'}],
+         id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'quick_events_list', showAll: this.showAll}, url: 'mod_ajax.php?page=farm_animals&do=events'
+     };
+     var animalsAdapter = new $.jqx.dataAdapter(source);
+   // initialize jqxGrid
+     if($('#quick_events :regex(class, jqx\-grid)').length === 0){
+        $("#quick_events").jqxGrid({
+            width: 917,
+            source: source,
+            pageable: true,
+            autoheight: true,
+            sortable: true,
+            showfilterrow: false,
+            autoshowfiltericon: true,
+            showstatusbar: true,
+            renderstatusbar: animals.animalGridStatusBar,
+            filterable: true,
+            altrows: true,
+            touchmode: false,
+            editable: true,
+            selectionmode: 'singlecell',
+            editmode: 'dblclick',
+            pagesize: 20,
+            pagesizeoptions: ['20', '50', '100'],
+            rowdetails: true,
+            columns: [
+              { datafield: 'id', hidden: true },
+              { text: 'Animal ID', datafield: 'animal_id', width: 95 },
+              { text: 'Species', datafield: 'species', width: 60 },
+              { text: 'Sex', datafield: 'sex', width: 50 },
+              { text: 'Breed', datafield: 'breed', width: 110 },
+              { text: 'Current Owner', datafield: 'owner', width: 110 },
+              { text: 'Experiment', datafield: 'experiment', width: 130 },
+              { text: 'Location', datafield: 'location', width: 150 },
+              { text: 'Cur Weight', datafield: 'weight', width: 100, editable: true },
+              { text: 'Cur Temp', datafield: 'temp', width: 100, editable: true }
+            ]
+        });
+     }
+     else{
+        $("#quick_events").jqxGrid({source: animalsAdapter});
+     }
+};
+
 // add a trim function
 if (typeof(String.prototype.trim) === "undefined") {
    String.prototype.trim = function() {
