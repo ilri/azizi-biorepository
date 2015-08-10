@@ -27,6 +27,11 @@ class FarmAnimals{
 
    private $Dbase;
 
+   private $quickEventsDic = array(
+      'temp' => 'Temperature',
+      'weight' => 'Weighing'
+   );
+
    /**
     *
     * @param type $Dbase   Create a new class for farm animals
@@ -77,7 +82,8 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalEvents ();
          else if(OPTIONS_REQUESTED_ACTION == 'send_email') $this->emailEventsDigest ();
          else if(OPTIONS_REQUESTED_ACTION == 'quick_events') $this->quickEventsHome ();
-         else if(OPTIONS_REQUESTED_ACTION == 'quick_events_list') $this->quickEventsList ();
+         else if(OPTIONS_REQUESTED_ACTION == 'quick_events_list') $this->quickEventsList();
+         else if(OPTIONS_REQUESTED_ACTION == 'quick_events_save') $this->quickEventsSave();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'experiments'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->experimentsHome();
@@ -1461,10 +1467,17 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxtabs.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.export.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.edit.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
 
-<div id="quick_events">
+<div id="quick_events_ph">
+   <div id="addinfo" style="font-weight: normal;">
+      This module presents a quick way of adding <b>Weighing</b> and <b>Temperature</b> events which were recorded <b><u>TODAY</u></b> to the database.<br />
+      To add a record, search for the animal and then double click the cell for that record. After entering the value, press <b>Enter</b> to save the value.<br />
+      <b><i>Please note that it will be recorded that <?php echo "{$_SESSION['surname']} {$_SESSION['onames']}"; ?> took the measurement.</i></b><br />If you need to specify who took the record please use the Animal Events module
+   </div>
    <div id="quick_events"></div>
 </div>
+<div id="messageNotification"><div class="">&nbsp;&nbsp;</div></div>
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
    var animals = new Animals();
@@ -1474,14 +1487,19 @@ class FarmAnimals{
 <?php
    }
 
+   /**
+    * Fetch the animal details that will be used in the quick add list
+    */
    private function quickEventsList(){
-      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.iacuc as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed, a.status '
+      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.iacuc as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed, a.status, g.event_value as temp, h.event_value as weight '
          . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
          . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
          . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
-         . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id '
-         . 'group by a.animal_id) as f on a.id=f.animal_id where a.status not like "%exit%" order by a.animal_id';
-      $res = $this->Dbase->ExecuteQuery($query);
+         . 'left join (select animal_id, group_concat(breed_name SEPARATOR ", ") as breed from '. Config::$farm_db .'.animal_breeds as a inner join '. Config::$farm_db .'.breeds as b on a.breed_id=b.id group by a.animal_id) as f on a.id=f.animal_id '
+         . 'left join (select animal_id, event_value from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id where b.event_name = :temp and date(record_date) = :today) as g on a.id=g.animal_id '
+         . 'left join (select animal_id, event_value from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id where b.event_name = :weight and date(record_date) = :today) as h on a.id=h.animal_id '
+         . 'where a.status not like "%exit%" order by a.animal_id';
+      $res = $this->Dbase->ExecuteQuery($query, array('temp' => $this->quickEventsDic['temp'], 'today' => date('Y-m-d'), 'weight' => $this->quickEventsDic['weight']));
       if($res == 1){
          $this->Dbase->CreateLogEntry($this->Dbase->lastError, 'fatal');
          die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
@@ -1493,5 +1511,26 @@ class FarmAnimals{
          $res[$id]['owner'] = $owners[$animal['current_owner']]['name'];
       }
       die(json_encode($res));
+   }
+
+   /**
+    * Saves the values from adding quick values
+    */
+   private function quickEventsSave(){
+      // get the event id
+      $selectQuery = 'select id from '. Config::$farm_db .'.farm_events where event_name = :event_name';
+      $res = $this->Dbase->ExecuteQuery($selectQuery, array('event_name' => $this->quickEventsDic[$_POST['type']]));
+      if($res == 1) die(json_encode(array('error' => true, 'mssg' => 'There was an error while fetching data from the database. Contact the system administrator')));
+      $eventId = $res[0]['id'];
+
+      // so lets save the events
+      $addQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, performed_by, recorded_by, event_value) '
+         . 'values(:animal_id, :event_type_id, :event_date, :performed_by, :recorded_by, :event_value)';
+      $vals = array('animal_id' => $_POST['animal_id'], 'event_type_id' => $eventId, 'event_date' => date('Y-m-d'), 'performed_by' => $_SESSION['user_id'], 'recorded_by' => $_SESSION['user_id'], 'event_value' => $_POST['value']);
+
+      $res1 = $this->Dbase->ExecuteQuery($addQuery, $vals);
+      if($res1 == 1) die(json_encode(array('error' => true, 'mssg' => 'There was an error while fetching data from the database. Contact the system administrator')));
+
+      die(json_encode(array('error' => false, 'mssg' => 'The record was succesfully recorded.')));
    }
 }

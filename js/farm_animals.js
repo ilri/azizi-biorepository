@@ -1689,14 +1689,38 @@ Animals.prototype.initiateQuickEventsGrid = function(){
               { text: 'Current Owner', datafield: 'owner', width: 110 },
               { text: 'Experiment', datafield: 'experiment', width: 130 },
               { text: 'Location', datafield: 'location', width: 150 },
-              { text: 'Cur Weight', datafield: 'weight', width: 100, editable: true },
+              { text: 'Cur Weight', datafield: 'weight', width: 100, editable: true, cellsrenderer: function(r,c,v,d,cp,rd){ return (v === '') ? '' : v +" Kg"; } },
               { text: 'Cur Temp', datafield: 'temp', width: 100, editable: true }
             ]
         });
+
+        // bind the cell end edit action to a function
+        $("#quick_events").on('cellendedit', function (event) {
+            var args = event.args;
+            animals.saveCellChanges(args.row.id, args.datafield, args.value);
+        });
+
      }
      else{
         $("#quick_events").jqxGrid({source: animalsAdapter});
      }
+};
+
+Animals.prototype.saveCellChanges = function(animal_id, dataType, value){
+   // send the data to the server
+   animals.showNotification('Saving the changes', 'mail');
+   $.ajax({
+       type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", dataType:'json', data: {action: 'quick_events_save', animal_id: animal_id, type: dataType, value: value},
+       success: function (data) {
+          if(data.error === true){
+            animals.showNotification(data.mssg, 'error');
+            return;
+          }
+          else{
+             animals.showNotification(data.mssg, 'success');
+          }
+      }
+   });
 };
 
 // add a trim function
