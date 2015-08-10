@@ -585,8 +585,8 @@ class FarmAnimals{
       $colvals = array('animal_id' => $_POST['animal_id'], 'species_id' => $_POST['species'], 'sex' => $_POST['sex'], 'status' => 'Alive');
       $dob = date_create_from_format('d-m-Y', $_POST['dob']);
       if($_POST['dob'] !== '') { $cols .= ', dob';  $colrefs .= ', :dob'; $colvals['dob'] = date_format($dob, 'Y-m-d'); }
-      if($_POST['other_id'] != '') { $cols .= ', other_id';  $colrefs .= ', :other_id'; $colvals[''] = $_POST['other_id']; }
-      if($_POST['origin'] != '') { $cols .= ', origin';  $colrefs .= ', :origin'; $colvals[''] = $_POST['origin']; }
+      if($_POST['other_id'] != '') { $cols .= ', other_id';  $colrefs .= ', :other_id'; $colvals['other_id'] = $_POST['other_id']; }
+      if($_POST['origin'] != '') { $cols .= ', origin';  $colrefs .= ', :origin'; $colvals['origin'] = $_POST['origin']; }
 //      if($_POST['experiment'] != '') { $cols .= ', experiment';  $colrefs .= ', :experiment'; $colvals[''] = $_POST['experiment']; }
       if($_POST['comments'] != '') { $cols .= ', comments';  $colrefs .= ', :comments'; $colvals['comments'] = $_POST['comments']; }
       if($_POST['dam'] != '') { $cols .= ', dam';  $colrefs .= ', :dam'; $colvals['dam'] = $_POST['dam']; }

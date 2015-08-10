@@ -169,10 +169,11 @@ class Parser {
    private $primaryKeys;
 
    /**
-    * Get all the options in the select options available in the xml
-    * @return type
+    * This function does XML parsing of the XML structure file to obtain
+    *  - The instance id and id prefix for the form
+    *  - Multiple selects in the form
     */
-   private function extractSelectMultipleOptions(){
+   private function parseXML(){
       $this->logHandler->log(3, $this->TAG, "Getting all mutiselect questions");
       $xml = new DOMDocument();
       $xml->loadHTML($_POST['xmlString']);
@@ -183,14 +184,28 @@ class Parser {
          $this->logHandler->log(3, $this->TAG, 'Successfully parsed the form\'s XML file');
       }
       
-      //support for older odk forms
       $allInstanceNodes = $xml->getElementsByTagName('instance');
-      $optionsFromOldODK = array();
+      //get the instance id for the form
+      /**/
+      
+      $optionsFromOldODK = array();//support for older odk forms
       $nodesLength = $allInstanceNodes->length;
       for($i = 0; $i < $nodesLength; $i++) {
-         //check if instance has <options> child
          $node = $allInstanceNodes->item($i);
+         //check if the instance has no attributes (probably means it holds the from's instance id)
+         if($node->attributes->length == 0) {
+            if($this->odkInstance == NULL) {//the instance has not been initialized before
+               $allChildElements = $node->getElementsByTagName('*');
+               foreach($allChildElements as $currChildElement) {
+                  $this->idPrefix = $currChildElement->tagName;
+                  $this->odkInstance = $currChildElement->getAttribute('id');
+                  break;//we are expecting only one child element in such an instance tag
+               }
+            }
+         }
+         
          $instanceId = $node->attributes->item(0)->value;
+         //check if instance has <options> child
          $optionsInInstance = $node->getElementsByTagName('options');
          //expecting at most one <options> tag in each instance tag
          $noOptions = $optionsInInstance->length;
@@ -276,6 +291,8 @@ class Parser {
       $this->logHandler->log(3, $this->TAG, 'initializing the Parser object');
 
       //init other vars
+      $this->idPrefix = null;
+      $this->odkInstance = null;
       $this->parseType = $_POST['parseType'];
       $this->logHandler->log(3, $this->TAG, 'requested parse type is '.$this->parseType);
       $this->sheetIndexes = array();
@@ -305,7 +322,7 @@ class Parser {
       $this->rootDirURI = $this->settings['root_uri'];
       
       // get the multiple select options
-      $this->extractSelectMultipleOptions();
+      $this->parseXML();
       
       $this->loadXML();
       include_once $this->settings['common_lib_dir'].'PHPExcel/Classes/PHPExcel.php';
@@ -1390,7 +1407,6 @@ class Parser {
    /**
     * This function parses the xml file in the post request to obtain:
     *   - The ODK language codes specified in the xml string
-    *   - The ODK instance id for the form being parsed
     *   - The fields in the jsonObject in the post request that hold scanned barcodes and manually entered barcodes
     *   - The string codes and their corresponding string values specified as part of the ODK UI
     */
@@ -1410,19 +1426,6 @@ class Parser {
       //get all the language codes for languages specifed as translations in xml
       preg_match_all("/\s+<translation\s+lang=[\"'](.+)[\"']>/", $this->xmlString, $matches);
       $this->languageCodes = $matches[1];
-
-      //get the odk instance id for the form
-      preg_match_all("/<instance>[\s\n]*<([a-z0-9_\-]+)\s+id=[\"']([a-z0-9_]+)[\"']\s*>/i", $this->xmlString, $matches);
-      $this->idPrefix = $matches[1][0];
-      $tempODKInstance = $matches[2][0];//assuming that the first instance tag in xml file is what we are looking for
-
-      //check if the last part of the instance contains a version number
-      /*if(preg_match("/.+_[v][ersion_\-]*[0-9]$/i", $tempODKInstance) === 1){
-         $this->logHandler->log(4, $this->TAG, $tempODKInstance." contains a version number, removing it");
-         preg_match_all("/(.+)_[v][ersion_\-]*[0-9]$/i", $tempODKInstance, $matches);
-         $tempODKInstance = $matches[1][0];
-      }*/
-      $this->odkInstance = $tempODKInstance;
 
       //associate all the barcode inputs in xml with their respective manual barcode inputs
       preg_match_all("/<bind\s+nodeset\s*=\s*[\"'](.+)[\"']\s+type\s*=\s*[\"']barcode[\"']/i", $this->xmlString, $matches);
