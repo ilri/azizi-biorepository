@@ -262,7 +262,6 @@ Animals.prototype.initiateAnimalsOwnersGrid = function(){
             showstatusbar: true,
             renderstatusbar: animals.animalGridStatusBar,
             filterable: true,
-            touchmode: false,
             enabletooltips: false,
             pagesize: 20,
             pagesizeoptions: ['20', '50', '100'],
@@ -270,8 +269,7 @@ Animals.prototype.initiateAnimalsOwnersGrid = function(){
             initrowdetails: animals.initializeOwnershipRowDetails,
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 130, rowdetailshidden: true},
             columns: [
-              { datafield: 'system_id', hidden: true },
-              { datefield: 'animal_id', hidden: true },
+              { datefield: 'animal_id', hidden: true, width: 50 },
               { text: 'Animal', datafield: 'animal', width: 100 },
               { text: 'Owner', datafield: 'owner', width: 200 },
               { text: 'Start Date', datafield: 'start_date', width: 150 },
