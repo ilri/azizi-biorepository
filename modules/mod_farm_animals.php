@@ -463,7 +463,7 @@ class FarmAnimals{
       $animalLocations = array();
 
       // get all animals
-      $animalsQuery = 'select b.id, if(b.status="Alive", b.animal_id, concat(b.animal_id, " (", b.status, ")")) `name` from '. Config::$farm_db .'.farm_animal_locations as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.end_date is null order by b.animal_id';
+      $animalsQuery = 'select b.id, if(b.status="Alive", b.animal_id, concat(b.animal_id, " (", b.status, ")")) `name` from '. Config::$farm_db .'.farm_animal_locations as a right join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.end_date is null order by b.animal_id';
       $allAnimals = $this->Dbase->ExecuteQuery($animalsQuery);
       if($allAnimals == 1) return $this->Dbase->lastError;
 
