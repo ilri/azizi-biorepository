@@ -372,6 +372,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #animals{ margin-top: 10px; }
 #animals #left_panel { float: left; }
 #animals #right_panel {float: left; }
+#add_animals [type=text]{ height: 30px; }
 #animal_locations { min-height: 330px; }
 #animal_locations #level1_pl, #animal_locations #level2_pl, #animal_locations #animalsOnLocation_pl { float: left; margin: 5px 7.5px; }
 #animal_locations #animalsOnLocation { float: none; margin: 5px 7.5px; }

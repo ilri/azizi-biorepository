@@ -455,6 +455,14 @@ class Repository extends DBase{
    }
 
    /**
+    * Echos the code for including the files that will be used for auto-complete
+    */
+   public function autoCompleteFiles(){
+      echo "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."../../common/jquery/jquery.autocomplete/jquery.autocomplete.js'></script>";
+      echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."../../common/jquery/jquery.autocomplete/styles.css' />";
+   }
+
+   /**
     * Spits out the javascript that initiates the autocomplete feature once the DOM has finished loading
     *
     * @param   array    $settings An array with the settings as described below
@@ -473,10 +481,11 @@ class Repository extends DBase{
    public function InitiateAutoComplete($settings){
       //$inputId, $reqModule, $reqSubModule, $selectFunction, $formatResult = '', $visibleSuggestions = '', $beforeNewQuery = ''
 //      if($formatResult != '') $formatResult = ", onSearchComplete: $formatResult";
-      if($settings['formatResult'] == '') $settings['formatResult'] = 'Lis.fnFormatResult';
+      if($settings['formatResult'] == '') $settings['formatResult'] = 'Repository.fnFormatResult';
       if($settings['visibleSuggestions'] == '') $settings['visibleSuggestions'] = true;
       if($settings['beforeNewQuery'] == '') $settings['beforeNewQuery'] = 'undefined';
 ?>
+
 <script type='text/javascript'>
    //bind the search to autocomplete
    $(function(){

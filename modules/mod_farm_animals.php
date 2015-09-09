@@ -48,7 +48,8 @@ class FarmAnimals{
          if(OPTIONS_REQUESTED_ACTION == '') $this->homePage();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'add'){
-         if(OPTIONS_REQUESTED_ACTION == '') $this->addHome();
+         if($_GET['query'] != '') $this->searchAnimals();
+         else if(OPTIONS_REQUESTED_ACTION == '') $this->addHome();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimal();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'inventory'){
@@ -86,7 +87,8 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'quick_events_save') $this->quickEventsSave();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'experiments'){
-         if(OPTIONS_REQUESTED_ACTION == '') $this->experimentsHome();
+         if($_GET['query'] != '') $this->searchExperiments();
+         else if(OPTIONS_REQUESTED_ACTION == '') $this->experimentsHome();
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->experimentsData();
          else if(OPTIONS_REQUESTED_ACTION == 'save_exp') $this->saveNewExperiment();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveExperimentAnimals();      // An ambigous action name....
@@ -361,6 +363,36 @@ class FarmAnimals{
    $('#animal_id').focus();
 </script>
 <?php
+      Repository::autoCompleteFiles();
+
+      $settings = array('inputId' => 'sire', 'reqModule' => 'farm_animals', 'reqSubModule' => 'add', 'selectFunction' => 'Repository.fnFormatResult');
+      Repository::InitiateAutoComplete($settings);
+
+      $settings = array('inputId' => 'dam', 'reqModule' => 'farm_animals', 'reqSubModule' => 'add', 'selectFunction' => 'Repository.fnFormatResult');
+      Repository::InitiateAutoComplete($settings);
+
+      $settings = array('inputId' => 'experiment', 'reqModule' => 'farm_animals', 'reqSubModule' => 'experiments', 'selectFunction' => 'Repository.fnFormatResult');
+      Repository::InitiateAutoComplete($settings);
+   }
+
+   /**
+    * Creates an auto suggest list based on the search criteria
+    */
+   private function searchAnimals(){
+      $searchQuery = 'select animal_id, breed_string, sex, status from '. Config::$farm_db .'.farm_animals where animal_id like :animal_id';
+      $res = $this->Dbase->ExecuteQuery($searchQuery, array('animal_id' => "%{$_GET['query']}%"));
+
+      if($res == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
+      $suggestions = array();
+      foreach($res as $t){
+//         $suggestions[] = $t['animal_id']. ', ' . $t['breed_string']. ' ' . $t['sex']. ', ' .$t['status'];
+         $suggestions[] = $t['animal_id'];
+//         $data[] = $t['animal_id'];
+         $data[] = $t['animal_id']. ', ' . $t['breed_string']. ' ' . $t['sex']. ', ' .$t['status'];;
+      }
+      $data = array('error' => false, 'query' => $_GET['query'], 'suggestions' => $suggestions, 'data' => $data);
+      header("Content-type: application/json");
+      die(json_encode($data, true));
    }
 
    /**
@@ -587,7 +619,17 @@ class FarmAnimals{
       if($_POST['dob'] !== '') { $cols .= ', dob';  $colrefs .= ', :dob'; $colvals['dob'] = date_format($dob, 'Y-m-d'); }
       if($_POST['other_id'] != '') { $cols .= ', other_id';  $colrefs .= ', :other_id'; $colvals['other_id'] = $_POST['other_id']; }
       if($_POST['origin'] != '') { $cols .= ', origin';  $colrefs .= ', :origin'; $colvals['origin'] = $_POST['origin']; }
-//      if($_POST['experiment'] != '') { $cols .= ', experiment';  $colrefs .= ', :experiment'; $colvals[''] = $_POST['experiment']; }
+      if($_POST['experiment'] != '') {
+         // get the experiment as defined here
+         $searchQuery = 'select id from '. Config::$farm_db .'.experiments where exp_name = :exp';
+         $res = $this->Dbase->ExecuteQuery($searchQuery, array('exp' => $_POST['experiment']));
+         if($res == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
+         else if(count($res) != 0){
+            $cols .= ', current_exp';
+            $colrefs .= ', :current_exp';
+            $colvals['current_exp'] = $res[0]['id'];
+         }
+      }
       if($_POST['comments'] != '') { $cols .= ', comments';  $colrefs .= ', :comments'; $colvals['comments'] = $_POST['comments']; }
       if($_POST['dam'] != '') { $cols .= ', dam';  $colrefs .= ', :dam'; $colvals['dam'] = $_POST['dam']; }
       if($_POST['sire'] != '') { $cols .= ', sire';  $colrefs .= ', :sire'; $colvals['sire'] = $_POST['sire']; }
@@ -1179,6 +1221,25 @@ class FarmAnimals{
    $("#new_exp_animals").on('click', function(){ animals.newExperimentAnimals(); });
 </script>
 <?php
+   }
+
+   /**
+    * Search the experiments database
+    */
+   private function searchExperiments(){
+      $searchQuery = 'select exp_name, iacuc, start_date from '. Config::$farm_db .'.experiments where exp_name like :exp';
+      $res = $this->Dbase->ExecuteQuery($searchQuery, array('exp' => "%{$_GET['query']}%"));
+
+      if($res == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
+      $suggestions = array();
+      foreach($res as $t){
+//         $suggestions[] = $t['animal_id']. ', ' . $t['breed_string']. ' ' . $t['sex']. ', ' .$t['status'];
+         $suggestions[] = $t['exp_name'];
+         $data[] = $t['exp_name'];
+      }
+      $data = array('error' => false, 'query' => $_GET['query'], 'suggestions' => $suggestions, 'data' => $data);
+      header("Content-type: application/json");
+      die(json_encode($data, true));
    }
 
    /**
