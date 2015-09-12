@@ -458,8 +458,8 @@ class Repository extends DBase{
     * Echos the code for including the files that will be used for auto-complete
     */
    public function autoCompleteFiles(){
-      echo "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."../../common/jquery/jquery.autocomplete/jquery.autocomplete.js'></script>";
-      echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."../../common/jquery/jquery.autocomplete/styles.css' />";
+      echo "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."jQuery-Autocomplete/dist/jquery.autocomplete.min.js'></script>";
+      echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."../shared_libs/jquery.autocomplete/jquery.autocomplete.css' />";
    }
 
    /**
@@ -479,8 +479,6 @@ class Repository extends DBase{
     * </code>
     */
    public function InitiateAutoComplete($settings){
-      //$inputId, $reqModule, $reqSubModule, $selectFunction, $formatResult = '', $visibleSuggestions = '', $beforeNewQuery = ''
-//      if($formatResult != '') $formatResult = ", onSearchComplete: $formatResult";
       if($settings['formatResult'] == '') $settings['formatResult'] = 'Repository.fnFormatResult';
       if($settings['visibleSuggestions'] == '') $settings['visibleSuggestions'] = true;
       if($settings['beforeNewQuery'] == '') $settings['beforeNewQuery'] = 'undefined';

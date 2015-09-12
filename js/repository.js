@@ -39,9 +39,9 @@ var Repository = {
     * @param {type} currentValue
     * @returns {unresolved}
     */
-    fnFormatResult: function (value, data, currentValue) {
-//       return value;
-      var pattern = '(' + currentValue.replace(Main.reEscape, '\\$1') + ')';
-      return value.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
+    fnFormatResult: function (value, searchString) {
+//      if(currentValue.context !== undefined){ return; }
+      var pattern = '(' + searchString.replace(Main.reEscape, '\\$1') + ')';
+      return value.data.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
    }
 };

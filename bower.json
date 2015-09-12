@@ -44,6 +44,7 @@
     "pyxform": "https://github.com/uw-ictd/pyxform.git#v0.9.22",
     "leaflet": "https://github.com/Leaflet/Leaflet.git#v0.7.3",
     "Leaflet.heat": "https://github.com/Leaflet/Leaflet.heat.git#gh-pages",
-    "lightgallery": "~1.1.5"
+    "lightgallery": "~1.1.5",
+    "jQuery-Autocomplete": "https://github.com/devbridge/jQuery-Autocomplete.git"
   }
 }
