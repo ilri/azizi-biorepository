@@ -674,9 +674,10 @@ class FarmAnimals{
 
       // now lets add the breeds if any
       $breedQuery = 'insert into '. Config::$farm_db .'.animal_breeds(animal_id, breed_id) values(:animal_id, :breed_id)';
-      if($_POST['breed'] !== '') {
-         $cols .= ', ';  $colrefs .= ', :'; $colvals[''] = $_POST['sire'];
-         $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $animalId, 'breed_id' => $_POST['breed']));
+      $breeds = json_decode($_POST['breed']);
+      if(!is_array($breeds)) $breeds = array($breeds);
+      foreach($breeds as $breed) {
+         $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $animalId, 'breed_id' => $breed));
          if($res1 == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));

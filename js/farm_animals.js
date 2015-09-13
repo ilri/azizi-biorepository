@@ -234,12 +234,18 @@ Animals.prototype.saveAnimal = function(){
       return;
    }
 
+   // get the breeds
+   var breed = [];
+   $.each($('#breedId')[0].selectedOptions, function(){
+      breed[breed.length] = this.value;
+   });
+
    // date of birth
    var formSerialized = $('#animals').formSerialize();
    var action = ($('#save').val() === 'save') ? 'add' : 'edit';
    var animalEdited = ($('#save').val() === 'save') ? '' : '&editedAnimal='+animals.editedAnimal;
    $.ajax({
-       type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+action, async: false, dataType:'json', data: formSerialized + '&action=save'+animalEdited,
+       type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+action, async: false, dataType:'json', data: formSerialized +'&action=save'+ animalEdited +'&breed='+ $.toJSON(breed),
        success: function (data) {
           animals.showNotification(data.mssg, data.error);
           if(data.error === true){
