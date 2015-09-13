@@ -51,6 +51,11 @@ class FarmAnimals{
          if($_GET['query'] != '') $this->searchAnimals();
          else if(OPTIONS_REQUESTED_ACTION == '') $this->addHome();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimal();
+         else if(OPTIONS_REQUESTED_ACTION == 'confirm') $this->confirmAnimal();
+      }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'edit'){
+         if($_GET['query'] != '') $this->searchAnimals();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->editAnimal();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'inventory'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->inventoryHome();
@@ -113,7 +118,7 @@ class FarmAnimals{
          <li><a href="?page=farm_animals&do=inventory">Animal inventory</a></li>
 <?php
          if(in_array(Config::$farm_module_admin, $_SESSION['user_type'])){
-            echo '<li><a href="?page=farm_animals&do=add">Add an animal</a></li>
+            echo '<li><a href="?page=farm_animals&do=add">Add/Edit an animal</a></li>
                <li><a href="?page=farm_animals&do=ownership">Animal ownership</a></li>
                <li><a href="?page=farm_animals&do=pens">Farm location & animals</a></li>
                <li><a href="?page=farm_animals&do=pen_animals">Animals in location</a></li>
@@ -334,7 +339,7 @@ class FarmAnimals{
          </div>
          <div>
          <div id="links" class="center">
-            <button type="button" id="save" class='btn btn-primary'>Save</button>
+            <button type="button" id="save" class='btn btn-primary' value="save">Save</button>
             <button type="button" id="cancel" class='btn btn-primary cancel'>Cancel</button>
          </div>
       </fieldset>
@@ -359,20 +364,47 @@ class FarmAnimals{
    $('.breeds').html(comboString);
 
    $('#save').bind('click', animals.saveAnimal);     // bind the save button to the save action
-   $('#animal_id').blur(animals.confirmId);
    $('#animal_id').focus();
 </script>
 <?php
       Repository::autoCompleteFiles();
 
-      $settings = array('inputId' => 'sire', 'reqModule' => 'farm_animals', 'reqSubModule' => 'add', 'selectFunction' => 'Repository.fnFormatResult');
+      $settings = array('inputId' => 'animal_id', 'reqModule' => 'farm_animals', 'reqSubModule' => 'edit', 'selectFunction' => 'animals.confirmId');
       Repository::InitiateAutoComplete($settings);
 
-      $settings = array('inputId' => 'dam', 'reqModule' => 'farm_animals', 'reqSubModule' => 'add', 'selectFunction' => 'Repository.fnFormatResult');
+      $settings = array('inputId' => 'sire', 'reqModule' => 'farm_animals', 'reqSubModule' => 'add', 'selectFunction' => 'function(){}');
       Repository::InitiateAutoComplete($settings);
 
-      $settings = array('inputId' => 'experiment', 'reqModule' => 'farm_animals', 'reqSubModule' => 'experiments', 'selectFunction' => 'Repository.fnFormatResult');
+      $settings = array('inputId' => 'dam', 'reqModule' => 'farm_animals', 'reqSubModule' => 'add', 'selectFunction' => 'function(){}');
       Repository::InitiateAutoComplete($settings);
+
+      $settings = array('inputId' => 'experiment', 'reqModule' => 'farm_animals', 'reqSubModule' => 'experiments', 'selectFunction' => 'function(){}');
+      Repository::InitiateAutoComplete($settings);
+   }
+
+   /**
+    * Confirm whether an animal is in the
+    */
+   private function confirmAnimal(){
+      $animalQuery = 'select a.id, animal_id, other_id, species_id, lower(sex) as sex, origin, date_format(dob, "%d-%m-%Y") as dob, sire, dam, c.exp_name, a.comments '
+          . 'from '. Config::$farm_db .'.farm_animals as a left join '. Config::$farm_db .'.experiments as c on a.current_exp=c.id where animal_id = :animal_id';
+      $res = $this->Dbase->ExecuteQuery($animalQuery, array('animal_id' => $_POST['animalId']));
+
+      if($res == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
+      if(count($res) == 0){
+         die(json_encode(array('error' => false, 'data' => array('isAnimalSaved' => false))));
+      }
+      else{
+         //get the breed composition of this animal
+         $breedQuery = 'select breed_id from '. Config::$farm_db .'.animal_breeds where animal_id = :animal_id';
+         $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $res[0]['id']));
+         if($res1 == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
+         $breed = array();
+         foreach($res1 as $t) $breed[] = $t['breed_id'];
+         $res[0]['breed'] = $breed;
+
+         die(json_encode(array('error' => false, 'data' => array('isAnimalSaved' => true, 'animalDetails' => $res[0]))));
+      }
    }
 
    /**
@@ -385,10 +417,7 @@ class FarmAnimals{
       if($res == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
       $suggestions = array();
       foreach($res as $t){
-//         $suggestions[] = $t['animal_id']. ', ' . $t['breed_string']. ' ' . $t['sex']. ', ' .$t['status'];
-         $suggestions[] = $t['animal_id'];
-//         $data[] = $t['animal_id'];
-         $data[] = $t['animal_id']. ', ' . $t['breed_string']. ' ' . $t['sex']. ', ' .$t['status'];;
+         $suggestions[] = array('value' => $t['animal_id'], 'data' => $t['animal_id']. ', ' . $t['breed_string']. ' ' . $t['sex']. ', ' .$t['status']);
       }
       $data = array('error' => false, 'query' => $_GET['query'], 'suggestions' => $suggestions, 'data' => $data);
       header("Content-type: application/json");
@@ -644,6 +673,55 @@ class FarmAnimals{
       $animalId = $this->Dbase->dbcon->lastInsertId();
 
       // now lets add the breeds if any
+      $breedQuery = 'insert into '. Config::$farm_db .'.animal_breeds(animal_id, breed_id) values(:animal_id, :breed_id)';
+      if($_POST['breed'] !== '') {
+         $cols .= ', ';  $colrefs .= ', :'; $colvals[''] = $_POST['sire'];
+         $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $animalId, 'breed_id' => $_POST['breed']));
+         if($res1 == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+         }
+      }
+      // seem all is ok, lets commit the transaction and go back
+      $this->Dbase->CommitTrans();
+      die(json_encode(array('error' => 'false', 'mssg' => 'The animal has been successful saved.')));
+   }
+
+   /**
+    * Update an animal details
+    */
+   private function editAnimal(){
+      // updating an animal details. Mandatory fields are animal_id, species, sex, breed
+      $cols = 'animal_id = :animal_id, species_id = :species_id, sex = :sex, status = :status';
+      $colvals = array('animal_id' => $_POST['animal_id'], 'species_id' => $_POST['species'], 'sex' => $_POST['sex'], 'status' => 'Alive', 'id' => $_POST['editedAnimal']);
+
+      $dob = date_create_from_format('d-m-Y', $_POST['dob']);
+      if($_POST['dob'] !== '') { $cols .= ', dob = :dob'; $colvals['dob'] = date_format($dob, 'Y-m-d'); }
+      if($_POST['other_id'] != '') { $cols .= ', other_id = :other_id'; $colvals['other_id'] = $_POST['other_id']; }
+      if($_POST['origin'] != '') { $cols .= ', origin = :origin'; $colvals['origin'] = $_POST['origin']; }
+      if($_POST['experiment'] != '') {
+         // get the experiment as defined here
+         $searchQuery = 'select id from '. Config::$farm_db .'.experiments where exp_name = :exp';
+         $res = $this->Dbase->ExecuteQuery($searchQuery, array('exp' => $_POST['experiment']));
+         if($res == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
+         else if(count($res) != 0){
+            $cols .= ', current_exp = :current_exp';
+            $colvals['current_exp'] = $res[0]['id'];
+         }
+      }
+      if($_POST['comments'] != '') { $cols .= ', comments = :comments'; $colvals['comments'] = $_POST['comments']; }
+      if($_POST['dam'] != '') { $cols .= ', dam = :dam'; $colvals['dam'] = $_POST['dam']; }
+      if($_POST['sire'] != '') { $cols .= ', sire = :sire'; $colvals['sire'] = $_POST['sire']; }
+
+      $this->Dbase->StartTrans();
+      $query = 'update '. Config::$farm_db .".farm_animals set $cols where id = :id";
+      $res = $this->Dbase->ExecuteQuery($query, $colvals);
+      if($res == 1){
+         $this->Dbase->RollBackTrans();
+         die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+      }
+
+      // now lets update the breeds if any
       $breedQuery = 'insert into '. Config::$farm_db .'.animal_breeds(animal_id, breed_id) values(:animal_id, :breed_id)';
       if($_POST['breed'] !== '') {
          $cols .= ', ';  $colrefs .= ', :'; $colvals[''] = $_POST['sire'];
@@ -1233,11 +1311,9 @@ class FarmAnimals{
       if($res == 1) die(json_encode(array('error' => true, 'data' => $this->Dbase->lastError)));
       $suggestions = array();
       foreach($res as $t){
-//         $suggestions[] = $t['animal_id']. ', ' . $t['breed_string']. ' ' . $t['sex']. ', ' .$t['status'];
-         $suggestions[] = $t['exp_name'];
-         $data[] = $t['exp_name'];
+         $suggestions[] = array('value' => $t['exp_name'], 'data' => $t['exp_name']);
       }
-      $data = array('error' => false, 'query' => $_GET['query'], 'suggestions' => $suggestions, 'data' => $data);
+      $data = array('error' => false, 'query' => $_GET['query'], 'suggestions' => $suggestions);
       header("Content-type: application/json");
       die(json_encode($data, true));
    }

@@ -183,12 +183,29 @@ Animals.prototype.confirmId = function(){
    var animalId = $('#animal_id').val().trim();
    if(animalId === '') { return; }
    $.ajax({
-       type:"POST", url: "mod_ajax.php?page=farm_animals&do=confirm", async: false, dataType:'json', data: {animalId: animalId},
+       type:"POST", url: 'mod_ajax.php?page=farm_animals&do=add', async: false, dataType:'json', data: {animalId: animalId, action: 'confirm'},
        success: function (data) {
+          animals.showNotification(data.mssg, data.error);
           if(data.error === true){
-             alert(data.mssg);
              $('#animal_id').val('').focus();
              return;
+          }
+          else if(data.data.animalDetails !== undefined){
+             // we have the animal details, so populate the necessary fields
+             var t = data.data.animalDetails;
+             if(t.animal_id !== 'null'){ $('#animal_id').val(t.animal_id); } else { $('#animal_id').val(''); }
+             if(t.species_id !== 'null'){ $('#speciesId').val(t.species_id); } else { $('#speciesId').val(0); }
+             if(t.breed !== 'null'){ $('#breedId').val(t.breed); } else { $('#breedId').val(0); }
+             if(t.dob !== 'null'){ $('#dob').val(t.dob); } else { $('#').val(''); }
+             if(t.sex !== 'null' || t.sex === ''){ $('#'+t.sex)[0].checked = true; } else { $('#').val(''); }
+             if(t.other_id !== 'null'){ $('#other_id').val(t.other_id); } else { $('#other_id').val(''); }
+             if(t.sire !== 'null'){ $('#sire').val(t.sire); } else { $('#sire').val(''); }
+             if(t.dam !== 'null'){ $('#dam').val(t.dam); } else { $('#dam').val(''); }
+             if(t.exp_name !== 'null'){ $('#experiment').val(t.exp_name); } else { $('#experiment').val(''); }
+             if(t.comments !== 'null' || t.comments !== ''){ $('#comments').val(t.comments); } else { $('#comments').val(''); }
+             animals.editedAnimal = t.id;
+             $('#save').val('edit');
+             $('#save')[0].innerHTML = 'Update';
           }
       }
    });
@@ -219,8 +236,10 @@ Animals.prototype.saveAnimal = function(){
 
    // date of birth
    var formSerialized = $('#animals').formSerialize();
+   var action = ($('#save').val() === 'save') ? 'add' : 'edit';
+   var animalEdited = ($('#save').val() === 'save') ? '' : '&editedAnimal='+animals.editedAnimal;
    $.ajax({
-       type:"POST", url: "mod_ajax.php?page=farm_animals&do=add", async: false, dataType:'json', data: formSerialized + '&action=save',
+       type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+action, async: false, dataType:'json', data: formSerialized + '&action=save'+animalEdited,
        success: function (data) {
           animals.showNotification(data.mssg, data.error);
           if(data.error === true){
