@@ -255,11 +255,11 @@ Animals.prototype.saveAnimal = function(){
           else{
              // clear all the fields and get ready for saving a new animal
               $('#animals').clearForm();
+              $('#sire').val('');
               $('#animal_id').focus();
           }
       }
    });
-
 };
 
 /**

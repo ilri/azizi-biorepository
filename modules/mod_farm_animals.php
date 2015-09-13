@@ -685,7 +685,7 @@ class FarmAnimals{
       }
       // seem all is ok, lets commit the transaction and go back
       $this->Dbase->CommitTrans();
-      die(json_encode(array('error' => 'false', 'mssg' => 'The animal has been successful saved.')));
+      die(json_encode(array('error' => false, 'mssg' => 'The animal has been successful saved.')));
    }
 
    /**
@@ -722,19 +722,30 @@ class FarmAnimals{
          die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
       }
 
-      // now lets update the breeds if any
+      // now lets update the breeds if any.
+      // first delete all the breeds entries and then add the breeds afresh
+      $deleteQuery = 'delete from '. Config::$farm_db .'.animal_breeds where animal_id = :animal_id';
+      $res = $this->Dbase->ExecuteQuery($deleteQuery, array('animal_id' => $_POST['editedAnimal']));
+      if($res == 1){
+         $this->Dbase->RollBackTrans();
+         die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+       }
+
+      // now lets add the breeds afresh
       $breedQuery = 'insert into '. Config::$farm_db .'.animal_breeds(animal_id, breed_id) values(:animal_id, :breed_id)';
-      if($_POST['breed'] !== '') {
-         $cols .= ', ';  $colrefs .= ', :'; $colvals[''] = $_POST['sire'];
-         $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $animalId, 'breed_id' => $_POST['breed']));
+      $breeds = json_decode($_POST['breed']);
+      if(!is_array($breeds)) $breeds = array($breeds);
+      foreach($breeds as $breed) {
+         $res1 = $this->Dbase->ExecuteQuery($breedQuery, array('animal_id' => $_POST['editedAnimal'], 'breed_id' => $breed));
          if($res1 == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
          }
       }
+
       // seem all is ok, lets commit the transaction and go back
       $this->Dbase->CommitTrans();
-      die(json_encode(array('error' => 'false', 'mssg' => 'The animal has been successful saved.')));
+      die(json_encode(array('error' => false, 'mssg' => 'The animal has been successful saved.')));
    }
 
    /**
