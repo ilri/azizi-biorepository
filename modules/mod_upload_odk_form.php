@@ -556,8 +556,10 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
          $preloadId = $result[0]['id'];
          $queries = explode("\n", $preloadText);
          foreach($queries as $currQuery){
-            $query = "insert into preload_queries(query, preload_id) values(:query, :preloadId)";
-            $this->Dbase->ExecuteQuery($query, array("query" => $currQuery, "preloadId" => $preloadId));
+            if(strlen($currQuery) > 0) {//make sure you don't add empty lines
+               $query = "insert into preload_queries(query, preload_id) values(:query, :preloadId)";
+               $this->Dbase->ExecuteQuery($query, array("query" => $currQuery, "preloadId" => $preloadId));
+            }
          } 
       }
       else {
