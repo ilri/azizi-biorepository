@@ -459,7 +459,7 @@ class Repository extends DBase{
     */
    public function autoCompleteFiles(){
       echo "<script type='text/javascript' src='". OPTIONS_COMMON_FOLDER_PATH ."jQuery-Autocomplete/dist/jquery.autocomplete.min.js'></script>";
-      echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."../shared_libs/jquery.autocomplete/jquery.autocomplete.css' />";
+      echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."../azizi-shared-libs/jquery.autocomplete/jquery.autocomplete.css' />";
    }
 
    /**

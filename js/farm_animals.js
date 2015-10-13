@@ -110,13 +110,18 @@ Animals.prototype.eventsGridStatusBar = function(statusbar){
    var excelButton = $("<div class='status_bar_div'><img style='position: relative; margin-top: 2px;' src='images/excel.png'/><span class='status_bar_span'>Export</span></div>");
    var showAllCheck = $("<div class='status_bar_div'><input type='checkbox' id='showAllId' name='showAll' /><span class='status_bar_span'>Show All</span></div>");
    var sendEmail = $("<div class='status_bar_div'><span class='status_bar_span'>Send Email</span></div>");
+   var newEvent = $("<div class='status_bar_div'><span class='status_bar_span'>New Event</span></div>");
    container.append(excelButton);
    container.append(showAllCheck);
    container.append(sendEmail);
+   container.append(newEvent);
    excelButton.jqxButton({  width: 80, height: 20 });
    showAllCheck.jqxButton({  width: 80, height: 20 });
    sendEmail.jqxButton({  width: 80, height: 20 });
+   newEvent.jqxButton({  width: 80, height: 20 });
    statusbar.append(container);
+
+   newEvent.click(function(event){ animals.newEvent(); });
 
    sendEmail.click(function (event) {
       $.ajax({
@@ -1019,7 +1024,7 @@ Animals.prototype.newLevel =  function(){
 Animals.prototype.initiateAnimalsEventsGrid = function(){
    // create the source for the grid
    var source = {
-       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'sub_event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'performed_by_id'}, {name: 'performed_by'}, {name: 'time_recorded'}, {name: 'no_animals'} ],
+       datatype: 'json', datafields: [ {name: 'event_type_id'}, {name: 'sub_event_type_id'}, {name: 'event_name'}, {name: 'event_date'}, {name: 'recorded_by'}, {name: 'performed_by_id'}, {name: 'performed_by'}, {name: 'time_recorded'}, {name: 'no_animals'}, {name: 'actions'} ],
        id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', field: 'animal_events'}, url: 'mod_ajax.php?page=farm_animals&do=events'
      };
      var eventsAdapter = new $.jqx.dataAdapter(source);
@@ -1027,7 +1032,6 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
      if($('#events_grid :regex(class, jqx\-grid)').length === 0){
         $("#events_grid").jqxGrid({
             width: 910,
-            height: 350,
             source: source,
             pageable: true,
             autoheight: true,
@@ -1048,11 +1052,12 @@ Animals.prototype.initiateAnimalsEventsGrid = function(){
               { datafield: 'sub_event_type_id', hidden: true },
               { datafield: 'performed_by_id', hidden: true },
               { text: 'Event', datafield: 'event_name', width: 150 },
-              { text: 'Event Date', datafield: 'event_date', width: 100 },
-              { text: 'Recorded By', datafield: 'recorded_by', width: 150 },
-              { text: 'Performed By', datafield: 'performed_by', width: 150 },
+              { text: 'Event Date', datafield: 'event_date', width: 90 },
+              { text: 'Recorded By', datafield: 'recorded_by', width: 140 },
+              { text: 'Performed By', datafield: 'performed_by', width: 130 },
               { text: 'Animals Count', datafield: 'no_animals', width: 100 },
-              { text: 'Time Recorded', datafield: 'time_recorded', width: 200 }
+              { text: 'Time Recorded', datafield: 'time_recorded', width: 170 },
+              { text: 'Actions', datafield: 'actions', width: 100 }
             ]
          });
      }
@@ -1069,7 +1074,7 @@ Animals.prototype.initializeEventRowDetails = function(index, parentElement, gri
    var grid = $($(parentElement).children()[0]);
 
    var eventsSource = {
-       datatype: "json", datafields: [ {name: 'animal_id'}, {name: 'sex'}, {name: 'performed_by'}, {name: 'comments'}, {name: 'event_value'} ], type: 'POST',
+       datatype: "json", datafields: [ {name: 'event_id'}, {name: 'animal_id'}, {name: 'sex'}, {name: 'performed_by'}, {name: 'comments'}, {name: 'event_value'}, {name: 'actions'} ], type: 'POST',
        id: 'id', data: {action: 'list', field: 'sub_events',  performed_by: dr.performed_by_id, event_type_id: dr.event_type_id, sub_event_type_id: dr.sub_event_type_id, event_date: dr.event_date},
        url: 'mod_ajax.php?page=farm_animals&do=events'
     };
@@ -1077,11 +1082,16 @@ Animals.prototype.initializeEventRowDetails = function(index, parentElement, gri
     if (grid !== null) {
       grid.jqxGrid({source: eventsSource, theme: '', width: 840, height: 140,
       columns: [
-         {text: 'Animal ID', datafield: 'animal_id', hidden: false, width: 150},
+         {datafield: 'event_id', hidden: true},
+         {text: 'Animal ID', datafield: 'animal_id', hidden: false, width: 120},
          {text: 'Sex', datafield: 'sex', width: 100},
          {text: 'Value', datafield: 'event_value', width: 70},
          {text: 'Performed By', datafield: 'performed_by', width: 150},
-         {text: 'Comments', datafield: 'comments', width: 350}
+         {text: 'Comments', datafield: 'comments', width: 280},
+         {text: 'Actions', datafield: 'actions', width: 100, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+               return '<a href="javascript:;" id="'+ rowdata.event_id +'" class="event_id_href '+ rowdata.uniqueid +'">&nbsp;Delete</a>';
+            }
+          }
       ]
       });
    }
@@ -1128,7 +1138,7 @@ var mainContent = '\
       <div id="from_filter"></div>\
       <div id="from_list"></div>\
    </div>\n\
-   <div id="actions">\n\
+   <div class="actions">\n\
       <button style="padding:4px 16px;" id="add">Add ></button>\
       <button style="padding:4px 16px;" id="add_all">Add All >></button>\
       <button style="padding:4px 16px;" id="remove">< Remove</button>\
@@ -1140,9 +1150,11 @@ var mainContent = '\
    </div>\n\
    <div id="event_actions">\n\
       <div class="save"><button style="padding:4px 16px;" id="save">Save</button></div>\n\
-   </div>';
+   </div>\n\
+   <div class="actions" style="float: none;">&nbsp;</div>\n\
+   ';
 
-   $('#events').html(mainContent);
+   $('#events_home').html(mainContent);
    $("#save").on('click', function(){ animals.saveChanges(); });
 
    // now initiate the grids
@@ -1167,17 +1179,41 @@ var mainContent = '\
 };
 
 Animals.prototype.reInitializeEvents = function(){
-   var content = '<div id="events_grid"></div>\
-   <div id="actions">\
-      <button style="padding:4px 16px;" id="new">Add Events</button>\
-   </div>';
+   var content = '<div id="events_grid"></div>';
 
-   $('#events').html(content);
-   $("#new").jqxButton({ width: '150'});
-   // bind the click functions of the buttons
-   $("#new").live('click', function(){ animals.newEvent(); });
-
+   $('#events_home').html(content);
    animals.initiateAnimalsEventsGrid();
+};
+
+/**
+ * Initiate the process of deleting an event
+ *
+ * @param {type} that
+ * @returns {undefined}
+ */
+Animals.prototype.confirmDeleteEvent = function(that){
+   $("#modalWindow").jqxWindow({ height: 150, width: 300, theme: 'summer', isModal: true, autoOpen: false });
+   $("#modalWindow").jqxWindow('open');
+
+   $("#button_yes").click(function () { animals.deleteEvent(that.target.id, that.target.classList[1]); });
+   $("#button_no").click(function () { $("#modalWindow").jqxWindow('close'); });
+};
+
+Animals.prototype.deleteEvent = function(event_id, rowId){
+   $("#modalWindow").jqxWindow('close');
+   $.ajax({
+      type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", dataType:'json', async: false, data: {'action': 'delete', event_id: event_id},
+      success: function (data) {
+         if(data.error === true){
+            animals.showNotification(data.mssg, 'error');
+            return;
+          }
+          else{
+             animals.showNotification(data.mssg, 'success');
+             animals.initiateAnimalsEventsGrid();
+          }
+       }
+   });
 };
 
 /**

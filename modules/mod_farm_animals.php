@@ -86,6 +86,7 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'list' && $_POST['field'] == 'sub_events') $this->eventsSubList();
          else if(OPTIONS_REQUESTED_ACTION == 'list') $this->newEventsData ();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveAnimalEvents ();
+         else if(OPTIONS_REQUESTED_ACTION == 'delete') $this->deleteAnimalEvents ();
          else if(OPTIONS_REQUESTED_ACTION == 'send_email') $this->emailEventsDigest ();
          else if(OPTIONS_REQUESTED_ACTION == 'quick_events') $this->quickEventsHome ();
          else if(OPTIONS_REQUESTED_ACTION == 'quick_events_list') $this->quickEventsList();
@@ -1018,18 +1019,23 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdatetimeinput.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcalendar.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxwindow.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/globalization/globalize.js"></script>
-<div id="events">
+<div id="events_home">
    <div id="events_grid"></div>
-   <div id="actions">
-      <button style="padding:4px 16px;" id="new">Add Events</button>
-   </div>
 </div>
 <div id="messageNotification"><div></div></div>
+<div id="modalWindow" style="display: none;">
+   <div id="mWindow_header">Confirm Delete</div>
+   <div>
+      <span id="mWindow_content">Are you sure you want to delete this event?</span>
+      <input type="button" value="Yes" id="button_yes" />
+      <input type="button" value="No" id="button_no" />
+   </div>
+</div>
 
 <script type="text/javascript">
    $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
-   $("#new").jqxButton({ width: '150'});
    var animals = new Animals();
    animals.initiateAnimalsEventsGrid();
    // bind the click functions of the buttons
@@ -1039,7 +1045,7 @@ class FarmAnimals{
    animals.seenVariable = '<?php echo Config::$farm_seen_name; ?>';
    animals.pmReportVariable = '<?php echo Config::$farm_pm_report; ?>';
    animals.valueEvents = [animals.tempVariable, animals.weightVariable, animals.seenVariable];
-   $("#new").live('click', function(){ animals.newEvent(); });
+   $('.event_id_href').live('click', function(that){ animals.confirmDeleteEvent(that); } );
 </script>
 <?php
    }
@@ -1082,7 +1088,7 @@ class FarmAnimals{
          $subEvent = NULL;
       }
 
-      $eventsQuery = 'select b.animal_id, b.sex, event_value, record_date as time_recorded, performed_by, recorded_by, a.comments '
+      $eventsQuery = 'select a.id as event_id, b.animal_id, b.sex, event_value, record_date as time_recorded, performed_by, recorded_by, a.comments '
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'left join '. Config::$farm_db .'.experiments as e on b.current_exp=e.id '
           . "where a.event_type_id = :event_type_id $addQuery and a.event_date = :event_date and performed_by = :performed_by";
@@ -1253,6 +1259,38 @@ class FarmAnimals{
       // we are all good, lets return
       $this->Dbase->CommitTrans();
       die(json_encode(array('error' => 'false', 'mssg' => 'The event has been saved successfully.')));
+   }
+
+   /**
+    * Delete an event
+    */
+   private function deleteAnimalEvents(){
+      // we want to delete an event. Check if its an exit event, if it is, we will need to update the farm animal details
+      $eventQuery = 'select event_name, animal_id from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id where a.id = :event_id';
+      $eventName = $this->Dbase->ExecuteQuery($eventQuery, array('event_id' => $_POST['event_id']));
+      if($eventName == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+
+      $this->Dbase->StartTrans();
+      // delete the event details
+      $updateQuery = 'delete from '. Config::$farm_db .'.farm_animal_events where id = :event_id';
+      $deleteEvent = $this->Dbase->ExecuteQuery($updateQuery, array('event_id' => $_POST['event_id']));
+      if($deleteEvent == 1){
+         $this->Dbase->RollBackTrans();
+         die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+      }
+
+      // update the animal status if we deleted an exit event
+      if($eventName[0]['event_name'] == 'Exit'){
+         $updateQuery = 'update '. Config::$farm_db .'.farm_animals set status = :alive where id = :animal_id';
+         $updateResult = $this->Dbase->ExecuteQuery($updateQuery, array('animal_id' => $eventName[0]['animal_id'], 'alive' => 'Alive'));
+         if($updateResult == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+         }
+      }
+      $this->Dbase->CommitTrans();
+
+      die(json_encode(array('error' => false, 'mssg' => 'The event has been deleted successfully')));
    }
 
    /**
