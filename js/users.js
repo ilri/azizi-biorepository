@@ -11,16 +11,8 @@ function Users(context, pwSettingsS, publicKey){
    //init variables
    window.users.context = context;
 
-   window.users.createUserBtn = jQuery("#create_user_btn");
-   window.users.createUserBtn.bind("click", window.users.validateInput);
-
    window.users.groupList = jQuery("#group_list");
-
    window.users.groupIDs = new Array();
-   window.users.addToGroupBtn = jQuery("#add_group_btn");
-   window.users.addToGroupBtn.click(function(){
-      window.users.addGroup();
-   });
 
    window.users.pass1 = jQuery("#pass_1");
    window.users.pass2 = jQuery("#pass_2");
@@ -40,7 +32,7 @@ function Users(context, pwSettingsS, publicKey){
    window.users.publicKey = publicKey;
 
    //init things specific to edit_user context
-   if(window.users.context == "edit_user"){
+   if(window.users.context === "edit_user"){
       window.users.exisitingUsers  = jQuery("#existing_users");
       window.users.exisitingUsers.change({}, function(){
          var selectedUser = window.users.exisitingUsers.find(":selected");
@@ -146,8 +138,46 @@ Users.prototype.validateInput = function() {
       $('#pass_1').val("");
       $('#pass_2').val("");
    }
-
    return true;
+};
+
+/**
+ * Save the changes defined so far by the user
+ * @returns {undefined}
+ */
+Users.prototype.saveChanges = function(){
+   // first validate the data entered
+   if(users.validateInput() === false){ return; }
+
+   // format all the data as a nice json object and send it to the server for saving
+   var formData = $('.user_form').serializeArray();
+   var selectedGroups = [];
+   $.each($("#to_groups").jqxListBox('getItems'), function(i, that){
+      selectedGroups[selectedGroups.length] = that.value;
+   });
+   var jsonData = new FormData();
+   $.each(formData, function(i, that){
+      jsonData.append(that.name, that.value);
+   });
+   jsonData.append('user_groups', selectedGroups);
+   jsonData.append('user_id',  users.userData.id);
+
+    $.ajax({
+      type:"POST", url: 'mod_ajax.php?page=users&do=manage_account&action=edit_user', dataType:'json', cache: false, contentType: false, processData: false, data: jsonData,
+      success: function (data) {
+         if(data.error === true){
+            Repository.showNotification(data.mssg, 'error');
+            return false;
+         }
+         else{
+            // all seems good, so refresh the page
+            Repository.showNotification(data.mssg, 'success');
+            $('.user_form').clearForm();
+            $("#to_groups").jqxListBox('clear');
+            $("#from_groups").jqxListBox({ source: Main.allGroups });
+         }
+     }
+   });
 };
 
 /**
@@ -175,8 +205,7 @@ Users.prototype.getUserData = function(id){
       data: {"id":id},
       success: function (data) {
          var userData = jQuery.parseJSON(data);
-         console.log(userData);
-         if(userData.length == 1){
+         if(userData.length === 1){
             window.users.userData = userData[0];
             $("#sname").val(userData[0].sname);
             $("#onames").val(userData[0].onames);
@@ -189,12 +218,14 @@ Users.prototype.getUserData = function(id){
             window.users.togglePasswords();
 
             //clear out group list
-            window.users.groupList.empty();
+            window.users.groups = userData[0].groups;
             window.users.groupIDs = new Array();
 
-            for(var gIndex = 0; gIndex < userData[0].groups.length; gIndex++){
-               window.users.addGroup(userData[0].groups[gIndex]);
-            }
+            $("#to_groups").jqxListBox('clear');
+            $.each(userData[0].groups, function(i, that){
+               $("#from_groups").jqxListBox('disableItem', that.id);
+               $("#to_groups").jqxListBox('addItem', that);
+            });
          }
       }
    });
@@ -203,24 +234,26 @@ Users.prototype.getUserData = function(id){
 /**
  * This function adds a group to the list of groups a user is in
  */
-Users.prototype.addGroup = function(data) {
-   if(typeof data === 'undefined') var selectedGroup = $("#group").find(":selected")[0];
-   else var selectedGroup = data;
+Users.prototype.addToGroup = function() {
+   // get the checked groups and add them to the list of user groups
+   var checkedGroups = $("#from_groups").jqxListBox('getCheckedItems');
+   $.each(checkedGroups, function(i, that){
+      $("#from_groups").jqxListBox('uncheckItem', that.value);
+      $("#to_groups").jqxListBox('addItem', that);
+      $("#from_groups").jqxListBox('disableItem', that.value);
+   });
+};
 
-   if(selectedGroup.text.length > 0){
-      if(jQuery.inArray(selectedGroup.id, window.users.groupIDs) == -1){//if group not already in list
-         var html = "<div id='group_"+selectedGroup.id+"' style='cursor:pointer;float:left;width:100%;height:10px;text-align:center;line-height:10px;'>"+selectedGroup.text+"</div>";
-         window.users.groupList.append(html);
-         window.users.groupIDs.push(selectedGroup.id);
-
-         $("#group_"+selectedGroup.id).click({"id":selectedGroup.id}, function(e){
-            var groupID = e.data.id;
-            $(this).remove();
-
-            window.users.groupIDs.splice(jQuery.inArray(groupID, window.users.groupIDs), 1);
-         });
-      }
-   }
+/**
+ * Remove a user from a group
+ * @returns {undefined}
+ */
+Users.prototype.removeFromGroup = function(){
+   var checkedGroups = $("#to_groups").jqxListBox('getCheckedItems');
+   $.each(checkedGroups, function(i, that){
+      $("#from_groups").jqxListBox('enableItem', that.value);
+      $("#to_groups").jqxListBox('removeItem', that);
+   });
 };
 
 /**

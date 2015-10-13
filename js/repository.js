@@ -43,5 +43,26 @@ var Repository = {
 //      if(currentValue.context !== undefined){ return; }
       var pattern = '(' + searchString.replace(Main.reEscape, '\\$1') + ')';
       return value.data.replace(new RegExp(pattern, 'gi'), '<strong>$1<\/strong>');
+   },
+
+   /**
+   * Show a notification on the page
+   *
+   * @param   message     The message to be shown
+   * @param   type        The type of message
+   */
+   showNotification: function(message, type){
+   if(type === undefined) { type = 'error'; }
+
+   $('#messageNotification div').html(message);
+   if($('#messageNotification').jqxNotification('width') === undefined){
+      $('#messageNotification').jqxNotification({
+         width: 350, position: 'top-right', opacity: 0.9,
+         autoOpen: false, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: type
+       });
+   }
+   else{ $('#messageNotification').jqxNotification({template: type}); }
+
+   $('#messageNotification').jqxNotification('open');
    }
 };

@@ -146,16 +146,11 @@ class Users {
    private function manageUserPage($addinfo = ''){
       if(OPTIONS_REQUESTED_ACTION == 'edit_user'){
          $result = $this->editUser();
-         if($result == 0){
-            $addinfo = "Successfully modified account";
-         }
-         else {
-            $addinfo = "A problem occurred while modifying the account";
-         }
+         if($result == 0) die(json_encode(array('error' => false, 'mssg' => 'Successfully modified account')));
+         else die(json_encode(array('error' => true, 'mssg' => 'A problem occurred while modifying the account')));
       }
 
-      $query = "SELECT name, id"
-              . " FROM groups";
+      $query = 'SELECT name, id FROM groups';
       $groups = $this->Dbase->ExecuteQuery($query);
 
       if($groups == 1){
@@ -164,8 +159,7 @@ class Users {
          $groups = array();
       }
 
-      $query = "SELECT val_id AS id, value AS name"
-              . " FROM ".Config::$config['azizi_db'].".modules_custom_values";
+      $query = 'SELECT val_id AS id, value AS name FROM '.Config::$config['azizi_db'].'.modules_custom_values';
       $projects = $this->Dbase->ExecuteQuery($query);
 
       if($projects == 1){
@@ -175,13 +169,25 @@ class Users {
       }
 
       $users = $this->getExistingUsers(false);//get date for exisiting users but don't encode as json
-
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
 <script type="text/javascript" src="js/users.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jquery-form/jquery.form.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+
 <h3 class="mod_user_heading">Manage An Account</h3>
 <?php echo $addinfo;?>
 <form action="?page=users&do=manage_account" method="post" class="form-horizontal user_form">
+   <div id="user_left">
    <div class="form-group"><label for="users" class="control-label">Select a user: </label>
       <select id="existing_users">
          <option id=""></option>
@@ -212,7 +218,7 @@ class Users {
    </select></div>
    <div class="form-group"><label for="username" class="control-label">Username: </label><input id="username" name="username" type="text" class="form-control" /></div>
    <div class="form-group">
-      <label for="ldap" class="control-label">Use LDAP Authentication: </label>
+      <label for="ldap" class="control-label">LDAP Authenticate: </label>
       <select id="ldap" name="ldap" class="form-control">
          <option value="0">No</option>
          <option value="1">Yes</option>
@@ -220,25 +226,37 @@ class Users {
    </div>
    <div class="form-group"><label for="pass_1" class="control-label">Password: </label><input id="pass_1" name="pass_1" type="password" class="form-control" placeholder="Leave blank if not updating" /></div>
    <div class="form-group"><label for="pass_2" class="control-label">Confirm Password: </label><input id="pass_2" name="pass_2" type="password" class="form-control" placeholder="Leave blank if not updating" /></div>
-   <h4 style="margin-left: 10%;">Groups</h4>
-   <div class="form-group"><label for="pass_2" class="control-label">Add to group:</label>
-      <select id="group" class="form-control">
- <?php
-   foreach($groups AS $currGroup){
-      echo "<option id='".$currGroup['id']."'>".$currGroup['name']."</option>";
-   }
- ?>
-      </select>
-      <button id="add_group_btn" type="button">Add</button></div>
-      <div id="group_list" style="overflow: hidden; margin-left: 30%; background: white; width: 40%; max-height: 100px; overflow-y: scroll;"></div>
-   <input type="hidden" name="action" id="action" />
-   <input type="hidden" name="user_id" id="user_id" />
-   <input type="hidden" name="user_groups" id="user_groups" />
-   <div class="center"><button type="submit" id="create_user_btn" class="btn-primary">Modify</button></div>
+   </div>
+   <div  id="user_right">
+      <h4>Groups</h4>
+      <div id="all_groups">
+         <div id="from_groups"></div>
+      </div>
+      <div class="actions">
+         <input type="button" style="padding:4px 16px;" id="add" value='Add >' />
+         <input type="button" style="padding:4px 16px;" id="remove" value='< Remove' />
+         <input type="button" style="padding:4px 16px;" id="reset" value='Reset' />
+      </div>
+      <div id="user_groups">
+         <div id="to_groups"></div>
+      </div>
+   </div>
+   <div class="center"><input type='button' id="create_user_btn" class="btn-primary" value='Update' /></div>
+   <div id="messageNotification"><div></div></div>
 </form>
 <script>
    $('#whoisme .back').html('<a href=\'?page=users\'>Back</a>');//back link
    var users = new Users('edit_user','<?php echo json_encode(Config::$psswdSettings);?>', "<?php echo Config::$rsaPubKey;?>");
+
+   Main.allGroups = <?php echo json_encode($groups); ?>;
+   $("#from_groups").jqxListBox({width: 200, height:300, source: Main.allGroups, displayMember: 'name', valueMember: 'id', checkboxes: true, filterable: true, theme: ''});
+   $("#to_groups").jqxListBox({width: 200, height: 300, source: [], displayMember: 'text', valueMember: 'id', checkboxes: true});
+   $("#add, #remove, #reset, #create_user_btn").jqxButton({ width: '100'});
+
+   $('#add').on('click', users.addToGroup);
+   $('#remove').on('click', users.removeFromGroup);
+   $('#reset').on('click', users.resetGroups);
+   $('#create_user_btn').on('click', users.saveChanges);
 </script>
 <?php
    }
@@ -401,7 +419,7 @@ class Users {
 
       $email = $_POST['email'];
       $result = $this->security->createUser($_POST['username'], $_POST['sname'], $_POST['onames'], $_POST['project'], $groupIDs, $_POST['ldap'], $email);
-      
+
       if($result == null || (!is_numeric($result) && strlen($result) > 1)){//probably means the password returned therefore successfully created user
          $this->Dbase->CreateLogEntry("password = $result","debug");
          $this->grantDMPAccess($_POST['username'], $_POST['user_groups'], $_POST['ldap'], $this->security->encryptPlainText($result));
@@ -437,7 +455,7 @@ class Users {
 
    private function editUser(){
       $groupIDs = explode(",",$_POST['user_groups']);
-      
+
       $result = $this->security->updateUser($_POST['user_id'], $_POST['username'], $_POST['pass_1'], $_POST['sname'], $_POST['onames'], $_POST['project'], $_POST['email'], $groupIDs, $_POST['ldap'], $_POST['allowed']);
       if($_POST['ldap'] == 1|| strlen($_POST['pass_1']) > 0) {
          $this->grantDMPAccess($_POST['username'], $_POST['user_groups'], $_POST['ldap'], $_POST['pass_1']);
@@ -467,7 +485,7 @@ class Users {
          return $result;
       }
    }
-   
+
    private function grantDMPAccess($username, $userGroups, $ldap, $encryptedPw) {
       //check if any of the user groups has access to the dmp
       $query = "select a.id"
@@ -540,7 +558,7 @@ class Users {
       $this->Dbase->CreateLogEntry("Was unable to register ".$username." on ODK Workflow API", "warnings");
       return false;
    }
-   
+
    /**
     * This function creates a group passed from the add group page
     *
@@ -562,10 +580,7 @@ class Users {
     * This function gets data corresponding to a user from the database
     */
    private function getUserData(){
-      $query = "SELECT id, login, sname, onames, email, project, allowed, ldap_authentication as ldap"
-              . " FROM users"
-              . " WHERE id = :id";
-
+      $query = "SELECT id, login, sname, onames, email, project, allowed, ldap_authentication as ldap FROM users WHERE id = :id";
       $result = $this->Dbase->ExecuteQuery($query, array("id" => $_GET['id']));
 
       if($result == 1){
@@ -574,20 +589,14 @@ class Users {
       }
 
       if(count($result) == 1){
-         $query = "SELECT b.name AS text, b.id"
-                 . " FROM user_groups AS a"
-                 . " INNER JOIN groups AS b on a.group_id = b.id"
-                 . " WHERE a.user_id = :userID";
+         $query = "SELECT b.name AS text, b.id FROM user_groups AS a INNER JOIN groups AS b on a.group_id = b.id WHERE a.user_id = :userID";
          $groups = $this->Dbase->ExecuteQuery($query, array("userID" => $result[0]['id']));
-
          if($groups == 1){
             $this->Dbase->CreateLogEntry("An error occurred while trying to get user groups", "fatal");
             $groups = array();
          }
-
          $result[0]['groups'] = $groups;
       }
-
       echo json_encode($result);
    }
 
