@@ -400,7 +400,7 @@ class ProcODKForm {
                   
                   //$this->Dbase->CreateLogEntry($currHeading." is repeating", "fatal");
                   //$newParentSheet = $rowKeys[$elementIndex];
-                  $newParentSheet = join("_", $newParents);
+                  $newParentSheet = join("-", $newParents);
                   
 $this->Dbase->CreateLogEntry("Set links before = ".print_r($this->setLinks, true), "info");
                   if(!isset($this->setLinks[$newParentSheet])){
@@ -416,6 +416,7 @@ $this->Dbase->CreateLogEntry("Link for $newParentSheet set", "info");
 $this->Dbase->CreateLogEntry("Set links after = ".print_r($this->setLinks, true), "info");
                   
                   $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $this->tableURL . "/" .$link;
+                  if($parentLink != -1) $this->tableLinks[$parentLink][$rowIndex][$currHeading] = $this->tableURL . "/" .$link;
                   if(!isset($this->tableLinks[$link])){
                       $this->tableLinks[$link] = array();
                       $this->tableIndexes[$link] = -1;
