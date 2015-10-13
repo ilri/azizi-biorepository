@@ -402,21 +402,17 @@ class ProcODKForm {
                   //$newParentSheet = $rowKeys[$elementIndex];
                   $newParentSheet = join("-", $newParents);
                   
-$this->Dbase->CreateLogEntry("Set links before = ".print_r($this->setLinks, true), "info");
                   if(!isset($this->setLinks[$newParentSheet])){
-$this->Dbase->CreateLogEntry("Link for $newParentSheet not set. Creating it", "info");
                      $link = $newParentSheet.mt_rand().".html";//a link should be unique for each repeat question answered
                      $this->setLinks[$newParentSheet] = $link;
                      $this->linkParentSheets[$link] = $currHeading;
                   }
                   else{
-$this->Dbase->CreateLogEntry("Link for $newParentSheet set", "info");
                      $link = $this->setLinks[$newParentSheet];
                   }
-$this->Dbase->CreateLogEntry("Set links after = ".print_r($this->setLinks, true), "info");
                   
                   $this->csvRows[$parentSheet][$rowIndex][$csvElementIndex] = $this->tableURL . "/" .$link;
-                  if($parentLink != -1) $this->tableLinks[$parentLink][$rowIndex][$currHeading] = $this->tableURL . "/" .$link;
+                  if($parentLink != -1) $this->tableLinks[$parentLink][$this->tableIndexes[$parentLink]][$currHeading] = $this->tableURL . "/" .$link;
                   if(!isset($this->tableLinks[$link])){
                       $this->tableLinks[$link] = array();
                       $this->tableIndexes[$link] = -1;
