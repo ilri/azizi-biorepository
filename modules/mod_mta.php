@@ -907,7 +907,7 @@ class MTA{
       $mtaTemplate->setValue("AZIZI_MANAGER_NAME", "Absolomn Kihara");
       $mtaTemplate->setValue("AZIZI_MANAGER_EMAIL", Config::$limsManager);
       $mtaTemplate->setValue("ILRI_SCIENTIST_NAME", "Steve Kemp");
-      $mtaTemplate->setValue("ILRI_SCIENTIST_TITLE", "Deputy Director General");
+      $mtaTemplate->setValue("ILRI_SCIENTIST_TITLE", "Program Leader, Animal Biosciences");
       $mtaTemplate->setValue("ILRI_SCIENTIST_EMAIL", "s.kemp@cgiar.org");
       $mtaTemplate->setValue("DATE_GENERATED", date('jS') ." day of ". date('F, Y'));//2nd day of March, 2014
       

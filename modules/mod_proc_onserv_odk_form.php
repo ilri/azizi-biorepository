@@ -66,7 +66,7 @@ class ProcODKForm {
          mkdir($this->tmpDir,0777,true);
       }
       $this->tableIndexes = array();
-      $this->tableURL = $_SERVER['HTTP_ORIGIN']."/repository/tmp/".$this->sessionID . "/tables";
+      $this->tableURL = "http://".$_SERVER['HTTP_HOST']."/repository/tmp/".$this->sessionID . "/tables";
       $this->tableDir = $this->tmpDir . "/tables";
       if(!file_exists($this->tableDir)){
          mkdir($this->tableDir,0777,true);
@@ -607,7 +607,7 @@ $this->Dbase->CreateLogEntry("Set links after = ".print_r($this->setLinks, true)
    
    private function sendToODKParser(){
       $postData = array("creator" => $this->creator, "email" => $this->email, "fileName" => $this->fileName, "csvString" => urldecode($this->csvString), "jsonString" => $this->json, "xmlString" => $this->xmlString, "parseType" => $this->parseType, "dwnldImages" => $this->dwnldImages, "fromWithin" => "yes");
-      $ch = curl_init($_SERVER['HTTP_ORIGIN']."/repository/modules/mod_parse_odk_backend.php");
+      $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/modules/mod_parse_odk_backend.php");
       
       curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
