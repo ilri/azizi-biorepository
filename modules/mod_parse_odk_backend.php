@@ -983,6 +983,7 @@ class Parser {
      * @return String   The shortened sheet name
      */
     private function shortenSheetName($sheetName) {
+       $sheetName = str_replace(":", "-", $sheetName);
        if(strlen($sheetName) > 30){
           $sheetName = substr($sheetName, -30);//get the last 30 characters of the name
           if(strstr($sheetName, "-") !== false){//there is at least one '-' in the shortened sheet name
