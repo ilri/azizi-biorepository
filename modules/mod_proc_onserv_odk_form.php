@@ -530,7 +530,7 @@ class ProcODKForm {
       $links = array_keys($this->tableLinks);
       $linkIndex = 0;
       foreach($this->tableLinks as $currTable){
-         $linkParentSheet = $this->linkParentSheets[$links[$linkIndex]];
+         $linkParentSheet = str_replace(":", "-", $this->linkParentSheets[$links[$linkIndex]]);
          $unProcessedHeadings = $this->headingRows[$linkParentSheet];
          for($uIndex = 0; $uIndex < count($unProcessedHeadings); $uIndex++){
             preg_match("/.*:([a-z0-9_\-\.\/]+)/i", $unProcessedHeadings[$uIndex], $matches);
@@ -550,8 +550,20 @@ class ProcODKForm {
             }
          }
          
-         if(count($unProcessedHeadings) > count($headings))
-            $headings = $unProcessedHeadings;
+         //add headings that are missing but that are in the sheet
+         foreach($unProcessedHeadings as $currUPHeading){
+            $found = false;
+            foreach($headings as $currHeading){
+               if(strpos($currHeading, $currUPHeading) !== false) {
+                  $found = true;
+                  break;
+               }
+            }
+            if($found == false) {
+               $this->Dbase->CreateLogEntry("Did not find $currUPHeading in ".print_r($headings, true), "debug");
+               $headings[] = $currUPHeading;
+            }
+         }
          
          $html = $html . "<table><tr>";
          foreach ($headings as $currHeading){
