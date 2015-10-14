@@ -167,6 +167,7 @@ class ProcODKForm {
             
             $this->Dbase->CreateLogEntry("Form xml obtained successfully!","info");
             $this->xmlString = $curlResult;
+            file_put_contents($this->tmpDir."/form.xml", $curlResult);
             return true;
          }
          else{
@@ -554,6 +555,12 @@ class ProcODKForm {
          
          $html = $html . "<table><tr>";
          foreach ($headings as $currHeading){
+            //remove heading prefixes that might have been inserted due to repeats within repeats. Heading prefixes are joined using a colon
+            $cleanHeading = explode(":", $currHeading);
+            if(count($cleanHeading) > 1) {
+               $cleanHeadingPart = count($cleanHeading) - 1;
+               $currHeading = $cleanHeading[$cleanHeadingPart];
+            }
             $html = $html . "<th>" . $currHeading. "</th>";
          }
          //$html = $html . "</tr>";
