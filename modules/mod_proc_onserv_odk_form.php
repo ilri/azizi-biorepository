@@ -35,7 +35,7 @@ class ProcODKForm {
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
       
-      $this->Dbase->CreateLogEntry("great success .... :)", "fatal");
+      $this->Dbase->CreateLogEntry("great success .... :)", "debug");
       /*
        *  creator: window.parse.name,
          email: window.parse.email,
@@ -82,7 +82,7 @@ class ProcODKForm {
          $this->lastCursor = "";
          $this->submissionIDs = array();
          $this->getSubmissionList();
-         $this->Dbase->CreateLogEntry("submission IDs = ".print_r($this->submissionIDs, true), "fatal");
+         $this->Dbase->CreateLogEntry("submission IDs = ".print_r($this->submissionIDs, true), "debug");
          
          //3. download submission data
          $this->json = "";
@@ -202,7 +202,6 @@ class ProcODKForm {
          $listXML = $curlResult;
          $listXObject = simplexml_load_string($listXML);
          if(is_object($listXObject->idList)){
-            //$this->Dbase->CreateLogEntry(print_r($listXObject->idList->id,true), "fatal");
             if(isset($listXObject->idList->id[0])){
                //add all submission ids to submissionIDs array
                foreach ($listXObject->idList->id as $currSubmission){
@@ -251,18 +250,9 @@ class ProcODKForm {
       curl_close($ch);
       
       if($http_status == 200){
-         //$this->Dbase->CreateLogEntry($curlResult, "fatal");
-         //$this->Dbase->CreateLogEntry($curlResult, "fatal");
          $submissionXObject = simplexml_load_string($curlResult);
-         /*if(strlen($this->json) === 0)
-            $this->json = "[".json_encode($submissionXObject->data);
-         else
-            $this->json = $this->json.",".json_encode($submissionXObject->data);*/
-         //$this->Dbase->CreateLogEntry($curlResult, "fatal");
-         //$this->submissionXObjects[] = $submissionXObject->xpath("/submission/data/".$this->topElement."[@id=\"".$this->instanceID."\"");
          $submissionChildren = (array) $submissionXObject->data->children();
          $this->submissionXObjects[] = $submissionChildren[$this->topElement];
-         //$this->Dbase->CreateLogEntry("this should work ".print_r($submissionChildren[$this->topElement], true), "fatal");
       }
       else
          $this->Dbase->CreateLogEntry(" Unable to get data for submission with id = ".$submissionID." . http status = ".$http_status." & result = ".$curlResult, "fatal");
@@ -305,24 +295,20 @@ class ProcODKForm {
          $geopoints[$geoIndex] = str_replace("/", ":", $geopoints[$geoIndex]);
       }
       
-      $this->Dbase->CreateLogEntry("Geopoints are ".print_r($geopoints, true), "fatal");
+      $this->Dbase->CreateLogEntry("Geopoints are ".print_r($geopoints, true), "debug");
       
       $this->geopointHeadings = $geopoints;
       $this->repeatHeadings = $repeats;
-      $this->Dbase->CreateLogEntry("Repeats are ".print_r($repeats, true), "fatal");
+      $this->Dbase->CreateLogEntry("Repeats are ".print_r($repeats, true), "debug");
       
       for($rowIndex = 0; $rowIndex < count($this->submissionXObjects); $rowIndex++){
-         $this->Dbase->CreateLogEntry("currently at ".$rowIndex, "fatal");
+         $this->Dbase->CreateLogEntry("currently at ".$rowIndex, "debug");
          $currRow = (array) $this->submissionXObjects[$rowIndex];
-         //$this->Dbase->CreateLogEntry(print_r($currRow, true),"fatal");
          $this->setLinks = array(); 
          $this->processRow($currRow, "main_sheet", array(), $rowIndex);
          
       }
-      
-      //$this->Dbase->CreateLogEntry(print_r($this->csvRows, true), "fatal");
-      //$this->Dbase->CreateLogEntry("csv files are ".print_r($this->headingRows, true), "fatal");
-      $this->Dbase->CreateLogEntry(print_r($_SERVER, true), "fatal");
+      $this->Dbase->CreateLogEntry(print_r($_SERVER, true), "debug");
    }
    
    /**
@@ -340,9 +326,6 @@ class ProcODKForm {
       
       $rowKeys = array_keys($row);
       $rowValues = array_values($row);
-      
-      //$this->Dbase->CreateLogEntry("row keys ".print_r($rowKeys, true), "fatal");
-      //$this->Dbase->CreateLogEntry("row values ".print_r($rowValues, true), "fatal");
       
       //get the next index in parent csv array
       if($rowIndex === -1){
@@ -367,8 +350,6 @@ class ProcODKForm {
                $currHeading = $rowKeys[$elementIndex];
             else
                $currHeading = $parent_heading . ":" . $rowKeys[$elementIndex];
-            
-            //$this->Dbase->CreateLogEntry($currHeading, "fatal");
             
             if(!isset($this->headingRows[$parentSheet]))
                $this->headingRows[$parentSheet] = array();
@@ -398,8 +379,6 @@ class ProcODKForm {
                      $csvElementIndex = array_push($this->headingRows[$parentSheet], $currHeading) - 1;
                   }
                   
-                  //$this->Dbase->CreateLogEntry($currHeading." is repeating", "fatal");
-                  //$newParentSheet = $rowKeys[$elementIndex];
                   $newParentSheet = join("-", $newParents);
                   
                   $link = $newParentSheet.mt_rand().".html";//a link should be unique for each repeat question answered
@@ -456,7 +435,7 @@ class ProcODKForm {
                    /*cell is an image, we need to disregard whatever is in the cell and construct a url
                     * Refer to https://groups.google.com/forum/#!topic/opendatakit/uzMy9az9eGE
                    */
-                   $this->Dbase->CreateLogEntry("** is image ".$rowValues[$elementIndex]." rowIndex = ".($rowIndex)." parentIndex = ".$parentIndex,"fatal");
+                   $this->Dbase->CreateLogEntry("** is image ".$rowValues[$elementIndex]." rowIndex = ".($rowIndex)." parentIndex = ".$parentIndex,"debug");
                    $cId = $rowKeys[$elementIndex];
                    
                    if($parentLink == -1){//means we are in the main sheet
@@ -479,7 +458,7 @@ class ProcODKForm {
                      $downloadURL = '<a href="'."http://azizi.ilri.cgiar.org/aggregate/view/binaryData?blobKey=".urlencode($blobKey).'" target="_blank">View</a>';
                    }
 
-                   $this->Dbase->CreateLogEntry("** is image url ".$downloadURL, "fatal");
+                   $this->Dbase->CreateLogEntry("** is image url ".$downloadURL, "debug");
                    $rowValues[$elementIndex] = $downloadURL;
                   }
                   
@@ -543,7 +522,7 @@ class ProcODKForm {
       }
       $this->csvString = $csvString;
       file_put_contents($this->tmpDir."/outputcsv.csv", $csvString);
-      $this->Dbase->CreateLogEntry($this->tmpDir."/outputcsv.csv", "fatal");
+      $this->Dbase->CreateLogEntry($this->tmpDir."/outputcsv.csv", "debug");
    }
    
    private function constructLinks(){
@@ -613,8 +592,8 @@ class ProcODKForm {
       $http_status = curl_getinfo($ch);
       curl_close($ch);
       
-      $this->Dbase->CreateLogEntry("http_status = ".print_r($http_status, true), "fatal");
-      $this->Dbase->CreateLogEntry("http_status = ".$http_status, "fatal");
+      $this->Dbase->CreateLogEntry("http_status = ".print_r($http_status, true), "debug");
+      $this->Dbase->CreateLogEntry("http_status = ".$http_status, "debug");
    }
 }
 ?>
