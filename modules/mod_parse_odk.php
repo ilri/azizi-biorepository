@@ -20,8 +20,8 @@ class ParseODK extends Repository{
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/odk_parser.js'></script>";
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery/jquery.min.js' /></script>";
-         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bootstrap/dist/js/bootstrap.min.js' /></script>";
-         echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."bootstrap/dist/css/bootstrap.min.css'/>";
+         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bootstrap/docs/assets/js/bootstrap.min.js' /></script>";
+         echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."bootstrap/docs/assets/css/bootstrap.css'/>";
       }
 
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
