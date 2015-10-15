@@ -1,7 +1,9 @@
-function DMPVSchema(server, user, session, project) {
+function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs = this;
    window.dvs.server = server;
    window.dvs.user = user;
+   window.dvs.userFullName = userFullName;
+   window.dvs.userEmail = userEmail;
    window.dvs.session = session;
    window.dvs.project = project;
    window.dvs.schema = null;
@@ -60,7 +62,7 @@ DMPVSchema.prototype.documentReady = function() {
       $("#blanket_cover").position({y:0, x:0});
       $("#blanket_cover").css("height", window.innerHeight * 0.9);
       $("#blanket_cover").css("width", $("#repository").width());
-      window.dvs.initWindow($("#new_project_wndw"), 220, 600);
+      window.dvs.initWindow($("#new_project_wndw"), 290, 600);
       window.dvs.initWindow($("#get_data_wndw"), 220, 600);
       window.dvs.initWindow($("#delete_project_wndw"), 100, 300);
       window.dvs.initWindow($("#other_projects_wndw"), 130, 300);
@@ -137,6 +139,16 @@ DMPVSchema.prototype.documentReady = function() {
       });
       $("#get_data_btn2").unbind('click').click(window.dvs.getDataButtonClicked);
       $("#menu_bar").on('itemclick', window.dvs.menuItemClicked);
+      $("#data_source").change(function() {
+         if($("#data_source").val() == "odk") {
+            $("#odk_forms_div").show();
+            $("#file_drop_area").hide();
+         }
+         else if($("#data_source").val() == "local") {
+            $("#odk_forms_div").hide();
+            $("#file_drop_area").show();
+         }
+      });
    }
    else {
       console.log("ignoring documentReady call");
@@ -2306,65 +2318,93 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
    //check if project name and upload file are set
    var projectName = $("#project_name").val();
    var fileLoc = window.dvs.uploadFileLoc;
-   if(projectName.length > 0 && fileLoc != null) {
-      $("#loading_box").show();
-      var sData = JSON.stringify({
-         "data_file_url": fileLoc,
-         "workflow_name": projectName
-      });
-      var sToken = JSON.stringify({
-         "server":window.dvs.server,
-         "user": window.dvs.user,
-         "session": window.dvs.session
-      });
-      $.ajax({
-         url: "mod_ajax.php?page=odk_workflow&do=init_workflow",
-         type: "POST",
-         async: true,
-         data: {data: sData, token: sToken},
-         statusCode: {
-            400: function() {//bad request
-               $("#enotification_pp").html("Could create project");
-               $("#enotification_pp").jqxNotification("open");
-            },
-            403: function() {//forbidden
-               $("#enotification_pp").html("User not allowed to create projects");
-               $("#enotification_pp").jqxNotification("open");
-            },
-            500: function() {//forbidden
-               $("#enotification_pp").html("An error occurred in the server");
-               $("#enotification_pp").jqxNotification("open");
-            }
-         },
-         success: function(jsonResult, textStatus, jqXHR){
-            console.log("Response from init_workflow endpoint = ", jsonResult);
-            if(jsonResult !== null) {
-               if(jsonResult.status.healthy == true) {
-                  $("#inotification_pp").html("Done creating project");
-                  $("#inotification_pp").jqxNotification("open");
-                  $("#new_project_wndw").hide();
-                  window.dvs.project = jsonResult.workflow_id;
-                  window.dvs.processProjectSchema();
-               }
-               else if(jsonResult.status.healthy == false) {
-                  var message = "";
-                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
-                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
-                        message = "<br />"+jsonResult.status.errors[0].message;
-                     }
-                  }
-                  $("#enotification_pp").html("Could not create project"+message);
+   if(projectName.length > 0) {
+      if($("#data_source").val() == "local" && fileLoc != null) {
+         $("#loading_box").show();
+         var sData = JSON.stringify({
+            "data_file_url": fileLoc,
+            "workflow_name": projectName
+         });
+         var sToken = JSON.stringify({
+            "server":window.dvs.server,
+            "user": window.dvs.user,
+            "session": window.dvs.session
+         });
+         $.ajax({
+            url: "mod_ajax.php?page=odk_workflow&do=init_workflow",
+            type: "POST",
+            async: true,
+            data: {data: sData, token: sToken},
+            statusCode: {
+               400: function() {//bad request
+                  $("#enotification_pp").html("Could create project");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               403: function() {//forbidden
+                  $("#enotification_pp").html("User not allowed to create projects");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               500: function() {//forbidden
+                  $("#enotification_pp").html("An error occurred in the server");
                   $("#enotification_pp").jqxNotification("open");
                }
+            },
+            success: function(jsonResult, textStatus, jqXHR){
+               console.log("Response from init_workflow endpoint = ", jsonResult);
+               if(jsonResult !== null) {
+                  if(jsonResult.status.healthy == true) {
+                     $("#inotification_pp").html("Done creating project");
+                     $("#inotification_pp").jqxNotification("open");
+                     $("#new_project_wndw").hide();
+                     window.dvs.project = jsonResult.workflow_id;
+                     window.dvs.processProjectSchema();
+                  }
+                  else if(jsonResult.status.healthy == false) {
+                     var message = "";
+                     if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                        if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                           message = "<br />"+jsonResult.status.errors[0].message;
+                        }
+                     }
+                     $("#enotification_pp").html("Could not create project"+message);
+                     $("#enotification_pp").jqxNotification("open");
+                  }
+               }
+               else {
+                  $("#enotification_pp").html("Could not fetch save points");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            },
+            complete: function() {
             }
-            else {
-               $("#enotification_pp").html("Could not fetch save points");
-               $("#enotification_pp").jqxNotification("open");
-            }
-         },
-         complete: function() {
+         });
+      }
+      else if($("#data_source").val() == "odk") {
+         if($("#odk_forms").val().length > 0) {
+            //send project name to ODK Parser
+            $.ajax({
+               url: "mod_ajax.php?page=odk_parser&do=proc_odk_form",
+               type: 'POST',
+               async: true,
+               data: {
+                  creator: window.dvs.userFullName,
+                  email: window.dvs.userEmail,
+                  fileName: projectName,
+                  formOnServerID: $("#odk_forms").val(),
+                  parseType: "analysis",
+                  dwnldImages: "yes",
+                  sendToDMP: "yes",
+                  dmpServer: window.dvs.server,
+                  dmpUser: window.dvs.user,
+                  dmpSession: window.dvs.session
+               }
+            });
+            alert("It may take some time to create the project. You can however close this browser window. An email will be sent to you when the project has been created.");
          }
-      });
+      }
+      else {
+         console.log("blimp");
+      }
    }
 };
 

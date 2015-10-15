@@ -32,6 +32,10 @@ class ProcODKForm {
    private $geopointHeadings;
    private $linkParentSheets;
    private $tableIndexes;
+   private $sendToDMP;
+   private $dmpUser;
+   private $dmpServer;
+   private $dmpSession;
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
       
@@ -50,6 +54,14 @@ class ProcODKForm {
       $this->formID = $_POST['formOnServerID'];
       $this->parseType = $_POST['parseType'];
       $this->dwnldImages = $_POST['dwnldImages'];
+      $this->sendToDMP = "no";//default is no
+      $this->dmpUser = "";
+      $this->dmpServer = "";
+      $this->dmpSession = "";
+      if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
+      if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
+      if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
+      if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
       
       $this->sessionID = session_id();
       if($this->sessionID == NULL || $this->sessionID == "") {
@@ -596,7 +608,21 @@ class ProcODKForm {
    }
    
    private function sendToODKParser(){
-      $postData = array("creator" => $this->creator, "email" => $this->email, "fileName" => $this->fileName, "csvString" => urldecode($this->csvString), "jsonString" => $this->json, "xmlString" => $this->xmlString, "parseType" => $this->parseType, "dwnldImages" => $this->dwnldImages, "fromWithin" => "yes");
+      $postData = array(
+         "creator" => $this->creator,
+         "email" => $this->email,
+         "fileName" => $this->fileName,
+         "csvString" => urldecode($this->csvString),
+         "jsonString" => $this->json,
+         "xmlString" => $this->xmlString,
+         "parseType" => $this->parseType,
+         "dwnldImages" => $this->dwnldImages,
+         "fromWithin" => "yes",
+         "sendToDMP" => $this->sendToDMP,
+         "dmpServer" => $this->dmpServer,
+         "dmpUser" => $this->dmpUser,
+         "dmpSession" => $this->dmpSession
+      );
       $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/modules/mod_parse_odk_backend.php");
       
       curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
@@ -604,7 +630,7 @@ class ProcODKForm {
       curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
       curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE); 
       curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
-      curl_setopt($ch, CURLOPT_POST, 1 );
+      curl_setopt($ch, CURLOPT_POST, 1);
       curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
       
       curl_exec($ch);
