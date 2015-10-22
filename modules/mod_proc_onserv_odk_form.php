@@ -477,6 +477,14 @@ class ProcODKForm {
                    $this->Dbase->CreateLogEntry("** is image url ".$downloadURL, "debug");
                    $rowValues[$elementIndex] = $downloadURL;
                   }
+                  else if(preg_match("/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+\+\d+/", $rowValues[$elementIndex]) === 1) {//check if it's a timestamp
+                     $this->Dbase->CreateLogEntry("** timestamp ".$rowValues[$elementIndex]." rowIndex = ".($rowIndex)." parentIndex = ".$parentIndex,"fatal");
+                     //change to format 2015-07-30 11:30:43.0
+                     $parts = explode("T", $rowValues[$elementIndex]);
+                     $this->Dbase->CreateLogEntry("** ".$parts[1],"fatal");
+                     $timeParts = explode("+", $parts[1]);
+                     $rowValues[$elementIndex] = $parts[0]." ".$timeParts[0];
+                  }
                   
                   $csvElementIndex = array_search($currHeading, $this->headingRows[$parentSheet]);
                   if($csvElementIndex === false){//element heading does not exist in array
