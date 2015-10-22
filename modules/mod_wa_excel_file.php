@@ -99,7 +99,14 @@ class WAExcelFile {
       if($this->excelObject != null) {
          $sheetNames = $this->excelObject->getSheetNames();
          $this->lH->log(4, $this->TAG, "{$this->waFile->getFSLocation()} has the following sheets ".print_r($sheetNames, true));
-         if($sheetNames[0] != "main_sheet") $linkSheets = false;//TODO: update code to work with WASheet::getOriginalName()
+         if(array_search("main_sheet", $sheetNames) === false) {
+            $this->lH->log(2, $this->TAG, "Setting link sheets to false since the excel file does not have a 'main_sheet'");
+            $linkSheets = false;//TODO: update code to work with WASheet::getOriginalName()
+         }
+         else {
+            if($linkSheets == true) $this->lH->log(2, $this->TAG, "linkSheets is true");
+            else $this->lH->log(2, $this->TAG, "linkSheets is false");
+         }
          for($index = 0; $index < count($sheetNames); $index++){
             try {
                $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index], $this->waFile->getFileDetails());
@@ -107,7 +114,7 @@ class WAExcelFile {
                if($sheetNames[$index] == "main_sheet" && $linkSheets == true) {
                   $linkSheets = $primaryKeyThere;
                }
-               $currSheet->saveAsMySQLTable($linkSheets);
+               $currSheet->saveAsMySQLTable($linkSheets, array(), $sheetNames);
                
                //offload $currSheet from memory to prevent this process from being OOM killed
                $currSheet->unload();

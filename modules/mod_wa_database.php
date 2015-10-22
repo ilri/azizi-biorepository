@@ -851,7 +851,7 @@ class Database {
     * 
     * @throws WAException
     */
-   public function runCreateTableQuery($name, $columns, $linkTables = false) {
+   public function runCreateTableQuery($name, $columns, $linkTables = false, $parentTable = null) {
       
       try {//check if table already exists
          $result = $this->getTableNames($this->getDatabaseName());
@@ -900,8 +900,8 @@ class Database {
             try {
                $this->runGenericQuery($createString);
                if(count($pKey) > 0) $this->addColumnsToPrimaryKey($name, $pKey);
-               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false) {
-                  $this->addForeignKey($name, array("secondary_key"), "main_sheet", array("primary_key"));
+               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false && $parentTable != null) {
+                  $this->addForeignKey($name, array("secondary_key"), $parentTable, array("primary_key"));
                }
             } catch (WAException $ex) {
                $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");
