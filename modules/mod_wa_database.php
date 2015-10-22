@@ -23,6 +23,7 @@ class Database {
    public static $TYPE_TIME = "time without time zone";
    public static $TYPE_DATE = "date";
    public static $TYPE_DATETIME = "timestamp without time zone";
+   public static $TYPE_TIMESTAMP = "timestamp with time zone";
    public static $TYPE_BOOLEAN = "boolean";
    public static $MAX_TABLE_NAME_LENGTH = 63;
    

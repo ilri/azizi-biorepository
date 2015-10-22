@@ -1492,6 +1492,7 @@ DMPVSchema.prototype.initVersionDiffGrid = function(project2, diffs) {
          'time without time zone',
          'date',
          'timestamp without time zone',
+         'timestamp with time zone',
          'boolean'
    ];
    var nullableTypes = [
@@ -1752,6 +1753,7 @@ DMPVSchema.prototype.initMergeDiffGrid = function(project2, diffs) {
          'time without time zone',
          'date',
          'timestamp without time zone',
+         'timestamp with time zone',
          'boolean'
    ];
    var nullableTypes = [
@@ -3152,6 +3154,7 @@ DMPVSchema.prototype.initColumnGrid = function() {
          'time without time zone',
          'date',
          'timestamp without time zone',
+         'timestamp with time zone',
          'boolean'
    ];
    var nullableTypes = [
