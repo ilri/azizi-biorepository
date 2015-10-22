@@ -985,7 +985,6 @@ class Database {
    }
    
    public function getFromClause($table, $mainTable, $fromClause = "") {
-      $this->logH->log(1, $this->TAG, "'$table' from clause called with main_table = '$mainTable'");
       if($table != $mainTable) {
          //get the foreign keys
          $foreignKeys = $this->getTableForeignKeys($table);
@@ -994,7 +993,6 @@ class Database {
             throw new WAException("$table is not tied to any othe table", WAException::$CODE_WF_PROCESSING_ERROR, null);
          }
          else if(count($foreignKeys) == 1) {
-            $this->logH->log(1, $this->TAG, "################");
             $arrayKeys = array_keys($foreignKeys);
             $foreignKeys = $foreignKeys[$arrayKeys[0]];
             if(strlen($fromClause) == 0) {
@@ -1033,9 +1031,7 @@ class Database {
    
    public function getNumberOfParents($table, $number = 0) {
       try {
-         $this->logH->log(1, $this->TAG, "Checking for parents for '$table'");
          $foreignKeys = $this->getTableForeignKeys($table);
-         $this->logH->log(1, $this->TAG, "'$table' has these foreign keys ".print_r($foreignKeys, true));
          if(count($foreignKeys) == 1) {
             $arrayKeys = array_keys($foreignKeys);
             $number++;
