@@ -36,6 +36,7 @@ class ProcODKForm {
    private $dmpUser;
    private $dmpServer;
    private $dmpSession;
+   private $dmpLinkSheets;
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
       
@@ -58,10 +59,12 @@ class ProcODKForm {
       $this->dmpUser = "";
       $this->dmpServer = "";
       $this->dmpSession = "";
+      $this->dmpLinkSheets = false;
       if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
       if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
       if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
       if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
+      if(isset($_POST['dmpLinkSheets'])) $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
       
       $this->sessionID = session_id();
       if($this->sessionID == NULL || $this->sessionID == "") {
@@ -621,7 +624,8 @@ class ProcODKForm {
          "sendToDMP" => $this->sendToDMP,
          "dmpServer" => $this->dmpServer,
          "dmpUser" => $this->dmpUser,
-         "dmpSession" => $this->dmpSession
+         "dmpSession" => $this->dmpSession,
+         "dmpLinkSheets" => $this->dmpLinkSheets
       );
       $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/modules/mod_parse_odk_backend.php");
       

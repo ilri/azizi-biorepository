@@ -172,6 +172,7 @@ class Parser {
    private $dmpUser;
    private $dmpServer;
    private $dmpSession;
+   private $dmpLinkSheets;
 
    /**
     * This function does XML parsing of the XML structure file to obtain
@@ -303,10 +304,12 @@ class Parser {
       $this->dmpUser = "";
       $this->dmpServer = "";
       $this->dmpSession = "";
+      $this->dmpLinkSheets = false;
       if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
       if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
       if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
       if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
+      if(isset($_POST['dmpLinkSheets'])) $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
       $this->logHandler->log(3, $this->TAG, 'requested parse type is '.$this->parseType);
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
@@ -497,7 +500,7 @@ class Parser {
                   $workflowId = $dmpData['workflow_id'];
                   $dataPayload = array(
                      "workflow_id" => $workflowId,
-                     "link_sheets" => false
+                     "link_sheets" => $this->dmpLinkSheets
                   );
                   $schemaData = $this->initializeDMPSchema($dataPayload, $authToken);
                   if($schemaData['status']['healthy'] == true){

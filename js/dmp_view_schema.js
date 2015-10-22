@@ -2396,7 +2396,8 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
                   sendToDMP: "yes",
                   dmpServer: window.dvs.server,
                   dmpUser: window.dvs.user,
-                  dmpSession: window.dvs.session
+                  dmpSession: window.dvs.session,
+                  dmpLinkSheets: true
                }
             });
             alert("It may take some time to create the project. You can however close this browser window. An email will be sent to you when the project has been created.");
@@ -2418,7 +2419,7 @@ DMPVSchema.prototype.processProjectSchema = function() {
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
-         "link_sheets": false
+         "link_sheets": true
       });
       var sToken = JSON.stringify({
          "server":window.dvs.server,
