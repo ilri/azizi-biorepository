@@ -164,6 +164,7 @@ class WAExcelFile {
       try {
          if($this->excelObject != null) {
             $sheetNames = WASheet::getAllWASheets($this->config, $this->database->getDatabaseName(), $this->database);
+            $sheetNames = WASheet::sortSheets($this->database, $sheetNames);
             $this->lH->log(4, $this->TAG, "Sheet names  = ".print_r($sheetNames, true));
             try {
                //delete data from the sheets (start from last index)

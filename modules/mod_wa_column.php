@@ -122,6 +122,10 @@ class WAColumn {
       return $this->data;
    }
    
+   public function getKey() {
+      return $this->key;
+   }
+   
    /**
     * This function returns the MySQL details for this column in form of an array
     * that can be used with the database object

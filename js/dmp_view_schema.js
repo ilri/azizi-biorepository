@@ -15,6 +15,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs.usersGridAdapter = null;
    window.dvs.mergeDiffGridAdapter = null;
    window.dvs.dataGridAdapter = null;
+   window.dvs.mainTimeColumns = [];
    window.dvs.schemaChanges={};
    window.dvs.columnDictionary={};//object storing the original and new column names
    window.dvs.foreignKeys = null;
@@ -124,16 +125,25 @@ DMPVSchema.prototype.documentReady = function() {
          if($("#data_filter_type").val() == "all") {
             $("#filter_query_div").hide();
             $("#filter_prefix_div").hide();
+            $("#filter_time_div").hide();
          }
          else if($("#data_filter_type").val() == "query") {
             wHeight = 230;
             $("#filter_query_div").show();
             $("#filter_prefix_div").hide();
+            $("#filter_time_div").hide();
          }
          else if($("#data_filter_type").val() == "prefix") {
             wHeight = 280;
             $("#filter_query_div").hide();
             $("#filter_prefix_div").show();
+            $("#filter_time_div").hide();
+         }
+         else if($("#data_filter_type").val() == "time") {
+            wHeight = 340;
+            $("#filter_query_div").hide();
+            $("#filter_prefix_div").hide();
+            $("#filter_time_div").show();
          }
          $("#get_data_wndw").jqxWindow({height: wHeight});
       });
@@ -149,6 +159,8 @@ DMPVSchema.prototype.documentReady = function() {
             $("#file_drop_area").show();
          }
       });
+      $("#start_time").jqxDateTimeInput({width:'200px', formatString:'yyyy-MM-dd'});
+      $("#end_time").jqxDateTimeInput({width:'200px', formatString:'yyyy-MM-dd'});
    }
    else {
       console.log("ignoring documentReady call");
@@ -925,6 +937,9 @@ DMPVSchema.prototype.getProjectGroups = function() {
 DMPVSchema.prototype.getDataButtonClicked = function() {
    var filterType = $("#data_filter_type").val();
    var query = $("#filter_query").val();
+   var timeColumn = $("#time_column").val();
+   var startTime = $("#start_time").val();
+   var endTime = $("#end_time").val();
    var prefixes = [];
    $("input:checkbox[name=project_groups]:checked").each(function() {
       prefixes[prefixes.length] = $(this).val();
@@ -932,6 +947,7 @@ DMPVSchema.prototype.getDataButtonClicked = function() {
    var correct = true;
    if(filterType == "query" && query.length == 0) correct = false;
    if(filterType == "prefix" && prefixes.length == 0) correct = false;
+   if(filterType == "time" && (timeColumn.length == 0 || startTime.length == 0 || endTime.length == 0)) correct = false;
    if(window.dvs.project != null && correct == true) {
       $("#get_data_btn2").attr("disabled", true);
       $("#apply_version_changes").prop('disabled', true);
@@ -945,6 +961,11 @@ DMPVSchema.prototype.getDataButtonClicked = function() {
       }
       else if(filterType == "prefix") {
          sDataObj.prefix = prefixes;
+      }
+      else if(filterType == "time") {
+         sDataObj.start_time = startTime;
+         sDataObj.end_time = endTime;
+         sDataObj.time_column = timeColumn;
       }
       var sData = JSON.stringify(sDataObj);
       var sToken = JSON.stringify({
@@ -2859,6 +2880,7 @@ DMPVSchema.prototype.initSheetList = function() {
             }
             //TODO: alert user if data is null
             data.sheet_names = sheets;
+            window.dvs.initTimeColumnList();
          }
       };
    }
@@ -2923,6 +2945,38 @@ DMPVSchema.prototype.initSheetList = function() {
       }
    });
 };
+
+DMPVSchema.prototype.initTimeColumnList = function() {
+   var timeColumns = [];
+   if(typeof window.dvs.schema != 'undefined' && window.dvs.schema != null) {
+      for(var sheetI = 0; sheetI < window.dvs.schema.sheets.length; sheetI++) {
+         var currSheet = window.dvs.schema.sheets[sheetI];
+         if(currSheet['is_main'] == true) {
+            for(var columnI = 0; columnI < currSheet.columns.length; columnI++){
+               if(currSheet.columns[columnI].type == "time without time zone"
+                       || currSheet.columns[columnI].type == "timestamp without time zone"
+                       || currSheet.columns[columnI].type == "timestamp with time zone"
+                       || currSheet.columns[columnI].type == "date") {
+                  timeColumns[timeColumns.length] = currSheet.columns[columnI].name;
+               }
+            }
+         }
+      }
+   }
+   window.dvs.mainTimeColumns = timeColumns;
+   $("#time_column").html("");
+   var optionsHTML = "<option value=''></option>";
+   for(var index = 0; index < timeColumns.length; index++) {
+      optionsHTML = optionsHTML + "<option value='"+timeColumns[index]+"'>"+timeColumns[index]+"</option>";
+   }
+   $("#time_column").html(optionsHTML);
+   if(timeColumns.length == 0) {//deactivate the time option in data export
+      $("#filter_time_div").find("*").prop("disabled", true);
+   }
+   else {
+      $("#filter_time_div").find("*").prop("disabled", false);
+   }
+}
 
 DMPVSchema.prototype.loadSheetData = function(sheetName) {
    if(typeof window.dvs.sheetData[sheetName] != 'undefined') {

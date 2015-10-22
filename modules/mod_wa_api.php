@@ -975,10 +975,11 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("filter", $json)
                && (($json['filter'] == "all")
                      || ($json['filter'] == "query" && array_key_exists("query", $json)) 
-                     || ($json['filter'] == "prefix" && array_key_exists("prefix", $json) && is_array($json['prefix'])))) {
+                     || ($json['filter'] == "prefix" && array_key_exists("prefix", $json) && is_array($json['prefix']))
+                     || ($json['filter'] == "time" && array_key_exists("start_time", $json) && array_key_exists("end_time", $json) && array_key_exists("time_column", $json)))) {
             $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
             //get the path to the data file
-            $url = $workflow->getData($json['filter'], $json['query'], $json['prefix']);
+            $url = $workflow->getData($json['filter'], $json['query'], $json['prefix'], $json['time_column'], $json['start_time'], $json['end_time']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "data_file" => $url,

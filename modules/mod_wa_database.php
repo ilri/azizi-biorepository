@@ -983,6 +983,72 @@ class Database {
       
       return $createString;
    }
-      
+   
+   public function getFromClause($table, $mainTable, $fromClause = "") {
+      $this->logH->log(1, $this->TAG, "'$table' from clause called with main_table = '$mainTable'");
+      if($table != $mainTable) {
+         //get the foreign keys
+         $foreignKeys = $this->getTableForeignKeys($table);
+         if(count($foreignKeys) == 0) {
+            $this->logH->log(1, $this->TAG, "No foreign keys gotten");
+            throw new WAException("$table is not tied to any othe table", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+         else if(count($foreignKeys) == 1) {
+            $this->logH->log(1, $this->TAG, "################");
+            $arrayKeys = array_keys($foreignKeys);
+            $foreignKeys = $foreignKeys[$arrayKeys[0]];
+            if(strlen($fromClause) == 0) {
+               $fromClause = "from ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." inner join".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI;            
+            }
+            else {
+               $fromClause .= " inner join".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI;            
+            }
+            $fromClause .= " on ";
+            $onClause = "";
+            for($index = 0; $index < count($foreignKeys['columns']); $index++) {
+               if(strlen($onClause) == 0) {
+                  $onClause .= Database::$QUOTE_SI.$table.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['columns'][$index].Database::$QUOTE_SI." = ".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['ref_columns'][$index].Database::$QUOTE_SI;           
+               }
+               else {
+                  $onClause .= " and ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['columns'][$index].Database::$QUOTE_SI." = ".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['ref_columns'][$index].Database::$QUOTE_SI;
+               }
+            }
+            $fromClause .= $onClause;
+            if($foreignKeys['ref_table'] == $mainTable) {
+               return $fromClause;
+            }
+            else {
+               return $this->getFromClause($foreignKeys['ref_table'], $mainTable, $fromClause);
+            }
+         }
+         else {
+            $this->logH->log(1, $this->TAG, "'$table' is linked to more than one parent table");
+            throw new WAException("$table is linked to more than one parent table", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+      }
+      else {
+         $this->logH->log(1, $this->TAG, "'$table' is linked $'$mainTable'");
+      }
+   }
+   
+   public function getNumberOfParents($table, $number = 0) {
+      try {
+         $this->logH->log(1, $this->TAG, "Checking for parents for '$table'");
+         $foreignKeys = $this->getTableForeignKeys($table);
+         $this->logH->log(1, $this->TAG, "'$table' has these foreign keys ".print_r($foreignKeys, true));
+         if(count($foreignKeys) == 1) {
+            $arrayKeys = array_keys($foreignKeys);
+            $number++;
+            $number = $this->getNumberOfParents($foreignKeys[$arrayKeys[0]]['ref_table'], $number);
+         }
+         else if(count($foreignKeys) > 1){
+            throw new WAException("Cannot get number of parents for $table since it has more than one foreign key", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not get the number of parents for $table", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+      return $number;
+   }
+   
 }
 ?>

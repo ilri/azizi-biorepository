@@ -1403,7 +1403,7 @@ class Workflow {
     * 
     * @return string A url to the data file
     */
-   public function getData($filter, $query = null, $prefix = null) {
+   public function getData($filter, $query = null, $prefix = null, $timeColumnName = null, $startTime = null, $endTime = null) {
       $url = "";
       if($this->healthy == true
             && $this->database != null) {
@@ -1423,6 +1423,61 @@ class Workflow {
                }
             }
          }
+         else if($filter == 'time') {
+            try {
+               //determine the main sheet and its primary key
+               $mainSheetName = WASheet::getMainSheet($this->config, $this->instanceId, $this->database);
+               $mainSheet = new WASheet($this->config, $this->database, null, $mainSheetName);
+               $timeColumn = $mainSheet->getColumn($timeColumnName);
+               if($timeColumn->getType() == Database::$TYPE_DATE || $timeColumn->getType() == Database::$TYPE_DATETIME || $timeColumn->getType() == Database::$TYPE_TIMESTAMP){
+                  //get the ids of the rows that lie within time frame
+                  $whereClause = "where to_date(".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') >= to_date('$startTime', 'YYYY-MM-DD') AND to_date(".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') <= to_date('$endTime', 'YYYY-MM-DD')";
+                  $sheetData[$mainSheetName] = $mainSheet->getDatabaseData(array(), $whereClause);
+                  $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+                  
+                  //for each of the other sheets, determine it's parent and join columns
+                  $this->lH->log(1, $this->TAG, "Other sheets are ".  print_r($dataTables, true));
+                  foreach($dataTables as $currSheetName) {
+                     if($currSheetName != $mainSheetName) {
+                        $currSheet = new WASheet($this->config, $this->database, null, $currSheetName);
+                        $currPrimaryKey = $currSheet->getPrimaryKey();
+                        $fromClause = $this->database->getFromClause($currSheetName, $mainSheetName);
+                        $query = "select ".Database::$QUOTE_SI.$currSheetName.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$currPrimaryKey->getName().Database::$QUOTE_SI.//" as ".$currPrimaryKey->getName().
+                              " ".$fromClause.
+                              " where to_date(".Database::$QUOTE_SI.$mainSheetName.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') >= to_date('$startTime', 'YYYY-MM-DD')".
+                              " AND to_date(".Database::$QUOTE_SI.$mainSheetName.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') <= to_date('$endTime', 'YYYY-MM-DD')";
+                        $result = $this->database->runGenericQuery($query, true);
+                        $fetchPrimaryKeys = array();
+                        foreach($result as $currResult) {
+                           $fetchPrimaryKeys[] = $currResult[$currPrimaryKey->getName()];
+                        }
+                        $quote = "";
+                        if($currPrimaryKey->getType() == Database::$TYPE_VARCHAR) {
+                           $quote = "'";
+                        }
+                        if(count($fetchPrimaryKeys) > 0) {
+                           $whereClause = "where ".Database::$QUOTE_SI.$currPrimaryKey->getName().Database::$QUOTE_SI." in(".$quote.implode("$quote, $quote", $fetchPrimaryKeys).$quote.")";
+                           $sheetData[$currSheetName] = $currSheet->getDatabaseData(array(), $whereClause);
+                        }
+                        else {
+                           $this->lH->log(2, $this->TAG, "No data in $currSheetName fits '$startTime' and '$endTime'");
+                        }
+                     }
+                  }
+                  //construct queries for fetching data from the sheets
+                  //fetch the data
+               }
+               else {
+                  $this->healthy = false;
+                  array_push($this->errors, new WAException("$timeColumnName is not a date datetime column", WAException::$CODE_WF_PROCESSING_ERROR, null));
+                  $this->lH->log(1, $this->TAG, "$timeColumnName in $mainSheetName is not a time or datetime column in workflow with instance id = '{$this->instanceId}'");
+               }
+            } catch (WAException $ex) {
+               $this->healthy = false;
+               array_push($this->errors, $ex);
+               $this->lH->log(1, $this->TAG, "Unable to get data in time range for workflow with instance id = '{$this->instanceId}'");
+            }
+         }
          else if($filter == "query") {
             if($query != null) {
                $sheetData['data'] = $this->database->runGenericQuery($query, true);
@@ -1439,6 +1494,7 @@ class Workflow {
          $rand = Workflow::generateRandomID(5);
          if($filter == "all") $name = $this->instanceId."_".$rand;
          else if($filter == "prefix") $name = $this->instanceId."_prefix_".$rand;
+         else if($filter == "time") $name = $this->instanceId."_".$startTime."-".$endTime."_".$rand;
          else if($filter == "query") $name = $this->instanceId."_query_".$rand;
          $relativeURL = WAExcelFile::saveAsExcelFile($this->config, $this->instanceId, $this->workingDir, $this->database, $name, $sheetData);
          return "http://".$_SERVER["HTTP_HOST"].str_replace("..", "", $relativeURL);
@@ -1529,11 +1585,23 @@ class Workflow {
       if($this->healthy == true && $this->instanceId == $this->database->getDatabaseName()
               && $this->instanceId != null) {
          $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-         
+         $mainSheetName = null;
+         try {
+            $mainSheetName = WASheet::getMainSheet($this->config, $this->instanceId, $this->database);
+         } catch (WAException $ex) {
+            $this->lH->log(2, $this->TAG, "Workflow with instance '{$this->instanceId}' does not have a main sheet");
+         }
          $sheets = array();
          try {
             for($index = 0; $index < count($dataTables); $index++) {
                $currSheet = new WASheet($this->config, $this->database, null, $dataTables[$index]);
+               if($mainSheetName != null && $dataTables[$index] == $mainSheetName) {
+                  $this->lH->log(3, $this->TAG, "Setting '{$dataTables[$index]}' as the main sheet in workflow with instance '{$this->instanceId}'");
+                  $currSheet->setIsMain(true);
+               }
+               else {
+                  $currSheet->setIsMain(false);
+               }
                array_push($sheets, $currSheet->getSchema());
             }
             

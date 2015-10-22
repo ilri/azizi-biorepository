@@ -15,6 +15,7 @@ class WASheet {
    private $sheetName;
    private $columnArray;//this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
    private $fileDetails;
+   private $isMain;
    
    /**
     * Default constructor for this class
@@ -38,6 +39,7 @@ class WASheet {
       $this->sheetName = $sheetName;
       $this->columns = array();
       $this->fileDetails = $fileDetails;
+      $this->isMain = false;
       
       if($this->excelObject == null) {//means data already stored in database
          $this->getCachedCopy();//this function will not initialize $this->excelObject but instead will initialize $this->$columnSchemas
@@ -46,6 +48,33 @@ class WASheet {
    
    public function getSheetName() {
       return $this->sheetName;
+   }
+   
+   public function setIsMain($isMain) {
+      $this->isMain = $isMain;
+   }
+   
+   public function getColumns() {
+      return $this->columns;
+   }
+   
+   public function getColumn($columnName) {
+      foreach ($this->columns as $currColumn) {
+         if($currColumn->getName() == $columnName) {
+            return $currColumn;
+         }
+      }
+      throw WAException("Unable to get column with the name '$columnName' in $this->sheetName", WAException::$CODE_WF_INSTANCE_ERROR, null);
+   }
+   
+   public function getPrimaryKey() {
+      foreach($this->columns as $currColumn) {
+         if($currColumn->getKey() == Database::$KEY_PRIMARY) {
+            return $currColumn;
+         }
+      }
+      $this->lH->log(1, $this->TAG, "Could not get the primary key for '{$this->sheetName}'");
+      throw WAException("$this->sheetName does not have a primary key", WAException::$CODE_WF_INSTANCE_ERROR, null);
    }
    
    /**
@@ -82,7 +111,7 @@ class WASheet {
     * 
     * @return array  An associative array with the data
     */
-   public function getDatabaseData($prefix = array()) {
+   public function getDatabaseData($prefix = array(), $whereClause = "") {
       $data = array();
       $selectColumnsString = "";
       $entireSheetMatches = false;//whether the entire sheet matches prefix
@@ -119,7 +148,7 @@ class WASheet {
             }
          }
          if(strlen($selectColumnsString) > 0) {
-            $query = "select $selectColumnsString from ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI;
+            $query = "select $selectColumnsString from ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI." ".$whereClause;
             $data = $this->database->runGenericQuery($query, TRUE);
          }
          else {
@@ -357,6 +386,7 @@ class WASheet {
               && $this->columns != null) {
          $schema = array(
              "name" => $this->sheetName,
+             "is_main" => $this->isMain,
              "columns" => array()
          );
          
@@ -672,17 +702,47 @@ class WASheet {
                return $tables;
             }
             else {
-               $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}'");
-               throw new Exception("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, null);
+               throw new WAException("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, null);
             }
          } catch (WAException $ex) {
-            $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}'");
-            throw new Exception("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, $ex);
+            throw new WException("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, $ex);
          }
       }
       else {
-         $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}' because connected to the wrong database");
-         throw new Exception("Unable to get data sheets for workflow  because connected to the wrong database", WAException::$CODE_WF_INSTANCE_ERROR, null);
+         throw new WAException("Unable to get data sheets for workflow  because connected to the wrong database", WAException::$CODE_WF_INSTANCE_ERROR, null);
+      }
+   }
+   
+   /**
+    * This function returns the name of the main sheet in the workflow. The main
+    * sheet is the one without foreign keys. If more than one sheet fits this criteria
+    * then null is returned
+    * 
+    * @param Array      $config
+    * @param String     $workfowId
+    * @param Database   $database
+    */
+   public static function getMainSheet($config, $workflowId, $database) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_log.php';
+      include_once 'mod_wa_exception.php';
+      
+      $lH = new LogHandler("./");
+      try {
+         $allSheets = WASheet::getAllWASheets($config, $workflowId, $database);
+         $mainSheets = array();
+         foreach($allSheets as $currSheetName) {
+            $currForeignKeys = $database->getTableForeignKeys($currSheetName);
+            if(count($currForeignKeys) == 0) $mainSheets[] = $currSheetName;
+         }
+         if(count($mainSheets) == 1) return $mainSheets[0];
+         else {
+            $lH->log(1, "wa_sheet_static", "More than one sheet can be considered as the main sheet");
+            throw new WAException("More than one sheet can be considered as the main sheet");
+         }
+      } catch (WAException $ex) {
+         $lH->log(1, "wa_sheet_static", "Unable to get the name of the main sheet in '{$workflowId}'");
+         throw new WAException("Unable to get the name of the main sheet", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
       }
    }
    
@@ -707,6 +767,35 @@ class WASheet {
          }
       } catch (WAException $ex) {
          throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+   
+   /**
+    * This function sorts the provided sheets based on the the parents with sheets
+    * that have no parents showing up first and sheets with the biggest heirarchy
+    * of parents showing up last
+    */
+   public static function sortSheets($database, $sheets) {
+      $lH = new LogHandler("./");
+      try {
+         $sheetClasses = array();
+         $maxNoParents = 0;
+         foreach($sheets as $currSheet) {
+            $noParents = $database->getNumberOfParents($currSheet);
+            if(!isset($sheetClasses[$noParents])) {
+               $sheetClasses[$noParents] = array();
+            }
+            $sheetClasses[$noParents][] = $currSheet;
+            if($noParents > $maxNoParents) $maxNoParents = $noParents;
+         }
+         $lH->log(1, "wa_sheet_static", print_r($sheetClasses, true));
+         $sortedSheets = array();
+         for($index = 0; $index <= $maxNoParents; $index++) {
+            $sortedSheets = array_merge($sortedSheets, $sheetClasses[$index]);
+         }
+         return $sortedSheets;
+      } catch (WAException $ex) {
+         throw new WAException("Could not sort sheets based on their parents", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
    
