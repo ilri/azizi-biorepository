@@ -55,7 +55,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
 DMPVSchema.prototype.documentReady = function() {
    var currTime = new Date().getTime();
    if(typeof window.dvs.lastDocumentReload == 'undefined' || (currTime - window.dvs.lastDocumentReload) > 1000) {
-      console.log("documentReady called");
+      //console.log("documentReady called");
       window.dvs.lastDocumentReload = currTime;
       var pWidth = window.innerWidth*0.942;//split_window width
       window.dvs.leftSideWidth = pWidth*0.2;//30% of split_window
@@ -163,7 +163,7 @@ DMPVSchema.prototype.documentReady = function() {
       $("#end_time").jqxDateTimeInput({width:'200px', formatString:'yyyy-MM-dd'});
    }
    else {
-      console.log("ignoring documentReady call");
+      //console.log("ignoring documentReady call");
    }
 };
 
@@ -1087,6 +1087,7 @@ DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
          },
          complete: function() {
             $("#loading_box").hide();
+            window.dvs.invalidateCachedProjectData();
             window.dvs.updateSheetList();
          }
       });
@@ -1993,6 +1994,7 @@ DMPVSchema.prototype.dumpDataButtonClicked = function() {
          complete: function() {
             $("#loading_box").hide();
             window.dvs.refreshSavePoints();
+            window.dvs.invalidateCachedProjectData();
             window.dvs.updateSheetList();
          }
       });
@@ -2139,6 +2141,7 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function (oldSheetName, newShee
          complete: function() {
             $("#loading_box").hide();
             window.dvs.refreshSavePoints();
+            window.dvs.invalidateCachedProjectData();
             window.dvs.updateSheetList();
          }
       });
@@ -2149,6 +2152,17 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function (oldSheetName, newShee
       }
    }
    return canContinue;
+};
+
+/**
+ * This function invalidates all global variables that store crucial project data
+ * that need refreshing whenever the schema changes
+ * 
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.invalidateCachedProjectData = function() {
+   window.dvs.schema = null;
+   window.dvs.foreignKeys = null;
 };
 
 /**
@@ -2217,6 +2231,7 @@ DMPVSchema.prototype.deleteSheetButtonClicked = function() {
          complete: function() {
             $("#loading_box").hide();
             window.dvs.refreshSavePoints();
+            window.dvs.invalidateCachedProjectData();
             window.dvs.updateSheetList();
          }
       });
@@ -2667,6 +2682,7 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
          console.log("Response from restore_save_point endpoint = ", jsonResult);
          if(jsonResult !== null) {
             if(jsonResult.status.healthy == true) {
+               window.dvs.invalidateCachedProjectData();
                window.dvs.updateSheetList();
                $("#inotification_pp").html("Changes undone");
                $("#inotification_pp").jqxNotification("open");
@@ -2799,6 +2815,7 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
    $("#loading_box").hide();
    $("#loading_box").html("Loading..");
    if(updateSheetList == true) {
+      window.dvs.invalidateCachedProjectData();
       window.dvs.updateSheetList();
    }
    return canContinue;
@@ -2846,104 +2863,109 @@ DMPVSchema.prototype.initFileDropArea = function() {
  */
 DMPVSchema.prototype.initSheetList = function() {
    console.log("Initializing  sheet list");
-   var source = null;
-   if(window.dvs.project.length > 0){//project defined
-      source = {
-         datatype: "json",
-         datafields: [
-            {name: 'name'}
-         ],
-         root: 'sheet_names',
-         async: true,
-         url: "mod_ajax.php?page=odk_workflow&do=get_workflow_schema",
-         data:{
-            token: {server: window.dvs.server, user: window.dvs.user, session: window.dvs.session},
-            data: {workflow_id: window.dvs.project}
-         },
-         type: "POST",
-         id: "name",
-         beforeprocessing: function(data) {
-            window.dvs.schema = data.schema;
-            $("#project_title").html(window.dvs.schema.title);
-            var sheets = new Array();
-            if(data != null) {
-               if(data.status.healthy == true){
-                  for(var index = 0; index < data.schema.sheets.length; index++) {
-                     sheets[index] = {};
-                     sheets[index].name = data.schema.sheets[index].name;
+   if(window.dvs.schema == null) {
+      window.dvs.schema = {};
+      var source = null;
+      if(window.dvs.project.length > 0){//project defined
+         source = {
+            datatype: "json",
+            datafields: [
+               {name: 'name'}
+            ],
+            root: 'sheet_names',
+            async: true,
+            url: "mod_ajax.php?page=odk_workflow&do=get_workflow_schema",
+            data:{
+               token: {server: window.dvs.server, user: window.dvs.user, session: window.dvs.session},
+               data: {workflow_id: window.dvs.project}
+            },
+            type: "POST",
+            id: "name",
+            beforeprocessing: function(data) {
+               window.dvs.schema = data.schema;
+               $("#project_title").html(window.dvs.schema.title);
+               var sheets = new Array();
+               if(data != null) {
+                  if(data.status.healthy == true){
+                     for(var index = 0; index < data.schema.sheets.length; index++) {
+                        sheets[index] = {};
+                        sheets[index].name = data.schema.sheets[index].name;
+                     }
+                  }
+                  else {
+                     $("#enotification_pp").html("Please rollback to a previous version if this project");
+                     $("#enotification_pp").jqxNotification("open");
                   }
                }
-               else {
-                  $("#enotification_pp").html("Please rollback to a previous version if this project");
-                  $("#enotification_pp").jqxNotification("open");
+               //TODO: alert user if data is null
+               data.sheet_names = sheets;
+               window.dvs.initTimeColumnList();
+            }
+         };
+      }
+      else {//user wants to create a new project
+         var data = {sheet_names:[]};
+         source = {
+            datatype: "json",
+            datafields: [
+               {name: 'name'}
+            ],
+            root: 'sheet_names',
+            localdata: data,
+            beforeprocessing: function() {
+               window.dvs.schema = null
+            }
+         };
+      }
+
+      window.dvs.sheetListAdapter = new $.jqx.dataAdapter(source, {loadComplete: function(){
+            $("#loading_box").hide();
+            window.dvs.refreshSavePoints();
+            console.log("load complete");
+            if(window.dvs.schema != null && window.dvs.schema.sheets.length > 0){
+               $("#sheets").jqxListBox('selectIndex', 0);
+            }
+      },
+      beforeSend: function() {
+         $("#loading_box").show();
+         window.dvs.refreshForeignKeys();
+      }});
+      $("#sheets").jqxListBox({width: window.dvs.leftSideWidth, height:'100%', source: window.dvs.sheetListAdapter, displayMember: "name", valueMember: "name", theme: ''});
+      $("#sheets").bind("select", function(event){
+         var sheetName = event.args.item.value;
+         if(window.dvs.schema != null) {
+            for(var index = 0; index < window.dvs.schema.sheets.length; index++) {
+               if(window.dvs.schema.sheets[index].name == sheetName){
+                  window.dvs.updateColumnGrid(window.dvs.schema.sheets[index]);
+                  window.dvs.loadSheetData(window.dvs.schema.sheets[index].name);
+                  break;
                }
             }
-            //TODO: alert user if data is null
-            data.sheet_names = sheets;
-            window.dvs.initTimeColumnList();
          }
-      };
-   }
-   else {//user wants to create a new project
-      var data = {sheet_names:[]};
-      source = {
-         datatype: "json",
-         datafields: [
-            {name: 'name'}
-         ],
-         root: 'sheet_names',
-         localdata: data,
-         beforeprocessing: function() {
-            window.dvs.schema = null
-         }
-      };
-   }
-   
-   window.dvs.sheetListAdapter = new $.jqx.dataAdapter(source, {loadComplete: function(){
-         $("#loading_box").hide();
-         window.dvs.refreshSavePoints();
-         console.log("load complete");
-         if(window.dvs.schema != null && window.dvs.schema.sheets.length > 0){
-            $("#sheets").jqxListBox('selectIndex', 0);
-         }
-   },
-   beforeSend: function() {
-      $("#loading_box").show();
-      //TODO: get foreign keys for workflow
-      window.dvs.refreshForeignKeys();
-   }});
-   $("#sheets").jqxListBox({width: window.dvs.leftSideWidth, height:'100%', source: window.dvs.sheetListAdapter, displayMember: "name", valueMember: "name", theme: ''});
-   $("#sheets").bind("select", function(event){
-      var sheetName = event.args.item.value;
-      if(window.dvs.schema != null) {
-         for(var index = 0; index < window.dvs.schema.sheets.length; index++) {
-            if(window.dvs.schema.sheets[index].name == sheetName){
-               window.dvs.updateColumnGrid(window.dvs.schema.sheets[index]);
-               window.dvs.loadSheetData(window.dvs.schema.sheets[index].name);
-               break;
-            }
-         }
-      }
-   });
-   //disable default right click context menu
-   $(document).on('contextmenu', function (e) {
-      return false;
-   });
-   $("#sheets").mousedown(function(e) {
-      if(e.button == 2) {//right click
-         $("#right_click_menu").html('<ul><li><a href="#" id="rename_sheet_btn">Rename</a></li><li><a href="#" id="delete_sheet_btn">Delete</a></li></ul>');
-         var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
-         var sheet = window.dvs.schema.sheets[selectedSheetIndex];
-         var scrollTop = $(window).scrollTop();
-         var scrollLeft = $(window).scrollLeft();
-         $("#delete_sheet_btn").html("Delete "+sheet.name);
-         $("#rename_sheet_btn").html("Rename "+sheet.name);
-         $("#right_click_menu").jqxMenu('open', parseInt(event.clientX) + 5 + scrollLeft, parseInt(event.clientY) + 5 + scrollTop);
-         $("#delete_sheet_btn").unbind('click').click(window.dvs.deleteSheetButtonClicked);
-         $("#rename_sheet_btn").unbind('click').click(window.dvs.renameSheetButtonClicked);
+      });
+      //disable default right click context menu
+      $(document).on('contextmenu', function (e) {
          return false;
-      }
-   });
+      });
+      $("#sheets").mousedown(function(e) {
+         if(e.button == 2) {//right click
+            $("#right_click_menu").html('<ul><li><a href="#" id="rename_sheet_btn">Rename</a></li><li><a href="#" id="delete_sheet_btn">Delete</a></li></ul>');
+            var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
+            var sheet = window.dvs.schema.sheets[selectedSheetIndex];
+            var scrollTop = $(window).scrollTop();
+            var scrollLeft = $(window).scrollLeft();
+            $("#delete_sheet_btn").html("Delete "+sheet.name);
+            $("#rename_sheet_btn").html("Rename "+sheet.name);
+            $("#right_click_menu").jqxMenu('open', parseInt(event.clientX) + 5 + scrollLeft, parseInt(event.clientY) + 5 + scrollTop);
+            $("#delete_sheet_btn").unbind('click').click(window.dvs.deleteSheetButtonClicked);
+            $("#rename_sheet_btn").unbind('click').click(window.dvs.renameSheetButtonClicked);
+            return false;
+         }
+      });
+   }
+   else {
+      console.log("ignoring initSheetList call");
+   }
 };
 
 DMPVSchema.prototype.initTimeColumnList = function() {
@@ -2976,13 +2998,15 @@ DMPVSchema.prototype.initTimeColumnList = function() {
    else {
       $("#filter_time_div").find("*").prop("disabled", false);
    }
-}
+};
 
 DMPVSchema.prototype.loadSheetData = function(sheetName) {
+   console.log("Getting sheet data for "+sheetName);
    if(typeof window.dvs.sheetData[sheetName] != 'undefined') {
       window.dvs.updateDataGrid(window.dvs.sheetData[sheetName]);
    }
    else {
+      window.dvs.sheetData[sheetName] = [];
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
@@ -3048,60 +3072,66 @@ DMPVSchema.prototype.loadSheetData = function(sheetName) {
  */
 DMPVSchema.prototype.refreshForeignKeys = function() {
    console.log("refresh foreign keys called");
-   if(window.dvs.project != null && window.dvs.project.length > 0) {
-      window.dvs.foreignKeys = null;
-      console.log("refreshing foreign keys");
-      var sData = JSON.stringify({"workflow_id": window.dvs.project});
-      var sToken = JSON.stringify({
-         "server":window.dvs.server,
-         "user": window.dvs.user,
-         "session": window.dvs.session
-      });
-      $.ajax({
-         url: "mod_ajax.php?page=odk_workflow&do=get_foreign_keys",
-         type: "POST",
-         async: true,
-         data: {data: sData, token: sToken},
-         statusCode: {
-            400: function() {//bad request
-               $("#enotification_pp").html("Could not fetch foreign keys");
-               $("#enotification_pp").jqxNotification("open");
-            },
-            403: function() {//forbidden
-               $("#enotification_pp").html("User not allowed to fetch foreign keys");
-               $("#enotification_pp").jqxNotification("open");
-            },
-            500: function() {//forbidden
-               $("#enotification_pp").html("An error occurred in the server");
-               $("#enotification_pp").jqxNotification("open");
-            }
-         },
-         success: function(jsonResult, textStatus, jqXHR){
-            console.log("Response from get_foreign_keys endpoint = ", jsonResult);
-            if(jsonResult !== null) {
-               if(jsonResult.status.healthy == true) {
-                  window.dvs.foreignKeys = jsonResult.foreign_keys;
-               }
-               else if(jsonResult.status.healthy == false) {
-                  var message = "";
-                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
-                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
-                        message = "<br />"+jsonResult.status.errors[0].message;
-                     }
-                  }
-                  $("#enotification_pp").html("Could not fetch foreign keys"+message);
+   if(window.dvs.foreignKeys == null) {
+      window.dvs.foreignKeys = [];//to avoid a subsequent request to refreshForeignKeys from being called
+      if(window.dvs.project != null && window.dvs.project.length > 0) {
+         window.dvs.foreignKeys = null;
+         console.log("refreshing foreign keys");
+         var sData = JSON.stringify({"workflow_id": window.dvs.project});
+         var sToken = JSON.stringify({
+            "server":window.dvs.server,
+            "user": window.dvs.user,
+            "session": window.dvs.session
+         });
+         $.ajax({
+            url: "mod_ajax.php?page=odk_workflow&do=get_foreign_keys",
+            type: "POST",
+            async: true,
+            data: {data: sData, token: sToken},
+            statusCode: {
+               400: function() {//bad request
+                  $("#enotification_pp").html("Could not fetch foreign keys");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               403: function() {//forbidden
+                  $("#enotification_pp").html("User not allowed to fetch foreign keys");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               500: function() {//forbidden
+                  $("#enotification_pp").html("An error occurred in the server");
                   $("#enotification_pp").jqxNotification("open");
                }
+            },
+            success: function(jsonResult, textStatus, jqXHR){
+               console.log("Response from get_foreign_keys endpoint = ", jsonResult);
+               if(jsonResult !== null) {
+                  if(jsonResult.status.healthy == true) {
+                     window.dvs.foreignKeys = jsonResult.foreign_keys;
+                  }
+                  else if(jsonResult.status.healthy == false) {
+                     var message = "";
+                     if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                        if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                           message = "<br />"+jsonResult.status.errors[0].message;
+                        }
+                     }
+                     $("#enotification_pp").html("Could not fetch foreign keys"+message);
+                     $("#enotification_pp").jqxNotification("open");
+                  }
+               }
+               else {
+                  $("#enotification_pp").html("Could not fetch foreign keys");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            },
+            complete: function() {
+               $("#loading_box").hide();
             }
-            else {
-               $("#enotification_pp").html("Could not fetch foreign keys");
-               $("#enotification_pp").jqxNotification("open");
-            }
-         },
-         complete: function() {
-            $("#loading_box").hide();
-         }
-      });
+         });
+      }
+   }
+   else {
+      console.log("ignoring call to refreshForeignKeys");
    }
 };
 
@@ -3441,6 +3471,7 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
             $("#new_foreign_key_wndw").hide();
             $("#loading_box").hide();
             window.dvs.refreshSavePoints();
+            window.dvs.invalidateCachedProjectData();
             window.dvs.updateSheetList();
          }
       });
