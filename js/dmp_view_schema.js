@@ -26,6 +26,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs.diffProject = null;//holds project id for the project chosen to be merged with this one
    window.dvs.diffProjectSchema = null;
    window.dvs.mergeKeys = null;
+   window.dvs.isDumping = false;
    $("#whoisme").hide();
    //initialize source for project_list_box
    $(document).ready(function() {
@@ -1939,65 +1940,72 @@ DMPVSchema.prototype.mergeDiffGridCellValueChanged = function(event) {
 };
 
 DMPVSchema.prototype.dumpDataButtonClicked = function() {
-   if(window.dvs.project != null && window.dvs.project.length > 0) {
-      $("#loading_box").show();
-      var sData = JSON.stringify({
-         "workflow_id": window.dvs.project,
-      });
-      var sToken = JSON.stringify({
-         "server":window.dvs.server,
-         "user": window.dvs.user,
-         "session": window.dvs.session
-      });
-      $.ajax({
-         url: "mod_ajax.php?page=odk_workflow&do=dump_data",
-         type: "POST",
-         async: true,
-         data: {data: sData, token: sToken},
-         statusCode: {
-            400: function() {//bad request
-               $("#enotification_pp").html("Was unable to dump data");
-               $("#enotification_pp").jqxNotification("open");
-            },
-            403: function() {//forbidden
-               $("#enotification_pp").html("User not allowed to dump data");
-               $("#enotification_pp").jqxNotification("open");
-            },
-            500: function() {//forbidden
-               $("#enotification_pp").html("An error occurred in the server");
-               $("#enotification_pp").jqxNotification("open");
-            }
-         },
-         success: function(jsonResult, textStatus, jqXHR){
-            console.log("Response from dump_data endpoint = ", jsonResult);
-            if(jsonResult !== null) {
-               if(jsonResult.status.healthy == false) {
-                  var message = "";
-                  if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
-                     if(typeof jsonResult.status.errors[0].message != 'undefined') {
-                        message = "<br />"+jsonResult.status.errors[0].message;
-                     }
-                  }
-                  $("#enotification_pp").html("Could dump data"+message);
+   if(window.dvs.isDumping == false) {
+      if(window.dvs.project != null && window.dvs.project.length > 0) {
+         window.dvs.isDumping = true;
+         $("#loading_box").show();
+         var sData = JSON.stringify({
+            "workflow_id": window.dvs.project,
+         });
+         var sToken = JSON.stringify({
+            "server":window.dvs.server,
+            "user": window.dvs.user,
+            "session": window.dvs.session
+         });
+         $.ajax({
+            url: "mod_ajax.php?page=odk_workflow&do=dump_data",
+            type: "POST",
+            async: true,
+            data: {data: sData, token: sToken},
+            statusCode: {
+               400: function() {//bad request
+                  $("#enotification_pp").html("Was unable to dump data");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               403: function() {//forbidden
+                  $("#enotification_pp").html("User not allowed to dump data");
+                  $("#enotification_pp").jqxNotification("open");
+               },
+               500: function() {//forbidden
+                  $("#enotification_pp").html("An error occurred in the server");
                   $("#enotification_pp").jqxNotification("open");
                }
-               else {
-                  $("#inotification_pp").html("Data successfully dumped");
-                  $("#inotification_pp").jqxNotification("open");
+            },
+            success: function(jsonResult, textStatus, jqXHR){
+               console.log("Response from dump_data endpoint = ", jsonResult);
+               if(jsonResult !== null) {
+                  if(jsonResult.status.healthy == false) {
+                     var message = "";
+                     if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                        if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                           message = "<br />"+jsonResult.status.errors[0].message;
+                        }
+                     }
+                     $("#enotification_pp").html("Could dump data"+message);
+                     $("#enotification_pp").jqxNotification("open");
+                  }
+                  else {
+                     $("#inotification_pp").html("Data successfully dumped");
+                     $("#inotification_pp").jqxNotification("open");
+                  }
                }
+               else {
+                  $("#enotification_pp").html("Could not dump data");
+                  $("#enotification_pp").jqxNotification("open");
+               }
+            },
+            complete: function() {
+               $("#loading_box").hide();
+               window.dvs.isDumping = false;
+               window.dvs.refreshSavePoints();
+               window.dvs.invalidateCachedProjectData();
+               window.dvs.updateSheetList();
             }
-            else {
-               $("#enotification_pp").html("Could not dump data");
-               $("#enotification_pp").jqxNotification("open");
-            }
-         },
-         complete: function() {
-            $("#loading_box").hide();
-            window.dvs.refreshSavePoints();
-            window.dvs.invalidateCachedProjectData();
-            window.dvs.updateSheetList();
-         }
-      });
+         });
+      }
+   }
+   else {
+      console.log("Ignoring the dumpDataButtonClick call");
    }
 };
 
