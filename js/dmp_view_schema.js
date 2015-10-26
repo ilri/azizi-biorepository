@@ -957,6 +957,7 @@ DMPVSchema.prototype.getDataButtonClicked = function() {
       var sDataObj = {};
       sDataObj.workflow_id = window.dvs.project;
       sDataObj.filter = filterType;
+      sDataObj.email = window.dvs.userEmail;
       if(filterType == "query") {
          sDataObj.query = query;
       }

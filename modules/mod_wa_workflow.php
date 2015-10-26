@@ -1407,7 +1407,7 @@ class Workflow {
     * 
     * @return string A url to the data file
     */
-   public function getData($filter, $query = null, $prefix = null, $timeColumnName = null, $startTime = null, $endTime = null) {
+   public function getData($filter, $email, $query = null, $prefix = null, $timeColumnName = null, $startTime = null, $endTime = null) {
       $url = "";
       if($this->healthy == true
             && $this->database != null) {
@@ -1501,7 +1501,11 @@ class Workflow {
          else if($filter == "time") $name = $this->instanceId."_".$startTime."-".$endTime."_".$rand;
          else if($filter == "query") $name = $this->instanceId."_query_".$rand;
          $relativeURL = WAExcelFile::saveAsExcelFile($this->config, $this->instanceId, $this->workingDir, $this->database, $name, $sheetData);
-         return "http://".$_SERVER["HTTP_HOST"].str_replace("..", "", $relativeURL);
+         $url = "http://".$_SERVER["HTTP_HOST"].str_replace("..", "", $relativeURL);
+         $emailSubject = $this->workflowName." data";
+         $emailMessage = "The DMP has finished getting data for $this->workflowName. You can download this data from $url. If you experience any problem while downloading or viewing the data, please fill free to contact the system administrators.";
+         $this->sendEmail($email, $emailSubject, $emailMessage);
+         return $url;
       }
       else {
          array_push($this->errors, new WAException("Unable to get data because the workflow is unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
@@ -1509,6 +1513,10 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to get data because the workflow with instance id = '{$this->instanceId}' is unhealthy");
       }
       return $url;
+   }
+   
+   private function sendEmail($email, $subject, $message) {
+      shell_exec('echo "'.$message.'"|'.$this->config['mutt_bin'].' -F '.$this->config['mutt_config'].' -s "'.$subject.'" -- '.$email);
    }
    
    /**
