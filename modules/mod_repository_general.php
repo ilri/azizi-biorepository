@@ -212,6 +212,11 @@ class Repository extends DBase{
                $dmp = new DMP($this->Dbase);
                $dmp->trafficController();
             }
+            else if(OPTIONS_REQUESTED_MODULE == 'toolkit'){
+               require_once 'mod_toolkit.php';
+               $toolkit = new Toolkit($this->Dbase);
+               $toolkit->trafficController();
+            }
             else{
                $this->Dbase->CreateLogEntry(print_r($_POST, true), 'debug');
                $this->Dbase->CreateLogEntry(print_r($_GET, true), 'debug');

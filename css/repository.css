@@ -997,3 +997,7 @@ ul.ui-autocomplete {z-index: 1000!important; }
     color: black !important;
     font-weight: bold !important;
 }
+
+#match_gps table { margin-top: 10px; margin-bottom: 10px; }
+#match_gps table td, #match_gps table tr { margin: 0px; padding: 2px; border-spacing: 0px; border-collapse: collapse; font-family: Verdana; font-size: 12px; }
+h4 { display: inline-block; margin: 0px; }
