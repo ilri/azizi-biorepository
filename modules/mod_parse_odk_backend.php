@@ -309,7 +309,11 @@ class Parser {
       if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
       if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
       if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
-      if(isset($_POST['dmpLinkSheets'])) $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
+      if(isset($_POST['dmpLinkSheets'])) {
+         $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
+         if($this->dmpLinkSheets == "yes") $this->dmpLinkSheets = true;
+         else $this->dmpLinkSheets = false;
+      }
       $this->logHandler->log(3, $this->TAG, 'requested parse type is '.$this->parseType);
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
