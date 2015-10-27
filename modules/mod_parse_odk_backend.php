@@ -167,6 +167,12 @@ class Parser {
    private $selectNodesOptions;
    
    private $primaryKeys;
+   
+   private $sendToDMP;
+   private $dmpUser;
+   private $dmpServer;
+   private $dmpSession;
+   private $dmpLinkSheets;
 
    /**
     * This function does XML parsing of the XML structure file to obtain
@@ -294,6 +300,16 @@ class Parser {
       $this->idPrefix = null;
       $this->odkInstance = null;
       $this->parseType = $_POST['parseType'];
+      $this->sendToDMP = "no";//default is no
+      $this->dmpUser = "";
+      $this->dmpServer = "";
+      $this->dmpSession = "";
+      $this->dmpLinkSheets = false;
+      if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
+      if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
+      if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
+      if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
+      if(isset($_POST['dmpLinkSheets'])) $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
       $this->logHandler->log(3, $this->TAG, 'requested parse type is '.$this->parseType);
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
@@ -422,8 +438,9 @@ class Parser {
       if(!file_exists($this->downloadDir)){
          mkdir($this->downloadDir,0777,true);
       }
+      $dataFileLoc = $this->downloadDir.'/'.$_POST['fileName'].'.xlsx';
       $objWriter = new PHPExcel_Writer_Excel2007($this->phpExcel);
-      $objWriter->save($this->downloadDir.'/'.$_POST['fileName'].'.xlsx');
+      $objWriter->save($dataFileLoc);
 
       //create dictionary and save in download dir
       $this->logHandler->log(3, $this->TAG, 'Creating dictionary');
@@ -465,19 +482,139 @@ class Parser {
 
       $dicObjWriter = new PHPExcel_Writer_Excel2007($dictionary);
       $dicObjWriter->save($this->downloadDir.'/dictionary.xlsx');
+      if($this->sendToDMP == "yes") {
+         $this->logHandler->log(3, $this->TAG, "Creating a new DMP project with parsed files");
+         if(strlen($this->dmpServer) > 0 && strlen($this->dmpSession) > 0 && strlen($this->dmpUser) > 0) {
+            $authToken = array(
+               "server" => $this->dmpServer,
+               "user" => $this->dmpUser,
+               "session" => $this->dmpSession
+            );
+            $dataPayload = array(
+               "data_file_url" => str_replace($this->ROOT, "", $dataFileLoc),
+               "workflow_name" => $_POST['fileName']
+            );
+            $dmpData = $this->sendDataFileToDMP($dataPayload, $authToken);
+            if($dmpData != null) {
+               if($dmpData['status']['healthy'] == true) {
+                  $workflowId = $dmpData['workflow_id'];
+                  $dataPayload = array(
+                     "workflow_id" => $workflowId,
+                     "link_sheets" => $this->dmpLinkSheets
+                  );
+                  $schemaData = $this->initializeDMPSchema($dataPayload, $authToken);
+                  if($schemaData['status']['healthy'] == true){
+                     $this->logHandler->log(3, $this->TAG, "Successfully created DMP project with id '$workflowId' for '{$_POST['fileName']}'");
+                     $this->sendEmail("DMP Project for ".$_POST['fileName']." (".$workflowId.")", "Successfully created a DMP project for {$_POST['fileName']}. You can access this project by visiting the Biorepository site.");
+                  }
+                  else {
+                     $this->logHandler->log(1, $this->TAG, "Unable to create a DMP schema for '{$_POST['fileName']}' ($workflowId). An error occurred.");
+                     $this->logHandler->log(1, $this->TAG, print_r($dmpData['status'], true));
+                     $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not generate the database schema for {$_POST['fileName']}. An system error occurred. Please contact the system administrators for assistance.\n".print_r($dmpData['status']['errors'], true));
+                  }
+                  //TODO: send the images and dictionary
+               }
+               else {
+                  $this->logHandler->log(1, $this->TAG, "Unable to create the DMP project for '{$_POST['fileName']}'. An error occurred while creating the project");
+                  $this->logHandler->log(1, $this->TAG, print_r($dmpData['status'], true));
+                  $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. An system error occurred while trying to initialize the project. Please contact the system administrators for assistance.\n".print_r($dmpData['status']['errors'], true));
+               }
+            }
+         }
+         else {
+            $this->logHandler->log(1, $this->TAG, "Unable to create the DMP project for '{$_POST['fileName']}'. One or more of the authentication token variables is not set");
+            $this->logHandler->log(1, $this->TAG, "server = {$this->dmpServer}, username = {$this->dmpUser}, session = {$this->dmpSession}");
+            $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. The authentication token provided to the server is incomplete. Please contact the system administrators for assistance.");
+         }
+      }
+      else {
+         //zip parsed files
+         $zipName = 'download/'.$_POST['fileName']."_".$this->sessionID.'.zip';
+         $downloadFileName = 'download/'.rawurlencode($_POST['fileName'])."_".$this->sessionID.'.zip';
+         //$this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
+         $this->logHandler->log(3, $this->TAG, 'zipping output files into '.$zipName);
+         $this->gTasks->zipDir($this->downloadDir, $this->ROOT.$zipName);
+         //$this->deleteDir($this->downloadDir);
+         $this->logHandler->log(3, $this->TAG, 'deleting temporary dir '.$this->downloadDir);
+         $this->gTasks->deleteDir($this->downloadDir);
 
-      //zip parsed files
-      $zipName = 'download/'.$_POST['fileName']."_".$this->sessionID.'.zip';
-      $downloadFileName = 'download/'.rawurlencode($_POST['fileName'])."_".$this->sessionID.'.zip';
-      //$this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
-      $this->logHandler->log(3, $this->TAG, 'zipping output files into '.$zipName);
-      $this->gTasks->zipDir($this->downloadDir, $this->ROOT.$zipName);
-      //$this->deleteDir($this->downloadDir);
-      $this->logHandler->log(3, $this->TAG, 'deleting temporary dir '.$this->downloadDir);
-      $this->gTasks->deleteDir($this->downloadDir);
-
-      //send zip file to specified email
-      $this->sendZipURL($downloadFileName);
+         //send zip file to specified email
+         $this->sendZipURL($downloadFileName);
+      }
+   }
+   
+   private function sendDataFileToDMP($dataPayload, $authToken) {
+      $postData = array(
+         "data" => $dataPayload,
+         "token" => $authToken
+      );
+      $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=init_workflow");
+      
+      curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+      
+      $result = curl_exec($ch);
+      $http_status = curl_getinfo($ch);
+      curl_close($ch);
+      if($http_status == 400) {//bad request
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Bad request");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. The data provided to the server is incomplete. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 403) {//forbidden
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 403 - Forbidden");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. Your account was denied permission to create the project. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 500) {//server error
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Server error");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. An error occurred while processing the parsed data file. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else {
+         return json_decode($result, true);
+      }
+   }
+   
+   private function initializeDMPSchema($dataPayload, $authToken) {
+      $postData = array(
+         "data" => $dataPayload,
+         "token" => $authToken
+      );
+      $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=process_mysql_schema");
+      
+      curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+      
+      $result = curl_exec($ch);
+      $http_status = curl_getinfo($ch);
+      curl_close($ch);
+      if($http_status == 400) {//bad request
+         $this->logHandler->log(1, $this->TAG, "Could not initialize the schema for DMP project corresponding to {$_POST['fileName']}. DMP returned status code 400 - Bad request");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not initialize the DMP database schema for {$_POST['fileName']}. The data provided to the server is incomplete. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 403) {//forbidden
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 403 - Forbidden");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not initialize the DMP database schema for {$_POST['fileName']}. Your account was denied permission to create the project. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 500) {//server error
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Server error");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not initialize the DMP database schema for {$_POST['fileName']}. An error occurred while processing the parsed data file. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else {
+         return json_decode($result, true);
+      }
    }
    
    private function addColumnsToRows($multiDimensionArray, $columnIndex, $columnsToInsert) {
@@ -983,6 +1120,7 @@ class Parser {
      * @return String   The shortened sheet name
      */
     private function shortenSheetName($sheetName) {
+       $sheetName = str_replace(":", "-", $sheetName);
        if(strlen($sheetName) > 30){
           $sheetName = substr($sheetName, -30);//get the last 30 characters of the name
           if(strstr($sheetName, "-") !== false){//there is at least one '-' in the shortened sheet name
@@ -1506,6 +1644,10 @@ class Parser {
        else {
             return TRUE;
        }
+   }
+   
+   private function sendEmail($subject, $message) {
+      shell_exec('echo "'."Hi {$_POST['creator']},\n".$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$subject.'" -- '.$_POST['email']);
    }
 
 }

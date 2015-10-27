@@ -122,6 +122,10 @@ class WAColumn {
       return $this->data;
    }
    
+   public function getKey() {
+      return $this->key;
+   }
+   
    /**
     * This function returns the MySQL details for this column in form of an array
     * that can be used with the database object
@@ -140,6 +144,7 @@ class WAColumn {
          $typeDate = 0;
          $typeDateTime = 0;
          $typeBoolean = 0;
+         $typeTimestamp = 0;
          
          for($index = 0; $index < count($this->data); $index++){
             
@@ -155,6 +160,7 @@ class WAColumn {
                $typeDate++;
                $typeDateTime++;
                $typeBoolean++;
+               $typeTimestamp++;
             }
             else {
                //$this->lH->log(4, $this->TAG, "Determining datatype for '{$this->data[$index]}'");
@@ -178,6 +184,9 @@ class WAColumn {
                else if(WAColumn::isDatetime($this->data[$index])) {
                   //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type datetime");
                   $typeDateTime++;
+               }
+               else if(WAColumn::isTimestamp($this->data[$index])) {
+                  $typeTimestamp++;
                }
                else if(WAColumn::isDouble($this->data[$index])) {
                   //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type double");
@@ -211,6 +220,7 @@ class WAColumn {
                  && $typeDate == $typeVarchar
                  && $typeTime == $typeVarchar
                  && $typeDateTime == $typeVarchar
+                 && $typeTimestamp == $typeVarchar
                  && $typeBoolean == $typeVarchar) {//none of the cells could be used to determine type because they were considered null
             
             $this->lH->log(2, $this->TAG, "Could not determine the datatype for column '{$this->name}'. Setting type to default type varchar");
@@ -240,6 +250,9 @@ class WAColumn {
             }
             if($typeDateTime == $typeVarchar) {
                $type = Database::$TYPE_DATETIME;
+            }
+            if($typeTimestamp == $typeVarchar) {
+               $type = Database::$TYPE_TIMESTAMP;
             }
          }
          $key = Database::$KEY_NONE;
@@ -321,6 +334,25 @@ class WAColumn {
       $string = ltrim($string, "'");//' character might have been appended to prevent excel processors from modifying value
       if($string != null && strlen($string) > 0){
          if(preg_match("/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(\.\d+)?/", $string) === 1) {//successfully parsed as a date
+            return true;
+         }
+      }
+      return false;
+   }
+   
+   /**
+    * Checkes whether provided string is a datetime. Datetimes expected to follow the
+    * ISO8601 format e.g:
+    *     - yyyy-mm-ddThh:mm:ss.ms tz
+    * 
+    * @param string $string   String to be checked
+    * 
+    * @return boolean TRUE if provided string is date
+    */
+   public static function isTimestamp($string) {
+      $string = ltrim($string, "'");//' character might have been appended to prevent excel processors from modifying value
+      if($string != null && strlen($string) > 0){
+         if(preg_match("/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}(\.\d+)?[\-,\+]\d{2}/", $string) === 1) {//successfully parsed as a date
             return true;
          }
       }

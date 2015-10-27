@@ -23,6 +23,7 @@ class Database {
    public static $TYPE_TIME = "time without time zone";
    public static $TYPE_DATE = "date";
    public static $TYPE_DATETIME = "timestamp without time zone";
+   public static $TYPE_TIMESTAMP = "timestamp with time zone";
    public static $TYPE_BOOLEAN = "boolean";
    public static $MAX_TABLE_NAME_LENGTH = 63;
    
@@ -850,7 +851,7 @@ class Database {
     * 
     * @throws WAException
     */
-   public function runCreateTableQuery($name, $columns, $linkTables = false) {
+   public function runCreateTableQuery($name, $columns, $linkTables = false, $parentTable = null) {
       
       try {//check if table already exists
          $result = $this->getTableNames($this->getDatabaseName());
@@ -899,8 +900,8 @@ class Database {
             try {
                $this->runGenericQuery($createString);
                if(count($pKey) > 0) $this->addColumnsToPrimaryKey($name, $pKey);
-               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false) {
-                  $this->addForeignKey($name, array("secondary_key"), "main_sheet", array("primary_key"));
+               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false && $parentTable != null) {
+                  $this->addForeignKey($name, array("secondary_key"), $parentTable, array("primary_key"));
                }
             } catch (WAException $ex) {
                $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");
@@ -982,6 +983,68 @@ class Database {
       
       return $createString;
    }
-      
+   
+   public function getFromClause($table, $mainTable, $fromClause = "") {
+      if($table != $mainTable) {
+         //get the foreign keys
+         $foreignKeys = $this->getTableForeignKeys($table);
+         if(count($foreignKeys) == 0) {
+            $this->logH->log(1, $this->TAG, "No foreign keys gotten");
+            throw new WAException("$table is not tied to any othe table", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+         else if(count($foreignKeys) == 1) {
+            $arrayKeys = array_keys($foreignKeys);
+            $foreignKeys = $foreignKeys[$arrayKeys[0]];
+            if(strlen($fromClause) == 0) {
+               $fromClause = "from ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." inner join".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI;            
+            }
+            else {
+               $fromClause .= " inner join".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI;            
+            }
+            $fromClause .= " on ";
+            $onClause = "";
+            for($index = 0; $index < count($foreignKeys['columns']); $index++) {
+               if(strlen($onClause) == 0) {
+                  $onClause .= Database::$QUOTE_SI.$table.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['columns'][$index].Database::$QUOTE_SI." = ".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['ref_columns'][$index].Database::$QUOTE_SI;           
+               }
+               else {
+                  $onClause .= " and ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['columns'][$index].Database::$QUOTE_SI." = ".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['ref_columns'][$index].Database::$QUOTE_SI;
+               }
+            }
+            $fromClause .= $onClause;
+            if($foreignKeys['ref_table'] == $mainTable) {
+               return $fromClause;
+            }
+            else {
+               return $this->getFromClause($foreignKeys['ref_table'], $mainTable, $fromClause);
+            }
+         }
+         else {
+            $this->logH->log(1, $this->TAG, "'$table' is linked to more than one parent table");
+            throw new WAException("$table is linked to more than one parent table", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+      }
+      else {
+         $this->logH->log(1, $this->TAG, "'$table' is linked $'$mainTable'");
+      }
+   }
+   
+   public function getNumberOfParents($table, $number = 0) {
+      try {
+         $foreignKeys = $this->getTableForeignKeys($table);
+         if(count($foreignKeys) == 1) {
+            $arrayKeys = array_keys($foreignKeys);
+            $number++;
+            $number = $this->getNumberOfParents($foreignKeys[$arrayKeys[0]]['ref_table'], $number);
+         }
+         else if(count($foreignKeys) > 1){
+            throw new WAException("Cannot get number of parents for $table since it has more than one foreign key", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not get the number of parents for $table", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+      return $number;
+   }
+   
 }
 ?>

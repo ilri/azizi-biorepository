@@ -62,6 +62,10 @@ class DMP extends Repository{
       $this->jqGridFiles();//import vital jqx files
       $sessionId = $_GET['session'];
       $project = $_GET['project'];
+      $query = "SELECT a.* FROM odk_forms AS a INNER JOIN odk_access AS b ON a.id = b.form_id WHERE b.user = :user AND a.is_active=1";
+      $forms = $this->Dbase->ExecuteQuery($query, array("user" => $_SESSION['username']));
+      $query = "SELECT email FROM users WHERE login = :login";
+      $userData = $this->Dbase->ExecuteQuery($query, array("login" => $_SESSION['username']));
 ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxwindow.js"></script>
@@ -78,6 +82,8 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxmenu.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxtabs.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdatetimeinput.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcalendar.js"></script>
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
 <div id="blanket_cover" style="position: absolute; background-color: white; opacity: 0.6; display: none; z-index: 5;"></div>
@@ -127,7 +133,24 @@ class DMP extends Repository{
             <label for="project_name">Project name</label>
             <input type="text" id="project_name" style="height: 25px; width: 300px;" />
          </div>
-         <div id="file_drop_area" style="position: relative; width: 90%; height: 60px; margin-left: 5%; margin-right: 5%;">
+         <div style="margin-left: 5%">
+            <label for="data_source">Data source</label>
+            <select id="data_source">
+               <option value="odk">ODK</option>
+               <option value="local">Local file</option>
+            </select>
+         </div>
+         <div id="odk_forms_div" style="margin-left: 5%">
+            <label for="odk_forms">Available forms</label>
+            <select id="odk_forms">
+               <option value=""></option>
+               <?php
+               foreach ($forms as $currForm)
+                  echo "<option value='".$currForm['id']."'>".$currForm['form_name']."</option>"
+               ?>
+            </select>
+         </div>
+         <div id="file_drop_area" style="position: relative; width: 90%; height: 60px; margin-left: 5%; margin-right: 5%;display: none;">
             <label for="manual_file_upload">Data file</label>
             <div id="manual_file_upload" style="position: absolute; bottom: 0;"></div>
          </div>
@@ -143,6 +166,7 @@ class DMP extends Repository{
                <option value="all">All</option>
                <option value="prefix">Groups</option>
                <option value="query">Query</option>
+               <option value="time">Time</option>
             </select>
          </div>
          <div style="margin-left: 5%; display: none;" id="filter_query_div">
@@ -154,6 +178,14 @@ class DMP extends Repository{
             <div id="data_project_groups_div" style="margin-left: 3%;max-height: 110px;overflow-y: scroll;">
             </div>
          </div>
+         <div style="margin-left: 5%; display: none;" id="filter_time_div">
+            <label for="time_column">Column</label>
+            <select id="time_column" style="margin-left: 3%;max-height: 110px;"></select>
+            <label for="start_time">Start date</label>
+            <div id="start_time" style="margin-left: 3%;max-height: 110px;"></div>
+            <label for="end_time" style="margin-top: 3%;">End date</label>
+            <div id="end_time" style="margin-left: 3%;max-height: 110px;"></div>
+          </div>
          <button type="button" id="get_data_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Get Data</button>
       </div>
    </div>
@@ -359,7 +391,7 @@ class DMP extends Repository{
    <div id="inotification_pp" style="z-index: 2000;"></div>
 </div>
 <script type="text/javascript">
-   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
+   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>", "<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>", "<?php echo $userData[0]['email'];?>");
 </script>
 <?php
    }
