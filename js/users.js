@@ -271,3 +271,111 @@ Users.prototype.togglePasswords = function(){
       $("#pass_2").prop("disabled", true);
    }
 };
+
+/**
+ * Initiates a user grid for displaying the modules and their sub modules
+ *
+ * @returns {undefined}
+ */
+Users.prototype.initiateModulesGrid = function(){
+   // create the source for the grid
+   var source = {
+      datatype: 'json', datafields: [ {name: 'module_id'}, {name: 'module_name'}, {name: 'uri'}, {name: 'access_level'}, {name: 'group_access'}, {name: 'in_menu'}, {name: 'actions'}],
+         id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', showAll: this.showAll}, url: 'mod_ajax.php?page=users&do=manage_modules'
+     };
+     var modulesAdapter = new $.jqx.dataAdapter(source);
+   // initialize jqxGrid
+     if($('#modules_grid :regex(class, jqx\-grid)').length === 0){
+        $("#modules_grid").jqxGrid({
+            width: 917,
+            source: source,
+            pageable: true,
+            autoheight: true,
+            sortable: true,
+            showfilterrow: false,
+            autoshowfiltericon: true,
+            showstatusbar: true,
+            renderstatusbar: users.modulesGridStatusBar,
+            filterable: true,
+            altrows: true,
+            touchmode: false,
+            pagesize: 20,
+            pagesizeoptions: ['20', '50', '100'],
+            rowdetails: true,
+            initrowdetails: users.initModuleActionsDetails,
+            ready: function(){
+                 var filtergroup = new $.jqx.filter(), filtervalue = 'Alive', filtercondition = 'equal';
+                 var filter = filtergroup.createfilter('stringfilter', filtervalue, filtercondition);
+                 filtergroup.addfilter(1, filter);
+                 $("#modules_grid").jqxGrid('addfilter', 'status', filtergroup);
+                 $("#modules_grid").jqxGrid('applyfilters');
+            },
+            rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
+            columns: [
+              { datafield: 'module_id', hidden: true },
+              { text: 'Module Name', datafield: 'module_name', width: 250},
+              { text: 'URI', datafield: 'uri', width: 130 },
+              { text: 'Access Level', datafield: 'access_level', width: 100 },
+              { text: 'Group Access', datafield: 'group_access', width: 110 },
+              { text: 'In Menu', datafield: 'in_menu', width: 80 },
+              {text: 'Actions', datafield: 'actions', width: 140, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                    return '<a href="javascript:;" id="'+ rowdata.module_id +'" class="module_id_href '+ rowdata.uniqueid +'">&nbsp;Add an action</a>';
+                }
+              }
+            ]
+        });
+     }
+     else{
+        $("#modules_grid").jqxGrid({source: modulesAdapter});
+     }
+};
+
+Users.prototype.modulesGridStatusBar = function(statusbar){
+   var container = $("<div style='overflow: hidden; position: relative; margin: 5px;'></div>");
+   var addButton = $("<div class='status_bar_div'><img style='position: relative; margin-top: 2px;' src='images/add.png'/><span class='status_bar_span'>Add</span></div>");
+
+   container.append(addButton);
+   addButton.jqxButton({  width: 80, height: 20 });
+   statusbar.append(container);
+
+   addButton.click(function (event) {
+       users.addNewModule();
+   });
+};
+
+/**
+ * Initiates the action details for a particular module
+ * @param {type} index
+ * @param {type} parentElement
+ * @param {type} gridElement
+ * @param {type} dr
+ * @returns {undefined}
+ */
+Users.prototype.initModuleActionsDetails = function(index, parentElement, gridElement, dr){
+   var grid = $($(parentElement).children()[0]);
+
+   var actionsSource = {
+       datatype: "json", datafields: [ {name: 'submodule_id'}, {name: 'submodule_uri'}, {name: 'action_id'}, {name: 'action_uri'}, {name: 'action_descr'}, {name: 'actions'} ], type: 'POST',
+       id: 'id', data: {action: 'action_list', field: 'events',  module_id: dr.module_id}, url: 'mod_ajax.php?page=users&do=manage_modules'
+    };
+
+    if (grid !== null) {
+      grid.jqxGrid({source: actionsSource, theme: '', width: 820, height: 140,
+      columns: [
+         {datafield: 'submodule_id', hidden: true},
+         {datafield: 'action_id', hidden: true},
+         {text: 'Sub Module URI', datafield: 'submodule_uri'},
+         {text: 'Acion URI', datafield: 'action_uri', width: 110 },
+         {text: 'Action Description', datafield: 'action_descr', width: 450}
+      ]
+      });
+   }
+};
+
+Users.prototype.addNewModule = function(){
+   alert('Add a new module');
+};
+
+Users.prototype.addNewAction = function(){
+   alert('Add new action');
+}
