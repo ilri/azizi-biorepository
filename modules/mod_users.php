@@ -14,17 +14,14 @@ class Users {
    }
 
    public function trafficController(){
-      if(OPTIONS_REQUESTED_SUB_MODULE == "create_account"){
-         $this->createUserPage();
-      }
-      else if(OPTIONS_REQUESTED_SUB_MODULE == "manage_account"){
-         $this->manageUserPage();
-      }
-      else if(OPTIONS_REQUESTED_SUB_MODULE == "create_group"){
-         $this->createGroupPage();
-      }
-      else if(OPTIONS_REQUESTED_SUB_MODULE == "manage_group"){
-         $this->modifyGroupPage();
+      if(OPTIONS_REQUESTED_SUB_MODULE == "create_account") $this->createUserPage();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == "manage_account") $this->manageUserPage();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == "create_group") $this->createGroupPage();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == "manage_group") $this->modifyGroupPage();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == "manage_modules"){
+         if(OPTIONS_REQUESTED_ACTION == 'list') $this->listModules ();
+         if(OPTIONS_REQUESTED_ACTION == 'action_list') $this->listModuleActions ();
+         else if(OPTIONS_REQUESTED_ACTION == '') $this->manageModulesHome ();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax'){
          if(OPTIONS_REQUESTED_ACTION == 'get_users'){
@@ -37,9 +34,7 @@ class Users {
             $this->getGroupData();
          }
       }
-      else if(OPTIONS_REQUESTED_SUB_MODULE == '' || OPTIONS_REQUESTED_SUB_MODULE == 'home'){
-         $this->home();
-      }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == '' || OPTIONS_REQUESTED_SUB_MODULE == 'home') $this->home();
    }
 
    private function home($addinfo = ''){
@@ -51,6 +46,8 @@ class Users {
       <li><a href="?page=users&do=manage_account">Manage an Account</a></li>
       <li><a href="?page=users&do=create_group">Create a Group</a></li>
       <li><a href="?page=users&do=manage_group">Manage a Group</a></li>
+      <li><a href="?page=users&do=manage_modules">Manage Modules and Sub Modules</a></li>
+      <li><a href="?page=users&do=odk_access">Grant Access to ODK Form</a></li>
    </ul>
 </div>
 <script>
@@ -618,6 +615,72 @@ class Users {
       }
 
       echo json_encode($result);
+   }
+
+   /**
+    * Creates a home page for managing modules and sub modules
+    */
+   private function manageModulesHome($addinfo = ''){
+?>
+<script type="text/javascript" src="js/users.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.export.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxwindow.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxtabs.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.export.js"></script>
+<div id="manage_modules">
+   <h3 class="mod_user_heading">Manage Modules and Sub Modules</h3>
+   <?php echo $addinfo;?>
+   <div id='modules_grid'></div>
+</div>
+<script>
+   $('#whoisme .back').html('<a href=\'?page=users\'>Back</a>');//back link
+   var users = new Users('manage_modules','<?php echo json_encode(Config::$psswdSettings);?>', "<?php echo Config::$rsaPubKey;?>");
+   users.initiateModulesGrid();
+   $('.module_id_href').live('click', function(that){ users.addNewAction(that); } );
+</script>
+<?php
+   }
+
+   /**
+    * Get a list of all the modules as defined in the database
+    */
+   private function listModules(){
+      $modulesQuery = 'select *, id as module_id, name as module_name from modules';
+      $modules = $this->Dbase->ExecuteQuery($modulesQuery);
+      if($modules == 1)  die(json_encode(array('error' => true, 'message' => $modules)));
+      die(json_encode($modules));
+   }
+
+   /**
+    * Get a list of all the actions for this module
+    */
+   private function listModuleActions(){
+      $actionsQuery = 'select a.id as submodule_id, a.uri as submodule_uri, b.id as action_id, b.uri as action_uri, b.description as action_descr '
+          . 'from sub_modules as a inner join sm_actions as b on b.sub_module_id = a.id where a.module_id = :sub_module_id order by a.id, a.uri, b.uri';
+      $actions = $this->Dbase->ExecuteQuery($actionsQuery, array('sub_module_id' => $_POST['module_id']));
+      if($actions == 1) die(json_encode(array('error' => true, 'message' => $actions)));
+      die(json_encode($actions));
+   }
+
+   /**
+    * Creates a home page for granting a user access to an ODK form
+    */
+   private function grantODKAccessHome(){
+
    }
 }
 ?>

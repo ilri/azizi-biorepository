@@ -511,7 +511,7 @@ class FarmAnimals{
     * @param   boolean        $withAnimals   Whether to get the locations with animals
     * @return  string|array   Returns a string incase of an error, else it returns an array
     */
-   private function getAnimalLocations($withAnimals = false, $groupByTopLocations = false){
+   private function getAnimalLocations($withAnimals = false, $groupByTopLocations = false, $includeDeadAnimals = true){
       // get all the level1 locations
       $query = 'select level1 from '. Config::$farm_db .'.farm_locations group by level1 order by level1';
       $res = $this->Dbase->ExecuteQuery($query);
@@ -525,7 +525,8 @@ class FarmAnimals{
       $animalLocations = array();
 
       // get all animals
-      $animalsQuery = 'select b.id, if(b.status="Alive", b.animal_id, concat(b.animal_id, " (", b.status, ")")) `name` from '. Config::$farm_db .'.farm_animal_locations as a right join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.end_date is null order by b.animal_id';
+      $deadAnimals = ($includeDeadAnimals == true) ? '' : " and b.status='Alive'";
+      $animalsQuery = 'select b.id, if(b.status="Alive", b.animal_id, concat(b.animal_id, " (", b.status, ")")) `name` from '. Config::$farm_db .'.farm_animal_locations as a right join '. Config::$farm_db .".farm_animals as b on a.animal_id = b.id where a.end_date is null $deadAnimals order by b.animal_id";
       $allAnimals = $this->Dbase->ExecuteQuery($animalsQuery);
       if($allAnimals == 1) return $this->Dbase->lastError;
 
@@ -892,7 +893,7 @@ class FarmAnimals{
     * Move animals between pens
     */
    private function moveAnimals(){
-      $animalLocations = $this->getAnimalLocations(true, true);
+      $animalLocations = $this->getAnimalLocations(true, true, false);
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
