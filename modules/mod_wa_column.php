@@ -4,7 +4,7 @@
  * This class implements a sheet column
  */
 class WAColumn {
-   
+
    private $TAG = "wacolumn";
    private $config;
    private $database;
@@ -16,10 +16,10 @@ class WAColumn {
    private $nullable;
    private $default;
    private $key;
-   
+
    /**
     * Default constructor for this class
-    * 
+    *
     * @param Object     $config     The repository_config object
     * @param Database   $database   Database object to be used to run queries
     * @param string     $name       Name of the column
@@ -29,20 +29,20 @@ class WAColumn {
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
-      
+
       $this->lH = new LogHandler("./");
       $this->config = $config;
       $this->database = $database;
       $this->name = $name;
       $this->data = $data;
-      
+
       $this->type = $type;
       $this->length = $length;
       $this->nullable = $nullable;
       $this->default = $default;
       $this->key = $key;
    }
-   
+
    /**
     * This function returns the schema representing this object as an array
     */
@@ -56,35 +56,35 @@ class WAColumn {
           "key" => $this->key,
           "present" => true
       );
-      
+
       return $schema;
    }
-   
+
    /**
     * This function returns the current column name (in memory)
     */
    public function getName() {
       return $this->name;
    }
-   
+
    public function getType() {
       return $this->type;
    }
-   
+
    /**
     * This function updates the column details
-    * 
+    *
     * @param string  $name       New name to be given to the column
     * @param string  $type       Can be any of the Database::$TYPE_* types
     * @param int     $length     The length of the column
     * @param boolean $nullable   TRUE if column is nullable
     * @param string  $default    The default value for the column
     * @param string  $key        Can either be Database::$KEY_NONE, Database::$KEY_UNIQUE or Database::$KEY_PRIMARY
-    * 
+    *
     * @throws WAException
     */
    public function update($sheetName, $name, $type, $length, $nullable, $default, $key) {
-      
+
       try {
          $new = array(
             "name" => $name,
@@ -113,19 +113,19 @@ class WAColumn {
          throw new WAException("Unable to alter the column '{$this->name}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
       }
    }
-   
+
    public function setData($data) {
       $this->data = $data;
    }
-   
+
    public function getData() {
       return $this->data;
    }
-   
+
    public function getKey() {
       return $this->key;
    }
-   
+
    /**
     * This function returns the MySQL details for this column in form of an array
     * that can be used with the database object
@@ -135,7 +135,7 @@ class WAColumn {
          $type = Database::$TYPE_VARCHAR;
          $length = -1;
          $nullable = false;
-         
+
          $typeVarchar = 0;
          $typeInteger = 0;
          $typeDouble = 0;
@@ -145,9 +145,9 @@ class WAColumn {
          $typeDateTime = 0;
          $typeBoolean = 0;
          $typeTimestamp = 0;
-         
-         for($index = 0; $index < count($this->data); $index++){
-            
+
+         $data_count = count($this->data);
+         for($index = 0; $index < $data_count; $index++){
             if(WAColumn::isNull($this->data[$index])){//means this column is nullable
                $nullable = true;
                //cannot use this cell to determing column datatype
@@ -169,10 +169,10 @@ class WAColumn {
                        && strlen($this->data[$index]) > $length) {
                   $length = strlen($this->data[$index]);
                }
-               
+
                //no need to test for string. String is default value
                $typeVarchar++;
-               
+
                if(WAColumn::isDate($this->data[$index])) {
                   //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type date");
                   $typeDate++;
@@ -206,13 +206,13 @@ class WAColumn {
                }
             }
          }
-         
+
          if($length == -1
                  || $length == 0) {//none of the data cells had data
             $this->lH->log(2, $this->TAG, "Could not determine the variable size of column '{$this->name}'. Setting length to default of 50 characters");
             $length = 50;//default length for the variables
          }
-         
+
          //determine type
          if($typeInteger == $typeVarchar
                  && $typeDouble == $typeVarchar
@@ -222,10 +222,10 @@ class WAColumn {
                  && $typeDateTime == $typeVarchar
                  && $typeTimestamp == $typeVarchar
                  && $typeBoolean == $typeVarchar) {//none of the cells could be used to determine type because they were considered null
-            
+
             $this->lH->log(2, $this->TAG, "Could not determine the datatype for column '{$this->name}'. Setting type to default type varchar");
             $type = Database::$TYPE_VARCHAR;
-            
+
          }
          else {
             //order of the following if blocks matters
@@ -241,7 +241,7 @@ class WAColumn {
             if($typeDouble == $typeVarchar) {
                $type = Database::$TYPE_DOUBLE;
             }
-            
+
             if($typeDate == $typeVarchar) {
                $type = Database::$TYPE_DATE;
             }
@@ -256,7 +256,7 @@ class WAColumn {
             }
          }
          $key = Database::$KEY_NONE;
-         if($linkSheets == true && $this->name == "primary_key") $key = Database::$KEY_UNIQUE; 
+         if($linkSheets == true && $this->name == "primary_key") $key = Database::$KEY_UNIQUE;
          return array("name" => $this->name , "type"=>$type , "length"=>$length , "nullable"=>$nullable, "default" => null , "key"=>$key);
       }
       else {
@@ -264,31 +264,31 @@ class WAColumn {
          return array("name" => $this->name , "type"=>Database::$TYPE_VARCHAR , "length"=>50 , "nullable"=>true, "default" => null , "key"=>Database::$KEY_NONE);
       }
    }
-   
+
    /**
     * Checkes whether provided string is null
-    * 
+    *
     * @param string $string  String to be checked
-    * 
+    *
     * @return boolean TRUE if string is null
     */
    public static function isNull($string) {
-      if($string == null 
-              || strlen($string) == 0 
+      if($string == null
+              || strlen($string) == 0
               || $string == "null"
               || $string == "NULL") {
          return true;
       }
       return false;
    }
-   
+
    /**
     * Checkes whether provided string is a date. Dates expected to be in these
     * formats:
     *     - yyyy-mm-dd
-    * 
+    *
     * @param string $string   String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is date
     */
    public static function isDate($string) {
@@ -300,14 +300,14 @@ class WAColumn {
       }
       return false;
    }
-   
+
    /**
     * Checkes whether provided string is of type time. Time expected to be in these
     * formats:
     *     - hh:mm:ss
-    * 
+    *
     * @param string $string   String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is time
     */
    public static function isTime($string) {
@@ -319,15 +319,15 @@ class WAColumn {
       }
       return false;
    }
-   
+
    /**
     * Checkes whether provided string is a datetime. Datetimes expected to follow the
     * ISO8601 format e.g:
     *     - yyyy-mm-dd hh:mm:ss.ms
     *     - yyyy-mm-dd hh:mm:ss
-    * 
+    *
     * @param string $string   String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is date
     */
    public static function isDatetime($string) {
@@ -339,14 +339,14 @@ class WAColumn {
       }
       return false;
    }
-   
+
    /**
     * Checkes whether provided string is a datetime. Datetimes expected to follow the
     * ISO8601 format e.g:
     *     - yyyy-mm-ddThh:mm:ss.ms tz
-    * 
+    *
     * @param string $string   String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is date
     */
    public static function isTimestamp($string) {
@@ -358,12 +358,12 @@ class WAColumn {
       }
       return false;
    }
-   
+
    /**
     * Checks whether provided string is an integer
-    * 
+    *
     * @param string $v  String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is integer
     */
    public static function isInt($v) {
@@ -372,15 +372,15 @@ class WAColumn {
             return true;
          }
       }
-      
+
       return false;
    }
-   
+
    /**
     * Checks whether provided string is a tiny integer
-    * 
+    *
     * @param type $string  String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is a tiny integer
     */
    public static function isTinyInt($string){
@@ -389,34 +389,34 @@ class WAColumn {
       }
       return false;
    }
-   
+
    /**
     * Checks whether provided string is a double
-    * 
+    *
     * @param type $string  String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is a double
     */
    public static function isDouble($string) {
       if($string != null && strlen($string) > 0){
-         if(is_numeric($string) 
+         if(is_numeric($string)
                  && strpos($string, ".") !== false) {
             return true;
-         }   
+         }
       }
-      
+
       return false;
    }
-   
+
    /**
     * Checks whether provided string is a boolean
-    * 
+    *
     * @param type $string  String to be checked
-    * 
+    *
     * @return boolean TRUE if provided string is a boolean
     */
    public static function isBoolean($string) {
-      if($string === true 
+      if($string === true
               || $string === false
               || preg_match("/true/i", $string) === 1
               || preg_match("/false/i", $string) === 1) {
@@ -424,7 +424,7 @@ class WAColumn {
       }
       return false;
    }
-   
+
    public static function isTrue($string) {
       if($string === true
               || preg_match("/true/i", $string) === 1) {
@@ -432,7 +432,7 @@ class WAColumn {
       }
       return false;
    }
-   
+
    public static function getOriginalColumnName($database, $file, $sheetName, $currentName) {
       include_once 'mod_wa_exception.php';
       try {
@@ -456,12 +456,12 @@ class WAColumn {
          throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function tries to remove the sheet name from the column name in an
     * effort to try minimize the length of the column. Make sure you record the
     * change (if name changes) in the meta changes table
-    * 
+    *
     * @param String $sheetName   Name of the sheet
     * @param String $columnName  Name of the column
     * @return String The new column name or the original column name if name doesn't change

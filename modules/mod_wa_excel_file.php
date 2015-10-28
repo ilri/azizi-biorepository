@@ -12,12 +12,12 @@ class WAExcelFile {
    private $lH;
    private $sheets;
    private $cachePath;//directory where PHPExcel is going to cache cells
-   
+
    /**
     * Default constructor for this class
-    * 
+    *
     * @param   WAFile   $waFile  WAFile containing details on the file
-    * 
+    *
     * @throws WAException
     */
    public function __construct($waFile) {
@@ -25,16 +25,16 @@ class WAExcelFile {
       include_once 'mod_log.php';
       include_once 'mod_wa_sheet.php';
       include_once 'mod_wa_database.php';
-      
+
       $this->lH = new LogHandler("./");
       $this->waFile = $waFile;
       $this->config = $waFile->getConfig();
       $this->sheets = array();
       $this->database = $waFile->getDatabase();
-      
+
       include_once $this->config['common_folder_path'].'PHPExcel/Classes/PHPExcel.php';
       include_once $this->config['common_folder_path'].'PHPExcel/Classes/PHPExcel/IOFactory.php';
-      
+
       //try reading the excel file
       try {
          $location = $waFile->getFSLocation();
@@ -46,19 +46,19 @@ class WAExcelFile {
                mkdir($this->cachePath, 0777, true);
             }
             $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_to_discISAM;
-            $cacheSettings = array( 
+            $cacheSettings = array(
                 'dir' => $this->cachePath
             );
             /*
              * since the cache type being used creates very large temporary files,
              * add a cronjob to periodically delete these temporary files
-             * 
+             *
              *    0 0 * * * /bin/find /var/www/html/azizi.ilri.org/odk_workflow/ -type d -iname "phpexcel_cache" ! -newermt "1 day ago" -exec rm -rf {} \;
-             * 
+             *
              * The previous find command will delete all phpexcel_cache directories that were last accessed more than one day ago
              */
             PHPExcel_Settings::setCacheStorageMethod($cacheMethod, $cacheSettings);
-            
+
             //read file into object
             $inputFileType = PHPExcel_IOFactory::identify($location);
             $objReader = PHPExcel_IOFactory::createReader($inputFileType);
@@ -68,31 +68,31 @@ class WAExcelFile {
             $this->lH->log(1, $this->TAG, "PHPExcel_Read_Exception thrown while trying to read this file '$location'");
             throw new WAException("Could read excel file into PHPExcel object", WAException::$CODE_WF_CREATE_ERROR, $ex);
          }
-         
+
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to load an excel file in the workflow");
          throw new WAException("Could not determine location for excel file", WAException::$CODE_FS_UNKNOWN_LOCATION_ERROR, $ex);
       }
-      
+
    }
-   
+
    /**
-    * This function returns the details of the underlying file this object has 
+    * This function returns the details of the underlying file this object has
     * bound to. Refer to WAFile::getFileDetails() for information on which details
     * are returned.
-    * 
+    *
     * @return Array An associative array with the file details
     */
    public function getFileDetails() {
       $fileDetails = $this->waFile->getFileDetails();
       return $fileDetails;
    }
-   
+
    /**
     * This function loads WA Sheets from the files into memory.
     * Function might be time consuming so call after returning response to client
     * then let client check back periodically
-    * 
+    *
     * @throws WAException
     */
    public function processToMySQL($linkSheets) {
@@ -107,7 +107,8 @@ class WAExcelFile {
             if($linkSheets == true) $this->lH->log(2, $this->TAG, "linkSheets is true");
             else $this->lH->log(2, $this->TAG, "linkSheets is false");
          }
-         for($index = 0; $index < count($sheetNames); $index++){
+         $snm_count = count($sheetNames);
+         for($index = 0; $index < $snm_count; $index++){
             try {
                $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index], $this->waFile->getFileDetails());
                $primaryKeyThere = $currSheet->processColumns();
@@ -115,7 +116,7 @@ class WAExcelFile {
                   $linkSheets = $primaryKeyThere;
                }
                $currSheet->saveAsMySQLTable($linkSheets, array(), $sheetNames);
-               
+
                //offload $currSheet from memory to prevent this process from being OOM killed
                $currSheet->unload();
                unset($currSheet);
@@ -130,7 +131,7 @@ class WAExcelFile {
          throw new WAException("Unable to process Excel data file", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
    /**
     * This function extracts the data from the specified sheet
     * @param type $sheetName
@@ -156,7 +157,7 @@ class WAExcelFile {
          throw new WAException("Unable to get data for sheet '$sheetName'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function dumps data from the excel file into the database
     */
@@ -166,17 +167,18 @@ class WAExcelFile {
             $sheetNames = WASheet::getAllWASheets($this->config, $this->database->getDatabaseName(), $this->database);
             $sheetNames = WASheet::sortSheets($this->database, $sheetNames);
             $this->lH->log(4, $this->TAG, "Sheet names  = ".print_r($sheetNames, true));
+            $snm_count = count($sheetNames);
             try {
                //delete data from the sheets (start from last index)
-               if(count($sheetNames) > 0 && $deleteData == true) {
+               if($snm_count > 0 && $deleteData == true) {
                   $this->lH->log(3, $this->TAG, "Truncating all tables before dumping data");
-                  for($index = count($sheetNames) - 1; $index >= 0; $index--) {
+                  for($index = $snm_count - 1; $index >= 0; $index--) {
                      $query = "truncate table ".Database::$QUOTE_SI.$sheetNames[$index].Database::$QUOTE_SI." cascade";
                      $this->database->runGenericQuery($query);
                   }
                }
                //dump data into database tables (start from first)
-               for($index = 0; $index < count($sheetNames); $index++){
+               for($index = 0; $index < $snm_count; $index++){
                   if($this->isSheetInFile($sheetNames[$index])){//is the current sheet in the current raw data file?
                      $currSheet = new WASheet($this->config, $this->database, $this->excelObject, $sheetNames[$index], $this->waFile->getFileDetails());
                      $currSheet->dumpData();
@@ -199,7 +201,7 @@ class WAExcelFile {
          throw new WAException("Unable to dump data from excel file", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function unloades the PHPExcel object from memory and deletes cache files
     */
@@ -207,7 +209,7 @@ class WAExcelFile {
       $this->excelObject->disconnectWorksheets();
       WAFile::rmDir($this->cachePath);
    }
-   
+
    public function isSheetInFile($sheetName) {
       $fileDetails = $this->waFile->getFileDetails();
       $originalName = WASheet::getSheetOriginalName($this->database, $fileDetails['filename'], $sheetName);
@@ -219,17 +221,17 @@ class WAExcelFile {
       }
       return false;
    }
-   
+
    /**
     * This function dumps data from the data provided into an PHPExcel object
-    * 
+    *
     * @param Array   $config     Repository general config file
     * @param String  $workflowID The instance id of the workflow
     * @param String  $workingDir Where to save the excel file
     * @param String  $title      The title to be given to the excel file
     * @param Array   $data       An associative array of the data with the top heirarchy being the sheets,
     *                            second level being the rows and the third level the columns
-    * 
+    *
     * @return PHPExcel  A PHPExcelObject containing the dumped data
     * @throws WAException
     */
@@ -248,25 +250,28 @@ class WAExcelFile {
          $phpExcel->getProperties()->setSubject("Created using ".$creator);
          $phpExcel->getProperties()->setDescription("This Excel file has been generated using $creator that utilizes the PHPExcel library on PHP. $creator was created by Jason Rogena (j.rogena@cgiar.org)");
          $sheetNames = array_keys($data);
+         $dt_count = count($data);
          try {
-            for($sheetIndex = 0; $sheetIndex < count($data); $sheetIndex++) {
+            for($sheetIndex = 0; $sheetIndex < $dt_count; $sheetIndex++) {
                if($sheetIndex > 0) {
                   $phpExcel->createSheet($sheetIndex);
                }
                $phpExcel->setActiveSheetIndex($sheetIndex);
                $phpExcel->getActiveSheet()->setTitle($sheetNames[$sheetIndex]);
                $sheetData = $data[$sheetNames[$sheetIndex]];
+               $shd_count = count($sheetData);
                //add the column titles
-               if(count($sheetData) > 0) {
+               if($shd_count > 0) {
                   $columnNames = array_keys($sheetData[0]);
-                  for($columnIndex = 0; $columnIndex < count($columnNames); $columnIndex++) {
+                  $clmn_count = count($columnNames);
+                  for($columnIndex = 0; $columnIndex < $clmn_count; $columnIndex++) {
                      $columnKey = PHPExcel_Cell::stringFromColumnIndex($columnIndex);//not sure if this should be 0 based or 1 based
                      $phpExcel->getActiveSheet()->setCellValue($columnKey."1", $columnNames[$columnIndex]);
                      $phpExcel->getActiveSheet()->getStyle($columnKey."1")->getFont()->setBold(true);
                      $phpExcel->getActiveSheet()->getColumnDimension($columnKey)->setAutoSize(true);
                   }
                   //add the data rows
-                  for($rowIndex = 0; $rowIndex < count($sheetData); $rowIndex++) {
+                  for($rowIndex = 0; $rowIndex < $shd_count; $rowIndex++) {
                      $currRow = $sheetData[$rowIndex];
                      $columnCount = count($currRow);
                      if($columnCount == count($columnNames)) {

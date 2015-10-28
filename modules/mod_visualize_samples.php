@@ -1,12 +1,12 @@
 <?php
 class VisualizeSamples {
    private $Dbase;
-   
+
    public function __construct($Dbase) {
       /*require_once 'repository_config';
       $logSettings = Config::$logSettings;
       $logSettings['workingDir'] = "../";
-      
+
       require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.0.php';
       require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.6.php';
 
@@ -19,18 +19,18 @@ class VisualizeSamples {
       }
 
       $this->Dbase->InitializeLogs($logSettings);
-      
+
       Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
-      
+
       $this->Dbase->InitializeConnection();
-      
+
       define(OPTIONS_REQUESTED_SUB_MODULE, $_GET['do']);
       define(OPTIONS_REQUESTED_ACTION, $_GET['action']);*/
       global $Repository;
       $this->Dbase = $Dbase;
       $this->Dbase->CreateLogEntry("Trying to reinitialize db connection", "info");
       Config::$config['user'] = Config::$config['rw_user']; Config::$config['pass'] = Config::$config['rw_pass'];
-      
+
       $this->Dbase->InitializeConnection(Config::$config);
       if(is_null($this->Dbase->dbcon)) {
          ob_start();
@@ -40,8 +40,8 @@ class VisualizeSamples {
          return;
       }
    }
-   
-   
+
+
    public function trafficController(){
       if(OPTIONS_REQUESTED_SUB_MODULE == 'ajax'){
          if(OPTIONS_REQUESTED_ACTION == 'all_sample_data'){
@@ -67,10 +67,10 @@ class VisualizeSamples {
          $this->home();
       }
    }
-   
+
    private function getAllSamples(){
       $cacheFile = "/tmp/sample_data.json";
-      
+
       if(file_exists($cacheFile)){//check if file exists
          $this->Dbase->CreateLogEntry("Samples cache file exists","info");
          //check when the file was last modified
@@ -88,9 +88,9 @@ class VisualizeSamples {
       else {
          $this->Dbase->CreateLogEntry("Cache file for sample data does not exist. Fetching data from MySQL","info");
       }
-      
+
       //if we've come this far, we have to get the data from MySQl
-      
+
       $query = "SELECT count, label, date_created, sample_type, origin, org, box_id, VisitDate, Longitude, Latitude, Elisa_Results, Project"
                . " FROM ".Config::$config['azizi_db'].".samples"
                . " WHERE Longitude IS NOT null AND Longitude != '' AND Latitude IS NOT null AND Latitude != ''";
@@ -113,38 +113,39 @@ class VisualizeSamples {
           $data['orphans'] = 0;
           $data['error'] = 1;
        }
-       
+
        $query = "SELECT a.sample_id, b.label as test,c.option_name as result"
                . " FROM ".Config::$config['azizi_db'].".processes as a"
                . " INNER JOIN ".Config::$config['azizi_db'].".process_type_def as b ON a.process_type = b.count"
                . " INNER JOIN ".Config::$config['azizi_db'].".modules_options as c on a.status = c.option_id";
-       
+
        $unformattedTests = $this->Dbase->ExecuteQuery($query);
        $allTests = array();
        foreach($unformattedTests as $currTest){
           if(!isset($allTests[$currTest['sample_id']])){
              $allTests[$currTest['sample_id']] = array();
           }
-          
+
           $sID = $currTest['sample_id'];
           unset($currTest['sample_id']);
           array_push($allTests[$sID], $currTest);
        }
-       
+
        $testTypes = array();//array holding the different types of tests done
        $resultTypes = array();
-       for($index = 0; $index < count($data['samples']); $index++){
+       $ds_count = count($data['samples']);
+       for($index = 0; $index < $ds_count; $index++){
           //clean longitude and latitude
           $data['samples'][$index]['Longitude'] = $this->convertLongitude($data['samples'][$index]['Longitude']);
           $data['samples'][$index]['Latitude'] = $this->convertLatitude($data['samples'][$index]['Latitude']);
-          
+
           //clean the elisa results column and get the relevant data
           /*$test = "";
           $result = "";
           if($data['samples'][$index]['Elisa_Results'] != null && strlen($data['samples'][$index]['Elisa_Results']) > 0){
              $tests = array();
              preg_match_all("/name\s*=\s*([^,]*)\s*,\s*status\s*=\s*([a-z0-9]*)/i", $data['samples'][$index]['Elisa_Results'], $tests);
-             
+
              if(count($tests) == 3){
                 if(isset($tests[1][0])) {
                    $test = $tests[1][0];
@@ -152,7 +153,7 @@ class VisualizeSamples {
                       array_push($testTypes, $test);
                    }
                 }
-                
+
                 if(isset($tests[2][0])) {
                    $result = $tests[2][0];
                    //$this->Dbase->CreateLogEntry($tests[2][0], "info");
@@ -162,53 +163,53 @@ class VisualizeSamples {
                 }
              }
           }*/
-          
+
           $sID = $data['samples'][$index]['count'];
           if(isset($allTests[$sID])){
-             
+
              $sampleTests = $allTests[$sID];
              foreach($sampleTests as $currTest){
                 if(array_search($currTest['test'], $testTypes) === false){
                    array_push($testTypes, $currTest['test']);
                 }
-                
+
                 if(array_search($currTest['result'], $resultTypes) === false){
                    array_push($resultTypes, $currTest['result']);
                 }
              }
-             
+
              $data['samples'][$index]['tests'] = $sampleTests;
           }
           else {
              $data['samples'][$index]['tests'] = array();
           }
-          
-          
+
+
           //if($index%1000 === 0) $this->Dbase->CreateLogEntry( $index,"fatal");
        }
-       
+
        $data['tests'] = array('types' => $testTypes, 'results' => $resultTypes);
        $cacheJson = json_encode($data);
-       
+
        file_put_contents($cacheFile, $cacheJson);
-       
+
        echo $cacheJson;
    }
-   
+
    private function getAllProjects() {
       $query = "select b.* from ".Config::$config['azizi_db'].".samples as a"
               . " inner join ".Config::$config['azizi_db'].".modules_custom_values as b on a.Project = b.val_id"
               . " where a.Longitude is not null and a.Longitude != '' and a.Latitude is not null and a.Latitude != ''"
               . " group by a.Project";
       $projects = $this->Dbase->ExecuteQuery($query);
-      
+
       $data = array();
       if($projects != 1){
-         
+
          for($index=0; $index < count($projects); $index++){
             $projects[$index]['value'] = preg_replace("/[^a-z0-9\s]/i", "", $projects[$index]['value']);
          }
-         
+
          $data['projects'] = $projects;
          $data['error'] = 0;
       }
@@ -216,10 +217,10 @@ class VisualizeSamples {
          $data['projects'] = array();
          $data['error'] = 1;
       }
-      
+
       echo json_encode($data);
    }
-   
+
    private function getAllSampleTypes() {
       $query = "select b.*"
               . " from ".Config::$config['azizi_db'].".samples as a"
@@ -227,7 +228,7 @@ class VisualizeSamples {
               . " where a.Longitude is not null and a.Longitude != '' and a.Latitude is not null and a.Latitude != ''"
               . " group by a.sample_type";
       $sampleTypes = $this->Dbase->ExecuteQuery($query);
-      
+
       $data = array();
       if($sampleTypes != 1){
          $data['sample_types'] = $sampleTypes;
@@ -237,17 +238,17 @@ class VisualizeSamples {
          $data['sample_types'] = array();
          $data['error'] = 1;
       }
-      
+
       echo json_encode($data);
    }
-   
+
    private function getAllOrganisms() {
       $query = "select b.* from ".Config::$config['azizi_db'].".samples as a"
               . " inner join ".Config::$config['azizi_db'].".organisms as b on a.org = b.org_id"
               . " where a.Longitude is not null and a.Longitude != '' and a.Latitude is not null and a.Latitude != ''"
               . " group by a.org";
       $organisms = $this->Dbase->ExecuteQuery($query);
-      
+
       $data = array();
       if($organisms != 1) {
          $data['organisms'] = $organisms;
@@ -257,14 +258,14 @@ class VisualizeSamples {
          $data['organisms'] = array();
          $data['error'] = 1;
       }
-      
+
       echo json_encode($data);
    }
-   
+
    private function getAllOrigins() {
       $query = "select origin from ".Config::$config['azizi_db'].".samples group by origin";
       $origins = $this->Dbase->ExecuteQuery($query);
-      
+
       $data = array();
       if($origins != 1){
          $data['origins'] = $origins;
@@ -274,18 +275,18 @@ class VisualizeSamples {
          $data['origins'] = array();
          $data['error'] = 1;
       }
-      
+
       echo json_encode($data);
    }
-   
+
    private function sendSampleData() {
       $this->Dbase->CreateLogEntry("sendSampleData called", "fatal");
-      
+
       $sampleIDs = $_POST['sampleIDs'];
-      
+
       if(count($sampleIDs) < 50000){//do not allow downloading of data greater than 50000 samples
          $implodedSIDs = implode(",", $sampleIDs);
-      
+
          //$this->Dbase->CreateLogEntry($implodedSIDs, "fatal");
 
          $email = $_POST['email'];
@@ -518,7 +519,7 @@ class VisualizeSamples {
          $this->Dbase->CreateLogEntry("Pruned all the chuff and left with ".$good, "fatal");
          $this->Dbase->CreateLogEntry(print_r($testHeadings, true), "fatal");
 
-         if(count($testHeadings) > 0){//means that there is at least one relevant test left         
+         if(count($testHeadings) > 0){//means that there is at least one relevant test left
             $phpExcel->setActiveSheetIndex(1);
             $phpExcel->getActiveSheet()->setTitle("Tests");
 
@@ -561,24 +562,24 @@ class VisualizeSamples {
          $this->sendEmail($email, $filename);
       }
    }
-   
+
    private function sendEmail($email, $filename){
       $this->Dbase->CreateLogEntry('sending email to '.$email ." with the attachment ".$filename, "fatal");
-      
+
       $emailSubject = "ILRI Bio-Repository Samples";
       $message = "The data on samples you requested for is attached to this email. To get more information on these and more samples, feel free to contact ILRI's Bio-Repository Manager";
-      
+
       shell_exec('echo "'.$message.'"|'.Config::$config['mutt_bin'].' -a '.$filename.' -F '.Config::$config['mutt_config'].' -s "'.$emailSubject.'" -- '.$email);
    }
-   
+
    private function convertLongitude($longitude) {
-      
+
       if(strlen($longitude) > 0) {
          $hemInt = 0;//default to 0 so that if not E or W you will end up with 0 longitude
          if(preg_match("/[a-z]/i", $longitude) == 1){
-            
+
             $hem = strtoupper(substr($longitude, -1));
-            
+
             if($hem =="E" ) {
                $hemInt = 1;
             }
@@ -589,7 +590,7 @@ class VisualizeSamples {
          else {
             $hemInt = 1;
          }
-         
+
          if($hemInt != 0) {
             $longitudeFloat = floatval(str_replace($hem, "", $longitude));
 
@@ -599,15 +600,15 @@ class VisualizeSamples {
             $this->Dbase->CreateLogEntry("longitude with problems = ".$longitude, "info");
          }
       }
-      
+
       $this->Dbase->CreateLogEntry("longitude with problems = ".$longitude, "info");
       return null;
    }
-   
+
    private function convertLatitude($latitude) {
       return floatval($latitude);
    }
-   
+
    private function home(){
 ?>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH;?>leaflet/dist/leaflet.css" />
@@ -632,31 +633,31 @@ class VisualizeSamples {
    <div id="project_label" class="filter_label">Projects</div>
    <div id="project_toggle" class="filter_toggle"></div>
    <div style="display: none;"><input id="project_sel_all" type="checkbox" checked/>Select all<br /></div>
-   <div id="project_list" class="filter_list"></div>   
+   <div id="project_list" class="filter_list"></div>
 </div>
 <div id="organism_container" class="filter_container">
    <div id="organism_label" class="filter_label">Organisms</div>
    <div id="organism_toggle" class="filter_toggle"></div>
    <div style="display: none;"><input id="organism_sel_all" type="checkbox" checked/>Select all<br /></div>
-   <div id="organism_list" class="filter_list"></div>   
+   <div id="organism_list" class="filter_list"></div>
 </div>
 <div id="sample_types_container" class="filter_container">
    <div id="sample_types_label" class="filter_label">Sample Types</div>
    <div id="sample_types_toggle" class="filter_toggle"></div>
    <div style="display: none;"><input id="sample_types_sel_all" type="checkbox" checked/>Select all<br /></div>
-   <div id="sample_types_list" class="filter_list"></div>   
+   <div id="sample_types_list" class="filter_list"></div>
 </div>
 <div id="test_container" class="filter_container">
    <div id="test_label" class="filter_label">Tests done</div>
    <div id="test_toggle" class="filter_toggle"></div>
    <div style="display: none;"><input id="test_sel_all" type="checkbox"/>Select all<br /></div>
-   <div id="test_list" class="filter_list"></div>   
+   <div id="test_list" class="filter_list"></div>
 </div>
 <div id="result_container" class="filter_container">
    <div id="result_label" class="filter_label">Test Results</div>
    <div id="result_toggle" class="filter_toggle"></div>
    <div style="display: none;"><input id="result_sel_all" type="checkbox"/>Select all<br /></div>
-   <div id="result_list" class="filter_list"></div>   
+   <div id="result_list" class="filter_list"></div>
 </div>
 <div id="email_dialog">
    <div id="email_dialog_toggle"></div>

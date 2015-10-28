@@ -763,7 +763,8 @@ class Workflow {
                if(count($dataTables) > 0) {
                   $this->lH->log(2, $this->TAG, "Workflow already has ".  count($dataTables)." data tables (before generating schema from Excel file). Dropping this tables");
                }
-               for($i = 0; $i < count($dataTables); $i++) {
+               $res_count = count($dataTables);
+               for($i = 0; $i < $res_count; $i++) {
                   $this->database->runGenericQuery("drop table ".Database::$QUOTE_SI.$dataTables[$i].Database::$QUOTE_SI." cascade");
                }
                $excelFile = new WAExcelFile($dataFiles[0]);
@@ -815,7 +816,8 @@ class Workflow {
    public static function getStatusArray($health, $errors, $processing = false) {
       $errorMessages = array();
 
-      for($index = 0; $index < count($errors); $index++) {
+      $err_count = count($errors);
+      for($index = 0; $index < $err_count; $index++) {
          $currError = $errors[$index];//should be an object of type WAException
          array_push($errorMessages, array("code" => $currError->getCode(), "message" => Workflow::getErrorMessage($currError)));
       }
@@ -982,7 +984,8 @@ class Workflow {
             $query = "select ".Database::$QUOTE_SI."code".Database::$QUOTE_SI.", ".Database::$QUOTE_SI."message".Database::$QUOTE_SI." from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ERRORS.Database::$QUOTE_SI." order by id";
             $result = $this->database->runGenericQuery($query, true);
             if(is_array($result)) {
-               for($index = 0; $index < count($result); $index++) {
+               $res_count = count($result);
+               for($index = 0; $index < $res_count; $index++) {
                   array_push($this->errors, new WAException($result[$index]['message'], $result[$index]['code']));
                }
             }
@@ -1408,7 +1411,8 @@ class Workflow {
             if($filter == "all") $prefix = array();
             $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
             //get data from all the sheets
-            for($index = 0; $index < count($dataTables); $index++) {
+            $dbt_count = count($dataTables);
+            for($index = 0; $index < $dbt_count; $index++) {
                $currSheet = new WASheet($this->config, $this->database, null, $dataTables[$index]);
                $currSheetData = $currSheet->getDatabaseData($prefix);
                if($filter == "all" || ($filter == "prefix" && count($currSheetData) > 0)) {//do not add sheet to list of sheets to be added to the excel file if we are filtering based on prefix and no data fetched from the sheet
@@ -1519,7 +1523,8 @@ class Workflow {
     */
    public function getRawDataFiles() {
       $dataFiles = array();
-      for($index = 0; $index < count($this->files); $index++) {
+      $df_count = count($dataFiles);
+      for($index = 0; $index < $df_count; $index++) {
          $currFile = $this->files[$index];
          if($currFile->getType() == WAFile::$TYPE_RAW) {
             array_push($dataFiles, $currFile);
@@ -1541,7 +1546,8 @@ class Workflow {
          $dataFiles = $this->getRawDataFiles();
          if(count($dataFiles) > 0) {
             //delete any existing data table in the database
-            for($index = 0; $index < count($dataFiles); $index++) {
+            $df_count = count($dataFiles);
+            for($index = 0; $index < $df_count; $index++) {
                $this->lH->log(3, $this->TAG, "Now dumping ".$dataFiles[$index]->getFSLocation());
                try {
                   $excelFile = new WAExcelFile($dataFiles[$index]);
@@ -1597,7 +1603,8 @@ class Workflow {
          }
          $sheets = array();
          try {
-            for($index = 0; $index < count($dataTables); $index++) {
+            $dt_count = count($dataTables);
+            for($index = 0; $index < $dt_count; $index++) {
                $currSheet = new WASheet($this->config, $this->database, null, $dataTables[$index]);
                if($mainSheetName != null && $dataTables[$index] == $mainSheetName) {
                   $this->lH->log(3, $this->TAG, "Setting '{$dataTables[$index]}' as the main sheet in workflow with instance '{$this->instanceId}'");
@@ -1730,7 +1737,8 @@ class Workflow {
          //copy the raw data files from workflow_2 to this workflow
          $dataFiles = $originWorkflow->getRawDataFiles();
          $mergeKeyFiles = array();
-         for($index = 0; $index < count($dataFiles); $index++) {
+         $df_count = count($dataFiles);
+         for($index = 0; $index < $df_count; $index++) {
             $name = basename($dataFiles[$index]->getFSLocation());
             $mergeSheet = null;
             $mergeColumn = null;
@@ -1768,7 +1776,8 @@ class Workflow {
    private function truncateWorkflow() {
       try {
          $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-         for($index = 0; $index < count($dataTables); $index++) {
+         $dt_count = count($dataTables);
+         for($index = 0; $index < $dt_count; $index++) {
             $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
             $this->database->runGenericQuery($query);
          }
@@ -1903,12 +1912,14 @@ class Workflow {
          try {
             $tables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
             $return = array();
-            for($index = 0; $index < count($tables); $index++) {
+            $tab_count = count($tables);
+            for($index = 0; $index < $tab_count; $index++) {
                $this->lH->log(4, $this->TAG, "Get foreign keys for the table '{$tables[$index]}'");
                $currFKeys = $this->database->getTableForeignKeys($tables[$index]);
                $fKeyKeys = array_keys($currFKeys);
                $formatted = array();
-               for($keyIndex = 0; $keyIndex < count($fKeyKeys); $keyIndex++) {
+               $fkk_count = count($fKeyKeys);
+               for($keyIndex = 0; $keyIndex < $fkk_count; $keyIndex++) {
 
                   $formatted[] = array(
                       "ref_sheet" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_table'],
@@ -1996,7 +2007,8 @@ class Workflow {
          $workingDir = $workflowDetails['working_dir'];
          try {
             $savePointFiles = WAFile::getAllSavePointFiles($config, $instanceId, $database, $workingDir);
-            for($index = 0; $index < count($savePointFiles); $index++) {
+            $spf_count = count($savePointFiles);
+            for($index = 0; $index < $spf_count; $index++) {
                $currFile = $savePointFiles[$index];
                $currFileDetails = $currFile->getFileDetails();
 
@@ -2732,7 +2744,8 @@ class Workflow {
                $allMetaTables = Workflow::getAllMetaTables();
                if($tableNames !== false) {
                   //check each of the table names to see if the meta tables exist
-                  for($tIndex = 0; $tIndex < count($tableNames); $tIndex++) {
+                  $tbn_count = count($tableNames);
+                  for($tIndex = 0; $tIndex < $tbn_count; $tIndex++) {
                      if(in_array($tableNames[$tIndex], $allMetaTables)== true) {
                         $metaTables++;
                      }

@@ -334,7 +334,8 @@ class Database {
       try {
          $result = $this->runGenericQuery($query, true);
          $tables = array();
-         for($index = 0; $index < count($result); $index++) {
+         $res_count = count($result);
+         for($index = 0; $index < $res_count; $index++) {
             array_push($tables, $result[$index]['table_name']);
          }
 
@@ -369,7 +370,8 @@ class Database {
             $this->logH->log(2, $this->TAG, "'$tableName' appears not to have any columns");
          }
 
-         for($index = 0; $index < count($result); $index++) {
+         $res_count = count($result);
+         for($index = 0; $index < $res_count; $index++) {
             $type = strtolower($result[$index]['data_type']);
 
             if($type == "character varying") $type = Database::$TYPE_VARCHAR;
@@ -419,10 +421,11 @@ class Database {
       $this->logH->log(4, $this->TAG, "columns = ".print_r($columns, true));
 
       $keys = array_keys($columns);
+      $key_count = count($keys);
       $query = "insert into ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." (".Database::$QUOTE_SI.implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $keys).Database::$QUOTE_SI.") ";
       $values ="values(";
 
-      for($index = 0; $index < count($keys); $index++) {
+      for($index = 0; $index < $key_count; $index++) {
          $values .= $columns[$keys[$index]];
          if($index == count($keys) - 1) {//last element
             $values .= ")";
@@ -483,12 +486,14 @@ class Database {
          AND i.indisprimary";
       try {
          $result = $this->runGenericQuery($query, true);
+         $res_count = count($result);
          $pkeys = array();
          if(is_array($result)) {
-            if(count($result) == 0) {
+            if($res_count == 0) {
                $this->logH->log(2, $this->TAG, "'$tableName' does not have a primary key in the database '{$this->getDatabaseName()}'");
             }
-            for($index = 0; $index < count($result); $index++) {
+
+            for($index = 0; $index < $res_count; $index++) {
                array_push($pkeys, $result[$index]['attname']);
             }
             return $pkeys;
@@ -521,7 +526,8 @@ class Database {
          $result = $this->runGenericQuery($query, true);
          if(is_array($result)) {
             $foreignKeys = array();
-            for($index = 0; $index < count($result); $index++) {
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++) {
                $this->logH->log(3, $this->TAG, "First character in foreign key '{$result[$index]['columns']}'  = ".substr($result[$index]['columns'], 0, 1));
                if(substr($result[$index]['columns'], 0, 2) == '{"') {
                   $columns = array_values(array_unique(explode('","', substr($result[$index]['columns'], 2, -2))));
@@ -560,7 +566,8 @@ class Database {
          $result = $this->runGenericQuery($query, true);
          if(is_array($result)) {
             $keys = array();
-            for($index = 0; $index < count($result); $index++) {
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++) {
                array_push($keys, $result[$index]['column_name']);
             }
             return $keys;
@@ -833,7 +840,8 @@ class Database {
             $this->runGenericQuery($query);
          }
          //make sure only unique columns exist in $primaryKeyColumns
-         for($index = 0; $index < count($existingKey); $index++) {
+         $exk_count = count($existingKey);
+         for($index = 0; $index < $exk_count; $index++) {
             if(!in_array($existingKey[$index], $primaryKeyColumns)) {
                array_push($primaryKeyColumns, $existingKey[$index]);
             }
@@ -863,8 +871,9 @@ class Database {
             $this->logH->log(3, $this->TAG, "Creating a foreign key in '$table'");
             $foreignKeys = $this->getTableForeignKeys($table);
             $fKeys = array_keys($foreignKeys);
+            $fkey_count = count($fKeys);
             //check if a foreign key joins table with refTable
-            for($index = 0; $index < count($fKeys); $index++) {
+            for($index = 0; $index < $fkey_count; $index++) {
                if($foreignKeys[$fKeys[$index]]['ref_table'] == $refTable) {
                   $query = "alter table ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." drop constraint ".Database::$QUOTE_SI.$fKeys[$index].Database::$QUOTE_SI;
                   $this->logH->log(2, $this->TAG, "About to drop '$table' foreign key ".  print_r($foreignKeys[$fKeys[$index]], true));
@@ -931,7 +940,8 @@ class Database {
             $pKey = array();
             $createString = "create table ".Database::$QUOTE_SI.$name.Database::$QUOTE_SI." ";
             $columnNames = array();
-            for($cIndex = 0; $cIndex < count($columns); $cIndex++) {
+            $clmn_count = count($columns);
+            for($cIndex = 0; $cIndex < $clmn_count; $cIndex++) {
                if($cIndex == 0){
                   $createString .= "(";
                }
@@ -1074,7 +1084,8 @@ class Database {
             }
             $fromClause .= " on ";
             $onClause = "";
-            for($index = 0; $index < count($foreignKeys['columns']); $index++) {
+            $fkc_count = count($foreignKeys['columns']);
+            for($index = 0; $index < $fkc_count; $index++) {
                if(strlen($onClause) == 0) {
                   $onClause .= Database::$QUOTE_SI.$table.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['columns'][$index].Database::$QUOTE_SI." = ".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['ref_columns'][$index].Database::$QUOTE_SI;
                }

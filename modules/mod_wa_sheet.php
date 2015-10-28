@@ -89,7 +89,8 @@ class WASheet {
          try {
             //$query = "describe `{$this->sheetName}`";
             $result = $this->database->getTableDetails($this->database->getDatabaseName(), $this->sheetName);//TODO: might need a check on whether database name is same as workflow instance
-            for($index = 0; $index < count($result); $index++) {
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++) {
                $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
                array_push($this->columns, $currColumn);
             }
@@ -115,11 +116,12 @@ class WASheet {
       $data = array();
       $selectColumnsString = "";
       $entireSheetMatches = false;//whether the entire sheet matches prefix
-      if(count($prefix) == 0){
+      $pref_count = count($prefix);
+      if($pref_count == 0){
          $entireSheetMatches = true;
       }
       else {
-         for($pIndex = 0; $pIndex < count($prefix); $pIndex++) {
+         for($pIndex = 0; $pIndex < $pref_count; $pIndex++) {
             $currPrefix = $prefix[$pIndex];
             if($currPrefix === "" || strrpos($this->sheetName, $currPrefix, -strlen($this->sheetName)) !== FALSE) {//column has prefix
                $entireSheetMatches = true;
@@ -129,7 +131,8 @@ class WASheet {
          }
       }
       try {
-         for($cIndex = 0; $cIndex < count($this->columns); $cIndex++) {
+         $clmn_count = count($this->columns);
+         for($cIndex = 0; $cIndex < $clmn_count; $cIndex++) {
             $currColumn = $this->columns[$cIndex];
             if($entireSheetMatches == true) {//add the column since the entire sheet matches at least one prefix
                if(strlen($selectColumnsString) == 0) $selectColumnsString = Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
@@ -137,7 +140,8 @@ class WASheet {
             }
             else {
                //search if the current column matches any of the prefixes
-               for($pIndex = 0; $pIndex < count($prefix); $pIndex++){
+
+               for($pIndex = 0; $pIndex < $pref_count; $pIndex++){
                   $currPrefix = $prefix[$pIndex];
                   if(strrpos($currColumn->getName(), $currPrefix, -strlen($currColumn->getName())) !== FALSE) {
                      if(strlen($selectColumnsString) == 0) $selectColumnsString = Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
@@ -196,7 +200,8 @@ class WASheet {
             $this->processColumns();
             //move what is in columnArray to an sql insert statement
             $dataColumns = array();
-            for($index = 0; $index < count($this->columns); $index++) {
+            $clmn_count = count($this->columns);
+            for($index = 0; $index < $clmn_count; $index++) {
                $currColumn = $this->columns[$index];
 
                $oColumnName = WAColumn::getOriginalColumnName($this->database, $this->fileDetails['filename'], $this->sheetName, $currColumn->getName());
@@ -204,11 +209,13 @@ class WASheet {
                $currColumn->setData($this->columnArray[$oColumnName]);
                $dataColumns[] = $currColumn;
             }
-            $this->lH->log(4, $this->TAG, "Number of data columns = ".count($dataColumns));
-            if(count($dataColumns) > 0) {
+            $dcl_count = count($dataColumns);
+            $this->lH->log(4, $this->TAG, "Number of data columns = $dcl_count");
+            if($dcl_count > 0) {
                //get the maximum row count
                $rowCount = 0;
-               foreach($dataColumns as $currDataColumn) {
+               for($z = 0; $z < $dcl_count; $z++) {
+                  $currDataColumn = $dataColumns[$z];
                   if(count($currDataColumn->getData()) > $rowCount) {
                      $rowCount = count($currDataColumn->getData());
                   }
@@ -218,7 +225,7 @@ class WASheet {
                $fullQuery = "";
                for($rIndex = 0; $rIndex < $rowCount; $rIndex++) {
                   $row = array();
-                  for($cIndex = 0; $cIndex < count($dataColumns); $cIndex++){
+                  for($cIndex = 0; $cIndex < $dcl_count; $cIndex++){
                      if(count($dataColumns[$cIndex]->getData()) > 0){
                         $cData = $dataColumns[$cIndex]->getData();
                         $cValue = $cData[$rIndex];
@@ -335,7 +342,8 @@ class WASheet {
               && array_key_exists("default", $columnDetails)
               && array_key_exists("key", $columnDetails)) {
          $column = null;
-         for($index = 0; $index < count($this->columns); $index++) {
+         $clmn_count = count($this->columns);
+         for($index = 0; $index < $clmn_count; $index++) {
             $currColumn = $this->columns[$index];
             if($currColumn->getName() == $columnDetails['original_name']) {
                $column = $currColumn;
@@ -392,7 +400,8 @@ class WASheet {
 
          //$this->lH->log(4, $this->TAG, "Columns = ".print_r($this->columns, true));
 
-         for($index = 0; $index < count($this->columns); $index++) {
+         $clmn_count = count($this->columns);
+         for($index = 0; $index < $clmn_count; $index++) {
             $currColumn = $this->columns[$index];
             array_push($schema['columns'], $currColumn->getSchema());
          }
@@ -436,7 +445,8 @@ class WASheet {
             if(is_array($this->columnArray)
               && count($this->columnArray) > 0) {
                $this->switchToThisSheet();
-               for($index = 0; $index < count($columnNames); $index++) {
+               $columnCount = count($columnNames);
+               for($index = 0; $index < $columnCount; $index++) {
                   if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
                      $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
                      $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
@@ -454,7 +464,6 @@ class WASheet {
             }
          }
 
-         $columnCount = count($columnNames);
          if($linkSheets == true && $columnsProvided == false) $columnCount++;
          if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
             $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
@@ -544,7 +553,8 @@ class WASheet {
           */
 
          $activeSheet = $this->excelObject->getActiveSheet()->toArray(null, true, false, false);
-         for($rowIndex = 0; $rowIndex < count($activeSheet); $rowIndex++){
+         $acs_count = count($activeSheet);
+         for($rowIndex = 0; $rowIndex < $acs_count; $rowIndex++){
             $this->lH->log(4, $this->TAG, "Current row index = $rowIndex");
             $columnNumber = -1;
             if($rowIndex == 0) {//we are in the first row (assume first row has column headings)
@@ -574,9 +584,10 @@ class WASheet {
                }
             }
             else {//iterating though data rows (not heading rows)
-               if(count($this->columnArray) > 0) {
+               $cla_count = count($this->columnArray);
+               if($cla_count > 0) {
 
-                  for($columnIndex = 0; $columnIndex < count($this->columnArray); $columnIndex++){
+                  for($columnIndex = 0; $columnIndex < $cla_count; $columnIndex++){
                      $headingCell = $activeSheet[0][$columnIndex];
                      $cellValue = trim($activeSheet[$rowIndex][$columnIndex]);
                      $this->columnArray[$headingCell][$rowIndex - 1] = $cellValue;
@@ -693,7 +704,8 @@ class WASheet {
                $tables = array();
                $metaTables = Workflow::getAllMetaTables();
 
-               for($index = 0; $index < count($result); $index++) {
+               $res_count = count($result);
+               for($index = 0; $index < $res_count; $index++) {
                   if(!in_array($result[$index], $metaTables)) {
                      array_push($tables, $result[$index]);
                   }
