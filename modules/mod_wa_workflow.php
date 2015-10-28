@@ -1523,7 +1523,7 @@ class Workflow {
     */
    public function getRawDataFiles() {
       $dataFiles = array();
-      $df_count = count($dataFiles);
+      $df_count = count($this->files);
       for($index = 0; $index < $df_count; $index++) {
          $currFile = $this->files[$index];
          if($currFile->getType() == WAFile::$TYPE_RAW) {
