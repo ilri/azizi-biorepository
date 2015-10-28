@@ -170,40 +170,32 @@ class WAColumn {
                   $length = strlen($this->data[$index]);
                }
 
+               if($typeDate == $typeVarchar) {
+                  if(WAColumn::isDate($this->data[$index])) $typeDate++;
+               }
+               if($typeTime == $typeVarchar) {
+                  if(WAColumn::isTime($this->data[$index])) $typeTime++;
+               }
+               if($typeDateTime == $typeVarchar) {
+                  if(WAColumn::isDatetime($this->data[$index])) $typeDateTime++;
+               }
+               if($typeTimestamp == $typeVarchar) {
+                  if(WAColumn::isTimestamp($this->data[$index])) $typeTimestamp++;
+               }
+               if($typeDouble == $typeVarchar) {
+                  if(WAColumn::isDouble($this->data[$index])) $typeDouble++;
+               }
+               if($typeTinyInt == $typeVarchar) {
+                  if(WAColumn::isTinyInt($this->data[$index])) $typeTinyInt++;
+               }
+               if($typeInteger == $typeVarchar) {
+                  if(WAColumn::isInt($this->data[$index])) $typeInteger++;
+               }
+               if($typeBoolean == $typeVarchar) {
+                  if(WAColumn::isBoolean($this->data[$index])) $typeBoolean++;
+               }
                //no need to test for string. String is default value
                $typeVarchar++;
-
-               if(WAColumn::isDate($this->data[$index])) {
-                  //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type date");
-                  $typeDate++;
-               }
-               else if(WAColumn::isTime($this->data[$index])) {
-                  //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type time");
-                  $typeTime++;
-               }
-               else if(WAColumn::isDatetime($this->data[$index])) {
-                  //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type datetime");
-                  $typeDateTime++;
-               }
-               else if(WAColumn::isTimestamp($this->data[$index])) {
-                  $typeTimestamp++;
-               }
-               else if(WAColumn::isDouble($this->data[$index])) {
-                  //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type double");
-                  $typeDouble++;
-               }
-               else if(WAColumn::isTinyInt($this->data[$index])) {
-                  //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type tinyint");
-                  $typeTinyInt++;
-               }
-               else if(WAColumn::isInt($this->data[$index])) {
-                  //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type int");
-                  $typeInteger++;
-               }
-               else if(WAColumn::isBoolean($this->data[$index])) {
-                  //$this->lH->log(4, $this->TAG, "'{$this->data[$index]}' is of type tinyint");
-                  $typeBoolean++;
-               }
             }
          }
 
