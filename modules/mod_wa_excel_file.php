@@ -98,7 +98,9 @@ class WAExcelFile {
    public function processToMySQL($linkSheets) {
       if($this->excelObject != null) {
          $sheetNames = $this->excelObject->getSheetNames();
-         $this->lH->log(4, $this->TAG, "{$this->waFile->getFSLocation()} has the following sheets ".print_r($sheetNames, true));
+
+         $shs_count = count($sheetNames);
+         $this->lH->log(4, $this->TAG, "{$this->waFile->getFSLocation()} has $shs_count sheets");
          if(array_search("main_sheet", $sheetNames) === false) {
             $this->lH->log(2, $this->TAG, "Setting link sheets to false since the excel file does not have a 'main_sheet'");
             $linkSheets = false;//TODO: update code to work with WASheet::getOriginalName()

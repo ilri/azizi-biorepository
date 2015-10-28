@@ -554,8 +554,8 @@ class WASheet {
 
          $activeSheet = $this->excelObject->getActiveSheet()->toArray(null, true, false, false);
          $acs_count = count($activeSheet);
+         $this->lH->log(4, $this->TAG, "The sheet '{$this->sheetName}' has $acs_count rows");
          for($rowIndex = 0; $rowIndex < $acs_count; $rowIndex++){
-            $this->lH->log(4, $this->TAG, "Current row index = $rowIndex");
             $columnNumber = -1;
             if($rowIndex == 0) {//we are in the first row (assume first row has column headings)
                //create an array for each column heading

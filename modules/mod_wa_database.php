@@ -417,9 +417,6 @@ class Database {
     * @throws WAException
     */
    public function runInsertQuery($table, $columns, $returnStatement = false) {
-      $this->logH->log(4, $this->TAG, "runInsertQuery called");
-      $this->logH->log(4, $this->TAG, "columns = ".print_r($columns, true));
-
       $keys = array_keys($columns);
       $key_count = count($keys);
       $query = "insert into ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." (".Database::$QUOTE_SI.implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $keys).Database::$QUOTE_SI.") ";
@@ -436,7 +433,6 @@ class Database {
       }
 
       $query .= $values;
-      $this->logH->log(4, $this->TAG, "Insert query = ".$query);
       try {
          if($returnStatement == true){
             return $query;
