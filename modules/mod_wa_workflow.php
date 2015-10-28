@@ -494,25 +494,17 @@ class Workflow {
       $this->lH->log(3, $this->TAG, "Generating an instance id for this new workflow");
       $generated = false;
       while($generated === false) {
-         //generate random id
-
+         //generate random id and check if it is unique
          $randomID = Workflow::$workflowPrefix.Workflow::generateRandomID();
-
-         //check if random id is unique
          try{
             //$result = $this->database->runGenericQuery("show databases", true);//since all databases names correspond to the workflow instances
-            $result = $this->database->getDatabaseNames();
-
-            $isDuplicate = false;
-            for($index = 0; $index < count($result); $index++){
-               if($result[$index] === $randomID) {
-                  $isDuplicate = true;
-                  break;
-               }
-            }
-
+            $isDuplicate = $this->database->checkIfDatabaseExists($randomID);
             if($isDuplicate === false){//no database with a similar name exists.
                return $randomID;
+            }
+            else{
+               $isDuplicate = true;
+               break;
             }
             //otherwise, the loop will rerun
             //theoretically, this loop should only run once
@@ -1900,7 +1892,7 @@ class Workflow {
    }
 
    /**
-    * This function gets all foreign keys in the the database corresponding to this
+    * This function gets all foreign keys in the database corresponding to this
     * workflow
     */
    public function getForeignKeys() {
@@ -1912,12 +1904,12 @@ class Workflow {
             $tables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
             $return = array();
             for($index = 0; $index < count($tables); $index++) {
+               $this->lH->log(4, $this->TAG, "Get foreign keys for the table '{$tables[$index]}'");
                $currFKeys = $this->database->getTableForeignKeys($tables[$index]);
                $fKeyKeys = array_keys($currFKeys);
-               $this->lH->log(4, $this->TAG, "Curr fK = ".  print_r($currFKeys, true));
                $formatted = array();
                for($keyIndex = 0; $keyIndex < count($fKeyKeys); $keyIndex++) {
-                  $this->lH->log(4, $this->TAG, "Foreign keys = ".print_r($currFKeys[$fKeyKeys[$keyIndex]], true));
+
                   $formatted[] = array(
                       "ref_sheet" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_table'],
                       "ref_columns" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_columns'],
@@ -2706,6 +2698,8 @@ class Workflow {
     * @param array   $config  repository_config object to be used
     * @param string  $user    user we are getting access for
     * @param boolean $admin   set to TRUE if you want to get all the workflows
+    *
+    * @todo Create a table for saving the current workflows
     */
    public static function getUserWorkflows($config, $user, $admin) {
       include_once 'mod_wa_database.php';
@@ -2720,7 +2714,6 @@ class Workflow {
       );//object to store return json for this function
 
       //get all the databases that look like store workflow details
-      //$query = "show databases";
       try {
          if($admin == true) {
             $lH->log(3, "static_workflow", "User '$user' is admin. Listing all the workflows");
@@ -2728,16 +2721,13 @@ class Workflow {
          $result = $database->getDatabaseNames();
          if($result !== false){
             $accessibleDbs = array();//array to store details for all the databases user has access to
-            $lH->log(4, "static_workflow","All the databases = ".print_r($result, true));
-            for($index = 0; $index < count($result); $index++) {
-               //$currDbName = $result[$index]['Database'];
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++) {
                $currDbName = $result[$index];
+
                //check if current database qualifies to store workflow details
-
                $newDatabase = new Database($config, $currDbName);
-
                $tableNames = $newDatabase->getTableNames($currDbName);
-
                $metaTables = 0;
                $allMetaTables = Workflow::getAllMetaTables();
                if($tableNames !== false) {

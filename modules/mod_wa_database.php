@@ -220,9 +220,10 @@ class Database {
       if($name !== null) {
          //check if the database exists
          try {
-            $result = $this->getDatabaseNames();
+            $result = $this->checkIfDatabaseExists($name);
 
-            if(in_array($name, $result) === false) {//no database with said name exists
+            if($result === false) {//no database with said name exists
+               $this->logH->log(4, $this->TAG, "Database '$name' does not exists. Creating it");
                $query = "create database {$name} with owner = ".$this->config['testbed_user'];
                try {
                   $this->runGenericQuery($query);
@@ -271,6 +272,30 @@ class Database {
    }
 
    /**
+    * Check if a database exists in the server
+    *
+    * @param   string   $db_name    The name of the database
+    * @return  boolean  Returns false if the database does not exists else it returns true
+    * @throws  WAException    Throws an exception if there is an error while running the query
+    */
+   public function checkIfDatabaseExists($db_name){
+      $this->logH->log(4, $this->TAG, "Check if the database '$db_name' exists");
+      $query = "SELECT datname FROM pg_database WHERE datistemplate = false and datname=:datname";
+      try {
+         $result = $this->executeQuery($query,array('datname' => $db_name), true);
+         if(count($result) == 0) return false;
+         else if(count($result) == 1) return false;
+         else{
+            $this->logH->log(1, $this->TAG, "There are multiple database with the name '$db_name'");
+            throw new WAException("Multiple databases with the same name '$db_name'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      } catch (WAException $ex) {
+         $this->logH->log(1, $this->TAG, "Error while checking if the database '$db_name' exists");
+         throw new WAException("Unable to get database names from the server", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+
+   /**
     * This function returns a list of all database names from the server
     *
     * @return Array
@@ -279,15 +304,14 @@ class Database {
    public function getDatabaseNames() {
       //$query = "show databases";
       $query = "SELECT datname FROM pg_database WHERE datistemplate = false";
+      $this->logH->log(4, $this->TAG, 'Get all the database which are not template databases');
       try {
          $result = $this->runGenericQuery($query, true);
-         $this->logH->log(4, $this->TAG, "Result from '$query' = ".print_r($result, TRUE));
          $names = array();
-         for($index = 0; $index < count($result); $index++) {
+         $dbCount = count($result);
+         for($index = 0; $index < $dbCount; $index++) {
             array_push($names, $result[$index]['datname']);
          }
-
-         $this->logH->log(4, $this->TAG, "Database names = ".print_r($names, TRUE));
 
          return $names;
       } catch (WAException $ex) {
@@ -477,6 +501,12 @@ class Database {
       }
    }
 
+   /**
+    * Get the foreign keys for the given table name
+    * @param type $tableName
+    * @return type
+    * @throws WAException
+    */
    public function getTableForeignKeys($tableName) {
       $query = "SELECT tc.constraint_name, array_agg(kcu.column_name::text) columns,
          max(ccu.table_name::text) AS foreign_table_name,
@@ -492,8 +522,7 @@ class Database {
          if(is_array($result)) {
             $foreignKeys = array();
             for($index = 0; $index < count($result); $index++) {
-               $this->logH->log(3, $this->TAG, "foreign key = ".$result[$index]['columns']);
-               $this->logH->log(3, $this->TAG, "First character in foreign key = ".substr($result[$index]['columns'], 0, 1));
+               $this->logH->log(3, $this->TAG, "First character in foreign key '{$result[$index]['columns']}'  = ".substr($result[$index]['columns'], 0, 1));
                if(substr($result[$index]['columns'], 0, 2) == '{"') {
                   $columns = array_values(array_unique(explode('","', substr($result[$index]['columns'], 2, -2))));
                }
