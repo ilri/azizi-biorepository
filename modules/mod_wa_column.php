@@ -286,7 +286,7 @@ class WAColumn {
    public static function isDate($string) {
       $string = ltrim($string, "'");//' character might have been appended to prevent excel processors from modifying value
       if($string != null && strlen($string) > 0){
-         if(DateTime::createFromFormat('Y-m-d', $string) !== false) {//successfully parsed as a date
+         if(preg_match("/\d{4}-\d{2}-\d{2}.*/", $string) === 1) {//successfully parsed as a date
             return true;
          }
       }
@@ -305,7 +305,7 @@ class WAColumn {
    public static function isTime($string) {
       $string = ltrim($string, "'");//' character might have been appended to prevent excel processors from modifying value
       if($string != null && strlen($string) > 0){
-         if(DateTime::createFromFormat('H:i:s', $string) !== false) {//successfully parsed as a date
+         if(preg_match("/\d{2}:\d{2}:\d{2}.*/", $string) === 1) {//successfully parsed as a time
             return true;
          }
       }
