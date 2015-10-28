@@ -150,14 +150,14 @@ class ODKWorkflowAPI extends Repository {
 
 			// dmp db settings
 
-         if(file_exists(get_include_path()."/{$settings['dmp_dbsettings_file']}")) {
+         if(parse_ini_file($settings['dmp_dbsettings_file']) !== false) {//check for both availability and ini correctness
 				$dmp_settings = parse_ini_file($settings['dmp_dbsettings_file']);
               $this->config['testbed_dbloc'] = $dmp_settings['dbloc'];
               $this->config['testbed_user'] = $dmp_settings['user'];
               $this->config['testbed_pass'] = $dmp_settings['cypher'];
 			}
 			else {
-				$this->lH->log(1, $this->TAG, "The file '{$settings['dmp_dbsettings_file']}' with the DMP database settings doesn't exist");
+				$this->lH->log(1, $this->TAG, "The file '{$settings['dmp_dbsettings_file']}' with the DMP database settings doesn't exist or is not parsable as an ini file");
 			}
 		}
 		else {
