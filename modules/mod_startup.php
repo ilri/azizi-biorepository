@@ -52,8 +52,8 @@ session_name('repository');
 //$Repository->Dbase->SessionStart();
 $Repository->sessionStart();
 
-$Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
-$Repository->Dbase->CreateLogEntry("Files: \n".print_r($_FILES, true), 'debug');
+if(count($_POST) != 0) $Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
+if(count($_FILES) != 0) $Repository->Dbase->CreateLogEntry("Files: \n".print_r($_FILES, true), 'debug');
 
 if(Config::$downloadFile) $Repository->TrafficController();
 
