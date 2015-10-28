@@ -1,6 +1,6 @@
 <?php
 
-/* 
+/*
  * This class is the gateway to the ODK Workflow API
  */
 class ODKWorkflowAPI extends Repository {
@@ -10,203 +10,161 @@ class ODKWorkflowAPI extends Repository {
    private static $STATUS_CODE_BAD_REQUEST = "HTTP/1.1 400 Bad Request";
    private static $STATUS_CODE_FORBIDDEN = "HTTP/1.1 403 Forbidden";
    private static $HEADER_CTYPE_JSON = "Content-Type: application/json";
+
    private $lH;
    private $config;
-   private $server;
-   private $userUUID;
-   
+   private $server;        // The origin of this request. Usually an IP address
+   private $user;          // The user who originated the request
+   private $cur_session;       // The current session
+   private $uuid;
+
    public function __construct() {
       include_once 'mod_wa_workflow.php';
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
-      
+
+      // initialize the log handler
+      $this->lH = new LogHandler("./");
+
+      $this->settingsDir = $this->ROOT."config/main.ini";
       $this->config = Config::$config;
       $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
-      //$this->config['timeout'] = Config::$timeout;//TODO: uncomment when deploying
-      $this->config['timeout'] = 100000000;
       include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
-      $this->lH = new LogHandler("./");
+
+      $this->readDbSettings();
       $this->Dbase = new DBase("mysql");
       $this->Dbase->InitializeConnection($this->config);
       $this->lH->log(4, $this->TAG, "ODK Workflow API called");
    }
-   
+
    /**
     * This function handles requests being handled by this class
     */
    public function trafficController(){
+      // process the passed parameters
+      $cookies = filter_input_array(INPUT_COOKIE);
+      $token = json_decode($_POST['token'], true);
+      $this->server = (empty($token['server'])) ? $_POST['token']['server'] : $token['server'];
+      $this->user = (empty($token['user'])) ? $_SESSION['username'] : $token['user'];
+      $this->cur_session = (empty($token['session'])) ? $cookies['repository'] : $token['session'];
+      $this->secret = (empty($token['secret'])) ? $_SESSION['password'] : $token['secret'];
+      $this->auth_mode = (empty($token['auth_mode'])) ? $_SESSION['auth_type'] : $token['auth_mode'];
+
+      // generate the uuid for this session
+      $this->uuid = $this->generateUserUUID($this->server, $this->user);
+
       if(OPTIONS_REQUESTED_SUB_MODULE == ""){//user does not know what to do. Return text
-         $this->lH->log(2, $this->TAG, "Client called API without parameters. Setting status code to ".ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         $this->lH->log(1, $this->TAG, "Client called API without parameters. Setting status code to ".ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
       else if (OPTIONS_REQUESTED_SUB_MODULE == "auth"){
-         if(isset($_REQUEST['token'])) {
-            $authJson = $this->getData($_REQUEST['token']);
-            if(array_key_exists("server", $authJson)
-                    && array_key_exists("user", $authJson)
-                    && array_key_exists("secret", $authJson)
-                    && array_key_exists("auth_mode", $authJson)
-                    && ($authJson['auth_mode'] == "local" || $authJson['auth_mode'] == "ldap")) {
-               try {
-                  $this->server = $authJson['server'];
-                  $sessionId = $this->authUser($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['auth_mode'], $authJson['secret']);
-                  $data = array(
-                      "session" => $sessionId,
-                      "status" => array("healthy" => true, "errors" => array())
-                  );
-                  
-                  $this->returnResponse($data);
-               } catch (WAException $ex) {
-                  $data = array(
-                      "session" => null,
-                      "status" => array("healthy" => FALSE, "errors" =>array(Workflow::getErrorMessage($ex)))
-                  );
-                  
-                  $this->returnResponse($data);
-               }
-            }
-            else {
-               $this->lH->log(2, $this->TAG, "Either server, secret or user not set in data provided to auth endpoint '".$_REQUEST['token']."'");
-               $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         if(!empty($this->server) && !empty($this->user) && !empty($this->secret) && !empty($this->auth_mode) && ($this->auth_mode == 'local' || $this->auth_mode == 'ldap') ) {
+            try {
+               $sessionId = $this->authUser($this->uuid, $this->auth_mode, $this->secret);
+               $data = array("session" => $sessionId, "status" => array("healthy" => true, "errors" => array()) );
+               $this->returnResponse($data);
+            } catch (WAException $ex) {
+               $data = array("session" => null, "status" => array("healthy" => FALSE, "errors" =>array(Workflow::getErrorMessage($ex))) );
+               $this->returnResponse($data);
             }
          }
          else {
-            $this->lH->log(2, $this->TAG, "Token variable not set in data provided to auth endpoint");
+            if(empty($this->server)) $this->lH->log(1, $this->TAG, "Server variable not set in data provided to API during authentication");
+            if(empty($this->user)) $this->lH->log(1, $this->TAG, "User variable not set in data provided to API during authentication");
+            if(empty($this->secret)) $this->lH->log(1, $this->TAG, "Secret variable not set in data provided to API during authentication");
+            if(empty($this->auth_mode)) $this->lH->log(1, $this->TAG, "Auth mode variable not set in data provided to API during authentication");
+            $this->lH->log(1, $this->TAG, "Token variable not set in data provided to auth endpoint");
             $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          }
       }
       else {
-         //check if client provided token
-         if(isset($_REQUEST['token'])) {
-            $authJson = $this->getData($_REQUEST['token']);
-            if(array_key_exists("server", $authJson)
-                    && array_key_exists("user", $authJson)
-                    && array_key_exists("session", $authJson)) {
-               $this->server = $authJson['server'];
-               //check if session id is still valid
-               try {
-                  $this->userUUID = $this->generateUserUUID($authJson['server'], $authJson['user']);
-                  if($this->isSessionValid($this->userUUID, $authJson['session'])) {//session valid
-                     if (OPTIONS_REQUESTED_SUB_MODULE == "init_workflow"){
-                        $this->handleInitWorkflowEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "register") {
-                        $this->handleRegisterEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflows"){
-                        $this->handleGetWorkflowsEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "process_mysql_schema"){
-                        $this->handleProcessMysqlSchemaEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_working_status"){
-                        $this->handleGetWorkingStatusEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_schema"){
-                        $this->handleGetWorkflowSchemaEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "alter_field") {
-                        $this->handleAlterFieldEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "alter_sheet") {
-                        $this->handleAlterSheetEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_save_points") {
-                        $this->handleGetSavePointsEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "restore_save_point") {
-                        $this->handleRestoreSavePointEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "delete_workflow") {
-                        $this->handleDeleteWorkflowEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "add_foreign_key") {
-                        $this->handleAddForeignKeyEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_foreign_keys") {
-                        $this->handleGetForeignKeyEndpoint();
-                     }
-                     else if (OPTIONS_REQUESTED_SUB_MODULE == "get_sheet_data") {
-                        $this->handleGetSheetDataEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "dump_data") {
-                        $this->handleDumpDataEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "alter_name") {
-                        $this->handleAlterNameEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_db_credentials") {
-                        $this->handleGetDbCredentialsEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_schema_diff") {
-                        $this->handleGetSchemaDiffEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_merge_diff") {
-                        $this->handleGetMergeDiffEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_version_diff") {
-                        $this->handleResolveVersionDiffEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_merge_diff") {
-                        $this->handleResolveMergeDiffEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_data") {
-                        $this->handleGetDataEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "add_note") {
-                        $this->handleAddNoteEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_notes") {
-                        $this->handleGetNotesEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "delete_note") {
-                        $this->handleDeleteNoteEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "run_query") {
-                        $this->handleRunQueryEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "grant_user_access") {
-                        $this->handleGrantUserAccessEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "revoke_user_access") {
-                        $this->handleRevokeUserAccessEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_access_level") {
-                        $this->handleGetAccessLevelEndpoint();
-                     }
-                     else if(OPTIONS_REQUESTED_SUB_MODULE == "get_users") {
-                        $this->handleGetUsersEndpoint();
-                     }
-                     else {
-                        $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
-                        $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
-                     }
-                  }
+         //check if client provided the necessary details for accessing the API
+         if(!empty($this->server) && !empty($this->user) && !empty($this->cur_session) ) {
+            //check if session id is still valid
+            try {
+               if($this->isSessionValid($this->uuid, $this->cur_session)) {
+                  $this->lH->log(4, $this->TAG, "We have a valid session, please proceed");
+                  // we have a valid session so lets go to the necessary sub module
+                  if (OPTIONS_REQUESTED_SUB_MODULE == "init_workflow") $this->handleInitWorkflowEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "register") $this->handleRegisterEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflows") $this->handleGetWorkflowsEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "process_mysql_schema") $this->handleProcessMysqlSchemaEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "get_working_status") $this->handleGetWorkingStatusEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflow_schema") $this->handleGetWorkflowSchemaEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "alter_field") $this->handleAlterFieldEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "alter_sheet") $this->handleAlterSheetEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "get_save_points") $this->handleGetSavePointsEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "restore_save_point") $this->handleRestoreSavePointEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "delete_workflow") $this->handleDeleteWorkflowEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "add_foreign_key") $this->handleAddForeignKeyEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "get_foreign_keys") $this->handleGetForeignKeyEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "get_sheet_data") $this->handleGetSheetDataEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "dump_data") $this->handleDumpDataEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "alter_name") $this->handleAlterNameEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_db_credentials") $this->handleGetDbCredentialsEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_schema_diff") $this->handleGetSchemaDiffEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_merge_diff") $this->handleGetMergeDiffEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_version_diff") $this->handleResolveVersionDiffEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "resolve_merge_diff") $this->handleResolveMergeDiffEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_data") $this->handleGetDataEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "add_note") $this->handleAddNoteEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_notes") $this->handleGetNotesEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "delete_note") $this->handleDeleteNoteEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "run_query") $this->handleRunQueryEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "grant_user_access") $this->handleGrantUserAccessEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "revoke_user_access") $this->handleRevokeUserAccessEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_access_level") $this->handleGetAccessLevelEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_users") $this->handleGetUsersEndpoint();
                   else {
-                     $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_FORBIDDEN);
+                     $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
+                     $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
                   }
-               } catch (WAException $ex) {
-                  $data = array(
-                      "status" => array("healthy" => FALSE, "errors" =>array(Workflow::getErrorMessage($ex)))
-                  );
-                  
-                  $this->returnResponse($data);
                }
-            }
-            else {
-               $this->lH->log(2, $this->TAG, "Either server, secret or user not set in data provided to auth endpoint");
-               $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+               else {
+                  $this->lH->log(1, $this->TAG, "not so fast....{$this->uuid}, {$this->cur_session}");
+                  $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_FORBIDDEN);
+               }
+            } catch (WAException $ex) {
+               $data = array(
+                   "status" => array("healthy" => FALSE, "errors" =>array(Workflow::getErrorMessage($ex)))
+               );
+               $this->returnResponse($data);
             }
          }
          else {
-            $this->lH->log(2, $this->TAG, "Token variable not set in data provided to API");
+            if(empty($this->server)) $this->lH->log(1, $this->TAG, "Server variable not set in data provided to API");
+            if(empty($this->user)) $this->lH->log(1, $this->TAG, "User variable not set in data provided to API");
+            if(empty($this->cur_session)) $this->lH->log(1, $this->TAG, "Session variable not set in data provided to API");
             $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          }
       }
-      
    }
-   
+
+   /**
+    * Read the database configurations and add them to the config variable
+    */
+   private function readDbSettings(){
+      if(file_exists($this->settingsDir)) {
+			$settings = parse_ini_file($this->settingsDir);
+
+			// dmp db settings
+
+         if(file_exists(get_include_path()."/{$settings['dmp_dbsettings_file']}")) {
+				$dmp_settings = parse_ini_file($settings['dmp_dbsettings_file']);
+              $this->config['testbed_dbloc'] = $dmp_settings['dbloc'];
+              $this->config['testbed_user'] = $dmp_settings['user'];
+              $this->config['testbed_pass'] = $dmp_settings['cypher'];
+			}
+			else {
+				$this->lH->log(1, $this->TAG, "The file '{$settings['dmp_dbsettings_file']}' with the DMP database settings doesn't exist");
+			}
+		}
+		else {
+         $this->lH->log(1, $this->TAG, "The file with the repository settings doesn't exist");
+		}
+   }
+
    private function getData($variable) {
       $array = null;
       if(gettype($variable) == "string") {
@@ -215,66 +173,40 @@ class ODKWorkflowAPI extends Repository {
       else if(gettype($variable) == "array") {
          $array = $variable;
       }
-      
       return $array;
    }
-   
+
    /**
     * This functioin hanles the register endpoint of the API.
     * The register endpoint registers a new user.
-    * 
-    * $_REQUEST['data'] variable
-    * {
-    *    server   :  "The IP address from where this user is going to access the API"
-    *    user     :  "The username to be used for authenticating. Should be unique for each server"
-    *    secret   :  "If type of authentication is local, the secret to be used for authetication"
-    *    auth_mode:  "Can either be local or ldap"
-    * }
     */
    private function handleRegisterEndpoint() {
-      if(isset($_REQUEST['data'])) {
-         $authJson = $this->getData($_REQUEST['data']);
-         if(array_key_exists("server", $authJson)
-                 && array_key_exists("user", $authJson)
-                 && array_key_exists("secret", $authJson)
-                 && array_key_exists("auth_mode", $authJson)
-                 && ($authJson['auth_mode'] == "local" || $authJson['auth_mode'] == "ldap")) {
-            try {
-               $this->lH->log(4, $this->TAG, "Token json looks like this ".print_r($authJson, true));
-               $result = $this->addClient($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['auth_mode'], $authJson['secret']);
-
-               $data = array(
-                   "created" => $result,
-                   "status" => array("healthy" => true, "errors" => array())
-               );
-
-               $this->returnResponse($data);
-            }
-            catch (WAException $ex) {
-               $data = array(
-                   "created" => false,
-                   "status" => array("healthy" => false, "errors" => array(Workflow::getErrorMessage($ex)))
-               );
-
-               $this->returnResponse($data);
-            }
+      if(!empty($this->server) && !empty($this->user) && !empty($this->secret) && !empty($this->auth_mode) && ($this->auth_mode == 'local' || $this->auth_mode == 'ldap') ) {
+         try {
+            $result = $this->addClient($this->uuid, $this->auth_mode, $this->secret);
+            $data = array("created" => $result, "status" => array("healthy" => true, "errors" => array()) );
+            $this->returnResponse($data);
          }
-         else {
-            $this->lH->log(2, $this->TAG, "Either server, secret or user not set in data provided to register endpoint");
-            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         catch (WAException $ex) {
+            $data = array("created" => false, "status" => array("healthy" => false, "errors" => array(Workflow::getErrorMessage($ex))));
+            $this->returnResponse($data);
          }
       }
       else {
-         $this->lH->log(2, $this->TAG, "Data variable not set in data provided to register endpoint");
+         if(empty($this->server)) $this->lH->log(1, $this->TAG, "Server variable not set in data provided to API during authentication");
+         if(empty($this->user)) $this->lH->log(1, $this->TAG, "User variable not set in data provided to API during authentication");
+         if(empty($this->cur_session)) $this->lH->log(1, $this->TAG, "Session variable not set in data provided to API during authentication");
+         if(empty($this->secret)) $this->lH->log(1, $this->TAG, "Secret variable not set in data provided to API during authentication");
+         if(empty($this->auth_mode)) $this->lH->log(1, $this->TAG, "Auth mode variable not set in data provided to API during authentication");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the initWorkflow endpoint of the API.
-    * The initWorkflow endpoint expects the following json object in the 
+    * The initWorkflow endpoint expects the following json object in the
     * $_REQUEST['data'] variable
-    * 
+    *
     * {
     *    data_file_url  :  "URL to the data file that is resolvable from the DMZ"
     *    workflow_name  :  "The name to give the workflow instance"
@@ -295,17 +227,17 @@ class ODKWorkflowAPI extends Repository {
                     && array_search("workflow_name", $jsonKeys) !== false){
 
                //initialize a workflow object
-               $workflow = new Workflow($this->config, $json['workflow_name'], $this->userUUID);
+               $workflow = new Workflow($this->config, $json['workflow_name'], $this->uuid);
 
                //fetch the form data file from the client
                $workflow->addRawDataFile($json['data_file_url']);
-               
+
                //clean up
                $workflow->cleanUp();
-               
+
                //release resources
                $workflow->finalize();
-               
+
                //return details back to user
                $data = array(
                    "workflow_id" => $workflow->getInstanceId(),
@@ -324,31 +256,31 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_workflow endpoint of the API.
     */
    private function handleGetWorkflowsEndpoint() {
-      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->userUUID), $this->isUserAdmin($this->userUUID));
+      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->uuid), $this->isUserAdmin($this->uuid));
    }
-   
+
    /**
     * This function handles the process_mysql_schema endpoint of the API.
-    * The process_mysql_schema endpoint expects the following json object in the 
+    * The process_mysql_schema endpoint expects the following json object in the
     * $_REQUEST['data'] variable
-    * 
+    *
     * {
     *    workflow_id :  "ID of the workflow"
     * }
-    * 
+    *
     */
    private function handleProcessMysqlSchemaEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("link_sheets", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+
             $workflow->setIsProcessing(true);//set is processing to be true because workflow instance is going to be left processing after response sent to user
             //call this function after sending response to client because it's goin to take some time
             $workflow->convertDataFilesToMySQL($json['link_sheets']);
@@ -367,22 +299,22 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_working_status endpoint of the API.
-    * The get_working_status endpoint expects the following json object in the 
+    * The get_working_status endpoint expects the following json object in the
     * $_REQUEST['data'] variable
-    * 
+    *
     * {
     *    workflow_id :  "ID of the workflow"
     * }
-    * 
+    *
     */
    private function handleGetWorkingStatusEndpoint() {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $data = array(
                 "status" => $workflow->getCurrentStatus()
             );
@@ -398,13 +330,13 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_workfow_schema endpoint of the API.
     * The get_workflow_schema endpoint returns schema details for all the data
     * storing tables for the provided workflow
     * $_REQUEST['data'] variable
-    * 
+    *
     * {
     *    workflow_id :  "ID of the workflow"
     * }
@@ -413,14 +345,14 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $schema = $workflow->getSchema();
-            
+
             $data = array(
                 "schema" => $schema,
                 "status" => $workflow->getCurrentStatus()
             );
-            
+
             $this->returnResponse($data);
          }
          else {
@@ -433,12 +365,12 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the alter_field endpoint of the API.
-    * The alter_field endpoint changes the schema values for the specified 
+    * The alter_field endpoint changes the schema values for the specified
     * field.
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -460,9 +392,9 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("nullable", $json['column'])
                  && array_key_exists("default", $json['column'])
                  && array_key_exists("key", $json['column'])) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->modifyColumn($json['sheet'], $json['column']);
-            
+
             $data = array(
                 "save_point" => $savePoint,
                 "status" => $workflow->getCurrentStatus()
@@ -479,11 +411,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the alter_name endpoint of the API.
     * The alter_name endpoint renames the workflow field.
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -495,9 +427,9 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("name", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->modifyName($json['name']);
-            
+
             $data = array(
                 "save_point" => $savePoint,
                 "status" => $workflow->getCurrentStatus()
@@ -514,12 +446,12 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the alter_sheet endpoint of the API.
-    * The alter_sheet endpoint changes the schema values for the specified 
+    * The alter_sheet endpoint changes the schema values for the specified
     * field.
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -534,9 +466,9 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("original_name", $json['sheet'])
                  && array_key_exists("name", $json['sheet'])
                  && array_key_exists("delete", $json['sheet'])) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->modifySheet($json['sheet']);
-            
+
             $data = array(
                 "save_point" => $savePoint,
                 "status" => $workflow->getCurrentStatus()
@@ -553,10 +485,10 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the show_save_points endpoint
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -567,7 +499,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
             $data = Workflow::getSavePoints($this->config, $json['workflow_id']);
-            
+
             $this->returnResponse($data);
          }
          else {
@@ -580,10 +512,10 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the restore_save_point endpoint
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -596,11 +528,11 @@ class ODKWorkflowAPI extends Repository {
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("save_point", $json)) {
             $status = Workflow::restore($this->config, $json['workflow_id'], $json['save_point']);
-            
+
             $data = array(
                 "status" => $status
             );
-            
+
             $this->returnResponse($data);
          }
          else {
@@ -613,10 +545,10 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the delete_workflow endpoint
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -627,11 +559,11 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
             $status = Workflow::delete($this->config, $json['workflow_id']);
-            
+
             $data = array(
                 "status" => $status
             );
-            
+
             $this->returnResponse($data);
          }
          else {
@@ -644,7 +576,7 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function hanles the add_foreign_key endpoint
     * $_REQUEST['data'] variable
@@ -665,14 +597,14 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("sheet", $json["references"])
                  && array_key_exists("columns", $json["references"])
                  && count($json['columns']) == count($json["references"]['columns'])) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->addForeignKey($json['sheet'], $json['columns'], $json['references']);
             $status = $workflow->getCurrentStatus();
             $data = array(
                 "save_point" => $savePoint,
                 "status" => $status
             );
-            
+
             $this->returnResponse($data);
          }
          else {
@@ -685,10 +617,10 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_foreign_keys endpoint
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -698,7 +630,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $foreignKeys = $workflow->getForeignKeys();
             $status = $workflow->getCurrentStatus();
             $data = array(
@@ -717,10 +649,10 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_sheet_data endpoint
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -732,7 +664,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("sheet", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $sheetData = $workflow->getSheetData($json['sheet']);
             $status = $workflow->getCurrentStatus();
             $data = array(
@@ -751,10 +683,10 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the dump_data endpoint
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -764,7 +696,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->dumpData();
             $status = $workflow->getCurrentStatus();
             $data = array(
@@ -783,10 +715,10 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_db_credentials endpoint
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "Instance id for the workflow"
@@ -796,7 +728,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $data = Workflow::getUserDBCredentials($this->userUUID, $this->config, $json['workflow_id']);
+            $data = Workflow::getUserDBCredentials($this->uuid, $this->config, $json['workflow_id']);
             $this->returnResponse($data);
          }
          else {
@@ -809,12 +741,12 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the diff_schema endpoint
     * The diff_schema endpoint checkes for the differences in schema structure for
     * the specified workflows
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id    :  "Instance id for the main workflow"
@@ -829,7 +761,7 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("workflow_id_2", $json)
                && array_key_exists("type", $json)
                && ($json['type'] == 'all' || $json['type'] == 'trivial' || $json['type'] == 'non_trivial')) {
-            $diff = Workflow::getVersionDifference($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type']);
+            $diff = Workflow::getVersionDifference($this->uuid, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type']);
             $this->returnResponse($diff);
          }
          else {
@@ -842,12 +774,12 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the diff_schema endpoint
     * The diff_schema endpoint checkes for the differences in schema structure for
     * the specified workflows
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id    :  "Instance id for the main workflow"
@@ -868,7 +800,7 @@ class ODKWorkflowAPI extends Repository {
                && (is_array($json['key_1']) && array_key_exists("sheet", $json['key_1']) && array_key_exists("column", $json['key_1']))
                && array_key_exists("key_2", $json)
                && (is_array($json['key_2']) && array_key_exists("sheet", $json['key_2']) && array_key_exists("column", $json['key_2']))) {
-            $diff = Workflow::getMergeDifferences($this->userUUID, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type'], $json['key_1'], $json['key_2']);
+            $diff = Workflow::getMergeDifferences($this->uuid, $this->config, $json['workflow_id'], $json['workflow_id_2'], $json['type'], $json['key_1'], $json['key_2']);
             $this->returnResponse($diff);
          }
          else {
@@ -881,11 +813,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the resolve_version_diff endpoint
     * The resolve_version_diff endpoint tries to resolve trivial differences in schema
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id    :  "Instance id for the main workflow"
@@ -899,7 +831,7 @@ class ODKWorkflowAPI extends Repository {
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("workflow_id_2", $json)
                && array_key_exists("name", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->resolveVersionSchemaDiff( $json['name'], $json['workflow_id_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -917,11 +849,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the resolve_merge_diff endpoint
     * The resolve_merge_diff endpoint tries to resolve trivial differences in schema
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id    :  "Instance id for the main workflow"
@@ -939,7 +871,7 @@ class ODKWorkflowAPI extends Repository {
                && (is_array($json['key_1']) && array_key_exists("sheet", $json['key_1']) && array_key_exists("column", $json['key_1']))
                && array_key_exists("key_2", $json)
                && (is_array($json['key_2']) && array_key_exists("sheet", $json['key_2']) && array_key_exists("column", $json['key_2']))) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->resolveMergeDiff($json['name'], $json['workflow_id_2'], $json['key_1'], $json['key_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -957,11 +889,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_data endpoint
     * The get_data endpoint get's data from the database (and not the raw data files)
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id    :  "Instance id for the main workflow"
@@ -975,10 +907,10 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("filter", $json)
                && array_key_exists("email", $json)
                && (($json['filter'] == "all")
-                     || ($json['filter'] == "query" && array_key_exists("query", $json)) 
+                     || ($json['filter'] == "query" && array_key_exists("query", $json))
                      || ($json['filter'] == "prefix" && array_key_exists("prefix", $json) && is_array($json['prefix']))
                      || ($json['filter'] == "time" && array_key_exists("start_time", $json) && array_key_exists("end_time", $json) && array_key_exists("time_column", $json)))) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             //get the path to the data file
             $url = $workflow->getData($json['filter'], $json['email'], $json['query'], $json['prefix'], $json['time_column'], $json['start_time'], $json['end_time']);
             $status = $workflow->getCurrentStatus();
@@ -997,11 +929,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the add_note endpoint
     * The add_note endpoint adds any form of note to the workflow
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow"
@@ -1013,7 +945,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("note", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $workflow->addNote($json['note']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1030,11 +962,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_notes endpoint
     * The get_notes endpoint gets all notes corresponding to a workflow
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow"
@@ -1044,7 +976,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $notes = $workflow->getAllNotes();
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1062,11 +994,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the delete_note endpoint
     * The delete_note endpoint deletes a note using its id
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow",
@@ -1078,7 +1010,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("note_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->deleteNote($json['note_id']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1096,11 +1028,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_notes endpoint
     * The get_notes endpoint gets all notes corresponding to a workflow
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow"
@@ -1112,7 +1044,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("query", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $savePoint = $workflow->runNonSelectQuery($json['query']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1130,11 +1062,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the grant_user_access endpoint
     * The grant_user_access endpoint grants a user access to a workflow
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow"
@@ -1147,7 +1079,7 @@ class ODKWorkflowAPI extends Repository {
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("user", $json)
                && array_key_exists("access_level", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']), $json['access_level']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1164,11 +1096,11 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the revoke_user_access endpoint
     * The revoke_user_access endpoint revokes all access a user has to a workflow
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow"
@@ -1180,7 +1112,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("user", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $workflow->revokeUserAccess($this->generateUserUUID($this->server, $json['user']));
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1197,12 +1129,12 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_access_level endpoint
     * The get_access_level endpoint check what the access level for the current user
     * in the specified workflow is
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow"
@@ -1212,8 +1144,8 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
-            $accessLevel = $workflow->getAccessLevel($this->userUUID);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $accessLevel = $workflow->getAccessLevel($this->uuid);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "access_level" => $accessLevel,
@@ -1230,12 +1162,12 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
+
    /**
     * This function handles the get_access_level endpoint
     * The get_access_level endpoint check what the access level for the current user
     * in the specified workflow is
-    * 
+    *
     * $_REQUEST['data'] variable
     * {
     *    workflow_id :  "The instance id for the workflow"
@@ -1245,7 +1177,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->userUUID, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $users = $workflow->getUsers();
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1263,24 +1195,6 @@ class ODKWorkflowAPI extends Repository {
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
-   
-   /*private function handleGetDatabaseAccessEndpoint() {
-      if(isset($_REQUEST['data'])) {
-         $json = $this->getData($_REQUEST['data']);
-         if(array_key_exists("workflow_id", $json)) {
-            
-            $data = Workflow::
-         }
-         else {
-            $this->lH->log(2, $this->TAG, "workflow_id not set in data provided to get_foreign_keys endpoint");
-            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
-         }
-      }
-      else {
-         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_foreign_keys endpoint");
-         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
-      }
-   }*/
 
    /**
     * This function generates a UUID for the user by combining ith with the server address
@@ -1288,7 +1202,7 @@ class ODKWorkflowAPI extends Repository {
    private function generateUserUUID($server, $user) {
       return $server."_:_".$user;
    }
-   
+
    /**
     * This function seperates the server from
     * @param type $userUUID
@@ -1299,10 +1213,10 @@ class ODKWorkflowAPI extends Repository {
       if(count($details) == 2) {
          return array("server" => $details[0], "user" => $details[1]);
       }
-      
+
       return null;
    }
-   
+
    private function setStatusCode($code) {
       $this->lH->log(3, $this->TAG, "Setting HTTP status code to '$code'");
       if($code == ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST) {
@@ -1310,10 +1224,10 @@ class ODKWorkflowAPI extends Repository {
       }
       header($code);
    }
-   
+
    /**
     * This function returns a response back to the user as a JSON string
-    * 
+    *
     * @param type $data The data to be sent back to the client
     */
    private function returnResponse($data){
@@ -1321,10 +1235,10 @@ class ODKWorkflowAPI extends Repository {
       header(ODKWorkflowAPI::$HEADER_CTYPE_JSON);
       echo json_encode($data);
    }
-   
+
    /**
     * This function registers a client
-    * 
+    *
     * @param String $uri         The client/user UUID
     * @param String $authMode    The authentication mode. Can either be 'local' or 'ldap'
     * @param String $cyperSecret Encrypted secret to be used when authenticating
@@ -1342,12 +1256,7 @@ class ODKWorkflowAPI extends Repository {
                if($database != null){
                   $salt = $security->generateSalt();
                   $hash = $security->hashPassword($decryptedCypher, $salt);
-                  $columns = array(
-                      "uri" => "'$uri'",
-                      "ldap_auth" => "'f'",
-                      "secret" => "'$hash'",
-                      "salt" => "'$salt'"
-                  );
+                  $columns = array("uri" => "'$uri'", "ldap_auth" => "'f'", "secret" => "'$hash'", "salt" => "'$salt'");
                   $database->runInsertQuery("clients", $columns);
                   return true;
                }
@@ -1356,7 +1265,7 @@ class ODKWorkflowAPI extends Repository {
                }
             }
             catch(WAException $ex) {
-               throw new WAException("Unable to authenticate client becuasue of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
+               throw new WAException("Unable to authenticate client because of database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
             }
          }
          else {
@@ -1401,18 +1310,17 @@ class ODKWorkflowAPI extends Repository {
       }
       return false;
    }
-   
+
    /**
     * This function authenticates a client against the client list
-    * 
+    *
     * @param type $uri           Client's unique identifier. Use IP address
     * @param type $cypherSecret  The client secrete
-    * 
+    *
     * @return string Auth Token/session id
     * @throws WAException
     */
    private function authUser($uri, $authMode, $cypherSecret) {
-      $this->lH->log(4, $this->TAG, "Dbase object = ".print_r($this->Dbase, TRUE));
       $security = new Security($this->Dbase);
       $decryptedCypher = $security->decryptCypherText(base64_decode($cypherSecret));
       $this->lH->log(4, $this->TAG, "decryptedCipher = $decryptedCypher");
@@ -1454,9 +1362,9 @@ class ODKWorkflowAPI extends Repository {
                      $ldapAuth = $result[0]['ldap_auth'];
                      $userURI = ODKWorkflowAPI::explodeUserUUID($uri);
                      $ldapRes = $security->ldapAuth($userURI['user'], $decryptedCypher);
-                     $this->lH->log(4, $this->TAG, "LDAP AUTH result = ".print_r($ldapRes, true));
                      if($ldapAuth == "t" && $ldapRes == 0) {//client authenticated
                         //create session id
+                        $this->lH->log(4, $this->TAG, "The user '{$userURI['user']}' has been authenticated succesfully via LDAP");
                         $sessionId = $this->setSessionId($database, $security, $clientId);
 
                         return $sessionId;
@@ -1475,13 +1383,13 @@ class ODKWorkflowAPI extends Repository {
       else {
          throw new WAException("Unable to authenticate client because cypher text provided couldn't be decrypted", WAException::$CODE_WF_PROCESSING_ERROR, null);
       }
-      
+
       return null;
    }
-   
+
    /**
     * This function determines whether the provided session is valid
-    * 
+    *
     * @param String $uri         The client/user UUID
     * @param String $sessionId   The session id
     * @return boolean   TRUE if session is valid
@@ -1490,10 +1398,11 @@ class ODKWorkflowAPI extends Repository {
    private function isSessionValid($uri, $sessionId) {
       try {
          $database = new Database($this->config);
+         $security = new Security($this->Dbase);
          //get the client id
          $query = "select id from clients where uri = '$uri'";
          $result = $database->runGenericQuery($query, true);
-         
+
          if(is_array($result) && count($result) == 1) {
             $clientId = $result[0]['id'];
             $query = "select update_time from sessions where session_id = '$sessionId' and client_id = $clientId";
@@ -1507,20 +1416,59 @@ class ODKWorkflowAPI extends Repository {
                   return true;
                }
             }
+            else{
+               // no record in the sessions table... so add it
+               $this->lH->log(4, $this->TAG, "No sessions for '$uri'. Adding one and then attempt to log in again....");
+               try {
+                  $sessions = $this->setSessionId($database, $security, $clientId);
+                  if(is_null($sessions)){
+                     $this->lH->log(1, $this->TAG, "Cannot add a session into the sessions table");
+                  }
+                  else{
+                     return true;
+                  }
+               } catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "An error occurred while trying to insert a new session");
+                  try {
+                     $query = "delete from sessions where client_id = $clientId";
+                     $database->runGenericQuery($query);
+                     $query = "delete from clients where uri = '$uri'";
+                     $database->runGenericQuery($query);
+                  } catch (WAException $ex) {
+                     $this->lH->log(1, $this->TAG, "An error occurred while trying to delete the client and its session '$uri'");
+                     return false;
+                  }
+               }
+            }
          }
          else {
-            $this->lH->log(2, $this->TAG, "Unable to get the client id for the provided URI. Failed to auth client '$uri'");
+            // this user is given access to the DMP but doesn't have a record in the clients table, so lets add him/her
+            $this->lH->log(4, $this->TAG, "Unable to get the client id '$uri' for the provided URI in the database. Will attempt to add the client");
+            $this->handleRegisterEndpoint();
+            // if all is ok, call this functuion again
+            if(!$this->isSessionValid($uri, $sessionId)){
+               $this->lH->log(1, $this->TAG, "Added the client '$uri' in the database successfully but I can't log in, so I will now delete the client.");
+               try {
+                  $query = "delete from clients where uri = '$uri'";
+                  $database->runGenericQuery($query);
+               } catch (WAException $ex) {
+                  $this->lH->log(1, $this->TAG, "An error occurred while trying to delete the client '$uri'");
+                  return false;
+               }
+            }
+            else{
+               return true;
+            }
          }
       } catch (WAException $ex) {
          throw new WAException("Unable to authenticate client because of a system error", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
-      
-      return false;
+      return true;
    }
-   
+
    /**
     * This function checks if the user is an admin
-    * 
+    *
     * @param type $userURI The user's URI
     */
    private function isUserAdmin($userURI) {
@@ -1542,13 +1490,13 @@ class ODKWorkflowAPI extends Repository {
       }
       return false;
    }
-   
+
    /**
-    * This function adds a session id to 
-    * 
+    * This function adds a session id to
+    *
     * @param Database $database
     * @param Security $security
-    * 
+    *
     * @throws WAException
     */
    private function setSessionId($database, $security, $clientId) {
@@ -1564,10 +1512,7 @@ class ODKWorkflowAPI extends Repository {
       } catch (WAException $ex) {
          throw new WAException("Unable to record the client's session ID because of a database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
-      
       return null;
    }
 }
-
 ?>
-

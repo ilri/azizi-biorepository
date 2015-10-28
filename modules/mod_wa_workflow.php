@@ -1,6 +1,6 @@
 <?php
 
-/* 
+/*
  * This class implements the Workflow clas in the ODK Workflow API
  */
 class Workflow {
@@ -18,7 +18,7 @@ class Workflow {
    private $currUser;//current user interracting with instance
    private $processing;//flag to be used with asynchronous processes. Set to true if asynchronous task working for current instance (example of task is converting excel sheets to MySQL tables)
    private static $workflowPrefix = "dmp_";//prefix to be used in instance IDs and db users
-   
+
    public static $TABLE_META_CHANGES = "__meta_changes";
    public static $TABLE_META_VAR_NAMES = "__meta_var_names";
    public static $TABLE_META_ACCESS = "__meta_access";
@@ -30,7 +30,7 @@ class Workflow {
    public static $CHANGE_COLUMN = "column";
    public static $ACCESS_LEVEL_NORMAL = "normal";
    public static $ACCESS_LEVEL_ADMIN = "admin";
-   
+
    /**
     * Default class contructor
     * @param Object $config repository_config object
@@ -45,7 +45,7 @@ class Workflow {
       include_once 'mod_wa_excel_file.php';
       include_once 'mod_wa_sheet.php';
       include_once 'mod_wa_api.php';
-      
+
       $this->config = $config;
       $this->lH = new LogHandler("./");
       $this->errors = array();
@@ -54,11 +54,11 @@ class Workflow {
       $this->currUser = $currUser;
       $this->workflowName = $workflowName;
       $this->processing = false;
-      
+
       $this->instanceId = $instanceId;
-      
+
       $this->initDbConnection();
-      
+
       //check if instanceId is null and try generating one if it is
       if($this->instanceId === null){
          $this->instanceId = $this->generateInstanceID();
@@ -70,7 +70,7 @@ class Workflow {
             array_push($this->errors, $ex);
             $this->healthy = false;
          }
-         
+
          //make sure the working directory exists
          $this->createWorkingDir();
 
@@ -89,7 +89,7 @@ class Workflow {
                   $workflowDetails = Workflow::getWorkflowDetails($this->config, $this->instanceId);//get workflow details from the MySQL database
                   $this->workflowName =  $workflowDetails['workflow_name'];
                   $this->workingDir = $workflowDetails['working_dir'];
-                  
+
                   //initialize all the files
                   try {
                      $this->files = WAFile::getAllWorkflowFiles($this->config, $this->instanceId, $this->workingDir);
@@ -112,26 +112,26 @@ class Workflow {
                $this->healthy = false;
                array_push($this->errors, new WAException("An error occurred while trying to restore state from database", WAException::$CODE_WF_INSTANCE_ERROR, $ex));
             }
-           
+
          }
          else {
             $this->lH->log(1, $this->TAG, "Cannot continue initializing workflow instance with id = '{$this->instanceId}'. Object is already unhealthy");
             $this->healthy = false;
             array_push($this->errors, new WAException("Cannot continue initializing workflow instance. Object is already unhealthy", WAException::$CODE_WF_INSTANCE_ERROR, null));
          }
-         
+
       }
    }
-   
+
    /**
     * This function returns the name of the current workflow
-    * 
+    *
     * @return String the name of the workflow
     */
    public function getWorkflowName() {
       return $this->workflowName;
    }
-   
+
    public function getAccessLevel($user) {
       try {
          $query = "select id from ".  Workflow::$TABLE_META_ACCESS." where user_granted = '$user' and is_admin = '".Database::$BOOL_TRUE."' and access_revoked = '".Database::$BOOL_FALSE."'";
@@ -146,10 +146,10 @@ class Workflow {
          array_push($this->errors, new WAException("Could not get the user's access level", WAException::$CODE_DB_QUERY_ERROR, $ex));
       }
    }
-   
+
    /**
     * This function saves the user's access level in the database
-    * 
+    *
     * @param type $user       The user to be granted access to the workflow
     */
    public function grantUserAccess($user, $userAccessLevel, $isNewWorkflow = false) {
@@ -179,7 +179,7 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to grant '$user' access to the workflow '{$this->instanceId}'");
       }
    }
-   
+
    public function getUsers() {
       //first check if this user is allowed to see all users
       $users = array();
@@ -217,10 +217,10 @@ class Workflow {
       }
       return $users;
    }
-   
+
    /**
     * This function revokes the user's access level in the database
-    * 
+    *
     * @param type $user       The user to be granted access to the workflow
     * @param type $grantedBy  The user granting the access
     */
@@ -245,7 +245,7 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to grant '$user' access to the workflow '{$this->instanceId}'");
       }
    }
-   
+
    /**
     * This function saves workflow details including:
     *    - the name
@@ -259,13 +259,13 @@ class Workflow {
    private function saveWorkflowDetails() {
       $this->lH->log(3, $this->TAG, "Saving details for workflow with id = '{$this->instanceId}'");
       $this->lH->log(4, $this->TAG, "************************************************************ inserting into meta document table");
-      
+
       $processing = Database::$BOOL_FALSE;
       if($this->processing === true) $processing = Database::$BOOL_TRUE;
-      
+
       $healthy = Database::$BOOL_FALSE;
       if($this->healthy === true) $healthy = Database::$BOOL_TRUE;
-      
+
       $columns = array(
           "workflow_name" => "'{$this->workflowName}'",
           "created_by" => "'{$this->currUser}'",
@@ -276,7 +276,7 @@ class Workflow {
           "health" => "'{$healthy}'",
           "version" => Workflow::$VERSION
       );
-      
+
       try {
          $this->database->runInsertQuery(Workflow::$TABLE_META_DOCUMENT, $columns);
       } catch (WAException $ex) {
@@ -285,10 +285,10 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "An error occurred while trying to workflow details in the database for workflow with id = '{$this->instanceId}'");
       }
    }
-   
+
    /**
     * This function initializes the meta tables for this workflow instance
-    * 
+    *
     */
    private function initMetaDBTables() {
       if($this->database->getDatabaseName() == $this->instanceId) {
@@ -305,7 +305,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    /**
     * This function checks whether the metaChanges table is created and creates it if not.
     * This table stores changes made to the form schema
@@ -331,7 +331,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    /**
     * This function checks whether the metaVarNames table  is created and creates it if not.
     * This table stores variable names (and their initial names)
@@ -353,7 +353,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    /**
     * This function checks whether the metaChanges  is created and creates it if not.
     * This table stores users that have access to the workflow
@@ -378,7 +378,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    /**
     * This funciton checks whether the metaDocument table is created and creates it if not.
     * This table stores the name, version and working directory for the document being worked on
@@ -404,7 +404,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    /**
     * This funciton checks whether the metaErrors table is created and creates it if not.
     * This table stores the code, message and timestamp for the error
@@ -425,7 +425,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    private function createMetaNotesTable(){
       try {
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_NOTES,
@@ -442,7 +442,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    /**
     * This function creates the working directory for this workflow instance
     */
@@ -482,12 +482,12 @@ class Workflow {
          $this->workingDir = null;
       }
    }
-   
+
    /**
     * This function generates a 20 character random string that meets MySQL's Schema
     * Object Name guidelines. Refer to https://dev.mysql.com/doc/refman/5.0/en/identifiers.html
     * The function also checks whether the instance id is unique
-    * 
+    *
     * @return String Returns the instance id or null if an error occurres
     */
    private function generateInstanceID() {
@@ -495,14 +495,14 @@ class Workflow {
       $generated = false;
       while($generated === false) {
          //generate random id
-         
+
          $randomID = Workflow::$workflowPrefix.Workflow::generateRandomID();
-         
+
          //check if random id is unique
          try{
             //$result = $this->database->runGenericQuery("show databases", true);//since all databases names correspond to the workflow instances
             $result = $this->database->getDatabaseNames();
-            
+
             $isDuplicate = false;
             for($index = 0; $index < count($result); $index++){
                if($result[$index] === $randomID) {
@@ -510,8 +510,8 @@ class Workflow {
                   break;
                }
             }
-            
-            if($isDuplicate === false){//no database with a similar name exists. 
+
+            if($isDuplicate === false){//no database with a similar name exists.
                return $randomID;
             }
             //otherwise, the loop will rerun
@@ -525,10 +525,10 @@ class Workflow {
          }
       }
    }
-   
+
    /**
     * This function adds a note to the workflow
-    * 
+    *
     * @param type $note
     */
    public function addNote($note) {
@@ -545,11 +545,11 @@ class Workflow {
          return;
       }
    }
-   
+
    /**
     * This function fetches all the workflow notes
-    * 
-    * @return Array  An array of all the notes 
+    *
+    * @return Array  An array of all the notes
     */
    public function getAllNotes($pruneServer = true) {
       $notes = array();
@@ -572,10 +572,10 @@ class Workflow {
       }
       return $notes;
    }
-   
+
    /**
     * This function deletes a note using it's id
-    * 
+    *
     * @param type $noteId  The note's id
     */
    public function deleteNote($noteId) {
@@ -592,11 +592,11 @@ class Workflow {
       }
       return $savePoint;
    }
-   
+
    /**
     * This function runs a generic non-select query in the database corresponding
     * to this workflow. The workflow is backed up before running the query
-    * 
+    *
     * @param string $query The query to be run
     */
    public function runNonSelectQuery($query) {
@@ -616,34 +616,34 @@ class Workflow {
       }
       return $savePoint;
    }
-   
+
    /**
     * This function generates a random alpha numeric ID that will always start with
     * an alphabetical character
-    * 
+    *
     * @return string The id
     */
    public static function generateRandomID($length = 20){
       //get first random alphabetic character
       $characters = 'abcdefghijklmnopqrstuvwxyz';
       $randomString = $characters[rand(0, strlen($characters))];
-      
+
       //generate the next 19 alphanumerical characters
       $length = $length - 1;
       $characters = '0123456789abcdefghijklmnopqrstuvwxyz';
       for ($i = 0; $i < $length; $i++) {
           $randomString .= $characters[rand(0, strlen($characters) - 1)];
       }
-      
+
       return $randomString;
    }
-   
+
    /**
     * This function intializes the database object
     */
    private function initDbConnection(){
       $this->lH->log(4, $this->TAG, "Initializing the database object for the workflow instance");
-      
+
       //close current database connection
       if($this->database != null) {
          try {
@@ -654,7 +654,7 @@ class Workflow {
             //no need to change health status to not_healthy because this shouldn't be a bad thing
          }
       }
-      
+
       //reinitiate new database connection
       try {
          $this->database = new Database($this->config, $this->instanceId);
@@ -664,18 +664,18 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to initialize the database object for workflow with id = {$this->instanceId}");
       }
    }
-   
+
    /**
     * This function fetches the raw data file from the specified URL.
     * Assumes that the file is a excel file. Saves it as an .xlsx file
-    * 
+    *
     * @param String $url The URL where the data file exists
     */
    public function addRawDataFile($url, $name = null, $mergeSheet = null, $mergeColumn = null) {
       if($name == null) $name = $this->instanceId.".xlsx";
       $this->lH->log(3, $this->TAG, "Adding '$name' in '$url' to the list of raw datafiles for '{$this->instanceId}'");
       //$this->lH->log(3, $this->TAG, "Adding raw data file to workflow with id = '{$this->instanceId}'");
-      if($this->workingDir !== null 
+      if($this->workingDir !== null
               && $this->instanceId !== null
               && $this->database !== null){
          try {
@@ -697,7 +697,7 @@ class Workflow {
          $this->healthy = false;
       }
    }
-   
+
    /**
     * This function cleans up all the resources if this object is unhealthy
     */
@@ -727,7 +727,7 @@ class Workflow {
          }
       }
    }
-   
+
    /**
     * This function releases all locks on hardware resources. Should be called
     * last for any workflow object
@@ -735,35 +735,35 @@ class Workflow {
    public function finalize() {
       $this->database->close();
    }
-   
+
    /**
     * This function sets the is processing flag for this instance to either
     * TRUE or FALSE. Flag will be auto reverted after processing finished
-    * 
+    *
     * @param bool $isProcessing Whether instance has something running
     */
    public function setIsProcessing($isProcessing) {
       $this->processing = $isProcessing;
    }
-   
+
    /**
     * This function takes each of the data files added to this workflow and tries
     * to create MySQL tables for them. Currently only supports one data file
-    * 
+    *
     * @todo Save processing status in MySQL
     */
    public function convertDataFilesToMySQL($linkSheets) {
       $this->lH->log(3, $this->TAG, "Converting data files to SQL for workflow with id = '{$this->instanceId}'");
       $this->cacheIsProcessing();
       if($this->healthy == true
-              && $this->database != null 
+              && $this->database != null
               && $this->instanceId != null
               && $this->workingDir != null
               && $this->config != null
               && $this->files != null) {
          //get only the data files
          $dataFiles = $this->getRawDataFiles();
-         
+
          if(count($dataFiles) > 0) {
             if(count($dataFiles) == 1) {//currently only support one data file
                //delete any existing data table in the database
@@ -807,43 +807,43 @@ class Workflow {
       $this->cacheErrors();
       $this->cacheHealth();
    }
-   
+
    /**
-    * This function returns an array with the status of this object and any 
+    * This function returns an array with the status of this object and any
     * cached error message
     */
    public function getCurrentStatus() {
       return Workflow::getStatusArray($this->healthy, $this->errors, $this->processing);
    }
-   
+
    /**
-    * This function returns an array with the status of this object and any 
+    * This function returns an array with the status of this object and any
     * cached error message
     */
    public static function getStatusArray($health, $errors, $processing = false) {
       $errorMessages = array();
-      
+
       for($index = 0; $index < count($errors); $index++) {
          $currError = $errors[$index];//should be an object of type WAException
          array_push($errorMessages, array("code" => $currError->getCode(), "message" => Workflow::getErrorMessage($currError)));
       }
-      
+
       $status = array(
           "healthy" => $health,
           "errors" => $errorMessages,
           "processing" => $processing
       );
-      
+
       return $status;
    }
-   
+
    /**
     * This function recurrsively extracts error messages from exception objects
-    * 
+    *
     * @param Exception $exception   The exception object from which to extract the message
     * @param int $level             The current level in the exception. 0 is root
     * @param string $currMessage    The current error message
-    * 
+    *
     * @return string The extracted error message
     */
    public static function getErrorMessage($exception, $level = 0, $currMessage = "") {
@@ -858,23 +858,23 @@ class Workflow {
          return Workflow::getErrorMessage($previous, $level+1, $currMessage);
       }
    }
-   
+
    /**
     * This function returns the Workflow instance id for this object
     */
    public function getInstanceId() {
       return $this->instanceId;
    }
-   
+
    /**
-    * This function sets the processing flag in the META_DOCUMENT table as either 
+    * This function sets the processing flag in the META_DOCUMENT table as either
     * TRUE or FALSE depending on what is provided
     */
    public function cacheIsProcessing() {
       $processing = $this->processing;
       if($processing === true) $processing = Database::$BOOL_TRUE;
       else $processing = Database::$BOOL_FALSE;
-      
+
       if($this->database != null
               && $this->instanceId != null
               && $this->database->getDatabaseName() == $this->instanceId
@@ -894,18 +894,18 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to update the processing flag in ".Workflow::$TABLE_META_DOCUMENT." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    public function getDatabase() {
       return $this->database;
    }
-   
+
    /**
     * This function caches health state in the META_DOCUMENT table
     */
    public function cacheHealth() {
       $health = Database::$BOOL_TRUE;
       if($this->healthy == false) $health = Database::$BOOL_FALSE;
-      
+
       if($this->database != null
               && $this->database->getDatabaseName() == $this->instanceId
               && $this->instanceId != null) {
@@ -924,7 +924,7 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to update the health flag in ".Workflow::$TABLE_META_DOCUMENT." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    /**
     * This function caches errors caught by this object in the META_ERRORS table
     */
@@ -954,7 +954,7 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to cache errors in ".Workflow::$TABLE_META_ERRORS." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }*/
    }
-   
+
    /**
     * This function gets the cached status from the database
     */
@@ -971,7 +971,7 @@ class Workflow {
                   $processing = $result[0]['processing'];
                   if($processing === Database::$BOOL_TRUE) $this->processing = true;
                   else $this->processing = false;
-                  
+
                   $health = $result[0]['health'];
                   if($health == Database::$BOOL_TRUE) $this->healthy = true;
                   else $this->healthy = false;
@@ -985,7 +985,7 @@ class Workflow {
                $this->healthy = false;
                $this->lH->log(1, $this->TAG, "Unable to get cached status from ".Workflow::$TABLE_META_DOCUMENT." for workflow with id = {$this->instanceId}");
             }
-            
+
             //get cached errors
             $query = "select ".Database::$QUOTE_SI."code".Database::$QUOTE_SI.", ".Database::$QUOTE_SI."message".Database::$QUOTE_SI." from ".Database::$QUOTE_SI.Workflow::$TABLE_META_ERRORS.Database::$QUOTE_SI." order by id";
             $result = $this->database->runGenericQuery($query, true);
@@ -1011,7 +1011,7 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to get cached status from ".Workflow::$TABLE_META_ERRORS." because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    /**
     * This function creates a save point for the workflow
     */
@@ -1029,7 +1029,7 @@ class Workflow {
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
             $this->healthy = false;
-            $this->lH->log(1, $this->TAG, "Unable to save the workflow with instance id = '{$this->instanceId}'");
+            $this->lH->log(1, $this->TAG, "Unable to save the workflow with instance id = '{$this->instanceId}' because of $ex");
          }
       }
       else {
@@ -1039,10 +1039,10 @@ class Workflow {
       }
       return null;
    }
-   
+
    /**
     * This function restores the specified workflow to a previous state
-    * 
+    *
     * @param type $config
     * @param type $instanceId
     * @param type $restorePoint
@@ -1070,17 +1070,17 @@ class Workflow {
             $lH->log(1, "waworkflow_static", "Unable to restore workflow with id = '{$instanceId}' to '$restorePoint' save point");
          }
       }
-      
+
       $status = Workflow::getStatusArray($healthy, $errors);
       return $status;
    }
-   
+
    /**
     * This function completely deletes a workflow
-    * 
+    *
     * @param type $config     The repository config file
     * @param type $instanceId The instance id of the workflow to be deleted
-    * 
+    *
     * @return Array  The status after deleting the workflow
     */
    public static function delete($config, $instanceId) {
@@ -1103,14 +1103,14 @@ class Workflow {
          $healthy = false;
          $lH->log(1, "waworkflow_static", "Unable to delete workflow with id = '{$instanceId}'");
       }
-      
+
       $status = Workflow::getStatusArray($healthy, $errors);
       return $status;
    }
-   
+
    /**
     * This function records name changes for sheets in the current workflow
-    * 
+    *
     * @param type $previousName  The current sheet name (should exist)
     * @param type $currentName   The new name for the sheet
     */
@@ -1143,7 +1143,7 @@ class Workflow {
                $rawFiles = $this->getRawDataFiles();
                foreach($rawFiles as $currFile) {
                   $fileDetails = $currFile->getFileDetails();
-                  if(array_search($fileDetails['filename'], $recordedFiles) === false 
+                  if(array_search($fileDetails['filename'], $recordedFiles) === false
                         && ($files == null || in_array($fileDetails['filename'], $files) == true)) {//we have not recorded the name change for this file
                      $columns = array(
                         "change_time" => "'".$this->database->getMySQLTime()."'",
@@ -1164,7 +1164,7 @@ class Workflow {
                   $query = "update ".Workflow::$TABLE_META_CHANGES." set current_sheet = '$currentName' where current_sheet = '$previousName' and change_type = '".Workflow::$CHANGE_COLUMN."'";
                }
                $this->database->runGenericQuery($query);
-               
+
                //update the merge_table value for all rows in the meta files table
                $query = "update ".WAFile::$TABLE_META_FILES." set merge_table = '$currentName' where merge_table = '$previousName'";
                $this->database->runGenericQuery($query);
@@ -1186,10 +1186,10 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to record sheet name change because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    /**
     * This function records name changes for columns
-    * 
+    *
     * @param string $sheetName   The name of the sheet where the column is found
     * @param type $previousName  The current name for the column
     * @param type $currentName   The new name given to the column
@@ -1258,10 +1258,10 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to record column name change because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    /**
     * This function modifies a sheet column
-    * 
+    *
     * @param type $sheet         The name of the sheet
     * @param type $columnDetails Details of the column to be modified
     */
@@ -1297,17 +1297,17 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to modify column in workflow with instance id = '{$this->instanceId}'");
       }
-      
+
       $this->setIsProcessing(false);
       $this->cacheIsProcessing();
       $this->cacheErrors();
       $this->cacheHealth();
       return $savePoint;
    }
-   
+
    /**
     * This function modifies the workflow name
-    * 
+    *
     * @param string $name  The new workflow name
     */
    public function modifyName($newName){
@@ -1330,17 +1330,17 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to rename workflow with id = '{$this->instanceId}' bacause it wasn't successfully backed up");
       }
-      
+
       $this->setIsProcessing(false);
       $this->cacheIsProcessing();
       $this->cacheErrors();
       $this->cacheHealth();
       return $savePoint;
    }
-   
+
    /**
     * This function modifies a sheet
-    * 
+    *
     * @param array $sheetDetails
     */
    public function modifySheet($sheetDetails) {
@@ -1390,21 +1390,21 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to modify sheet in workflow with instance id = '{$this->instanceId}'");
       }
-      
+
       $this->setIsProcessing(false);
       $this->cacheIsProcessing();
       $this->cacheErrors();
       $this->cacheHealth();
       return $savePoint;
    }
-   
+
    /**
     * This function get's data from the database
-    * 
+    *
     * @param String $filter   The filter to be used for getting the data. Can be 'all', 'query' or 'prefix'
     * @param type $query      If filter is query, the corresponding query to be used to get the data
     * @param type $prefix     If filter is prefix, the prefix to be used to select columns to be fetched
-    * 
+    *
     * @return string A url to the data file
     */
    public function getData($filter, $email, $query = null, $prefix = null, $timeColumnName = null, $startTime = null, $endTime = null) {
@@ -1438,7 +1438,7 @@ class Workflow {
                   $whereClause = "where to_date(".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') >= to_date('$startTime', 'YYYY-MM-DD') AND to_date(".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') <= to_date('$endTime', 'YYYY-MM-DD')";
                   $sheetData[$mainSheetName] = $mainSheet->getDatabaseData(array(), $whereClause);
                   $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-                  
+
                   //for each of the other sheets, determine it's parent and join columns
                   $this->lH->log(1, $this->TAG, "Other sheets are ".  print_r($dataTables, true));
                   foreach($dataTables as $currSheetName) {
@@ -1514,15 +1514,15 @@ class Workflow {
       }
       return $url;
    }
-   
+
    private function sendEmail($email, $subject, $message) {
       shell_exec('echo "'.$message.'"|'.$this->config['mutt_bin'].' -F '.$this->config['mutt_config'].' -s "'.$subject.'" -- '.$email);
    }
-   
+
    /**
     * This function returns a list of all the data files associated to the current
     * workflow
-    * 
+    *
     * @return Array The list of files
     */
    public function getRawDataFiles() {
@@ -1535,7 +1535,7 @@ class Workflow {
       }
       return $dataFiles;
    }
-   
+
    /**
     * This function dumps data from the data files into the database
     */
@@ -1578,18 +1578,18 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "Unable to dump data because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
-      
+
       $this->setIsProcessing(false);
       $this->cacheIsProcessing();
       $this->cacheErrors();
       $this->cacheHealth();
       return $savePoint;
    }
-   
+
    /**
     * This function gets the schema details for all data storing tables from the
     * MySQL database storing data for this workflow
-    * 
+    *
     * @return Array Array with schema data for all the data storing MySQL tables
     */
    public function getSchema() {
@@ -1616,13 +1616,13 @@ class Workflow {
                }
                array_push($sheets, $currSheet->getSchema());
             }
-            
+
             $schema = array(
                 "workflow_id" => $this->instanceId,
                 "title" => $this->workflowName,
                 "sheets" => $sheets
             );
-            
+
             return $schema;
          } catch (WAException $ex) {
             array_push($this->errors, $ex);
@@ -1636,11 +1636,11 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to get data tables because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    /**
-    * This function resolves trivial differences between this workflow and the 
+    * This function resolves trivial differences between this workflow and the
     * one provided
-    * 
+    *
     * @param type $newName       The name to be given to the new merged schema
     * @param type $workflow2Id   The Instance id for the second workflow
     * @return type
@@ -1721,7 +1721,7 @@ class Workflow {
       }
       return $savePoint;
    }
-   
+
    private function copyData($originWorkflow, $originMergeKey = null, $destMergeKey = null) {
       //dump variable changes from workflow2
       try {
@@ -1734,7 +1734,7 @@ class Workflow {
             }
             $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $currChange);
          }
-         
+
          //copy the raw data files from workflow_2 to this workflow
          $dataFiles = $originWorkflow->getRawDataFiles();
          $mergeKeyFiles = array();
@@ -1767,10 +1767,10 @@ class Workflow {
          throw new WAException("Unable to copy metadata from {$originWorkflow->getInstanceId()} to {$targetWorkflow->getInstanceId()}", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function deletes all the data in the workflow's database
-    * 
+    *
     * @throws WAException
     */
    private function truncateWorkflow() {
@@ -1784,7 +1784,7 @@ class Workflow {
          throw new WAException("Was unable to truncate the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function resolves any merge differences between this workflow and the
     * workflow identified by $workflow2Id. The difference between this function and
@@ -1853,10 +1853,10 @@ class Workflow {
       }
       return $savePoint;
    }
-   
+
    /**
     * This function returns an array of all the data in the changes meta table
-    * 
+    *
     * @return Array An array with all the meta changes
     * @throws WAException
     */
@@ -1873,10 +1873,10 @@ class Workflow {
          throw new WAException($message, WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function adds a foreign key to the workflow
-    * 
+    *
     * @param type $sheet
     * @param type $columns
     * @param type $referencing
@@ -1898,7 +1898,7 @@ class Workflow {
       $this->cacheHealth();
       return $savePoint;
    }
-   
+
    /**
     * This function gets all foreign keys in the the database corresponding to this
     * workflow
@@ -1919,7 +1919,7 @@ class Workflow {
                for($keyIndex = 0; $keyIndex < count($fKeyKeys); $keyIndex++) {
                   $this->lH->log(4, $this->TAG, "Foreign keys = ".print_r($currFKeys[$fKeyKeys[$keyIndex]], true));
                   $formatted[] = array(
-                      "ref_sheet" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_table'], 
+                      "ref_sheet" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_table'],
                       "ref_columns" => $currFKeys[$fKeyKeys[$keyIndex]]['ref_columns'],
                       "columns" => $currFKeys[$fKeyKeys[$keyIndex]]['columns']
                   );
@@ -1941,7 +1941,7 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to get foreign keys because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    /**
     * This function returns the data corresponding to the provided sheet
     * @param type $sheetName
@@ -1978,11 +1978,11 @@ class Workflow {
          $this->lH->log(1, $this->TAG, "Unable to get sheet data for '$sheetName' because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
       }
    }
-   
+
    /**
     * This function gets all the save points for this instance.
     * Function is static inorder to avoid importing messed up workflow context if
-    * an error occurres in the workflow. Allows clients to rollback to previous 
+    * an error occurres in the workflow. Allows clients to rollback to previous
     * savepoints event if workflow health is bad
     */
    public static function getSavePoints($config, $instanceId) {
@@ -1990,7 +1990,7 @@ class Workflow {
       include_once 'mod_wa_file.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
-      
+
       $errors = array();
       $healthy = true;
       $formatted = array();//list of formatted save points
@@ -2007,11 +2007,11 @@ class Workflow {
             for($index = 0; $index < count($savePointFiles); $index++) {
                $currFile = $savePointFiles[$index];
                $currFileDetails = $currFile->getFileDetails();
-               
+
                $currFileDetails["creator"] = ODKWorkflowAPI::explodeUserUUID($currFileDetails['creator']);
                unset($currFileDetails["type"]);
                unset($currFileDetails['time_last_modified']);
-               
+
                array_push($formatted, $currFileDetails);
             }
          } catch (WAException $ex) {
@@ -2025,24 +2025,24 @@ class Workflow {
          $healthy = false;
          $lH->log(1, "waworkflow_static", "Unable to get data tables because workflow with id = '{$instanceId}' wasn't initialized correctly");
       }
-      
+
       $result = array(
           "save_points" => $formatted,
           "status" => Workflow::getStatusArray($healthy, $errors)
       );
       return $result;
    }
-   
+
    /**
     * This function copies the contents of the first workflow to the new workflow
-    * 
+    *
     * @param array $config          The repository_config file
     * @param type $oldWorkflowId    The id of the existing workflow
     * @param type $newWorkflowId    The id of the new workflow
     * @param type $oldWorkingDir    The working directory for the existing workflow
     * @param type $newWorkingDir    The working directory for the new workflow
     * @param type $savePoint        The save point in the existing workflow for which to dump into the new workflow
-    * 
+    *
     * @return array  An array containing the status after the copy
     */
    public static function copyWorkflow($config, $oldWorkflowId, $newWorkflowId, $oldWorkingDir, $newWorkingDir, $savePoint) {
@@ -2050,7 +2050,7 @@ class Workflow {
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
       include_once 'mod_wa_file.php';
-      
+
       $errors = array();
       $healthy = true;
       $lH = new LogHandler("./");
@@ -2067,26 +2067,26 @@ class Workflow {
          $healthy = false;
          $lH->log(1, "waworkflow_static", "Unable to copy workflow from '{$oldWorkflowId}' to '{$newWorkflowId}'".  print_r($ex, true));
       }
-      
+
       return Workflow::getStatusArray($healthy, $errors);
    }
-   
+
    /**
     * This function returns schema differences between the provided workflows
-    * 
+    *
     * @param string $userUUID    The current user's UUID
     * @param array $config       The repository config file
     * @param string $workflowID1 The instance id for the first workflow
     * @param string $workflowID2 The instance id for the second workflow
     * @param string $diffType    Can either be 'all', 'trivial' or 'non_trivial'
-    * 
+    *
     * @return Array  An array containing the differences plus status
     */
    public static function getVersionDifference($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all") {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
-      
+
       $errors = array();
       $healthy = true;
       $diff = array();
@@ -2114,7 +2114,7 @@ class Workflow {
                $sheet2Indexes[$schema2['sheets'][$index]['name']] = $index;
             }
             $lH->log(4, "waworkflow_static", "Sheet 2 indexes = ".print_r($sheet2Indexes, true));
-            
+
             $schema1SheetNames = array_keys($sheet1Indexes);
             $schema2SheetNames = array_keys($sheet2Indexes);
             $commonSheetNames = array();
@@ -2152,7 +2152,7 @@ class Workflow {
                   }
                }
             }
-            
+
             //for each of the common sheets
             $noCommonSheets = count($commonSheetNames);
             for($index = 0; $index < $noCommonSheets; $index++){
@@ -2160,7 +2160,7 @@ class Workflow {
                $lH->log(4, "waworkflow_static", "Comparing columns in $currSheetName");
                $currSheetIn1 = $schema1['sheets'][$sheet1Indexes[$currSheetName]];
                $currSheetIn2 = $schema2['sheets'][$sheet2Indexes[$currSheetName]];
-               
+
                //get the column indexes
                $col1Indexes = array();
                $col2Indexes = array();
@@ -2174,7 +2174,7 @@ class Workflow {
                   $col2Indexes[$currSheetIn2['columns'][$colIndex]['name']] = $colIndex;
                }
                $lH->log(4, "waworkflow_static", "Column2Indexes = ".  print_r($col2Indexes, TRUE));
-               
+
                $col1Names = array_keys($col1Indexes);
                $col2Names = array_keys($col2Indexes);
                $commonColumnNames = array();
@@ -2214,9 +2214,9 @@ class Workflow {
                      }
                   }
                }
-               
+
                //for each of the common columns, check which ones are different
-               
+
                $colSize = count($commonColumnNames);
                for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                   $currCol1 = $currSheetIn1['columns'][$col1Indexes[$commonColumnNames[$colIndex]]];
@@ -2298,10 +2298,10 @@ class Workflow {
       );
       return $result;
    }
-   
+
    /**
     * This function returns schema differences between the provided workflows
-    * 
+    *
     * @param string $userUUID    The current user's UUID
     * @param array $config       The repository config file
     * @param string $workflowID1 The instance id for the first workflow
@@ -2309,14 +2309,14 @@ class Workflow {
     * @param string $diffType    Can either be 'all', 'trivial' or 'non_trivial'
     * @param Array $mergeSheet1  An array containing the details for the column in the first workflow to be used for merging
     * @param Array $mergeSheet2  An array containing the details for the column in the second workflow to be used for merging
-    * 
+    *
     * @return Array  An array containing the differences plus status
     */
    public static function getMergeDifferences($userUUID, $config, $workflowID1, $workflowID2, $diffType = "all", $mergeSheet1, $mergeSheet2) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
-      
+
       $errors = array();
       $healthy = true;
       $diff = array();
@@ -2344,7 +2344,7 @@ class Workflow {
                $sheet2Indexes[$schema2['sheets'][$index]['name']] = $index;
             }
             $lH->log(4, "waworkflow_static", "Sheet 2 indexes = ".print_r($sheet2Indexes, true));
-            
+
             $schema1SheetNames = array_keys($sheet1Indexes);
             $schema2SheetNames = array_keys($sheet2Indexes);
             //make sure the merging sheets are fine
@@ -2498,7 +2498,7 @@ class Workflow {
                      //check which columns are in workflow2 and not workflow1
                      if($diffType == "all" || $diffType == "trivial"){
                         for($colIndex = 0; $colIndex < $colSize; $colIndex++){
-                           if(in_array($col2Names[$colIndex], $col1Names) == false 
+                           if(in_array($col2Names[$colIndex], $col1Names) == false
                                  && ($currSheetIn2['name'] != $mergeSheet2['sheet'] || ($currSheetIn2['name'] == $mergeSheet2['sheet'] && $currSheetIn2['columns'][$col2Indexes[$col2Names[$colIndex]]]['name'] != $mergeSheet2['column']))){
                               $lH->log(4, "waworkflow_static", "{$col2Names[$colIndex]} not in $workflowID1");
                               $diff[] = array(
@@ -2616,11 +2616,11 @@ class Workflow {
       );
       return $result;
    }
-   
+
    /**
     * This function returns the username and password to be used by a user to access
     * the specified workflow
-    * 
+    *
     * @param String $userURI     The user's UUID
     * @param Array $config       repository config file
     * @param type $instanceId    The instance id for the workflow
@@ -2631,7 +2631,7 @@ class Workflow {
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
       include_once 'mod_wa_sheet.php';
-      
+
       $errors = array();
       $healthy = true;
       $credentials = array();//list of formatted save points
@@ -2677,14 +2677,14 @@ class Workflow {
          $healthy = false;
          $lH->log(1, "waworkflow_static", "Unable to get database credentails for user $userURI on workflow '{$instanceId}'");
       }
-      
+
       $result = array(
           "credentials" => $credentials,
           "status" => Workflow::getStatusArray($healthy, $errors)
       );
       return $result;
    }
-   
+
    public static function getAllMetaTables() {
       include_once 'mod_wa_file.php';
       $tables = array(
@@ -2698,11 +2698,11 @@ class Workflow {
       );
       return $tables;
    }
-   
+
    /**
     * This function returns an array containing details of workflows that the
     * specified user has access to
-    * 
+    *
     * @param array   $config  repository_config object to be used
     * @param string  $user    user we are getting access for
     * @param boolean $admin   set to TRUE if you want to get all the workflows
@@ -2711,14 +2711,14 @@ class Workflow {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
-      
+
       $lH = new LogHandler("./");
       $database = new Database($config);
       $jsonReturn = array(
           "workflows" => array(),
           "status" => array("health" => true, "errors" => array())
       );//object to store return json for this function
-      
+
       //get all the databases that look like store workflow details
       //$query = "show databases";
       try {
@@ -2733,11 +2733,11 @@ class Workflow {
                //$currDbName = $result[$index]['Database'];
                $currDbName = $result[$index];
                //check if current database qualifies to store workflow details
-               
+
                $newDatabase = new Database($config, $currDbName);
-               
+
                $tableNames = $newDatabase->getTableNames($currDbName);
-               
+
                $metaTables = 0;
                $allMetaTables = Workflow::getAllMetaTables();
                if($tableNames !== false) {
@@ -2748,7 +2748,7 @@ class Workflow {
                      }
                   }
                }
-               
+
                if($metaTables == count($allMetaTables)) {//database has all the meta tables
                   $lH->log(3, "static_workflow", "'$currDbName' complies to the DMP Structure");
                   //check if the database has a workflow version
@@ -2777,12 +2777,12 @@ class Workflow {
                               array_push($accessibleDbs, $details);
                            } catch (WAException $ex) {
                               $jsonReturn['status'] = Workflow::getStatusArray(false, array($ex));
-                              return $jsonReturn;  
+                              return $jsonReturn;
                            }
                         }
                         else {
                            $lH->log(4, "static_workflow", "User '$user' does not have access to '$currDbName'");
-                        }  
+                        }
                      }
                      else {
                         $lH->log(2, "static_workflow", "'$currDbName' has a workflow version that is not compatible with current code");
@@ -2795,7 +2795,7 @@ class Workflow {
                else {//database not usable with this API
                   $lH->log(4, "static_workflow", "$currDbName not usable with the WorkflowAPI");
                }
-               
+
                $newDatabase->close();
             }
             //return the accessible databases
@@ -2811,13 +2811,13 @@ class Workflow {
          return $jsonReturn;
       }
    }
-   
+
    /**
     * This function gets the specified workflow's details from the database
-    * 
+    *
     * @param string     $dbName     The name of the MySQL database where the workflow is stored
     * @param Database   $database   Database object to be used to perform MySQL queries
-    * 
+    *
     * @return Array  Associative array containing the database details
     * @throws WAException
     */

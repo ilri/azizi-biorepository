@@ -31,7 +31,7 @@ class DMP extends Repository{
          if(OPTIONS_REQUESTED_ACTION == "upload_data_file") $this->uploadDataFile();
       }
    }
-   
+
    /**
     * This function renders the home page
     */
@@ -54,9 +54,9 @@ class DMP extends Repository{
 </script>
 <?php
    }
-   
+
    /**
-    * 
+    *
     */
    public function viewSchemaPage() {
       $this->jqGridFiles();//import vital jqx files
@@ -395,7 +395,7 @@ class DMP extends Repository{
 </script>
 <?php
    }
-   
+
    /**
     * This function returns the session ID corresponding to the current user
     * @return string
@@ -403,9 +403,6 @@ class DMP extends Repository{
    private function getAPISessionID() {
       include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
       $security = new Security($this->Dbase);
-      /*$cypherSecret = $_SESSION['password'];
-      $username = $_SESSION['username'];
-      $authType = $_SESSION['auth_type'];*/
       $this->Dbase->CreateLogEntry("Repository username = ".$_SESSION['username'], "debug");
       $tokenString = json_encode(array(
           "server" => $_SERVER['SERVER_ADDR'],
@@ -413,7 +410,7 @@ class DMP extends Repository{
           "auth_mode" => $_SESSION['auth_type'],
           "secret" => base64_encode($_SESSION['password'])
       ));
-      $authURL = "http://azizi.ilri.cgiar.org/repository/mod_ajax.php?page=odk_workflow&do=auth";
+      $authURL = Config::$azizi_url .'/repository/mod_ajax.php?page=odk_workflow&do=auth';
       $authCh = curl_init($authURL);
       curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
@@ -433,7 +430,7 @@ class DMP extends Repository{
       }
       return null;
    }
-   
+
    /**
     * This function uploads files from javascript into the server
     */
