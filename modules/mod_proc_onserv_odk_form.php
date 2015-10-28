@@ -59,7 +59,7 @@ class ProcODKForm {
       $this->dmpUser = "";
       $this->dmpServer = "";
       $this->dmpSession = "";
-      $this->dmpLinkSheets = false;
+      $this->dmpLinkSheets = "no";
       if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
       if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
       if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];

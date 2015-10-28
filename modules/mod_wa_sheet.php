@@ -431,15 +431,6 @@ class WASheet {
             $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
             array_push($mysqlColumns, $primayKey);
          }
-         else {
-            //check if the primary key already exists in $mysqlColumns
-            foreach($mysqlColumns as $currMySQLColumn) {
-               if($currMySQLColumn->getKey() == Database::$KEY_PRIMARY){
-                  $linkSheets = true;
-                  break;
-               }
-            }
-         }
          if($columnsProvided == false){
             $this->processColumns();
             if(is_array($this->columnArray)
@@ -464,7 +455,9 @@ class WASheet {
             }
          }
 
+         $columnCount = count($columnNames);
          if($linkSheets == true && $columnsProvided == false) $columnCount++;
+
          if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
             $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
             throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
@@ -719,12 +712,6 @@ class WASheet {
                if($mainSheetPos !== false){
                   unset($tables[$mainSheetPos]);
                   $tables = array_merge(array($mainSheetName), $tables);
-               }
-               //try to sort the tables
-               try {
-                  $tables = WASheet::sortSheets($database, $tables);
-               } catch (WAException $ex) {
-                  $lH->log(2, "wa_sheet_static", "Uable to sort the sheets with the top level sheet being first");
                }
                return $tables;
             }

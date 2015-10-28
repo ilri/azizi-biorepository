@@ -1653,8 +1653,6 @@ class Workflow {
       $status = Workflow::copyWorkflow($this->config, $this->instanceId, $instanceId2, $this->workingDir, $workingDir2, $savePoint);
       if($this->healthy == TRUE && $status['healthy'] == true){
          try {
-            $allSheetNames = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-            $allSheetNames = array_merge($allSheetNames, WASheet::getAllWASheets($this->config, $workflow2Id, $workflow2->getDatabase()));
             //truncate data from all the data tables
             $this->truncateWorkflow();
             $rawDiff = Workflow::getVersionDifference($this->currUser, $this->config, $this->instanceId, $workflow2Id, "trivial");
@@ -1666,7 +1664,7 @@ class Workflow {
                if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing"  && is_null($currDiff[$this->instanceId])){
                   $missingSheet = $currDiff[$workflow2Id];
                   $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
-                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns'], $allSheetNames);
+                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
                   $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet['name'], true));
                }
@@ -1803,8 +1801,6 @@ class Workflow {
       $status = Workflow::copyWorkflow($this->config, $this->instanceId, $instanceId2, $this->workingDir, $workingDir2, $savePoint);
       if($this->healthy == TRUE && $status['healthy'] == true){
          try {
-            $allSheetNames = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-            $allSheetNames = array_merge($allSheetNames, WASheet::getAllWASheets($this->config, $workflow2Id, $workflow2->getDatabase()));
             //truncate data from all the data tables
             $this->truncateWorkflow();
             $rawDiff = Workflow::getMergeDifferences($this->currUser, $this->config, $this->instanceId, $workflow2Id, "all", $key1, $key2);//get all the merge differences
@@ -1816,7 +1812,7 @@ class Workflow {
                if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])){
                   $missingSheet = $currDiff[$workflow2Id];
                   $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
-                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns'], $allSheetNames);
+                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
                   $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet, true));
                }

@@ -2444,7 +2444,7 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
                   dmpServer: window.dvs.server,
                   dmpUser: window.dvs.user,
                   dmpSession: window.dvs.session,
-                  dmpLinkSheets: true
+                  dmpLinkSheets: "no"
                }
             });
             alert("It may take some time to create the project. You can however close this browser window. An email will be sent to you when the project has been created.");
@@ -2466,7 +2466,7 @@ DMPVSchema.prototype.processProjectSchema = function() {
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
-         "link_sheets": true
+         "link_sheets": false
       });
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -2956,8 +2956,8 @@ DMPVSchema.prototype.initSheetList = function() {
       $(document).on('contextmenu', function (e) {
          return false;
       });
-      $("#sheets").mousedown(function(e) {
-         if(e.button == 2) {//right click
+      $("#sheets").mousedown(function(event) {
+         if(event.button == 2) {//right click
             $("#right_click_menu").html('<ul><li><a href="#" id="rename_sheet_btn">Rename</a></li><li><a href="#" id="delete_sheet_btn">Delete</a></li></ul>');
             var selectedSheetIndex = $("#sheets").jqxListBox("getSelectedIndex");
             var sheet = window.dvs.schema.sheets[selectedSheetIndex];
