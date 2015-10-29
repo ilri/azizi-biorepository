@@ -2825,7 +2825,7 @@ class Workflow {
     * @throws WAException
     */
    private static function getWorkflowDetails($config, $dbName){
-      require_once 'mod_wa_database.php';
+      include_once 'mod_wa_database.php';
       $database = new Database($config, $dbName);
       $query = "select workflow_name, created_by, time_created, workflow_id, working_dir"
               . " from ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI

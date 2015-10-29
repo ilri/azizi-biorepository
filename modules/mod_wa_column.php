@@ -25,12 +25,11 @@ class WAColumn {
     * @param string     $name       Name of the column
     * @param Array      $data       Data corresponding to that column
     */
-   public function __construct($config, $database, $name, $data = null, $type = null, $length = null, $nullable = null, $default = null, $key = null) {
-      include_once 'mod_log.php';
+   public function __construct($config, $database, $name, $lh, $data = null, $type = null, $length = null, $nullable = null, $default = null, $key = null) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
 
-      $this->lH = new LogHandler("./");
+      $this->lH = $lh;
       $this->config = $config;
       $this->database = $database;
       $this->name = $name;
@@ -307,10 +306,7 @@ class WAColumn {
     * @return boolean TRUE if string is null
     */
    public static function isNull($string) {
-      if($string == null
-              || strlen($string) == 0
-              || $string == "null"
-              || $string == "NULL") {
+      if($string == "null" || $string == "NULL" || strlen($string) == 0 || $string == null) {
          return true;
       }
       return false;
@@ -401,10 +397,8 @@ class WAColumn {
     * @return boolean TRUE if provided string is integer
     */
    public static function isInt($v) {
-      if($v != null && strlen($v) > 0) {
-         if(is_numeric($v)) {
-            return true;
-         }
+      if($v != null && is_numeric($v)) {
+          return true;
       }
 
       return false;
@@ -418,7 +412,7 @@ class WAColumn {
     * @return boolean TRUE if provided string is a tiny integer
     */
    public static function isTinyInt($string){
-      if(WAColumn::isInt($string) && strlen($string) == 1) {
+      if(strlen($string) == 1 && WAColumn::isInt($string)) {
          return true;
       }
       return false;

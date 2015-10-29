@@ -79,7 +79,12 @@ class ODKWorkflowAPI extends Repository {
          }
       }
       else {
-         //check if client provided the necessary details for accessing the API
+//         $this->lH->log(4, $this->TAG, 'geez....');
+//         //check if client provided the necessary details for accessing the API
+//         $this->lH->log(4, $this->TAG, "1.{$this->server} 2.{$this->user} 3.{$this->secret} 4.{$this->auth_mode}");
+//         // we don't need a valid session for adding new users.. so just add the user if we need to register a new person
+//         if(OPTIONS_REQUESTED_SUB_MODULE == "register") $this->handleRegisterEndpoint();
+
          if(!empty($this->server) && !empty($this->user) && !empty($this->cur_session) ) {
             //check if session id is still valid
             try {
@@ -181,23 +186,40 @@ class ODKWorkflowAPI extends Repository {
     * The register endpoint registers a new user.
     */
    private function handleRegisterEndpoint() {
-      if(!empty($this->server) && !empty($this->user) && !empty($this->secret) && !empty($this->auth_mode) && ($this->auth_mode == 'local' || $this->auth_mode == 'ldap') ) {
-         try {
-            $result = $this->addClient($this->uuid, $this->auth_mode, $this->secret);
-            $data = array("created" => $result, "status" => array("healthy" => true, "errors" => array()) );
-            $this->returnResponse($data);
+      if(isset($_REQUEST['data'])) {
+         $authJson = $this->getData($_REQUEST['data']);
+         if(array_key_exists("server", $authJson)
+                 && array_key_exists("user", $authJson)
+                 && array_key_exists("secret", $authJson)
+                 && array_key_exists("auth_mode", $authJson)
+                 && ($authJson['auth_mode'] == "local" || $authJson['auth_mode'] == "ldap")) {
+            try {
+               $this->lH->log(4, $this->TAG, "Token json looks like this ".print_r($authJson, true));
+               $result = $this->addClient($this->generateUserUUID($authJson['server'], $authJson['user']), $authJson['auth_mode'], $authJson['secret']);
+
+               $data = array(
+                   "created" => $result,
+                   "status" => array("healthy" => true, "errors" => array())
+               );
+
+               $this->returnResponse($data);
+            }
+            catch (WAException $ex) {
+               $data = array(
+                   "created" => false,
+                   "status" => array("healthy" => false, "errors" => array(Workflow::getErrorMessage($ex)))
+               );
+
+               $this->returnResponse($data);
+            }
          }
-         catch (WAException $ex) {
-            $data = array("created" => false, "status" => array("healthy" => false, "errors" => array(Workflow::getErrorMessage($ex))));
-            $this->returnResponse($data);
+         else {
+            $this->lH->log(2, $this->TAG, "Either server, secret or user not set in data provided to register endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
          }
       }
       else {
-         if(empty($this->server)) $this->lH->log(1, $this->TAG, "Server variable not set in data provided to API during authentication");
-         if(empty($this->user)) $this->lH->log(1, $this->TAG, "User variable not set in data provided to API during authentication");
-         if(empty($this->cur_session)) $this->lH->log(1, $this->TAG, "Session variable not set in data provided to API during authentication");
-         if(empty($this->secret)) $this->lH->log(1, $this->TAG, "Secret variable not set in data provided to API during authentication");
-         if(empty($this->auth_mode)) $this->lH->log(1, $this->TAG, "Auth mode variable not set in data provided to API during authentication");
+         $this->lH->log(2, $this->TAG, "Data variable not set in data provided to register endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
    }
@@ -1323,7 +1345,6 @@ class ODKWorkflowAPI extends Repository {
    private function authUser($uri, $authMode, $cypherSecret) {
       $security = new Security($this->Dbase);
       $decryptedCypher = $security->decryptCypherText(base64_decode($cypherSecret));
-      $this->lH->log(4, $this->TAG, "decryptedCipher = $decryptedCypher");
       if($decryptedCypher != null){
          if($authMode == "local") {
                try {

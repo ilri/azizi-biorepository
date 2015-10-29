@@ -91,7 +91,7 @@ class WASheet {
             $result = $this->database->getTableDetails($this->database->getDatabaseName(), $this->sheetName);//TODO: might need a check on whether database name is same as workflow instance
             $res_count = count($result);
             for($index = 0; $index < $res_count; $index++) {
-               $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
+               $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], $this->lH, null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
                array_push($this->columns, $currColumn);
             }
          } catch (WAException $ex) {
@@ -590,50 +590,6 @@ class WASheet {
                }
             }
          }
-         /*foreach($this->excelObject->getActiveSheet()->getRowIterator() as $row){
-            $rowIndex = $row->getRowIndex();
-
-            $columnNumber = -1;
-            if($rowIndex == 1){//the first row
-               $columnIndex = 0;
-               while($columnNumber == -1) {//while the number of columns is still unknown
-                  $cellValue = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName($rowIndex, $columnIndex))->getValue());
-                  if(strlen($cellValue) == 0) {//the cell is empty
-                     $columnNumber = $columnIndex;
-                     $this->lH->log(3, $this->TAG, "Sheet '{$this->sheetName}' has $columnNumber columns");
-                  }
-                  else {
-                     $this->columnArray[$cellValue] = array();
-                  }
-                  $columnIndex++;
-               }
-            }
-            else {
-               if(count($this->columnArray) > 0) {
-
-                  for($columnIndex = 0; $columnIndex < count($this->columnArray); $columnIndex++){
-                     $headingCell = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName(1, $columnIndex))->getValue());
-                     $cellValue = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName($rowIndex, $columnIndex))->getValue());
-                     $this->columnArray[$headingCell][$rowIndex - 2] = $cellValue;
-
-                     if($columnIndex == (count($this->columnArray) - 1)) {//the last column in this row
-                        //check if there is something in the column to the right
-                        $cellToRight = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName($rowIndex, $columnIndex + 1))->getValue());
-                        if(strlen($cellToRight) > 0){//there is something in the column to the right
-                           //excel sheet data is mulformed
-                           $this->lH->log(1, $this->TAG, "Sheet '{$this->sheetName}' seems to be mulformed for workflow with id = '{$this->database->getDatabaseName()}'");
-                           throw new WAException("Sheet '{$this->sheetName}' seems to be mulformed", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
-                        }
-                     }
-                  }
-
-                  //$this->lH->log(4, $this->TAG, "Columns for sheet '{$this->sheetName}' are ".print_r($this->columnArray, true));
-               }
-               else {
-                  $this->lH->log(2, $this->TAG, "Sheet with name = '{$this->sheetName}' has no heading columns. Will be ignoring this sheet");
-               }
-            }
-         }*/
          return $primaryKeyThere;
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to process columns in sheet with name = '{$this->sheetName}' for workflow with id = {$this->database->getDatabaseName()}");

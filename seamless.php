@@ -1,7 +1,7 @@
 <?php
-require_once('label_printing_config');
+include_once('label_printing_config');
 include_once('../../bower/azizi-shared-libs/dbmodules/dbase_functions.php');
-require_once('../../bower/azizi-shared-libs/mod_general/general.php');
+include_once('../../bower/azizi-shared-libs/mod_general/general.php');
 session_save_path($config['session_dbase']);
 session_name('sessions');
 StartingSession();
