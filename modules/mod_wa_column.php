@@ -265,12 +265,24 @@ class WAColumn {
    private function shortenName($workflow, $sheetName) {
       try {
          if(strlen($this->name) > Database::$MAX_TABLE_NAME_LENGTH) {
-            $this->lH->log(3, $this->TAG, "Shortening the column name {$this->name} to < ".Database::$MAX_TABLE_NAME_LENGTH);
             $nameParts = explode("-", $this->name);
             $newName = "";
-            for($index = count($nameParts) - 1; $index >= 0; $index++) {
-               if(strlen($nameParts[$index].$newName) <= Database::$MAX_TABLE_NAME_LENGTH) {
-                  $newName = $nameParts[$index].$newName;
+            for($index = count($nameParts) - 1; $index >= 0; $index--) {
+               if(strlen($newName) == 0) {
+                  if(strlen($nameParts[$index].$newName) <= Database::$MAX_TABLE_NAME_LENGTH) {
+                     $newName = $nameParts[$index].$newName;
+                  }
+                  else {
+                     throw new WAException("Unable to shorten the column name ".$this->name, WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+                  }
+               }
+               else {
+                  if(strlen($nameParts[$index]."-".$newName) <= Database::$MAX_TABLE_NAME_LENGTH) {
+                     $newName = $nameParts[$index]."-".$newName;
+                  }
+                  else {
+                     break;
+                  }
                }
             }
 
@@ -290,6 +302,7 @@ class WAColumn {
                   "file" => "'".$fileDetails['filename']."'"
                );
                $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
+               $this->lH->log(3, $this->TAG, "Shortening the column name {$this->name} to < $newName");
                $this->name = $newName;
             }
          }

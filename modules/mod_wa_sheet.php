@@ -438,7 +438,7 @@ class WASheet {
                $this->switchToThisSheet();
                $columnCount = count($columnNames);
                for($index = 0; $index < $columnCount; $index++) {
-                  $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
+                  $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->lH, $this->columnArray[$columnNames[$index]]);
                   $currMySQLColumn = $currColumn->getMySQLDetails($workflow, $this->sheetName, $linkSheets);
                   array_push($mysqlColumns, $currMySQLColumn);
                }
