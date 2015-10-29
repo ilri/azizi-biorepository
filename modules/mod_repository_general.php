@@ -88,28 +88,28 @@ class Repository extends DBase{
       if($openAccess == 0){//the requested module is under open access
          $this->logAccess();
          if(OPTIONS_REQUESTED_MODULE == 'samples_vis'){
-            require_once 'mod_visualize_samples.php';
+            include_once 'mod_visualize_samples.php';
             $visSamples = new VisualizeSamples($this->Dbase);
             $visSamples->trafficController();
          }
          else if(OPTIONS_REQUESTED_MODULE == 'repository_3d'){
-            require_once 'mod_repository_3d.php';
+            include_once 'mod_repository_3d.php';
             $repository3D = new Repository3D($this->Dbase);
             $repository3D->TrafficController();
          }
          else if(OPTIONS_REQUESTED_MODULE == "mta"){
-            require_once 'mod_mta.php';
+            include_once 'mod_mta.php';
             $mta = new MTA($this->Dbase);
             $mta->trafficController();
          }
          else if(OPTIONS_REQUESTED_MODULE == 'odk_puller') {
-            require_once 'mod_odk_puller.php';
+            include_once 'mod_odk_puller.php';
             $odkPuller = new ODKPuller($this->Dbase);
             $odkPuller->trafficController();
          }
          else if (OPTIONS_REQUESTED_MODULE == 'odk_workflow') {
             $this->Dbase->CreateLogEntry("Calling the workflow API", 'debug');
-            require_once 'mod_wa_api.php';
+            include_once 'mod_wa_api.php';
             $odkWorkflowAPI = new ODKWorkflowAPI($this->Dbase);
             $odkWorkflowAPI->trafficController();
          }
@@ -148,67 +148,67 @@ class Repository extends DBase{
          if($access == 0){//user has access
             $this->logAccess();
             if(OPTIONS_REQUESTED_MODULE == 'ln2_requests'){
-               require_once 'mod_ln2_requests.php';
+               include_once 'mod_ln2_requests.php';
                $Ln2 = new Ln2Requests($this->Dbase);
                $Ln2->TrafficController();
             }
             elseif(OPTIONS_REQUESTED_MODULE == 'odk_parser'){
-               require_once 'mod_parse_odk.php';
+               include_once 'mod_parse_odk.php';
                $ParseODK = new ParseODK($this->Dbase);
                $ParseODK->TrafficController();
             }
             elseif(OPTIONS_REQUESTED_MODULE == 'odk_uploader'){
-               require_once 'mod_upload_odk_form.php';
+               include_once 'mod_upload_odk_form.php';
                $UploadODK = new UploadODK($this->Dbase);
                $UploadODK->TrafficController();
             }
             elseif(OPTIONS_REQUESTED_MODULE == 'labels'){
-               require_once 'mod_label_printing.php';
+               include_once 'mod_label_printing.php';
                $LabelsPrinter = new LabelPrinter($this->Dbase);
                $LabelsPrinter->TrafficController();
             }
             elseif(OPTIONS_REQUESTED_MODULE == 'ln2_transfers'){
-               require_once 'mod_ln2_transfers.php';
+               include_once 'mod_ln2_transfers.php';
                $Ln2Transfers = new LN2Transferer($this->Dbase);
                $Ln2Transfers->TrafficController();
             }
             elseif(OPTIONS_REQUESTED_MODULE == 'lims_uploader'){
-               require_once 'mod_lims_uploader.php';
+               include_once 'mod_lims_uploader.php';
                $LimsUploader = new LimsUploader($this->Dbase);
                $LimsUploader->TrafficController();
             }
             else if(OPTIONS_REQUESTED_MODULE == 'inventory'){
-                require_once 'mod_inventory_management.php';
+                include_once 'mod_inventory_management.php';
                 $InventoryManager = new InventoryManager($this->Dbase);
                 $InventoryManager->TrafficController();
             }
             else if(OPTIONS_REQUESTED_MODULE == 'box_storage'){
-               require_once 'mod_box_storage.php';
+               include_once 'mod_box_storage.php';
                $boxStorage = new BoxStorage($this->Dbase);
                $boxStorage->TrafficController();
             }
             else if(OPTIONS_REQUESTED_MODULE == 'users'){
-               require_once 'mod_users.php';
+               include_once 'mod_users.php';
                $users = new Users($this->Dbase);
                $users->trafficController();
             }
             else if(OPTIONS_REQUESTED_MODULE == 'own_account'){
-               require_once 'mod_account.php';
+               include_once 'mod_account.php';
                $account = new Account($this->Dbase);
                $account->trafficController();
             }
             else if(OPTIONS_REQUESTED_MODULE == 'recharges'){
-               require_once 'mod_recharges.php';
+               include_once 'mod_recharges.php';
                $recharges = new Recharges($this->Dbase);
                $recharges->trafficController();
             }
             else if(OPTIONS_REQUESTED_MODULE == 'farm_animals'){
-               require_once 'mod_farm_animals.php';
+               include_once 'mod_farm_animals.php';
                $farmAnimals = new FarmAnimals($this->Dbase);
                $farmAnimals->trafficController();
             }
             else if(OPTIONS_REQUESTED_MODULE == 'dmp'){
-               require_once 'mod_dmp.php';
+               include_once 'mod_dmp.php';
                $dmp = new DMP($this->Dbase);
                $dmp->trafficController();
             }

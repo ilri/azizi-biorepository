@@ -1906,7 +1906,7 @@ class Recharges{
     * @return PHPExcel
     */
    private function initExcelSheet($title){
-      require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
       $phpExcel = new PHPExcel();
       $phpExcel->getProperties()->setCreator("Azizi Biorepository");
       $phpExcel->getProperties()->setLastModifiedBy("Azizi Biorepository");

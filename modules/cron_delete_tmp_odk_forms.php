@@ -11,7 +11,7 @@
  */
 class ODKPruner {
    public function __construct() {
-      require_once 'repository_config';
+      include_once 'repository_config';
       include_once Config::$config['httpd_root']."bower/azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php";
       include_once Config::$config['httpd_root']."bower/azizi-shared-libs/mod_general/mod_general_v0.6.php";
       $Dbase = new DBase('mysql');

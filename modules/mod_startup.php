@@ -9,11 +9,11 @@
 
 define('OPTIONS_COMMON_FOLDER_PATH', '../bower/');
 
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.7.php';
-require_once 'repository_config';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_messages/mod_messages_v0.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/authmodules/mod_security_v0.1.php';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.7.php';
+include_once 'repository_config';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_messages/mod_messages_v0.1.php';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/authmodules/mod_security_v0.1.php';
 
 
 //setting the date settings
@@ -44,7 +44,7 @@ $t = pathinfo($_SERVER['SCRIPT_FILENAME']);
 $requestType = ($t['basename'] == 'mod_ajax.php') ? 'ajax' : 'normal';
 define('OPTIONS_REQUEST_TYPE', $requestType);
 
-require_once 'mod_repository_general.php';
+include_once 'mod_repository_general.php';
 $Repository = new Repository();
 
 session_save_path(Config::$config['dbase']);

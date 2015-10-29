@@ -3,12 +3,12 @@ class VisualizeSamples {
    private $Dbase;
 
    public function __construct($Dbase) {
-      /*require_once 'repository_config';
+      /*include_once 'repository_config';
       $logSettings = Config::$logSettings;
       $logSettings['workingDir'] = "../";
 
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.0.php';
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.6.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.0.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.6.php';
 
       $this->Dbase = new DBase('mysql');
       $this->Dbase->InitializeConnection();
@@ -384,7 +384,7 @@ class VisualizeSamples {
             $caResult[$caIndex]['open_access'] = "No";
          }
 
-         require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+         include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
 
          $phpExcel = new PHPExcel();
          $phpExcel->getProperties()->setCreator($email);
