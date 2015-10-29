@@ -52,9 +52,22 @@ session_name('repository');
 //$Repository->Dbase->SessionStart();
 $Repository->sessionStart();
 
-if(count($_POST) != 0) $Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
-if(count($_FILES) != 0) $Repository->Dbase->CreateLogEntry("Files: \n".print_r($_FILES, true), 'debug');
+// activate the loggings if there is need
+if(Config::$logSettings['loglevel'] == 'extensive'){
+   $p_count = count($_POST);
+   $f_count = count($_FILES);
+   $g_count = count($_GET);
+
+   if($p_count != 0 || $f_count != 0){
+      $Repository->Dbase->CreateLogEntry("\n\n======================  New request: ". OPTIONS_REQUESTED_MODULE .' ==> '. OPTIONS_REQUESTED_SUB_MODULE. ' ==> '. OPTIONS_REQUESTED_ACTION ."  ====================", 'debug');
+      if(count($_POST) != 0)
+         $Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
+      if(count($_FILES) != 0)
+         $Repository->Dbase->CreateLogEntry("Files: \n".print_r($_FILES, true), 'debug');
+   }
+//      if(count($_GET) != 0)
+//         $Repository->Dbase->CreateLogEntry("GET User request: \n".print_r($_GET, true), 'debug');
+}
 
 if(Config::$downloadFile) $Repository->TrafficController();
-
 ?>
