@@ -25,12 +25,11 @@ class WAColumn {
     * @param string     $name       Name of the column
     * @param Array      $data       Data corresponding to that column
     */
-   public function __construct($config, $database, $name, $data = null, $type = null, $length = null, $nullable = null, $default = null, $key = null) {
-      include_once 'mod_log.php';
+   public function __construct($config, $database, $name, $lh, $data = null, $type = null, $length = null, $nullable = null, $default = null, $key = null) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
 
-      $this->lH = new LogHandler("./");
+      $this->lH = $lh;
       $this->config = $config;
       $this->database = $database;
       $this->name = $name;

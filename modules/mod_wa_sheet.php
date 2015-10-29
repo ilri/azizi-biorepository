@@ -91,7 +91,7 @@ class WASheet {
             $result = $this->database->getTableDetails($this->database->getDatabaseName(), $this->sheetName);//TODO: might need a check on whether database name is same as workflow instance
             $res_count = count($result);
             for($index = 0; $index < $res_count; $index++) {
-               $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
+               $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], $this->lH, null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
                array_push($this->columns, $currColumn);
             }
          } catch (WAException $ex) {
@@ -439,7 +439,7 @@ class WASheet {
                $columnCount = count($columnNames);
                for($index = 0; $index < $columnCount; $index++) {
                   if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
-                     $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
+                     $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->lH, $this->columnArray[$columnNames[$index]]);
                      $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
                      array_push($mysqlColumns, $currMySQLColumn);
                   }
