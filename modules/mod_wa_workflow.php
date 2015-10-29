@@ -131,6 +131,10 @@ class Workflow {
    public function getWorkflowName() {
       return $this->workflowName;
    }
+   
+   public function getCurrentUser() {
+      return $this->currUser;
+   }
 
    public function getAccessLevel($user) {
       try {
@@ -769,7 +773,7 @@ class Workflow {
                }
                $excelFile = new WAExcelFile($dataFiles[0]);
                try {
-                  $excelFile->processToMySQL($linkSheets);
+                  $excelFile->processToMySQL($this, $linkSheets);
                   $excelFile->unload();//Unloads from memory. Also deletes temporary files
                } catch (WAException $ex) {
                   $this->lH->log(1, $this->TAG, "Could not process data file for workflow with id = {$this->instanceId} to MySQL");
@@ -1664,7 +1668,7 @@ class Workflow {
                if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing"  && is_null($currDiff[$this->instanceId])){
                   $missingSheet = $currDiff[$workflow2Id];
                   $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
-                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
+                  $sheetObject->saveAsMySQLTable($this, FALSE, $missingSheet['columns']);
                   $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet['name'], true));
                }
@@ -1812,7 +1816,7 @@ class Workflow {
                if($currDiff['level'] == "sheet" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])){
                   $missingSheet = $currDiff[$workflow2Id];
                   $sheetObject = new WASheet($this->config, $this->database, -1, $missingSheet['name']);//for excel object, put -1 instead of null so as to prevent the object from getting column details from the database
-                  $sheetObject->saveAsMySQLTable(FALSE, $missingSheet['columns']);
+                  $sheetObject->saveAsMySQLTable($this, FALSE, $missingSheet['columns']);
                   $this->lH->log(3, $this->TAG, "Adding sheet '{$missingSheet['name']}' to {$this->instanceId}");
                   $this->lH->log(4, $this->TAG, "New sheet details".print_r($missingSheet, true));
                }

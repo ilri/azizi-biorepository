@@ -130,7 +130,7 @@ class WAColumn {
     * This function returns the MySQL details for this column in form of an array
     * that can be used with the database object
     */
-   public function getMySQLDetails($linkSheets = false){
+   public function getMySQLDetails($workflow, $sheetName, $linkSheets = false){
       if($this->data != null || count($this->data) > 0) {
          $type = Database::$TYPE_VARCHAR;
          $length = -1;
@@ -249,11 +249,53 @@ class WAColumn {
          }
          $key = Database::$KEY_NONE;
          if($linkSheets == true && $this->name == "primary_key") $key = Database::$KEY_UNIQUE;
+         $this->shortenName($workflow, $sheetName);
          return array("name" => $this->name , "type"=>$type , "length"=>$length , "nullable"=>$nullable, "default" => null , "key"=>$key);
       }
       else {
          $this->lH->log(2, $this->TAG, "Unable to determine datatype for '$name' column because no data was provided. Assuming nullable varchar(50) datatype");
          return array("name" => $this->name , "type"=>Database::$TYPE_VARCHAR , "length"=>50 , "nullable"=>true, "default" => null , "key"=>Database::$KEY_NONE);
+      }
+   }
+   
+   /**
+    * This function checks whether the length of the column name is greater than what PostgreSQL allows and modifies it if so
+    * 
+    * @param Workflow $workflow
+    */
+   private function shortenName($workflow, $sheetName) {
+      try {
+         if(strlen($this->name) > Database::$MAX_TABLE_NAME_LENGTH) {
+            $this->lH->log(3, $this->TAG, "Shortening the column name {$this->name} to < ".Database::$MAX_TABLE_NAME_LENGTH);
+            $nameParts = explode("-", $this->name);
+            $newName = "";
+            for($index = count($nameParts) - 1; $index >= 0; $index++) {
+               if(strlen($nameParts[$index].$newName) <= Database::$MAX_TABLE_NAME_LENGTH) {
+                  $newName = $nameParts[$index].$newName;
+               }
+            }
+
+            $rawFiles = $workflow->getRawDataFiles();
+            for($index = 0; $index < count($rawFiles); $index++){
+               $currFile = $rawFiles[$index];
+               $fileDetails = $currFile->getFileDetails();
+               //record the name change in the database
+               $columns = array(
+                  "change_time" => "'".$this->database->getMySQLTime()."'",
+                  "submitted_by" => "'".$workflow->getCurrentUser()."'",
+                  "change_type" => "'".Workflow::$CHANGE_COLUMN."'",
+                  "original_sheet" => "'".$sheetName."'",
+                  "original_column" => "'".$this->name."'",
+                  "current_sheet" => "'".$sheetName."'",
+                  "current_column" => "'".$newName."'",
+                  "file" => "'".$fileDetails['filename']."'"
+               );
+               $this->database->runInsertQuery(Workflow::$TABLE_META_CHANGES, $columns);
+               $this->name = $newName;
+            }
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Unable to shorten the name for column ".$this->name, WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
 

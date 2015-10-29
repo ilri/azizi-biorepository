@@ -95,7 +95,7 @@ class WAExcelFile {
     *
     * @throws WAException
     */
-   public function processToMySQL($linkSheets) {
+   public function processToMySQL($workflow, $linkSheets) {
       if($this->excelObject != null) {
          $sheetNames = $this->excelObject->getSheetNames();
 
@@ -117,7 +117,7 @@ class WAExcelFile {
                if($sheetNames[$index] == "main_sheet" && $linkSheets == true) {
                   $linkSheets = $primaryKeyThere;
                }
-               $currSheet->saveAsMySQLTable($linkSheets, array(), $sheetNames);
+               $currSheet->saveAsMySQLTable($workflow, $linkSheets, array(), $sheetNames);
 
                //offload $currSheet from memory to prevent this process from being OOM killed
                $currSheet->unload();

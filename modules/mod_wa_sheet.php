@@ -420,7 +420,7 @@ class WASheet {
     *
     * @throws WAException
     */
-   public function saveAsMySQLTable($linkSheets, $mysqlColumns = array(), $allSheetNames = null) {
+   public function saveAsMySQLTable($workflow, $linkSheets, $mysqlColumns = array(), $allSheetNames = null) {
       try {
          $columnNames = array_keys($this->columnArray);
          $columnsProvided = false;
@@ -438,15 +438,9 @@ class WASheet {
                $this->switchToThisSheet();
                $columnCount = count($columnNames);
                for($index = 0; $index < $columnCount; $index++) {
-                  if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
-                     $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
-                     $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
-                     array_push($mysqlColumns, $currMySQLColumn);
-                  }
-                  else {
-                     $this->lH->log(1, $this->TAG, "Column '{$columnNames[$index]}' has a name that is longer than ".Database::$MAX_TABLE_NAME_LENGTH." characters long");
-                     throw new WAException("Column '{$columnNames[$index]}' has a name that is longer than ".Database::$MAX_TABLE_NAME_LENGTH." characters long", WAException::$CODE_WF_PROCESSING_ERROR, null);
-                  }
+                  $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
+                  $currMySQLColumn = $currColumn->getMySQLDetails($workflow, $this->sheetName, $linkSheets);
+                  array_push($mysqlColumns, $currMySQLColumn);
                }
             }
             else {
