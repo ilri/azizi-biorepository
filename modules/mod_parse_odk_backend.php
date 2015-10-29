@@ -165,9 +165,9 @@ class Parser {
    private $authURL;
 
    private $selectNodesOptions;
-   
+
    private $primaryKeys;
-   
+
    private $sendToDMP;
    private $dmpUser;
    private $dmpServer;
@@ -189,11 +189,11 @@ class Parser {
       else {
          $this->logHandler->log(3, $this->TAG, 'Successfully parsed the form\'s XML file');
       }
-      
+
       $allInstanceNodes = $xml->getElementsByTagName('instance');
       //get the instance id for the form
       /**/
-      
+
       $optionsFromOldODK = array();//support for older odk forms
       $nodesLength = $allInstanceNodes->length;
       for($i = 0; $i < $nodesLength; $i++) {
@@ -209,7 +209,7 @@ class Parser {
                }
             }
          }
-         
+
          $instanceId = $node->attributes->item(0)->value;
          //check if instance has <options> child
          $optionsInInstance = $node->getElementsByTagName('options');
@@ -228,7 +228,7 @@ class Parser {
       $allSelectNodes = $xml->getElementsByTagName('select');
       $nodesLength = $allSelectNodes->length;
       $allNodes = array();
-      
+
       // traverse all nodes and get the name of the node and the possible options
       for($i = 0; $i < $nodesLength; $i++){
          //$nodeName = $allSelectNodes[$i]->attributes->item(0)->value;
@@ -236,7 +236,7 @@ class Parser {
          $this->logHandler->log(4, $this->TAG, "Value of current node = ".$node->nodeValue);
          $nodeName = $node->attributes->item(0)->value;
          $this->logHandler->log(4, $this->TAG, "Value of nodeName = ".$nodeName);
-         
+
          // format the nodeName by removing the leading form name before the first / and then replace the rest of the / with '-' to match the column names as per the csv files
          $nodeName = substr($nodeName, strpos($nodeName, '/', 1)+1);
          $nodeName = str_replace('/', '-', $nodeName);
@@ -340,10 +340,10 @@ class Parser {
 
       //$this->rootDirURI = "/~jason/ilri/ODKParser/";
       $this->rootDirURI = $this->settings['root_uri'];
-      
+
       // get the multiple select options
       $this->parseXML();
-      
+
       $this->loadXML();
       include_once $this->settings['common_lib_dir'].'PHPExcel/Classes/PHPExcel.php';
 
@@ -425,15 +425,6 @@ class Parser {
          }
          unlink($this->authCookies);
       }
-
-
-      //clean all sheets
-      /*if($this->parseType !== "viewing"){
-          $sheetArrayKeys = array_keys($this->sheetIndexes);
-          foreach ($sheetArrayKeys as $currSheet){
-              $this->cleanSheet($currSheet);
-          }
-      }*/
 
       $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$mainSheetKey]);
 
@@ -546,21 +537,21 @@ class Parser {
          $this->sendZipURL($downloadFileName);
       }
    }
-   
+
    private function sendDataFileToDMP($dataPayload, $authToken) {
       $postData = array(
          "data" => $dataPayload,
          "token" => $authToken
       );
       $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=init_workflow");
-      
+
       curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
       curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
       curl_setopt($ch, CURLOPT_POST, 1);
       curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-      
+
       $result = curl_exec($ch);
       $http_status = curl_getinfo($ch);
       curl_close($ch);
@@ -583,21 +574,21 @@ class Parser {
          return json_decode($result, true);
       }
    }
-   
+
    private function initializeDMPSchema($dataPayload, $authToken) {
       $postData = array(
          "data" => $dataPayload,
          "token" => $authToken
       );
       $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=process_mysql_schema");
-      
+
       curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
       curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
       curl_setopt($ch, CURLOPT_POST, 1);
       curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
-      
+
       $result = curl_exec($ch);
       $http_status = curl_getinfo($ch);
       curl_close($ch);
@@ -620,10 +611,10 @@ class Parser {
          return json_decode($result, true);
       }
    }
-   
+
    private function addColumnsToRows($multiDimensionArray, $columnIndex, $columnsToInsert) {
       $arraySize = count($multiDimensionArray);
-      
+
       //if column index is 0 just array_merge the two arrays
       if($columnIndex == 0){
          for($index = 0; $index < $arraySize; $index++) {
@@ -1115,11 +1106,11 @@ class Parser {
             }
         }
     }
-    
+
     /**
      * This function trys to shorten the provided sheet name if it's more than
      * 30 characters long
-     * 
+     *
      * @param String $sheetName  The current sheet name
      * @return String   The shortened sheet name
      */
@@ -1223,7 +1214,7 @@ class Parser {
       if (!in_array($sheetName, $sheetNames)) {
          $this->nextRowName[$sheetName] = 0;
       }
-      
+
       if(!isset($this->primaryKeys[$sheetName])){
          $this->primaryKeys[$sheetName] = 1;
       }
@@ -1426,39 +1417,6 @@ class Parser {
       return $originalCSVRows;
    }
 
-    /**
-    * This method checks all cells in the sheet specified to see if they are blank and inserts a 0 if blank found
-    *
-    * @param    string      $sheetName      The name of the sheet eg main_sheet
-    */
-   private function cleanSheet($sheetName){
-       $this->logHandler->log(3, $this->TAG, 'cleaning '.$sheetName.' sheet ');
-       $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$sheetName]);
-       foreach($this->phpExcel->getActiveSheet()->getRowIterator() as $row){
-           $rowIndex = $row->getRowIndex();
-           //get array of all column headings in sheet
-           if(sizeof($this->allColumnNames)>0)//means we are parsing json
-               $sheetRowHeadings = $this->allColumnNames[$sheetName];
-           else if(sizeof($this->sheets)>0)//means we are parsing csv
-               $sheetRowHeadings = $this->sheets[$sheetName];
-           foreach($sheetRowHeadings as $columnHeading){
-               //get column name/id corresponding to columnHeading
-               if(sizeof($this->allColumnNames)>0)//means we are parsing json
-                   $columnName = $this->getColumnName($sheetName, $columnHeading);
-               else if(sizeof($this->sheets)>0)//means we are parsing csv
-                   $columnName = $this->getColumnName(NULL, NULL, array_search($columnHeading, $sheetRowHeadings));
-               $cellName = $columnName.$rowIndex;
-               $cell = $this->phpExcel->getActiveSheet()->getCell($cellName);
-               if(strlen($cell->getValue()) === 0){
-                   // $this->logHandler->log(4, $this->TAG, 'cell '.$cellName.' in '.$sheetName.' is empty, inserting 0 into it');
-                   //setting cell value to 0 if cell is blank
-                   $this->phpExcel->getActiveSheet()->setCellValue($cellName, "0");
-               }
-           }
-       }
-   }
-
-
    /**
     * This function gets the string corresponding to a string code used in ODK eg if mlk is passed to this function and mlk = Milk according to the xml file
     * then Milk will be returned
@@ -1534,7 +1492,7 @@ class Parser {
            $columns[0] = str_replace("\"","",$columns[0]);
            $columns[$columnCount - 1] = str_replace("\"", "", $columns[$columnCount - 1]);
            $columns[$columnCount - 1] = trim($columns[$columnCount - 1], "\n\r");//remove new lines from last column
-           
+
            if($index===0){
                array_unshift($columns,"primary_key");
            }
@@ -1649,7 +1607,7 @@ class Parser {
             return TRUE;
        }
    }
-   
+
    private function sendEmail($subject, $message) {
       shell_exec('echo "'."Hi {$_POST['creator']},\n".$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$subject.'" -- '.$_POST['email']);
    }

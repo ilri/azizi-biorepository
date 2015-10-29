@@ -264,10 +264,7 @@ class WAColumn {
     * @return boolean TRUE if string is null
     */
    public static function isNull($string) {
-      if($string == null
-              || strlen($string) == 0
-              || $string == "null"
-              || $string == "NULL") {
+      if($string == "null" || $string == "NULL" || strlen($string) == 0 || $string == null) {
          return true;
       }
       return false;
@@ -358,10 +355,8 @@ class WAColumn {
     * @return boolean TRUE if provided string is integer
     */
    public static function isInt($v) {
-      if($v != null && strlen($v) > 0) {
-         if(is_numeric($v)) {
-            return true;
-         }
+      if($v != null && is_numeric($v)) {
+          return true;
       }
 
       return false;
@@ -375,7 +370,7 @@ class WAColumn {
     * @return boolean TRUE if provided string is a tiny integer
     */
    public static function isTinyInt($string){
-      if(WAColumn::isInt($string) && strlen($string) == 1) {
+      if(strlen($string) == 1 && WAColumn::isInt($string)) {
          return true;
       }
       return false;
