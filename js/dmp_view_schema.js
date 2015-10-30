@@ -68,7 +68,7 @@ DMPVSchema.prototype.documentReady = function() {
       window.dvs.initWindow($("#get_data_wndw"), 220, 600);
       window.dvs.initWindow($("#delete_project_wndw"), 100, 300);
       window.dvs.initWindow($("#other_projects_wndw"), 130, 300);
-      window.dvs.initWindow($("#version_diff_wndw"), (window.innerHeight * 0.9), (window.innerWidth * 0.8));
+      window.dvs.initWindow($("#version_diff_wndw"), (window.innerHeight * 0.9), (window.innerWidth * 0.9));
       window.dvs.initWindow($("#merge_diff_wndw"), window.innerHeight * 0.9, window.innerWidth * 0.8);
       window.dvs.initWindow($("#merge_sheet_wndw"), 200, (window.innerWidth * 0.8));
       window.dvs.initWindow($("#rename_sheet_wndw"), window.innerHeight * 0.8, window.innerWidth * 0.8);
@@ -3268,6 +3268,7 @@ DMPVSchema.prototype.initColumnGrid = function() {
       theme: '',
       selectionmode: "singlerow",
       pageable: false,
+      filterable: true,
       editable: true,
       rendergridrows: function() {
          return window.dvs.columnGridAdapter.records;
