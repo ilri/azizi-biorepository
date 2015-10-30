@@ -397,7 +397,6 @@ class Parser {
 
           //replace all : in headings with -
           $multiSelectQuestions = array_keys($this->selectNodesOptions);//includes those in main_sheet and other sheets
-          $this->logHandler->log(4, $this->TAG, "headings before = ".  print_r($this->cells[0], true));
           for($i=0; $i < count($this->cells[0]); $i++){
              $this->cells[0][$i] = str_replace(":", "-", $this->cells[0][$i]);
           }
@@ -1253,8 +1252,6 @@ class Parser {
 
          if (sizeof($htmlTables[1]) === 1) {//allow only http redirects and 200 status codes
             $dataTable = $htmlTables[1][0];
-            //print_r($htmlTables);
-            //get the table headers <th>
             $th = array();
             $uncleanTHs = explode('</th>', $dataTable);
             $cleanTHCount = 0;
@@ -1373,7 +1370,6 @@ class Parser {
    private function expandMultiSelectQuestions($originalCSVRows){
        if($this->parseType !== "viewing"){
           $multiSelectQuestions = array_keys($this->selectNodesOptions);//includes those in main_sheet and other sheets
-          $this->logHandler->log(4, $this->TAG, "headings before = " . print_r($originalCSVRows[0], true));
           for ($i = 0; $i < count($originalCSVRows[0]); $i++) {
            //check if current cell is a multi select question
            if (array_search($originalCSVRows[0][$i], $multiSelectQuestions) !== false) {//current cell contains the heading of a multi select question
@@ -1409,7 +1405,6 @@ class Parser {
               $originalCSVRows = $this->addColumnsToRows($originalCSVRows, $i + 1, $toBeInserted);
            }
         }
-        $this->logHandler->log(4, $this->TAG, "headings after = " . print_r($originalCSVRows[0], true));
        }
       return $originalCSVRows;
    }

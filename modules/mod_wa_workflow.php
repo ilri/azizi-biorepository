@@ -131,7 +131,7 @@ class Workflow {
    public function getWorkflowName() {
       return $this->workflowName;
    }
-   
+
    public function getCurrentUser() {
       return $this->currUser;
    }
@@ -1686,13 +1686,11 @@ class Workflow {
                   $column['delete'] = false;
                   $sheetObject->alterColumn($column);
                   $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
-                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$this->instanceId])) {
                   $currDiff[$workflow2Id]['nullable'] = true;
                   $this->database->runAddColumnQuery($currDiff['sheet'], $currDiff[$workflow2Id]);
                   $this->lH->log(3, $this->TAG, "Creating new column '{$currDiff['sheet']} - {$currDiff[$workflow2Id]['name']}' in {$this->instanceId}");
-                  $this->lH->log(4, $this->TAG, "Column details".print_r($currDiff[$workflow2Id], true));
                }
                else if($currDiff['level'] == "column" && $currDiff['type'] == "missing" && is_null($currDiff[$workflow2Id])) {
                   $column = $currDiff[$this->instanceId];
@@ -1702,7 +1700,6 @@ class Workflow {
                   $column['delete'] = false;
                   $sheetObject->alterColumn($column);
                   $this->lH->log(3, $this->TAG, "Resolving trivial conflict in '{$column['sheet']} - {$column['name']}' in {$this->instanceId}");
-                  $this->lH->log(4, $this->TAG, "Column details".print_r($column, true));
                }
             }
             $this->copyData($workflow2);
@@ -2224,9 +2221,7 @@ class Workflow {
                $colSize = count($commonColumnNames);
                for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                   $currCol1 = $currSheetIn1['columns'][$col1Indexes[$commonColumnNames[$colIndex]]];
-                  $lH->log(4, "waworkflow_static", "Current column1 = ".print_r($currCol1,true));
                   $currCol2 = $currSheetIn2['columns'][$col2Indexes[$commonColumnNames[$colIndex]]];
-                  $lH->log(4, "waworkflow_static", "Current column2 = ".print_r($currCol2,true));
                   if($diffType == "trivial"){//Trivial cases. Only when length or nullable differ
                      if($currCol1['type'] == $currCol2['type']
                         && $currCol1['default'] == $currCol2['default']
@@ -2520,9 +2515,7 @@ class Workflow {
                      for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                         if($mergeSheet1['column'] == $commonColumnNames[$colIndex]) {//currently comparing the merging columns
                            $currCol1 = $currSheetIn1['columns'][$col1Indexes[$mergeSheet1['column']]];
-                           $lH->log(4, "waworkflow_static", "Current column1 = ".print_r($currCol1,true));
                            $currCol2 = $currSheetIn2['columns'][$col2Indexes[$mergeSheet2['column']]];
-                           $lH->log(4, "waworkflow_static", "Current column2 = ".print_r($currCol2,true));
                            //make sure the two merging columns are not nullable
                            if($currCol1['nullable'] == true) {
                               $healthy = false;
@@ -2537,9 +2530,7 @@ class Workflow {
                         }
                         else {
                            $currCol1 = $currSheetIn1['columns'][$col1Indexes[$commonColumnNames[$colIndex]]];
-                           $lH->log(4, "waworkflow_static", "Current column1 = ".print_r($currCol1,true));
                            $currCol2 = $currSheetIn2['columns'][$col2Indexes[$commonColumnNames[$colIndex]]];
-                           $lH->log(4, "waworkflow_static", "Current column2 = ".print_r($currCol2,true));
                         }
                         if($healthy == true) {
                            if($diffType == "trivial"){//Trivial cases. Only when length or nullable differ
