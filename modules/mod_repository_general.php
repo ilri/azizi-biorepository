@@ -340,7 +340,6 @@ class Repository extends DBase{
        *    3 - user does not exist
        *    4 - accout disabled
        */
-      $this->Dbase->CreateLogEntry("Auth results = ".$authRes, "info");
       if($authRes == 0){
          $this->logAccess();
          $this->WhoIsMe();

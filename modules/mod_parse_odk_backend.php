@@ -233,9 +233,7 @@ class Parser {
       for($i = 0; $i < $nodesLength; $i++){
          //$nodeName = $allSelectNodes[$i]->attributes->item(0)->value;
          $node = $allSelectNodes->item($i);
-         $this->logHandler->log(4, $this->TAG, "Value of current node = ".$node->nodeValue);
          $nodeName = $node->attributes->item(0)->value;
-         $this->logHandler->log(4, $this->TAG, "Value of nodeName = ".$nodeName);
 
          // format the nodeName by removing the leading form name before the first / and then replace the rest of the / with '-' to match the column names as per the csv files
          $nodeName = substr($nodeName, strpos($nodeName, '/', 1)+1);
@@ -279,7 +277,6 @@ class Parser {
       }
       $this->selectNodesOptions = $allNodes;
       $this->logHandler->log(3, $this->TAG, "Done getting all multiselect questions");
-      $this->logHandler->log(4, $this->TAG, "Multi select options  = ".  print_r($this->selectNodesOptions, true));
       return;
    }
 
