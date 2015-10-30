@@ -170,12 +170,10 @@ class DMP extends Repository{
             </select>
          </div>
          <div style="margin-left: 5%; display: none;" id="filter_query_div">
-            <label for="filter_query">Query</label>
             <textarea id="filter_query" style="width: 500px;" cols="1" placeholder="Valid PostgreSQL select query"></textarea>
          </div>
          <div style="margin-left: 5%; display: none;" id="filter_prefix_div">
-            <label for="filter_prefix">Groups</label>
-            <div id="data_project_groups_div" style="margin-left: 3%;max-height: 110px;overflow-y: scroll;">
+            <div id="data_project_groups_div" style="margin-left: 3%; height: 80%;overflow-y: scroll;">
             </div>
          </div>
          <div style="margin-left: 5%; display: none;" id="filter_time_div">

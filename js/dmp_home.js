@@ -102,7 +102,7 @@ DMPHome.prototype.initProjectList = function() {
    };
 
    window.dhome.projectListAdapter = new $.jqx.dataAdapter(source);
-   $("#projects_list_box").jqxListBox({width: '500px', height:'150px', source: window.dhome.projectListAdapter, theme: '', displayMember: 'workflow_name', valueMember: 'workflow_id'});
+   $("#projects_list_box").jqxListBox({width: '500px', height:'400px', source: window.dhome.projectListAdapter, theme: '', displayMember: 'workflow_name', valueMember: 'workflow_id'});
    $("#projects_list_box").bind("select", function(event){
       var project = event.args.item.value;
       console.log(project);

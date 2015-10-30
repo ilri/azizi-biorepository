@@ -36,7 +36,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
       console.log("window resized");
       window.dvs.documentReady();
    });
-   
+
    if(window.dvs.project == null || window.dvs.project.length == 0) {//if project is not set
       //show create project popup
       $("#new_project_wndw").show();
@@ -50,7 +50,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
 /**
  * This function initializes resources that need to be initialized after the DOM
  * has fully loaded
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.documentReady = function() {
@@ -135,7 +135,7 @@ DMPVSchema.prototype.documentReady = function() {
             $("#filter_time_div").hide();
          }
          else if($("#data_filter_type").val() == "prefix") {
-            wHeight = 280;
+            wHeight = 540;
             $("#filter_query_div").hide();
             $("#filter_prefix_div").show();
             $("#filter_time_div").hide();
@@ -250,7 +250,7 @@ DMPVSchema.prototype.menuItemClicked = function(event) {
 
 /**
  * This function gets the access level for the current user
- * 
+ *
  * @returns {String} The access level. Can either be 'admin' or 'normal'
  */
 DMPVSchema.prototype.getAccessLevel = function(accessLevelFunction) {
@@ -314,7 +314,7 @@ DMPVSchema.prototype.getAccessLevel = function(accessLevelFunction) {
 
 /**
  * This function gets the access level for the current user
- * 
+ *
  * @returns {String} The access level. Can either be 'admin' or 'normal'
  */
 DMPVSchema.prototype.getUsers = function(userFunction) {
@@ -378,7 +378,7 @@ DMPVSchema.prototype.getUsers = function(userFunction) {
 
 DMPVSchema.prototype.initUsersGrid = function(users) {
    console.log("initializing users grid");
-   
+
    var source = {
       datatype: "json",
       datafields: [
@@ -390,7 +390,7 @@ DMPVSchema.prototype.initUsersGrid = function(users) {
       ],
       localdata: users
    };
-   
+
    window.dvs.usersGridAdapter = new $.jqx.dataAdapter(source);
    var gridWidth = $("#users_wndw").width() * 0.95;
    $("#users_grid").jqxGrid({
@@ -425,7 +425,7 @@ DMPVSchema.prototype.initUsersGrid = function(users) {
 
 /**
  * This function grants access to the defined user
- * 
+ *
  * @returns {String} The access level. Can either be 'admin' or 'normal'
  */
 DMPVSchema.prototype.grantAccessButtonClicked = function() {
@@ -493,7 +493,7 @@ DMPVSchema.prototype.grantAccessButtonClicked = function() {
 
 /**
  * This function revokes access to the defined user
- * 
+ *
  * @returns {String} The access level. Can either be 'admin' or 'normal'
  */
 DMPVSchema.prototype.revokeAccessButtonClicked = function() {
@@ -621,7 +621,7 @@ DMPVSchema.prototype.runQueryButtonClicked = function() {
 
 /**
  * This function records a project note
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.addNoteButtonClicked = function() {
@@ -1027,7 +1027,7 @@ DMPVSchema.prototype.getDataButtonClicked = function() {
 
 DMPVSchema.prototype.startDownload = function(url) {
    $("#hiddenDownloader").remove();
-   $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");   
+   $('#repository').append("<iframe id='hiddenDownloader' style='display:none;' />");
    $("#hiddenDownloader").attr("src", url);
 };
 
@@ -1235,7 +1235,7 @@ DMPVSchema.prototype.mergeVersionButtonClicked = function(){
 DMPVSchema.prototype.mergeSheetButtonClicked = function(){
    console.log("merge_sheet_btn clicked");
    window.dvs.mergeKeys = null;
-   if(window.dvs.project != null 
+   if(window.dvs.project != null
            && window.dvs.project.length > 0
            && window.dvs.diffProjectSchema != null
            && $("#curr_sheet_list").val().length > 0
@@ -1417,7 +1417,7 @@ DMPVSchema.prototype.initMergeSheetWindow = function() {
          }
       }
    });
-   
+
    //init section on current schema
    var currSchema = window.dvs.schema;
    $("#curr_project_name").html(currSchema.title);
@@ -1451,7 +1451,7 @@ DMPVSchema.prototype.initMergeSheetWindow = function() {
 
 /**
  * This function initializes the jqxGrid displaying schema links
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.initVersionDiffGrid = function(project2, diffs) {
@@ -1485,7 +1485,7 @@ DMPVSchema.prototype.initVersionDiffGrid = function(project2, diffs) {
       }
       data.diffs[diffIndex] = currDiffData;
    }
-   
+
    var source = {
       datatype: "json",
       datafields: [
@@ -1505,9 +1505,9 @@ DMPVSchema.prototype.initVersionDiffGrid = function(project2, diffs) {
       root: 'diffs',
       localdata: data
    };
-   
+
    window.dvs.versionDiffGridAdapter = new $.jqx.dataAdapter(source);
-   
+
    var columnTypes = [
          'varchar',
          'numeric',
@@ -1582,12 +1582,12 @@ DMPVSchema.prototype.initVersionDiffGrid = function(project2, diffs) {
 
 /**
  * This function initializes the jqxGrid displaying notes
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.initNotesGrid = function(notes) {
    console.log("initializing notes grid");
-   
+
    var source = {
       datatype: "json",
       datafields: [
@@ -1598,7 +1598,7 @@ DMPVSchema.prototype.initNotesGrid = function(notes) {
       ],
       localdata: notes
    };
-   
+
    window.dvs.notesGridAdapter = new $.jqx.dataAdapter(source);
    var gridWidth = $("#notes_wndw").width() * 0.95;
    $("#notes_grid").jqxGrid({
@@ -1707,7 +1707,7 @@ DMPVSchema.prototype.deleteNote = function($noteId) {
 
 /**
  * This function initializes the jqxGrid displaying schema links
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.initMergeDiffGrid = function(project2, diffs) {
@@ -1766,9 +1766,9 @@ DMPVSchema.prototype.initMergeDiffGrid = function(project2, diffs) {
       root: 'diffs',
       localdata: data
    };
-   
+
    window.dvs.mergeDiffGridAdapter = new $.jqx.dataAdapter(source);
-   
+
    var columnTypes = [
          'varchar',
          'numeric',
@@ -1873,18 +1873,18 @@ DMPVSchema.prototype.versionDiffGridCellValueChanged = function(event) {
          if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
             window.dvs.schemaChanges[sheetName] = {};
          }
-         
+
          if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
             window.dvs.schemaChanges[sheetName][columnName] = {};
          }
-         
+
          window.dvs.schemaChanges[sheetName][columnName] = columnData;
          window.dvs.schemaChanges[sheetName][columnName].original_name = columnName;
-         
+
          console.log(window.dvs.schemaChanges);
       }
    }
-   
+
 };
 
 DMPVSchema.prototype.mergeDiffGridCellValueChanged = function(event) {
@@ -1932,12 +1932,12 @@ DMPVSchema.prototype.mergeDiffGridCellValueChanged = function(event) {
    }
    /*else if(event.args.datafield == "sheet") {
       var sheetChanged = window.dvs.renameSheetButton2Clicked(event.args.oldvalue, event.args.value);
-      
+
    }
    else {//should be considere change in the diff project
       console.log("Change is to the other project");
    }*/
-   
+
 };
 
 DMPVSchema.prototype.dumpDataButtonClicked = function() {
@@ -2075,7 +2075,7 @@ DMPVSchema.prototype.renameProjectButtonClicked = function() {
 
 /**
  * This function is called when the rename button in contextual right click menu is clicked
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.renameSheetButtonClicked = function (event) {
@@ -2087,7 +2087,7 @@ DMPVSchema.prototype.renameSheetButtonClicked = function (event) {
 
 /**
  * This function is called when the rename button in the rename sheet window is clicked
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.renameSheetButton2Clicked = function (oldSheetName, newSheetName) {
@@ -2166,7 +2166,7 @@ DMPVSchema.prototype.renameSheetButton2Clicked = function (oldSheetName, newShee
 /**
  * This function invalidates all global variables that store crucial project data
  * that need refreshing whenever the schema changes
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.invalidateCachedProjectData = function() {
@@ -2177,7 +2177,7 @@ DMPVSchema.prototype.invalidateCachedProjectData = function() {
 /**
  * This function is fired whenever the delete sheet button is clicked on the right
  * click contextual menu
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.deleteSheetButtonClicked = function() {
@@ -2254,7 +2254,7 @@ DMPVSchema.prototype.deleteSheetButtonClicked = function() {
 /**
  * This function is fired whenever the delete button in the delete_project_wndw
  * is clicked
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.deleteProjectButtonClicked = function() {
@@ -2317,7 +2317,7 @@ DMPVSchema.prototype.deleteProjectButtonClicked = function() {
 
 /**
  * This function is fired whenever a file is uploaded using the jqxFile element
- * 
+ *
  * @param {Object} event   Event object returned from the listener
  * @returns {undefined}
  */
@@ -2336,7 +2336,7 @@ DMPVSchema.prototype.fileUploadEnd = function(event) {
    else {
       error = true;
    }
-   
+
    if(error==true) {
       $("#enotification_pp").html("Unable to upload file");
       $("#enotification_pp").jqxNotification("open");
@@ -2349,7 +2349,7 @@ DMPVSchema.prototype.fileUploadEnd = function(event) {
 
 /**
  * This function does everthing that needs to be done before a file upload starts
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.fileUploadStart = function() {
@@ -2358,7 +2358,7 @@ DMPVSchema.prototype.fileUploadStart = function() {
 
 /**
  * This function is fired whenever the create button is clicked in the new_project_wndw
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.createProjectButtonClicked = function() {
@@ -2458,7 +2458,7 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
 
 /**
  * This function calls the process_mysql_schema endpoint in the ODK Workflow API
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.processProjectSchema = function() {
@@ -2526,7 +2526,7 @@ DMPVSchema.prototype.processProjectSchema = function() {
 
 /**
  * This function is fired wheneve the cancel button (below the jqxGrid) is clicked
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.cancelButtonClicked = function() {
@@ -2544,7 +2544,7 @@ DMPVSchema.prototype.cancelButtonClicked = function() {
 /**
  * This function refreshes the list of save points corresponding to the current
  * project
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.refreshSavePoints = function() {
@@ -2653,7 +2653,7 @@ DMPVSchema.prototype.refreshSavePoints = function() {
 
 /**
  * This function restores a project to the specifed save point
- * 
+ *
  * @param {type} savePoint The name of the save point to restore to
  * @returns {undefined}
  */
@@ -2721,7 +2721,7 @@ DMPVSchema.prototype.restoreSavePoint = function(savePoint) {
 /**
  * This function is fired whenever the update button (below the jqxGrid) is clicked
  * @param {boolean} updateSheetList Set to TRUE if you want the sheet list to be refresh after the update
- * 
+ *
  * @returns {boolean} TRUE if successfully updated all the fields
  */
 DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
@@ -2747,7 +2747,7 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
                if(typeof details["vlength"] != 'undefined'){
                   details['length'] = details['vlength'];
                }
-               
+
                var sData = JSON.stringify({
                      "workflow_id": window.dvs.project,
                      "sheet":sheetName,
@@ -2832,7 +2832,7 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
 
 /**
  * This function initializes the file drop area
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.initFileDropArea = function() {
@@ -2844,7 +2844,7 @@ DMPVSchema.prototype.initFileDropArea = function() {
          //prevent the browser from trying to download the file
          event.preventDefault();
          event.stopPropagation();
-         
+
          console.log("target.files", event.target.files);
          console.log("event.datatransfer", event.dataTransfer);
       });
@@ -2858,7 +2858,7 @@ DMPVSchema.prototype.initFileDropArea = function() {
          e.target.className = "";
          $("#file_drop_area").css("border", "2px #aaa dashed");
       });*/
-      
+
    }
    else {
       //TODO: notify user that drag and drop not supported by browser
@@ -2867,7 +2867,7 @@ DMPVSchema.prototype.initFileDropArea = function() {
 
 /**
  * This function initializes the source for the project_list_box jqxList
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.initSheetList = function() {
@@ -3146,7 +3146,7 @@ DMPVSchema.prototype.refreshForeignKeys = function() {
 
 /**
  * This function initializes the source for the project_list_box jqxList
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.updateSheetList = function() {
@@ -3196,7 +3196,7 @@ DMPVSchema.prototype.updateSheetList = function() {
          }
       };
    }
-   
+
    window.dvs.sheetListAdapter = new $.jqx.dataAdapter(source, {loadComplete: function(){
          $("#loading_box").hide();
          window.dvs.refreshSavePoints();
@@ -3213,7 +3213,7 @@ DMPVSchema.prototype.updateSheetList = function() {
 
 /**
  * This function initializes the jqxGrid displaying the schema
- * 
+ *
  * @returns {undefined}
  */
 DMPVSchema.prototype.initColumnGrid = function() {
@@ -3236,9 +3236,9 @@ DMPVSchema.prototype.initColumnGrid = function() {
       root: 'columns',
       localdata: data
    };
-   
+
    window.dvs.columnGridAdapter = new $.jqx.dataAdapter(source);
-   
+
    var columnTypes = [
          'varchar',
          'numeric',
@@ -3313,7 +3313,7 @@ DMPVSchema.prototype.initColumnGrid = function() {
          }}
       ]
    });
-   
+
    $("#columns").on('cellendedit', window.dvs.columnGridCellValueChanged);
 };
 
@@ -3341,16 +3341,13 @@ DMPVSchema.prototype.updateDataGrid = function(sheetData) {
       for(var cIndex = 0; cIndex < columnNames.length; cIndex++){
          formattedData[index][columnNames[cIndex]] = sheetData[columnNames[cIndex]][index];
       }
-      /*if(isComplex) {
-         index = index + Math.floor(sheetData[columnNames[0]].length*0.1);
-      }*/
    }
    var source = {
       datatype: "json",
       datafields: dataFields,
       localdata: formattedData
    };
-   
+
    window.dvs.dataGridAdapter = new $.jqx.dataAdapter(source);
    $("#sheet_data").jqxGrid({
       width: window.dvs.rightSideWidth,
@@ -3369,9 +3366,9 @@ DMPVSchema.prototype.updateDataGrid = function(sheetData) {
 };
 
 /**
- * This function is fired whenever the "Edit" or "Add" link button is clicked 
+ * This function is fired whenever the "Edit" or "Add" link button is clicked
  * in the jqxGrid displaying the schema
- * 
+ *
  * @param {type} rowIndex
  * @returns {undefined}
  */
@@ -3490,7 +3487,7 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
 /**
  * This function is fired whenever a value in the jqxGrid displaying the schema
  * changes
- * 
+ *
  * @param {Object} event  The event object returned from the handler
  * @returns {undefined}
  */
@@ -3502,20 +3499,20 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
       if(typeof sheetData !== 'undefined') {
          var sheetName = sheetData.name;
          var columnChanged = window.dvs.changeColumnDetails(sheetName, event.args.rowindex, event.args.datafield, event.args.oldvalue, event.args.value, columnData);
-         
+
          /*if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
             window.dvs.schemaChanges[sheetName] = {};
          }
-         
+
          if(event.args.datafield == 'name') {//name of the field is what changed
             console.log("oldvalue "+event.args.oldvalue);
             console.log("value "+event.args.value);
             if(typeof window.dvs.columnDictionary[sheetName] === 'undefined') {
                window.dvs.columnDictionary[sheetName] = [];
             }
-            
+
             var found = false;
-         
+
             for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
                if(window.dvs.columnDictionary[sheetName][i].new_name === event.args.oldvalue) {
                   window.dvs.columnDictionary[sheetName][i].new_name = event.args.value;
@@ -3548,36 +3545,36 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
                      break;
                   }
                }
-               
+
                if(found == false) {//current column's name has not been edited
                   columnName = columnData.name;
                }
             }
          }*/
-         
+
          /*console.log("Original column name is "+columnName);
-         
+
          if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
             window.dvs.schemaChanges[sheetName][columnName] = {};
          }
-         
+
          window.dvs.schemaChanges[sheetName][columnName] = columnData;
          window.dvs.schemaChanges[sheetName][columnName].original_name = columnName;
-         
+
          $("#cancel_btn").prop('disabled', false);
          $("#update_btn").prop('disabled', false);
-         
+
          console.log(window.dvs.schemaChanges);*/
       }
    }
-   
+
 };
 
 /**
  * This function prepares the data structures in this object before a column in
  * the schema being displayed is updated. The original name given to the column
  * being updated is returned
- * 
+ *
  * @param {String} sheetName     The name of the sheet that contains the column being edited
  * @param {Integer} rowIndex     The index of the column in the sheet's object
  * @param {String} changedField  The column's property being changed
@@ -3643,7 +3640,7 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
       if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
          window.dvs.schemaChanges[sheetName][columnName] = {};
       }
-      
+
       window.dvs.schemaChanges[sheetName][columnName] = columnData;
       window.dvs.schemaChanges[sheetName][columnName].original_name = columnName;
       console.log("column data = ", window.dvs.schemaChanges[sheetName][columnName]);
@@ -3656,7 +3653,7 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
 
 /**
  * This function updates the jqxGrid displaying the schema
- * 
+ *
  * @param {type} data   The data to be displayed in the grid
  * @returns {undefined}
  */
@@ -3679,7 +3676,7 @@ DMPVSchema.prototype.updateColumnGrid = function(data) {
          data.columns[index].link = false;
       }
    }
-   
+
    var source = {
       datatype: "json",
       datafields: [
@@ -3695,7 +3692,7 @@ DMPVSchema.prototype.updateColumnGrid = function(data) {
       root: 'columns',
       localdata: data
    };
-   
+
    window.dvs.columnGridAdapter = new $.jqx.dataAdapter(source);
    $("#columns").jqxGrid({source: window.dvs.columnGridAdapter});
 };
