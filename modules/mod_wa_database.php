@@ -708,7 +708,7 @@ class Database {
             $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
             //if column was previously part of the primary key, the primary key will be deleted
             //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
-            $tmpName = $existing['name']."_odk_w_delete";
+            $tmpName = 'temp_column_odk_will_delete';
             $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
             $this->runGenericQuery($query);
             $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
