@@ -10,10 +10,10 @@ class WASheet {
    private $config;
    private $lH;
    private $database;
-   private $excelObject; //excel object and columns can be used interchangebly. They both store the sheet schema
-   private $columns;//array of WAColumns in this object
+   private $excelObject;   //excel object and columns can be used interchangebly. They both store the sheet schema
+   private $columns;        //array of WAColumns in this object
    private $sheetName;
-   private $columnArray;//this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
+   private $columnArray;   //this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
    private $fileDetails;
    private $isMain;
 
@@ -695,6 +695,7 @@ class WASheet {
       try {
          $allSheets = WASheet::getAllWASheets($config, $workflowId, $database);
          $mainSheets = array();
+         $lH->log(1, "wa_sheet_static", "sheets in '{$workflowId}'". print_r($allSheets, true));
          foreach($allSheets as $currSheetName) {
             $currForeignKeys = $database->getTableForeignKeys($currSheetName);
             if(count($currForeignKeys) == 0) $mainSheets[] = $currSheetName;

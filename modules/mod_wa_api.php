@@ -283,7 +283,7 @@ class ODKWorkflowAPI extends Repository {
     * This function handles the get_workflow endpoint of the API.
     */
    private function handleGetWorkflowsEndpoint() {
-      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->uuid), $this->isUserAdmin($this->uuid));
+      $this->returnResponse(Workflow::getUserWorkflows($this->config, $this->uuid, $this->isUserAdmin($this->uuid)));
    }
 
    /**

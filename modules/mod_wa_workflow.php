@@ -31,6 +31,8 @@ class Workflow {
    public static $ACCESS_LEVEL_NORMAL = "normal";
    public static $ACCESS_LEVEL_ADMIN = "admin";
 
+   public $dataTables;      // workflow tables
+
    /**
     * Default class contructor
     * @param Object $config repository_config object
@@ -54,6 +56,7 @@ class Workflow {
       $this->currUser = $currUser;
       $this->workflowName = $workflowName;
       $this->processing = false;
+      $this->dataTables = NULL;
 
       $this->instanceId = $instanceId;
 
@@ -763,7 +766,14 @@ class Workflow {
          if(count($dataFiles) > 0) {
             if(count($dataFiles) == 1) {//currently only support one data file
                //delete any existing data table in the database
-               $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+               if(is_null($this->dataTables)){
+                  $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+                  $this->dataTables = $dataTables;
+               }
+               else{
+                  $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
+                  $dataTables = $this->dataTables;
+               }
                if(count($dataTables) > 0) {
                   $this->lH->log(2, $this->TAG, "Workflow already has ".  count($dataTables)." data tables (before generating schema from Excel file). Dropping this tables");
                }
@@ -823,6 +833,9 @@ class Workflow {
       $err_count = count($errors);
       for($index = 0; $index < $err_count; $index++) {
          $currError = $errors[$index];//should be an object of type WAException
+         if(is_array($currError)){
+            echo print_r($currError, true);
+         }
          array_push($errorMessages, array("code" => $currError->getCode(), "message" => Workflow::getErrorMessage($currError)));
       }
 
@@ -1413,7 +1426,14 @@ class Workflow {
          $sheetData = array();
          if($filter == "all" || $filter == "prefix"){//user wants all the data
             if($filter == "all") $prefix = array();
-            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+            if(is_null($this->dataTables)){
+               $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+               $this->dataTables = $dataTables;
+            }
+            else{
+               $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
+               $dataTables = $this->dataTables;
+            }
             //get data from all the sheets
             $dbt_count = count($dataTables);
             for($index = 0; $index < $dbt_count; $index++) {
@@ -1437,7 +1457,14 @@ class Workflow {
                   //get the ids of the rows that lie within time frame
                   $whereClause = "where to_date(".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') >= to_date('$startTime', 'YYYY-MM-DD') AND to_date(".Database::$QUOTE_SI.$timeColumnName.Database::$QUOTE_SI."::text, 'YYYY-MM-DD') <= to_date('$endTime', 'YYYY-MM-DD')";
                   $sheetData[$mainSheetName] = $mainSheet->getDatabaseData(array(), $whereClause);
-                  $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+                  if(is_null($this->dataTables)){
+                     $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+                     $this->dataTables = $dataTables;
+                  }
+                  else{
+                     $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
+                     $dataTables = $this->dataTables;
+                  }
 
                   //for each of the other sheets, determine it's parent and join columns
                   $this->lH->log(1, $this->TAG, "Other sheets are ".  print_r($dataTables, true));
@@ -1598,7 +1625,15 @@ class Workflow {
       $this->lH->log(3, $this->TAG, "Getting schema for workflow with id = '{$this->instanceId}'");
       if($this->healthy == true && $this->instanceId == $this->database->getDatabaseName()
               && $this->instanceId != null) {
-         $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+
+         if(is_null($this->dataTables)){
+            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+            $this->dataTables = $dataTables;
+         }
+         else{
+            $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
+            $dataTables = $this->dataTables;
+         }
          $mainSheetName = null;
          try {
             $mainSheetName = WASheet::getMainSheet($this->config, $this->instanceId, $this->database);
@@ -1774,7 +1809,14 @@ class Workflow {
     */
    private function truncateWorkflow() {
       try {
-         $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+         if(is_null($this->dataTables)){
+            $dataTables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+            $this->dataTables = $dataTables;
+         }
+         else{
+            $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
+            $dataTables = $this->dataTables;
+         }
          $dt_count = count($dataTables);
          for($index = 0; $index < $dt_count; $index++) {
             $query = "truncate table ".Database::$QUOTE_SI.$dataTables[$index].Database::$QUOTE_SI." cascade";
@@ -1907,7 +1949,15 @@ class Workflow {
               && $this->instanceId != null
               && $this->database->getDatabaseName() == $this->instanceId) {
          try {
-            $tables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+
+            if(is_null($this->dataTables)){
+               $tables = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+               $this->dataTables = $tables;
+            }
+            else{
+               $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
+               $tables = $this->dataTables;
+            }
             $return = array();
             $tab_count = count($tables);
             for($index = 0; $index < $tab_count; $index++) {
@@ -2061,7 +2111,7 @@ class Workflow {
          $database = new Database($config);
          $database->restore($newWorkflowId, WAFile::getSavePointFilePath($oldWorkingDir, $savePoint), false);//create the database for $newWorkflowId using $savePoint
          $database2 = new Database($config, $newWorkflowId);
-         $query = "update ".Workflow::$TABLE_META_DOCUMENT." set workflow_id = '$newWorkflowId', working_dir = '$newWorkingDir', time_created = '".Database::getMySQLTime()."'";
+         $query = "update ".Database::$QUOTE_SI.Workflow::$TABLE_META_DOCUMENT.Database::$QUOTE_SI." set workflow_id = '$newWorkflowId', working_dir = '$newWorkingDir', time_created = '".Database::getMySQLTime()."'";
          $database2->runGenericQuery($query);
       } catch (WAException $ex) {
          array_push($errors, $ex);
@@ -2640,7 +2690,15 @@ class Workflow {
             $db2 = new Database($config, $instanceId);
             $username = $result[0]['db_username'];
             $password = $result[0]['db_password'];
-            $sheetNames = WASheet::getAllWASheets($config, $instanceId, $db2);
+
+            if(is_null($this->dataTables)){
+               $sheetNames = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
+               $this->dataTables = $sheetNames;
+            }
+            else{
+               $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
+               $sheetNames = $this->dataTables;
+            }
             //TODO: get all table names
             if($username == null || strlen($username) == 0 || $password == null || strlen($password) == 0) {//user not given a connection password
                $randomUsername = Workflow::$workflowPrefix.Workflow::generateRandomID(10);
