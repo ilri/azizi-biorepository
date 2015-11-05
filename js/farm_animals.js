@@ -136,7 +136,7 @@ Animals.prototype.eventsGridStatusBar = function(statusbar){
    });
 
    excelButton.click(function (event) {
-       $("#inventory").jqxGrid('exportdata', 'xls', 'jqxGrid', false);
+       $("#events_grid").jqxGrid('exportdata', 'xls', 'jqxGrid', false);
    });
 
    $('#showAllId').on('change', function(){
