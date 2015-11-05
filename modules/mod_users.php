@@ -63,11 +63,11 @@ class Users {
     */
    private function createUserPage($addinfo = ''){
       if(OPTIONS_REQUESTED_ACTION == 'add_user'){
-         $addinfo = $this->addUser();
+         $result = $this->addUser();
+         if($result == 1) die(json_encode(array('error' => true, 'mssg' => '"Something went wrong while trying to add user"')));
+         else die(json_encode(array('error' => false, 'mssg' => $result)));
       }
-
-      $query = "SELECT name, id"
-              . " FROM groups";
+      $query = 'SELECT name, id FROM groups';
       $groups = $this->Dbase->ExecuteQuery($query);
 
       if($groups == 1){
@@ -76,8 +76,7 @@ class Users {
          $groups = array();
       }
 
-      $query = "SELECT val_id AS id, value AS name"
-              . " FROM ".Config::$config['azizi_db'].".modules_custom_values";
+      $query = 'SELECT val_id AS id, value AS name FROM '. Config::$config['azizi_db'] .'.modules_custom_values';
       $projects = $this->Dbase->ExecuteQuery($query);
 
       if($projects == 1){
@@ -85,52 +84,84 @@ class Users {
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch projects", "fatal");
          $projects = array();
       }
+      else{
+         $pCount = count($projects);
+         $aProjects = array();
+         for($i = 0; $i < $pCount; $i++){
+            $aProjects[$projects[$i]['id']] = $projects[$i]['name'];;
+         }
+      }
 
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
 <script type="text/javascript" src="js/users.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jquery-form/jquery.form.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
 <h3 class="mod_user_heading">Create An Account</h3>
 <?php echo $addinfo;?>
 <form action="?page=users&do=create_account" method="post" class="form-horizontal user_form">
-   <div class="form-group"><label for="sname" class="control-label">Surname: </label><input id="sname" name="sname" type="text" class="form-control" /></div>
-   <div class="form-group"><label for="onames" class="control-label">Other Names: </label><input id="onames" name="onames" type="text" class="form-control" /></div>
-   <div class="form-group"><label for="email" class="control-label">Email: </label><input id="email" name="email" type="email" class="form-control" /></div>
-   <div class="form-group"><label for="username" class="control-label">Username: </label><input id="username" name="username" type="text" class="form-control" /></div>
-   <div class="form-group">
-      <label for="ldap" class="control-label">Use LDAP Authentication: </label>
-      <select id="ldap" name="ldap" class="form-control">
-         <option value="0">No</option>
-         <option value="1">Yes</option>
-      </select>
-   </div>
-   <div class="form-group" style="display: none;"><label for="pass_1" class="control-label">Password: </label><input id="pass_1" name="pass_1" type="password" class="form-control" /></div>
-   <div class="form-group" style="display: none;"><label for="pass_2" class="control-label">Confirm Password: </label><input id="pass_2" name="pass_2" type="password" class="form-control" /></div>
-   <div class="form-group"><label for="project" class="control-label">Project: </label><select id="project" name="project" class="form-control">
-         <option value=""></option>
+   <div id="user_left">
+      <div class="form-group"><label for="sname" class="control-label">Surname: </label><input id="sname" name="sname" type="text" class="form-control" /></div>
+      <div class="form-group"><label for="onames" class="control-label">Other Names: </label><input id="onames" name="onames" type="text" class="form-control" /></div>
+      <div class="form-group"><label for="email" class="control-label">Email: </label><input id="email" name="email" type="email" class="form-control" /></div>
+      <div class="form-group"><label for="username" class="control-label">Username: </label><input id="username" name="username" type="text" class="form-control" /></div>
+      <div class="form-group">
+         <label for="ldap" class="control-label">LDAP Authenticate:</label>
+         <select id="ldap" name="ldap" class="form-control">
+            <option value="0">No</option>
+            <option value="1" selected="">Yes</option>
+         </select>
+      </div>
+      <div class="form-group"><label for="project" class="control-label">Users Project: </label>
+         <select id="project" name="project" class="form-control">
 <?php
    foreach($projects AS $currProject){
       echo "<option value='".$currProject['id']."'>".$currProject['name']."</option>";
    }
 ?>
-   </select></div>
-   <h4 style="margin-left: 10%;">Groups</h4>
-   <div class="form-group"><label for="pass_2" class="control-label">Add to group:</label>
-      <select id="group" class="form-control">
- <?php
-   foreach($groups AS $currGroup){
-      echo "<option id='".$currGroup['id']."'>".$currGroup['name']."</option>";
-   }
- ?>
-      </select>
-      <button id="add_group_btn" type="button">Add</button></div>
-      <div id="group_list" style="overflow: hidden; margin-left: 30%; background: white; width: 40%; max-height: 100px; overflow-y: scroll;"></div>
-   <input type="hidden" name="action" id="action" />
-   <input type="hidden" name="user_groups" id="user_groups" />
-   <div class="center"><button type="submit" id="create_user_btn" class="btn-primary">Create</button></div>
+         </select></div>
+   </div>
+
+   <div  id="user_right">
+      <h4>Groups</h4>
+      <div id="all_groups">
+         <div id="from_groups"></div>
+      </div>
+      <div class="actions">
+         <input type="button" style="padding:4px 16px;" id="add" value='Add >' />
+         <input type="button" style="padding:4px 16px;" id="remove" value='< Remove' />
+         <input type="button" style="padding:4px 16px;" id="reset" value='Reset' />
+      </div>
+      <div id="user_groups">
+         <div id="to_groups"></div>
+      </div>
+   </div>
+   <div class="center"><input type='button' id="create_user_btn" class="btn-primary" value='Create' /></div>
+   <div id="messageNotification"><div></div></div>
 </form>
 <script>
    $('#whoisme .back').html('<a href=\'?page=users\'>Back</a>');//back link
    var users = new Users('add_user','<?php echo json_encode(Config::$psswdSettings);?>', "<?php echo Config::$rsaPubKey;?>");
+
+   Main.allGroups = <?php echo json_encode($groups); ?>;
+   $("#from_groups").jqxListBox({width: 200, height:300, source: Main.allGroups, displayMember: 'name', valueMember: 'id', checkboxes: true, filterable: true, theme: ''});
+   $("#to_groups").jqxListBox({width: 200, height: 300, source: [], displayMember: 'text', valueMember: 'id', checkboxes: true});
+   $("#add, #remove, #reset, #create_user_btn").jqxButton({ width: '100'});
+
+   $('#add').on('click', users.addToGroup);
+   $('#remove').on('click', users.removeFromGroup);
+   $('#reset').on('click', users.resetGroups);
+   $('#create_user_btn').on('click', users.saveChanges);
+   $('#sname').focus();
 </script>
 <?php
    }
@@ -424,7 +455,7 @@ class Users {
          return "The user '{$_POST['username']}' has been successfully added and email sent to '$email'";
       }
       else {
-         return "Something went wrong while trying to add user";
+         return 1;
       }
    }
 
