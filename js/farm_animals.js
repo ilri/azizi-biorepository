@@ -1780,6 +1780,55 @@ Animals.prototype.saveCellChanges = function(animal_id, dataType, value){
    });
 };
 
+Animals.prototype.initiateWeightsChart = function(event){
+   var source ={ datatype: "csv", datafields: [ { name: 'Date' }, { name: 'weight' }], url: 'mod_ajax.php?page=farm_animals&do=graphs',
+      async: false, type: 'POST', data: {action: 'weights', animal_id: event.args.item.value} };
+
+   var dataAdapter = new $.jqx.dataAdapter(source, { async: false, autoBind: true,
+      loadError: function (xhr, status, error) {
+         animals.showNotification('Error loading data from the server: ' + error, 'error');
+      }
+   });
+   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+   // prepare jqxChart settings
+   var settings = {
+       title: "Animal Weights",
+       enableAnimations: true,
+       showLegend: true,
+       enableCrosshairs: true,
+       crosshairsDashStyle: '2,2',
+       crosshairsLineWidth: 1.0,
+       crosshairsColor: '#888888',
+       padding: { left: 10, top: 5, right: 30, bottom: 5 },
+       titlePadding: { left: 10, top: 0, right: 0, bottom: 10 },
+       source: dataAdapter,
+       xAxis: {
+         dataField: 'Date',
+         formatFunction: function (value) {
+             return value.getDate() + '-' + months[value.getMonth()] + '-' + value.getFullYear();
+         },
+         type: 'date',
+         baseUnit: 'month',
+         unitInterval: 1,
+         valuesOnTicks: true,
+         gridLines: { interval: 3 },
+         labels: {
+             angle: -60,
+             rotationPoint: 'topright',
+             offset: { x: 0, y: -25 }
+         }
+       },
+       colorScheme: 'scheme01',
+       seriesGroups: [{
+          type: 'line',
+          valueAxis:{title: { text: 'Animal Weight<br><br>' } },
+          series: [{ dataField: 'weight', displayText: 'Weight' }]
+       }]
+   };
+   $('#weight_graph').jqxChart(settings);
+};
+
 // add a trim function
 if (typeof(String.prototype.trim) === "undefined") {
    String.prototype.trim = function() {

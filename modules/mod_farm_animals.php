@@ -99,6 +99,12 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'save_exp') $this->saveNewExperiment();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveExperimentAnimals();      // An ambigous action name....
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'graphs'){
+         if(OPTIONS_REQUESTED_ACTION == 'weights'){
+            if(isset($_POST['animal_id'])) $this->getAnimalWeights();
+            else $this->weightGraphsHome();
+         }
+      }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'images'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->fileUploadsHome();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->processAndSaveUploads();
@@ -127,7 +133,8 @@ class FarmAnimals{
                <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
                <li><a href="?page=farm_animals&do=events&action=quick_events">Add Quick Events</a></li>
                <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
-               <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>';
+               <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>
+               <li><a href="?page=farm_animals&do=graphs&action=weights">Weight Graphs</a></li>';
          }
 ?>
       </ul>
@@ -1722,5 +1729,95 @@ class FarmAnimals{
       if($res1 == 1) die(json_encode(array('error' => true, 'mssg' => 'There was an error while fetching data from the database. Contact the system administrator')));
 
       die(json_encode(array('error' => false, 'mssg' => 'The record was succesfully recorded.')));
+   }
+
+   /**
+    * The home page for visualizing cow weights
+    */
+   private function weightGraphsHome(){
+      $animals = $this->getAnimalsByWeight();
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdraw.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxchart.core.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+
+<div id="weights_graphs">
+   <div id="addinfo" style="font-weight: normal;">
+      This module presents a quick way of visualizing cow weights. The cows on the left are ordered by the ones losing weight the fastest. Select an animal on the left to show its weight plotted over time.
+   </div>
+   <div id="cow_details"></div>
+   <div id="cow_list"></div>
+   <div id="weight_graph"></div>
+</div>
+<div id="messageNotification"><div class="">&nbsp;&nbsp;</div></div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   var animals = new Animals();
+   animals.allAnimals = <?php echo json_encode($animals); ?>;
+   $("#cow_list").jqxListBox({width: 215, source: animals.allAnimals, displayMember: 'animal_id', valueMember: 'id', height: '400px', filterable: true});
+   $("#cow_list").on('select', animals.initiateWeightsChart);
+</script>
+<?php
+   }
+
+   /**
+    * Fetch a list of animals sorted by loss of weight
+    */
+   private function getAnimalsByWeight(){
+      $animalQuery = 'select b.id, b.animal_id '
+            . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+            . 'where event_type_id=13 and b.status="Alive"'
+            . 'group by a.animal_id';
+      $res = $this->Dbase->ExecuteQuery($animalQuery);
+      if($res == 1) return 1;
+      else{
+         $weights = array();
+         foreach($res as $r){
+            $weights[] = array('id' => $r['id'], 'animal_id' => $r['animal_id']);
+         }
+      }
+      return $weights;
+   }
+
+   /**
+    * Fetch the weights of the selected animal
+    */
+   private function getAnimalWeights(){
+      $weighingId = $this->getEventId('Weighing');
+      if(!is_numeric($weighingId)) die(json_encode(array('error' => true, 'mssg' => $weighingId)));
+
+      $weightQ = 'select date_format(event_date, "%m/%d/%Y") as eventdate, event_value as weight from '. Config::$farm_db .'.farm_animal_events where event_type_id = :event and animal_id = :animal_id order by event_date';
+      $events = $this->Dbase->ExecuteQuery($weightQ, array('event' => $weighingId, 'animal_id' => $_POST['animal_id']));
+      if($events == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+
+      header("Content-type: text/csv");
+      header("Content-Disposition: attachment; filename=file.csv");
+      header("Pragma: no-cache");
+      header("Expires: 0");
+      foreach($events as $e){
+         echo "{$e['eventdate']},{$e['weight']}\n";
+      }
+
+   }
+
+   /**
+    * Return the id of an event from the database
+    *
+    * @param   string   $eventName  The name of the event that we want to get its id
+    * @return  mixed    Returns the id if successfull else returns the error
+    */
+   private function getEventId($eventName){
+      $weightsEventQ = 'select id from '. Config::$farm_db .'.farm_events where event_name = :event_name';
+      $weightsEventName = $this->Dbase->ExecuteQuery($weightsEventQ, array('event_name' => $eventName));
+      if($weightsEventName == 1) return $this->Dbase->lastError;
+      else return $weightsEventName[0]['id'];
    }
 }
