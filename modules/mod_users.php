@@ -441,12 +441,11 @@ class Users {
          <input type="hidden" name="action" id="action" />
          <input type="hidden" name="group_id" id="group_id" />
    </div>
-   <div class="center"><input type='button' id="create_group_btn" class="btn-primary" value='Update' /></div>
+   <div class="center"><input type='submit' id="create_group_btn" class="btn-primary" value='Update' /></div>
 </form>
 <script>
    $('#whoisme .back').html('<a href=\'?page=users\'>Back</a>');//back link
    var groups = new Groups('edit_group', <?php echo "'".json_encode($existingGroups)."'";?>);
-   $('#create_group_btn').on('click', groups.saveModuleChanges);
 </script>
 <?php
    }
