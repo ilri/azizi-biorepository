@@ -363,7 +363,6 @@ class Users {
     * This function renders the modify group page
     */
    private function modifyGroupPage($addinfo = ""){
-
       if(OPTIONS_REQUESTED_ACTION == 'edit_group'){
          $result = $this->editGroup();
 
@@ -387,36 +386,47 @@ class Users {
          $actions = array();
       }
 
-      $query = "SELECT id,name"
-              . " FROM groups";
-
+      $query = "SELECT id, name FROM groups";
       $existingGroups = $this->Dbase->ExecuteQuery($query);
-
       if($existingGroups == 1){
          $this->Dbase->CreateLogEntry("Error occurred while trying to fetch sub module actions");
          $actions = array();
       }
       $addinfo = ($addinfo != '') ? "<div id='addinfo'>$addinfo</div>" : '';
 ?>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
 <script type="text/javascript" src="js/groups.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcheckbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jquery-form/jquery.form.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
 <h3 class="mod_user_heading">Modify a Group</h3>
 <?php echo $addinfo;?>
 <form action="?page=users&do=manage_group" method="post" class="form-horizontal user_form">
-   <div class="form-group"><label for="name" class="control-label">Group: </label>
-      <select name="curr_group_name" id="curr_group_name">
-         <option id=""><option>
+   <div id="user_left">
+      <div class="form-group"><label for="name" class="control-label">Group: </label>
+         <select name="curr_group_name" id="curr_group_name">
+            <option id=""><option>
 <?php
    foreach($existingGroups as $currGroup){
       echo "<option id='".$currGroup['id']."'>".$currGroup['name']."</option>";
    }
 ?>
-      </select>
+         </select>
+      </div>
+      <div class="form-group"><label for="name" class="control-label">Name: </label><input type="text" name="group_name" id="group_name" /></div>
    </div>
-   <div class="form-group"><label for="name" class="control-label">Name: </label><input type="text" name="group_name" id="group_name" /></div>
-   <h4 style="margin-left: 10%;">Sub-Module Actions</h4>
-   <div class="form-group"><label for="pass_2" class="control-label">Add access:</label>
-      <select id="all_actions" class="form-control">
-         <option id=""></option>
+   <div id="user_right">
+      <h4 style="margin-left: 30%;">Sub-Module Actions</h4>
+      <div class="form-group"><label for="pass_2" class="control-label">Add access:</label>
+         <select id="all_actions" class="form-control">
+            <option id=""></option>
 <?php
    foreach($actions AS $currAction){
       if(substr($currAction['name'], -1) == "-") $currAction['name'] .= "All Actions";
@@ -424,17 +434,19 @@ class Users {
       echo "<option id='".$currAction['id']."'>".$currAction['name']."</option>";
    }
 ?>
-      </select>
-      <button id="add_action_btn" type="button">Add</button></div>
-      <div id="action_list" style="overflow: hidden; margin-left: 30%; background: white; width: 40%; max-height: 100px; overflow-y: scroll;"></div>
-      <input type="hidden" id="group_actions" name="group_actions" />
-      <input type="hidden" name="action" id="action" />
-      <input type="hidden" name="group_id" id="group_id" />
-   <div class="center"><button type="submit" id="create_group_btn" class="btn-primary">Update</button></div>
+         </select>
+         <button id="add_action_btn" type="button">Add</button></div>
+         <div id="action_list" style="overflow: hidden; margin-left: 30%; background: white; width: 40%; max-height: 100px; overflow-y: scroll;"></div>
+         <input type="hidden" id="group_actions" name="group_actions" />
+         <input type="hidden" name="action" id="action" />
+         <input type="hidden" name="group_id" id="group_id" />
+   </div>
+   <div class="center"><input type='button' id="create_group_btn" class="btn-primary" value='Update' /></div>
 </form>
 <script>
    $('#whoisme .back').html('<a href=\'?page=users\'>Back</a>');//back link
    var groups = new Groups('edit_group', <?php echo "'".json_encode($existingGroups)."'";?>);
+   $('#create_group_btn').on('click', groups.saveModuleChanges);
 </script>
 <?php
    }
