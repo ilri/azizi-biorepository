@@ -1124,8 +1124,6 @@ Animals.prototype.newEvent = function(){
                animals.allExperiments = data.data.allExperiments;
                animals.allOwners = data.data.allOwners;
                animals.eventMinDays = data.data.eventMinDays;
-               // add the add new option for the events
-               animals.allEvents[Object.keys(animals.allEvents).length] = {id:'new', name: 'Add new'};
              }
          }
       });
