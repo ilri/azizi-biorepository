@@ -695,7 +695,6 @@ class WASheet {
       try {
          $allSheets = WASheet::getAllWASheets($config, $workflowId, $database);
          $mainSheets = array();
-         $lH->log(1, "wa_sheet_static", "sheets in '{$workflowId}'". print_r($allSheets, true));
          foreach($allSheets as $currSheetName) {
             $currForeignKeys = $database->getTableForeignKeys($currSheetName);
             if(count($currForeignKeys) == 0) $mainSheets[] = $currSheetName;

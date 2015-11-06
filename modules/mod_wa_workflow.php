@@ -2691,14 +2691,7 @@ class Workflow {
             $username = $result[0]['db_username'];
             $password = $result[0]['db_password'];
 
-            if(is_null($this->dataTables)){
-               $sheetNames = WASheet::getAllWASheets($this->config, $this->instanceId, $this->database);
-               $this->dataTables = $sheetNames;
-            }
-            else{
-               $this->lH->log(4, $this->TAG, "We have a copy of the tables for {$this->instanceId}... No need to fetch them again, lets use the current copy");
-               $sheetNames = $this->dataTables;
-            }
+            $sheetNames = WASheet::getAllWASheets($config, $instanceId, $db2);
             //TODO: get all table names
             if($username == null || strlen($username) == 0 || $password == null || strlen($password) == 0) {//user not given a connection password
                $randomUsername = Workflow::$workflowPrefix.Workflow::generateRandomID(10);
