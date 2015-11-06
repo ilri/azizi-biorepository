@@ -844,7 +844,7 @@ class FarmAnimals{
    private function animalOwnersHistory(){
       $query = 'select a.animal_id, a.owner_id, c.animal_id animal, start_date, end_date, a.comments, concat(d.sname, " ", d.onames) as owner '
          . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id '
-         . 'inner join '. Config::$config['lims_extension'] .'.users as d on a.owner_id = d.id '
+         . 'inner join '. Config::$config['dbase'] .'.users as d on a.owner_id = d.id '
          . 'where a.animal_id = :animal_id '
          . 'order by start_date';
       $ownership = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
