@@ -1273,7 +1273,6 @@ class Parser {
                }
                $cleanCSVRows[0][$i] = $headings[$i];
             }
-            $this->logHandler->log(4, $this->TAG, "cleanCSVRows looks like this " . print_r($cleanCSVRows, true));
 
             $tr = array();
             preg_match_all("/<\/th>\s*(<tr>.*<\/tr>$)/", $dataTable, $tr);
@@ -1337,7 +1336,6 @@ class Parser {
                      //$this->nextRowName[$sheetName] ++;
                   }
                }
-               $this->logHandler->log(4, $this->TAG, "cleanCSVRows now looks like this " . print_r($cleanCSVRows, true));
                //clean csv rows
                $cleanCSVRows = $this->expandMultiSelectQuestions($cleanCSVRows);
                $sheetNames = array_keys($this->sheets);
