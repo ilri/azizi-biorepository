@@ -85,22 +85,8 @@ class WAColumn {
    public function update($sheetName, $name, $type, $length, $nullable, $default, $key) {
 
       try {
-         $new = array(
-            "name" => $name,
-            "type" => $type,
-            "length" => $length,
-            "nullable" => $nullable,
-            "default" => $default,
-            "key" => $key
-         );
-         $existing = array(
-            "name" => $this->name,
-            "type" => $this->type,
-            "length" => $this->length,
-            "nullable" => $this->nullable,
-            "default" => $this->default,
-            "key" => $this->key
-         );
+         $new = array("name" => $name, "type" => $type, "length" => $length, "nullable" => $nullable, "default" => $default, "key" => $key);
+         $existing = array("name" => $this->name, "type" => $this->type, "length" => $this->length, "nullable" => $this->nullable, "default" => $this->default, "key" => $this->key);
          $this->database->runAlterColumnQuery($sheetName, $existing, $new);
          $this->name = $name;
          $this->type = $type;
@@ -256,10 +242,10 @@ class WAColumn {
          return array("name" => $this->name , "type"=>Database::$TYPE_VARCHAR , "length"=>50 , "nullable"=>true, "default" => null , "key"=>Database::$KEY_NONE);
       }
    }
-   
+
    /**
     * This function checks whether the length of the column name is greater than what PostgreSQL allows and modifies it if so
-    * 
+    *
     * @param Workflow $workflow
     */
    private function shortenName($workflow, $sheetName) {

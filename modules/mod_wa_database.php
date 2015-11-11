@@ -710,11 +710,14 @@ class Database {
             //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
             $tmpName = 'temp_column_odk_will_delete';
             $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+            $this->logH->log(4, $this->TAG, "1. Renaming the column via $query");
             $this->runGenericQuery($query);
             $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
+            $this->logH->log(4, $this->TAG, "2. Adding a column via $query");
             $query .= $this->getColumnExpression($new['name'], $new['type'], $new['length'], $new['key'], $new['default'], $new['nullable']);
             $this->runGenericQuery($query);
             $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
+            $this->logH->log(4, $this->TAG, "3. Deleting a column via $query");
             $this->runGenericQuery($query);
             if($new['key'] == Database::$KEY_PRIMARY){
                $this->addColumnsToPrimaryKey($tableName, array($new['name']));
