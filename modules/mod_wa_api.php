@@ -44,7 +44,7 @@ class ODKWorkflowAPI extends Repository {
    public function trafficController(){
       // process the passed parameters
       $cookies = filter_input_array(INPUT_COOKIE);
-      $token = json_decode($_POST['token'], true);
+      $token = is_array($_POST['token']) ? $_POST['token'] : json_decode($_POST['token'], true);
       $this->server = (empty($token['server'])) ? $_POST['token']['server'] : $token['server'];
       $this->user = (empty($token['user'])) ? $_SESSION['username'] : $token['user'];
       $this->cur_session = (empty($token['session'])) ? $cookies['repository'] : $token['session'];
