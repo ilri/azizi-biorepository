@@ -438,7 +438,7 @@ class Workflow {
          $this->database->runCreateTableQuery(Workflow::$TABLE_META_NOTES,
                  array(
                      array("name" => "id" , "type"=>Database::$TYPE_SERIAL , "length"=>11 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_PRIMARY),
-                     array("name" => "message" , "type"=>Database::$TYPE_VARCHAR , "length"=>1000 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
+                     array("name" => "message" , "type"=>Database::$TYPE_VARCHAR , "length"=>100000 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "user" , "type"=>Database::$TYPE_VARCHAR , "length"=>200 , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE),
                      array("name" => "time_added" , "type"=>Database::$TYPE_DATETIME , "length"=>null , "nullable"=>false , "default"=>null , "key"=>Database::$KEY_NONE)
                      )
