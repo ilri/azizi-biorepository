@@ -1530,18 +1530,31 @@ class FarmAnimals{
     *
     * @todo Define the farm manager email as a setting
     */
-   private function emailEventsDigest(){
+   private function emailEventsDigest($email_type){
       global $Repository;
       // load the settings from the main file
       $settings = $Repository->loadSettings();
+      $this->Dbase->CreateLogEntry("sending daily digest", 'info');
 
       // get a list of all the day's events and send them to the concerned user
-      $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
-            . 'a.event_date, record_date as time_recorded, recorded_by, performed_by, b.animal_id, b.sex, event_value, a.comments  '
-          . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
-          . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
-          . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date = :event_date';
-      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d')));
+      if($email_type == 'weekly'){
+         $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
+               . 'a.event_date, record_date as time_recorded, recorded_by, performed_by, b.animal_id, b.sex, event_value, a.comments  '
+             . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+             . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
+             . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date < :end_date and event_date > :start_date';
+         $events = $this->Dbase->ExecuteQuery($eventsQuery, array('start_date' => date('Y-m-d', strtotime('-7 days')), 'end_date' => date('Y-m-d', strtotime('+1 days'))));
+         $intro = 'Below is a digest of activities carried out on animals assigned to you and <b>RECORDED IN THE LAST 7 DAYS</b><b></b>. If you have any questions, kindly contact the farm manager through '. Config::$farmManagerEmail .'<br /><br />';
+      }
+      elseif($email_type == 'daily'){
+         $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
+               . 'a.event_date, record_date as time_recorded, recorded_by, performed_by, b.animal_id, b.sex, event_value, a.comments  '
+             . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+             . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
+             . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date = :event_date and c.event_category = :cat';
+         $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d'), 'cat' => 'heightened'));
+         $intro = "Below are the activities carried out on your animals and were recorded <b>". date('dS M Y') .'</b>. If you have any questions, kindly contact the farm manager through '. Config::$farmManagerEmail .'<br /><br />';
+      }
 
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
@@ -1560,8 +1573,14 @@ class FarmAnimals{
       foreach ($uniqueOwners as $owner){
          $animalsByOwner = array();
          // loop through all the affected animals and create the report
-         $content = "Dear {$owners[$owner]['name']}, <br /><br />Below is a report of the activities carried out on the farm animals assigned to you on ". date('dS M Y') .'. If you have any questions, kindly contact the farm manager through '. Config::$farmManagerEmail .'<br /><br />';
-         $content .= '<table border="1"><tr><th>Animal ID</th><th>Event Date</th><th>Event</th><th>Event Value</th><th>Recorded By</th><th>Performed By</th><th>Time Recorded</th><th>Comments</th></tr>';
+         $style = '<style type="text/css">';
+         $style .= 'table{font-family: verdana,arial,sans-serif; font-size:10px; color:#333333; border-width: 1px; border-color: #666666; border-collapse: collapse; }';
+         $style .= 'th { border-width: 1px; padding: 8px; border-style: solid; border-color: #666666; background-color: #dedede; }';
+         $style .= 'td { border-width: 1px; padding: 8px; border-style: solid; border-color: #666666; background-color: #ffffff; }';
+         $style .= '</style>';
+         $content = "Dear {$owners[$owner]['name']}, <br /><br />$intro";
+         $content .= "$style";
+         $content .= '<table><tr><th>Animal ID</th><th>Event Date</th><th>Event</th><th>Event Value</th><th>Recorded By</th><th>Performed By</th><th>Time Recorded</th><th>Comments</th></tr>';
          foreach($events as $id => $event){
             if($event['current_owner'] == $owner){
                $animalsByOwner[$id] = $event;
@@ -1573,7 +1592,9 @@ class FarmAnimals{
          // email this user with the animal report
 
          $this->Dbase->CreateLogEntry("sending an email to {$owners[$owner]['name']} with the daily digest", 'info');
-         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c 'azizibiorepository@cgiar.org' -c 's.kemp@cgiar.org' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- ". Config::$farmManagerEmail);
+//         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c 'azizibiorepository@cgiar.org' -c 's.kemp@cgiar.org' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- ". Config::$farmManagerEmail);
+//         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c '".Config::$farmManagerEmail."' -c '".Config::$farmRecordKeeperEmail."' -c '".Config::$farmManagerSupervisorEmail."' -c '".Config::$farmSystemDeveloperEmail."' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- {$owner['email']}");
+         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c '".Config::$farmSystemDeveloperEmail."' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- a.kihara@cgiar.org");
       }
       die(json_encode(array('error' => false, 'mssg' => 'All processed')));
    }

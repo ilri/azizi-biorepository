@@ -124,12 +124,16 @@ Animals.prototype.eventsGridStatusBar = function(statusbar){
    newEvent.click(function(event){ animals.newEvent(); });
 
    sendEmail.click(function (event) {
+      animals.showNotification("Creating a digest of today's events", 'mail');
       $.ajax({
          type:"POST", url: "mod_ajax.php?page=farm_animals&do=events", async: false, dataType:'json', data: {action: 'send_email'},
          success: function (data) {
             if(data.error === true){
                animals.showNotification(data.mssg, 'error');
                return;
+            }
+            else{
+               animals.showNotification("The digest was sent successfully", 'success');
             }
         }
      });
