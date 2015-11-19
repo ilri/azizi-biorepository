@@ -1,7 +1,7 @@
 <?php
 
-define ('DOCUMENT_ROOT', __FILE__);
-define('OPTIONS_COMMON_FOLDER_PATH', '/www/bower/');
+define ('DOCUMENT_ROOT', __DIR__);
+define('OPTIONS_COMMON_FOLDER_PATH', DOCUMENT_ROOT. '/../bower/');
 include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.7.php';
 include_once 'repository_config';
 include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php';
