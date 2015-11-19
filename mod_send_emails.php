@@ -157,7 +157,7 @@ date_default_timezone_set ('Africa/Nairobi');
  */
 define('OPTIONS_REQUESTED_MODULE', $argv[1]);
 define('OPTIONS_REQUESTED_SUB_MODULE', $argv[2]);
-define('OPTIONS_MODULE_EMAIL_CONFIG_FILE', '/www/repository/config/main.ini');
+define('OPTIONS_MODULE_EMAIL_CONFIG_FILE', DOCUMENT_ROOT. '/config/main.ini');
 
 $EmailDigest = new FarmEmailDigest();
 $EmailDigest->trafficController();
