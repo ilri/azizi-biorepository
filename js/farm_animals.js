@@ -69,7 +69,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
               { text: 'Breed', datafield: 'breed', width: 110 },
               { text: 'Current Owner', datafield: 'owner', width: 110 },
               { text: 'Experiment', datafield: 'experiment', width: 190 },
-              { text: 'Location', datafield: 'location', width: 150 },
+              { text: 'Location', datafield: 'location', width: 150, filtertype: 'textbox' },
               { text: 'Status', datafield: 'status', width: 120 }
             ]
         });
