@@ -3019,7 +3019,7 @@ class Workflow {
       $lH = new LogHandler("./");
       $lH->log(3, "waworkflow_static", "Updating the status of workflow with id = '{$instanceId}' to '$status'");
 
-      $database = new Database($config);
+      $database = new Database($config, 'dmp_master');
       $query = 'update projects set proj_status = :status, last_updated = :time_updated, updated_by = :updated_by, is_active = :is_active where db_name = :workflow';
       $vals = array('status' => $status, 'time_updated' => "'".Database::getMySQLTime()."'", 'updated_by' => $user, 'workflow' => $instanceId, 'is_active' => Database::$BOOL_FALSE);
       $database->executeQuery($query, $vals, FALSE);
@@ -3038,7 +3038,7 @@ class Workflow {
       $lH = new LogHandler("./");
       $lH->log(3, "waworkflow_static", "Clean up of the project access table");
 
-      $database = new Database($config);
+      $database = new Database($config, 'dmp_master');
       $query = 'delete from project_access where instance = :instance';
       $database->executeQuery($query, array('instance' => $instanceId), FALSE);
       $lH->log(3, "waworkflow_static", "Successfully cleaned up the project_access table");

@@ -580,8 +580,8 @@ class ODKWorkflowAPI extends Repository {
             $data = array("status" => $status);
 
             // update the main record with a delete status
-            Workflow::updateMainWorkflowStatus($this->user, $this->dmpMasterConfig, $json['workflow_id'], ODKWorkflowAPI::$workflowStatus['deleted']);
-            Workflow::cleanProjectAccessTable($this->dmpMasterConfig, $json['workflow_id']);
+            Workflow::updateMainWorkflowStatus($this->user, $this->config, $json['workflow_id'], ODKWorkflowAPI::$workflowStatus['deleted']);
+            Workflow::cleanProjectAccessTable($this->config, $json['workflow_id']);
             $this->returnResponse($data);
          }
          else {
