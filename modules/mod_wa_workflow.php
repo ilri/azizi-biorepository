@@ -41,7 +41,7 @@ class Workflow {
     * @param String $instanceID  Unique instance ID for the Workflow.
     *                            Set to null if new workflow
     */
-   public function __construct($config, $workflowName, $currUser, $instanceId = null, $dmpMasterConfig = NULL, $dmpAdmin = NULL) {
+   public function __construct($config, $workflowName, $currUser, $instanceId = null) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
@@ -59,8 +59,6 @@ class Workflow {
       $this->workflowName = $workflowName;
       $this->processing = false;
       $this->dataTables = NULL;
-      $this->dmpMasterConfig = $dmpMasterConfig;
-      $this->dmpAdmin = $dmpAdmin;
 
       $this->instanceId = $instanceId;
 
@@ -169,7 +167,7 @@ class Workflow {
       // change the database to the dmp master db
       $this->lH->log(3, $this->TAG, "Changing the database connection to DMP master");
       try{
-         $this->initDbConnection($this->dmpMasterConfig, 'dmp_master');
+         $this->initDbConnection($this->config, 'dmp_master');
       }
       catch(WAException $ex){
          array_push($this->errors, $ex);
@@ -181,7 +179,7 @@ class Workflow {
       // change the database to the instance db
       $this->lH->log(3, $this->TAG, "Changing the database connection to instance db");
       try{
-         $this->initDbConnection($this->dmpAdmin);
+         $this->initDbConnection($this->config);
       }
       catch(WAException $ex){
          array_push($this->errors, $ex);
@@ -1809,7 +1807,7 @@ class Workflow {
     * @return type
     */
    public function resolveVersionSchemaDiff($newName, $workflow2Id){
-      $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id, $this->dmpMasterConfig, $this->dmpAdmin);
+      $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
       $savePoint = $this->save("Resolve trivial version differences with ".$workflow2->getWorkflowName());
       $instanceId2 = $this->generateInstanceID();
       $workingDir2 = Workflow::$WORKFLOW_ROOT_DIR.$instanceId2;
@@ -1961,7 +1959,7 @@ class Workflow {
     * @param type $workflow2Id
     */
    public function resolveMergeDiff($newName, $workflow2Id, $key1, $key2) {
-      $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id, $this->dmpMasterConfig, $this->dmpAdmin);
+      $workflow2 = new Workflow($this->config, null, $this->currUser, $workflow2Id);
       $savePoint = $this->save("Resolve trivial merge differences with ".$workflow2->getWorkflowName());
       $instanceId2 = $this->generateInstanceID();
       $workingDir2 = Workflow::$WORKFLOW_ROOT_DIR.$instanceId2;
@@ -2269,10 +2267,10 @@ class Workflow {
       $lH = new LogHandler("./");
       $lH->log(3, "waworkflow_static", "Determining schema difference between '{$workflowID1}' and '{$workflowID2}'");
       try {
-         $workflow1 = new Workflow($config, null, $userUUID, $workflowID1, $this->dmpMasterConfig, $this->dmpAdmin);
+         $workflow1 = new Workflow($config, null, $userUUID, $workflowID1);
          $schema1 = $workflow1->getSchema();
          $lH->log(4, "waworkflow_static", "Schema1 = ".print_r($schema1, true));
-         $workflow2 = new Workflow($config, null, $userUUID, $workflowID2, $this->dmpMasterConfig, $this->dmpAdmin);
+         $workflow2 = new Workflow($config, null, $userUUID, $workflowID2);
          $schema2 = $workflow2->getSchema();
          $lH->log(4, "waworkflow_static", "Schema2 = ".print_r($schema2, true));
          $status1 = $workflow1->getCurrentStatus();
@@ -2497,10 +2495,10 @@ class Workflow {
       $lH = new LogHandler("./");
       $lH->log(3, "waworkflow_static", "Determining schema difference between '{$workflowID1}' and '{$workflowID2}'");
       try {
-         $workflow1 = new Workflow($config, null, $userUUID, $workflowID1, $this->dmpMasterConfig, $this->dmpAdmin);
+         $workflow1 = new Workflow($config, null, $userUUID, $workflowID1);
          $schema1 = $workflow1->getSchema();
          $lH->log(4, "waworkflow_static", "Schema1 = ".print_r($schema1, true));
-         $workflow2 = new Workflow($config, null, $userUUID, $workflowID2, $this->dmpMasterConfig, $this->dmpAdmin);
+         $workflow2 = new Workflow($config, null, $userUUID, $workflowID2);
          $schema2 = $workflow2->getSchema();
          $lH->log(4, "waworkflow_static", "Schema2 = ".print_r($schema2, true));
          $status1 = $workflow1->getCurrentStatus();
