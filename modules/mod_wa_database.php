@@ -68,7 +68,7 @@ class Database {
          if($this->connectedDb === NULL) $this->connectedDb = $this->DEFAULT_DATABASE;
          $this->logH->log(4, $this->TAG, "Trying to initialize database connection to {$this->connectedDb}");
 
-         $this->pdoObject = new PDO("pgsql:dbname={$this->connectedDb};host={$config['dbloc']}", $config['user'], $config['pass']);
+         $this->pdoObject = new PDO("pgsql:dbname={$this->connectedDb};host={$config['pg_dbloc']}", $config['pg_user'], $config['pg_pass']);
          $this->pdoObject->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
       } catch (PDOException $ex) {
          $this->logH->log(1, $this->TAG, "An error occurred while trying to initialize database connection to {$this->connectedDb}");

@@ -16,7 +16,6 @@ class ODKWorkflowAPI extends Repository {
    private $config;
    private $dmpAdmin;
    private $dmpMasterConfig;     // The config to the master database
-   private $mysqlConfig;     // The config to the mysql database
    private $server;               // The origin of this request. Usually an IP address
    private $user;          // The user who originated the request
    private $cur_session;       // The current session
@@ -154,9 +153,10 @@ class ODKWorkflowAPI extends Repository {
 			// dmp db settings
          if(parse_ini_file($settings['dmp_dbsettings_file']) !== false) {//check for both availability and ini correctness
 				$dmp_settings = parse_ini_file($settings['dmp_dbsettings_file'], true);
-              $this->dmpAdmin = $dmp_settings['dmp_admin'];
               $this->dmpMasterConfig = $dmp_settings['dmp_master'];
-              $this->mysqlConfig = $dmp_settings['azizi_mysql'];
+              $this->config['pg_dbloc'] = $dmp_settings['dmp_admin']['dbloc'];
+              $this->config['pg_user'] = $dmp_settings['dmp_admin']['user'];
+              $this->config['pg_pass'] = $dmp_settings['dmp_admin']['cypher'];
 			}
 			else {
 				$this->lH->log(1, $this->TAG, "The file '{$settings['dmp_dbsettings_file']}' with the DMP database settings doesn't exist or is not parsable as an ini file");
