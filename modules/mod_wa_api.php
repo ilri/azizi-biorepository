@@ -14,6 +14,7 @@ class ODKWorkflowAPI extends Repository {
 
    private $lH;
    private $config;
+   private $dmpAdmin;
    private $dmpMasterConfig;     // The config to the master database
    private $mysqlConfig;     // The config to the mysql database
    private $server;               // The origin of this request. Usually an IP address
@@ -31,12 +32,13 @@ class ODKWorkflowAPI extends Repository {
       $this->lH = new LogHandler("./");
 
       $this->settingsDir = $this->ROOT."config/main.ini";
+      $this->config = Config::$config;
       $this->readDbSettings();
       $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
       include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
 
       $this->Dbase = new DBase("mysql");
-      $this->Dbase->InitializeConnection($this->mysqlConfig);
+      $this->Dbase->InitializeConnection($this->config);
       $this->lH->log(4, $this->TAG, "ODK Workflow API called");
    }
 
@@ -152,7 +154,7 @@ class ODKWorkflowAPI extends Repository {
 			// dmp db settings
          if(parse_ini_file($settings['dmp_dbsettings_file']) !== false) {//check for both availability and ini correctness
 				$dmp_settings = parse_ini_file($settings['dmp_dbsettings_file'], true);
-              $this->config = $dmp_settings['dmp_admin'];
+              $this->dmpAdmin = $dmp_settings['dmp_admin'];
               $this->dmpMasterConfig = $dmp_settings['dmp_master'];
               $this->mysqlConfig = $dmp_settings['azizi_mysql'];
 			}
