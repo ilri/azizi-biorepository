@@ -246,7 +246,7 @@ class ODKWorkflowAPI extends Repository {
                     && array_search("workflow_name", $jsonKeys) !== false){
 
                //initialize a workflow object
-               $workflow = new Workflow($this->config, $json['workflow_name'], $this->uuid, NULL, $this->dmpMasterConfig);
+               $workflow = new Workflow($this->config, $json['workflow_name'], $this->uuid, NULL, $this->dmpMasterConfig, $this->dmpAdmin);
 
                //fetch the form data file from the client
                $workflow->addRawDataFile($json['data_file_url']);
@@ -298,7 +298,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("link_sheets", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
 
             $workflow->setIsProcessing(true);//set is processing to be true because workflow instance is going to be left processing after response sent to user
             //call this function after sending response to client because it's goin to take some time
@@ -333,7 +333,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $data = array(
                 "status" => $workflow->getCurrentStatus()
             );
@@ -364,7 +364,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $schema = $workflow->getSchema();
 
             $data = array(
@@ -411,7 +411,7 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("nullable", $json['column'])
                  && array_key_exists("default", $json['column'])
                  && array_key_exists("key", $json['column'])) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->modifyColumn($json['sheet'], $json['column']);
 
             $data = array(
@@ -446,7 +446,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("name", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->modifyName($json['name']);
 
             $data = array(
@@ -485,7 +485,7 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("original_name", $json['sheet'])
                  && array_key_exists("name", $json['sheet'])
                  && array_key_exists("delete", $json['sheet'])) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->modifySheet($json['sheet']);
 
             $data = array(
@@ -616,7 +616,7 @@ class ODKWorkflowAPI extends Repository {
                  && array_key_exists("sheet", $json["references"])
                  && array_key_exists("columns", $json["references"])
                  && count($json['columns']) == count($json["references"]['columns'])) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->addForeignKey($json['sheet'], $json['columns'], $json['references']);
             $status = $workflow->getCurrentStatus();
             $data = array(
@@ -649,7 +649,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $foreignKeys = $workflow->getForeignKeys();
             $status = $workflow->getCurrentStatus();
             $data = array(
@@ -683,7 +683,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                  && array_key_exists("sheet", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $sheetData = $workflow->getSheetData($json['sheet']);
             $status = $workflow->getCurrentStatus();
             $data = array(
@@ -715,7 +715,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->dumpData();
             $status = $workflow->getCurrentStatus();
             $data = array(
@@ -850,7 +850,7 @@ class ODKWorkflowAPI extends Repository {
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("workflow_id_2", $json)
                && array_key_exists("name", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->resolveVersionSchemaDiff( $json['name'], $json['workflow_id_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -890,7 +890,7 @@ class ODKWorkflowAPI extends Repository {
                && (is_array($json['key_1']) && array_key_exists("sheet", $json['key_1']) && array_key_exists("column", $json['key_1']))
                && array_key_exists("key_2", $json)
                && (is_array($json['key_2']) && array_key_exists("sheet", $json['key_2']) && array_key_exists("column", $json['key_2']))) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->resolveMergeDiff($json['name'], $json['workflow_id_2'], $json['key_1'], $json['key_2']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -929,7 +929,7 @@ class ODKWorkflowAPI extends Repository {
                      || ($json['filter'] == "query" && array_key_exists("query", $json))
                      || ($json['filter'] == "prefix" && array_key_exists("prefix", $json) && is_array($json['prefix']))
                      || ($json['filter'] == "time" && array_key_exists("start_time", $json) && array_key_exists("end_time", $json) && array_key_exists("time_column", $json)))) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             //get the path to the data file
             $url = $workflow->getData($json['filter'], $json['email'], $json['query'], $json['prefix'], $json['time_column'], $json['start_time'], $json['end_time']);
             $status = $workflow->getCurrentStatus();
@@ -964,7 +964,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("note", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $workflow->addNote($json['note']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -995,7 +995,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $notes = $workflow->getAllNotes();
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1029,7 +1029,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("note_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->deleteNote($json['note_id']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1063,7 +1063,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("query", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $savePoint = $workflow->runNonSelectQuery($json['query']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1098,7 +1098,7 @@ class ODKWorkflowAPI extends Repository {
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("user", $json)
                && array_key_exists("access_level", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']), $json['access_level']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1131,7 +1131,7 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)
                && array_key_exists("user", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $workflow->revokeUserAccess($this->generateUserUUID($this->server, $json['user']));
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1163,7 +1163,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $accessLevel = $workflow->getAccessLevel($this->uuid);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
@@ -1196,7 +1196,7 @@ class ODKWorkflowAPI extends Repository {
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
-            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id'], $this->dmpMasterConfig, $this->dmpAdmin);
             $users = $workflow->getUsers();
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
