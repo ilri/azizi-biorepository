@@ -200,6 +200,7 @@ class Workflow {
             "dmp_name" => "'{$this->workflowName}'",
             "time_created" => "'".Database::getMySQLTime()."'",
             "created_by" => "'{$this->currUser}'",
+            "proj_status" => "'Active'",
             "is_active" => "'".Database::$BOOL_TRUE."'"
          );
          $this->database->runInsertQuery('projects', $columns);
@@ -2985,6 +2986,46 @@ class Workflow {
       } catch (WAException $ex) {
          throw new WAException("Unable to get workflow details from the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
+   }
+
+   /**
+    * Update the status of the workflow in the main workflow record
+    *
+    * @param type $user          The user who is doing the update
+    * @param type $config        The database configuration
+    * @param type $instanceId    The workflow instance
+    * @param type $status        The new status of the workflow
+    */
+   public static function updateMainWorkflowStatus($user, $config, $instanceId, $status){
+      include_once 'mod_wa_database.php';
+      include_once 'mod_log.php';
+      $lH = new LogHandler("./");
+      $lH->log(3, "waworkflow_static", "Updating the status of workflow with id = '{$instanceId}' to '$status'");
+
+      $database = new Database($config);
+      $query = 'update projects set proj_status = :status, last_updated = :time_updated, updated_by = :updated_by, is_active = :is_active where db_name = :workflow';
+      $vals = array('status' => $status, 'time_updated' => "'".Database::getMySQLTime()."'", 'updated_by' => $user, 'workflow' => $instanceId, 'is_active' => Database::$BOOL_FALSE);
+      $database->executeQuery($query, $vals, FALSE);
+      $lH->log(3, "waworkflow_static", "Successfully updated workflow with id = '{$instanceId}' to '$status'");
+   }
+
+   /**
+    * Delete the un-necessary instances in the project_access table
+    *
+    * @param type $config        The database configuration
+    * @param type $instanceId    The workflow instance
+    */
+   public static function cleanProjectAccessTable($config, $instanceId){
+      include_once 'mod_wa_database.php';
+      include_once 'mod_log.php';
+      $lH = new LogHandler("./");
+      $lH->log(3, "waworkflow_static", "Clean up of the project access table");
+
+      $database = new Database($config);
+      $query = 'delete from project_access where instance = :instance';
+      $database->executeQuery($query, array('instance' => $instanceId), FALSE);
+      $lH->log(3, "waworkflow_static", "Successfully cleaned up the project_access table");
+
    }
 }
 ?>

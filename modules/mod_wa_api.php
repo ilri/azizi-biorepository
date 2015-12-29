@@ -10,6 +10,7 @@ class ODKWorkflowAPI extends Repository {
    private static $STATUS_CODE_BAD_REQUEST = "HTTP/1.1 400 Bad Request";
    private static $STATUS_CODE_FORBIDDEN = "HTTP/1.1 403 Forbidden";
    private static $HEADER_CTYPE_JSON = "Content-Type: application/json";
+   private static $workflowStatus = array('deleted' => 'Deleted');
 
    private $lH;
    private $config;
@@ -572,11 +573,11 @@ class ODKWorkflowAPI extends Repository {
          $json = $this->getData($_REQUEST['data']);
          if(array_key_exists("workflow_id", $json)) {
             $status = Workflow::delete($this->config, $json['workflow_id']);
+            $data = array("status" => $status);
 
-            $data = array(
-                "status" => $status
-            );
-
+            // update the main record with a delete status
+            Workflow::updateMainWorkflowStatus($this->user, $this->dmpMasterConfig, $json['workflow_id'], ODKWorkflowAPI::$workflowStatus['deleted']);
+            Workflow::cleanProjectAccessTable($this->dmpMasterConfig, $json['workflow_id']);
             $this->returnResponse($data);
          }
          else {
