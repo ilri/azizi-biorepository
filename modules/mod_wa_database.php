@@ -300,18 +300,17 @@ class Database {
     * @return Array
     * @throws WAException
     */
-   public function getDatabaseNames() {
+   public function getDatabaseNames($user) {
       //$query = "show databases";
-      $query = "SELECT datname FROM pg_database WHERE datistemplate = false";
-      $this->logH->log(4, $this->TAG, 'Get all the database which are not template databases');
+      $query = "select a.db_name, a.dmp_name from projects as a inner join project_access as b on a.db_name=b.instance where b.user_granted = :cur_user";
+      $this->logH->log(4, $this->TAG, "Getting all the databases which the user '$user' has access to...");
       try {
-         $result = $this->runGenericQuery($query, true);
+         $result = $this->executeQuery($query, array('cur_user' => $user), true);
          $names = array();
          $dbCount = count($result);
          for($index = 0; $index < $dbCount; $index++) {
-            array_push($names, $result[$index]['datname']);
+            array_push($names, $result[$index]['db_name']);
          }
-
          return $names;
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "Unable to get database names from the server");
@@ -337,7 +336,6 @@ class Database {
          for($index = 0; $index < $res_count; $index++) {
             array_push($tables, $result[$index]['table_name']);
          }
-
          return $tables;
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "Unable to get names of tables in '{$databaseName}'");

@@ -79,12 +79,6 @@ class ODKWorkflowAPI extends Repository {
          }
       }
       else {
-//         $this->lH->log(4, $this->TAG, 'geez....');
-//         //check if client provided the necessary details for accessing the API
-//         $this->lH->log(4, $this->TAG, "1.{$this->server} 2.{$this->user} 3.{$this->secret} 4.{$this->auth_mode}");
-//         // we don't need a valid session for adding new users.. so just add the user if we need to register a new person
-//         if(OPTIONS_REQUESTED_SUB_MODULE == "register") $this->handleRegisterEndpoint();
-
          if(!empty($this->server) && !empty($this->user) && !empty($this->cur_session) ) {
             //check if session id is still valid
             try {

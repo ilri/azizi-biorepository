@@ -196,8 +196,8 @@ class Workflow {
       $this->lH->log(4, $this->TAG, "Add the instance '{$this->instanceId}' to the global list");
       try{
          $columns = array(
-            "dmp_name" => "'{$this->instanceId}'",
-            "db_name" => "'{$this->workflowName}'",
+            "db_name" => "'{$this->instanceId}'",
+            "dmp_name" => "'{$this->workflowName}'",
             "time_created" => "'".Database::getMySQLTime()."'",
             "created_by" => "'{$this->currUser}'",
             "is_active" => "'".Database::$BOOL_TRUE."'"
@@ -2864,18 +2864,20 @@ class Workflow {
          if($admin == true) {
             $lH->log(3, "static_workflow", "User '$user' is admin. Listing all the workflows");
          }
-         $result = $database->getDatabaseNames();
+         $result = $database->getDatabaseNames($user);
          if($result !== false){
             $accessibleDbs = array();//array to store details for all the databases user has access to
             $res_count = count($result);
+            $allMetaTables = Workflow::getAllMetaTables();
+            $allMetaTablesCount = count($allMetaTables);
+
             for($index = 0; $index < $res_count; $index++) {
                $currDbName = $result[$index];
 
                //check if current database qualifies to store workflow details
                $newDatabase = new Database($config, $currDbName);
-               $tableNames = $newDatabase->getTableNames($currDbName);
+               $tableNames = $newDatabase->getTableNames($currDbName);        // we can use the connection above
                $metaTables = 0;
-               $allMetaTables = Workflow::getAllMetaTables();
                if($tableNames !== false) {
                   //check each of the table names to see if the meta tables exist
                   $tbn_count = count($tableNames);
@@ -2886,7 +2888,7 @@ class Workflow {
                   }
                }
 
-               if($metaTables == count($allMetaTables)) {//database has all the meta tables
+               if($metaTables == $allMetaTablesCount) {//database has all the meta tables
                   $lH->log(3, "static_workflow", "'$currDbName' complies to the DMP Structure");
                   //check if the database has a workflow version
                   $metaDocColumns = $newDatabase->getTableDetails($currDbName, Workflow::$TABLE_META_DOCUMENT);
@@ -2924,6 +2926,7 @@ class Workflow {
                      else {
                         $lH->log(2, "static_workflow", "'$currDbName' has a workflow version that is not compatible with current code");
                      }
+
                   }
                   else {
                      $lH->log(2, "static_workflow", "'$currDbName' does not have a workflow version");
@@ -2932,7 +2935,6 @@ class Workflow {
                else {//database not usable with this API
                   $lH->log(4, "static_workflow", "$currDbName not usable with the WorkflowAPI");
                }
-
                $newDatabase->close();
             }
             //return the accessible databases
