@@ -196,11 +196,10 @@ class Workflow {
       $this->lH->log(4, $this->TAG, "Add the instance '{$this->instanceId}' to the global list");
       try{
          $columns = array(
-            "db_name" => "'{$this->instanceId}'",
-            "dmp_name" => "'{$this->workflowName}'",
+            "dmp_name" => "'{$this->instanceId}'",
+            "db_name" => "'{$this->workflowName}'",
             "time_created" => "'".Database::getMySQLTime()."'",
             "created_by" => "'{$this->currUser}'",
-            "proj_status" => "'Active'",
             "is_active" => "'".Database::$BOOL_TRUE."'"
          );
          $this->database->runInsertQuery('projects', $columns);
@@ -2865,20 +2864,18 @@ class Workflow {
          if($admin == true) {
             $lH->log(3, "static_workflow", "User '$user' is admin. Listing all the workflows");
          }
-         $result = $database->getDatabaseNames($user);
+         $result = $database->getDatabaseNames();
          if($result !== false){
             $accessibleDbs = array();//array to store details for all the databases user has access to
             $res_count = count($result);
-            $allMetaTables = Workflow::getAllMetaTables();
-            $allMetaTablesCount = count($allMetaTables);
-
             for($index = 0; $index < $res_count; $index++) {
                $currDbName = $result[$index];
 
                //check if current database qualifies to store workflow details
                $newDatabase = new Database($config, $currDbName);
-               $tableNames = $newDatabase->getTableNames($currDbName);        // we can use the connection above
+               $tableNames = $newDatabase->getTableNames($currDbName);
                $metaTables = 0;
+               $allMetaTables = Workflow::getAllMetaTables();
                if($tableNames !== false) {
                   //check each of the table names to see if the meta tables exist
                   $tbn_count = count($tableNames);
@@ -2889,7 +2886,7 @@ class Workflow {
                   }
                }
 
-               if($metaTables == $allMetaTablesCount) {//database has all the meta tables
+               if($metaTables == count($allMetaTables)) {//database has all the meta tables
                   $lH->log(3, "static_workflow", "'$currDbName' complies to the DMP Structure");
                   //check if the database has a workflow version
                   $metaDocColumns = $newDatabase->getTableDetails($currDbName, Workflow::$TABLE_META_DOCUMENT);
@@ -2927,7 +2924,6 @@ class Workflow {
                      else {
                         $lH->log(2, "static_workflow", "'$currDbName' has a workflow version that is not compatible with current code");
                      }
-
                   }
                   else {
                      $lH->log(2, "static_workflow", "'$currDbName' does not have a workflow version");
@@ -2936,6 +2932,7 @@ class Workflow {
                else {//database not usable with this API
                   $lH->log(4, "static_workflow", "$currDbName not usable with the WorkflowAPI");
                }
+
                $newDatabase->close();
             }
             //return the accessible databases
@@ -2986,46 +2983,6 @@ class Workflow {
       } catch (WAException $ex) {
          throw new WAException("Unable to get workflow details from the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
-   }
-
-   /**
-    * Update the status of the workflow in the main workflow record
-    *
-    * @param type $user          The user who is doing the update
-    * @param type $config        The database configuration
-    * @param type $instanceId    The workflow instance
-    * @param type $status        The new status of the workflow
-    */
-   public static function updateMainWorkflowStatus($user, $config, $instanceId, $status){
-      include_once 'mod_wa_database.php';
-      include_once 'mod_log.php';
-      $lH = new LogHandler("./");
-      $lH->log(3, "waworkflow_static", "Updating the status of workflow with id = '{$instanceId}' to '$status'");
-
-      $database = new Database($config);
-      $query = 'update projects set proj_status = :status, last_updated = :time_updated, updated_by = :updated_by, is_active = :is_active where db_name = :workflow';
-      $vals = array('status' => $status, 'time_updated' => "'".Database::getMySQLTime()."'", 'updated_by' => $user, 'workflow' => $instanceId, 'is_active' => Database::$BOOL_FALSE);
-      $database->executeQuery($query, $vals, FALSE);
-      $lH->log(3, "waworkflow_static", "Successfully updated workflow with id = '{$instanceId}' to '$status'");
-   }
-
-   /**
-    * Delete the un-necessary instances in the project_access table
-    *
-    * @param type $config        The database configuration
-    * @param type $instanceId    The workflow instance
-    */
-   public static function cleanProjectAccessTable($config, $instanceId){
-      include_once 'mod_wa_database.php';
-      include_once 'mod_log.php';
-      $lH = new LogHandler("./");
-      $lH->log(3, "waworkflow_static", "Clean up of the project access table");
-
-      $database = new Database($config);
-      $query = 'delete from project_access where instance = :instance';
-      $database->executeQuery($query, array('instance' => $instanceId), FALSE);
-      $lH->log(3, "waworkflow_static", "Successfully cleaned up the project_access table");
-
    }
 }
 ?>

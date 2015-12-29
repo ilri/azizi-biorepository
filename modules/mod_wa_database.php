@@ -302,7 +302,7 @@ class Database {
     */
    public function getDatabaseNames($user) {
       //$query = "show databases";
-      $query = "select a.db_name, a.dmp_name from projects as a inner join project_access as b on a.db_name=b.instance where b.user_granted = :cur_user";
+      $query = "select a.db_name, a.dmp_name from projects as a inner join project_access as b on a.db_name=b.instance where b.user_granted = :cur_user order by a.dmp_name";
       $this->logH->log(4, $this->TAG, "Getting all the databases which the user '$user' has access to...");
       try {
          $result = $this->executeQuery($query, array('cur_user' => $user), true);
