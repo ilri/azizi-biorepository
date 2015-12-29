@@ -164,28 +164,8 @@ class Workflow {
     */
    public function addGlobalSettings(){
       //add this project instance in the access tables
-      // change the database to the dmp master db
-      $this->lH->log(3, $this->TAG, "Changing the database connection to DMP master");
-      try{
-         $this->initDbConnection($this->config, 'dmp_master');
-      }
-      catch(WAException $ex){
-         array_push($this->errors, $ex);
-         $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "An error occurred while changing the db connection to the DMP master instance");
-      }
       $this->addProject2GlobalList();
       $this->addUser2GlobalAccessList($this->currUser, Workflow::$ACCESS_LEVEL_ADMIN);
-      // change the database to the instance db
-      $this->lH->log(3, $this->TAG, "Changing the database connection to instance db");
-      try{
-         $this->initDbConnection($this->config);
-      }
-      catch(WAException $ex){
-         array_push($this->errors, $ex);
-         $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "An error occurred while changing the db connection to the project instance");
-      }
    }
 
    /**
@@ -193,6 +173,7 @@ class Workflow {
     */
    public function addProject2GlobalList(){
       // check if the instance is already added to the global list
+      $this->initDbConnection($this->config, 'dmp_master');
       try{
          $query = 'select 1 from projects where db_name = :db_name and dmp_name = :dmp_name';
          $res = $this->database->executeQuery($query, array('db_name' => $this->instanceId, 'dmp_name' => $this->workflowName), TRUE);
@@ -225,6 +206,8 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "An error occurred while trying to add the workflow '{$this->instanceId}' to the global list of workflows");
       }
+      // change the database to the instance db
+      $this->initDbConnection($this->config);
       $this->lH->log(4, $this->TAG, "The instance '{$this->instanceId}' has been added successfully to the global list");
    }
 
@@ -236,6 +219,7 @@ class Workflow {
     */
    public function addUser2GlobalAccessList($user, $userAccessLevel){
       // check if the user is alredy added to the global list
+      $this->initDbConnection($this->config, 'dmp_master');
       try{
          $query = 'select 1 from project_access where instance = :db_name and user_granted = :user';
          $res = $this->database->executeQuery($query, array('db_name' => $this->instanceId, 'user' => $user), TRUE);
@@ -270,6 +254,9 @@ class Workflow {
          $this->healthy = false;
          $this->lH->log(1, $this->TAG, "An error occurred while trying to grant '$user' access to the workflow '{$this->instanceId}'");
       }
+      // change the database to the instance db
+      $this->lH->log(3, $this->TAG, "Changing the database connection to instance db");
+      $this->initDbConnection($this->config);
       $this->lH->log(4, $this->TAG, "The user'{$user}' has been added successfully to the global access list");
    }
 

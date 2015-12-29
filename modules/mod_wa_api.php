@@ -1099,6 +1099,7 @@ class ODKWorkflowAPI extends Repository {
                && array_key_exists("access_level", $json)) {
             $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
             $workflow->grantUserAccess($this->generateUserUUID($this->server, $json['user']), $json['access_level']);
+            $workflow->addUser2GlobalAccessList($this->generateUserUUID($this->server, $json['user']), $json['access_level']);
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "status" => $status
