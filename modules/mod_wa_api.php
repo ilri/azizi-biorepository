@@ -15,6 +15,7 @@ class ODKWorkflowAPI extends Repository {
    private $lH;
    private $config;
    private $dmpMasterConfig;     // The config to the master database
+   private $mysqlConfig;     // The config to the mysql database
    private $server;               // The origin of this request. Usually an IP address
    private $user;          // The user who originated the request
    private $cur_session;       // The current session
@@ -35,7 +36,7 @@ class ODKWorkflowAPI extends Repository {
       include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
 
       $this->Dbase = new DBase("mysql");
-      $this->Dbase->InitializeConnection($this->config);
+      $this->Dbase->InitializeConnection($this->mysqlConfig);
       $this->lH->log(4, $this->TAG, "ODK Workflow API called");
    }
 
@@ -45,8 +46,9 @@ class ODKWorkflowAPI extends Repository {
    public function trafficController(){
       // process the passed parameters
       $cookies = filter_input_array(INPUT_COOKIE);
+
       $token = is_array($_POST['token']) ? $_POST['token'] : json_decode($_POST['token'], true);
-      $this->server = (empty($token['server'])) ? $_POST['token']['server'] : $token['server'];
+      $this->server = $token['server'];
       $this->user = (empty($token['user'])) ? $_SESSION['username'] : $token['user'];
       $this->cur_session = (empty($token['session'])) ? $cookies['repository'] : $token['session'];
       $this->secret = (empty($token['secret'])) ? $_SESSION['password'] : $token['secret'];
@@ -152,6 +154,7 @@ class ODKWorkflowAPI extends Repository {
 				$dmp_settings = parse_ini_file($settings['dmp_dbsettings_file'], true);
               $this->config = $dmp_settings['dmp_admin'];
               $this->dmpMasterConfig = $dmp_settings['dmp_master'];
+              $this->mysqlConfig = $dmp_settings['azizi_mysql'];
 			}
 			else {
 				$this->lH->log(1, $this->TAG, "The file '{$settings['dmp_dbsettings_file']}' with the DMP database settings doesn't exist or is not parsable as an ini file");
