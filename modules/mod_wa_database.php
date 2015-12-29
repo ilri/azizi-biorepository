@@ -223,7 +223,7 @@ class Database {
 
             if($result === false) {//no database with said name exists
                $this->logH->log(4, $this->TAG, "Database '$name' does not exists. Creating it");
-               $query = "create database {$name} with owner = ".$this->config['user'];
+               $query = "create database {$name} with owner = ".$this->config['pg_user'];
                try {
                   $this->runGenericQuery($query);
                }
@@ -597,7 +597,7 @@ class Database {
          $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
          $subDirPath = $dumpFile->createWorkingSubdir();
          $path = $subDirPath . "/" . $filename;
-         $command = "export PGPASSWORD='".$this->config['cypher']."';".$this->config['pg_dump']." --clean -U ".$this->config['user']." {$this->getDatabaseName()} -h {$this->config['dbloc']} > $path";
+         $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} > $path";
          $this->logH->log(4, $this->TAG, "Backup command is '$command'");
          $output = shell_exec($command);
          $this->logH->log(3, $this->TAG, "Output from backup command is '$output'");
@@ -656,7 +656,7 @@ class Database {
                $this->runDropDatabaseQuery($databaseName);
             }
             $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
-            $command = "export PGPASSWORD='".$this->config['cypher']."';".$this->config['psql']." -U ".$this->config['user']." {$databaseName} -f $restoreFile -h {$this->config['dbloc']}";
+            $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['psql']." -U ".$this->config['pg_user']." {$databaseName} -f $restoreFile -h {$this->config['pg_dbloc']}";
             $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);
             $output = shell_exec($command);
             $this->logH->log(4, $this->TAG, "Message from pg_restore is ".$output);
