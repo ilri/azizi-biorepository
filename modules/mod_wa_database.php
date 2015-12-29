@@ -60,7 +60,6 @@ class Database {
       //include_once $config['common_folder_path'].'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
 
       $this->config = $config;
-
       $this->logH = new LogHandler("./");//TODO: not sure if the default root dir specified in LogHandler is correct
 
       //initialize the PDO connection
@@ -69,7 +68,7 @@ class Database {
          if($this->connectedDb === NULL) $this->connectedDb = $this->DEFAULT_DATABASE;
          $this->logH->log(4, $this->TAG, "Trying to initialize database connection to {$this->connectedDb}");
 
-         $this->pdoObject = new PDO("pgsql:dbname={$this->connectedDb};host={$config['testbed_dbloc']}", $config['testbed_user'], $config['testbed_pass']);
+         $this->pdoObject = new PDO("pgsql:dbname={$this->connectedDb};host={$config['dbloc']}", $config['user'], $config['cypher']);
          $this->pdoObject->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
       } catch (PDOException $ex) {
          $this->logH->log(1, $this->TAG, "An error occurred while trying to initialize database connection to {$this->connectedDb}");
@@ -224,7 +223,7 @@ class Database {
 
             if($result === false) {//no database with said name exists
                $this->logH->log(4, $this->TAG, "Database '$name' does not exists. Creating it");
-               $query = "create database {$name} with owner = ".$this->config['testbed_user'];
+               $query = "create database {$name} with owner = ".$this->config['user'];
                try {
                   $this->runGenericQuery($query);
                }
@@ -600,7 +599,7 @@ class Database {
          $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
          $subDirPath = $dumpFile->createWorkingSubdir();
          $path = $subDirPath . "/" . $filename;
-         $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
+         $command = "export PGPASSWORD='".$this->config['cypher']."';".$this->config['pg_dump']." --clean -U ".$this->config['user']." {$this->getDatabaseName()} -h {$this->config['dbloc']} > $path";
          $this->logH->log(4, $this->TAG, "Backup command is '$command'");
          $output = shell_exec($command);
          $this->logH->log(3, $this->TAG, "Output from backup command is '$output'");
@@ -649,10 +648,6 @@ class Database {
       if(file_exists($restoreFile)) {
          try {
             $this->logH->log(3, $this->TAG, "Restoring '$databaseName' to state defined in '$restoreFile'");
-            /*$query = "drop database $databaseName";
-            $this->runGenericQuery($query);*/
-            /*$command = "export PGPASSWORD=".$this->config['testbed_pass'].";dropdb -U ".$this->config['testbed_user']." {$databaseName}";
-            shell_exec($command);*/
             //drop all the tables
             if($databaseExists == true) {
                $db2 = new Database($this->config, $databaseName);
@@ -663,8 +658,7 @@ class Database {
                $this->runDropDatabaseQuery($databaseName);
             }
             $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
-            //$command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
-            $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['psql']." -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile -h {$this->config['testbed_dbloc']}";
+            $command = "export PGPASSWORD='".$this->config['cypher']."';".$this->config['psql']." -U ".$this->config['user']." {$databaseName} -f $restoreFile -h {$this->config['dbloc']}";
             $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);
             $output = shell_exec($command);
             $this->logH->log(4, $this->TAG, "Message from pg_restore is ".$output);

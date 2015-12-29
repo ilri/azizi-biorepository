@@ -13,7 +13,8 @@ class ODKWorkflowAPI extends Repository {
 
    private $lH;
    private $config;
-   private $server;        // The origin of this request. Usually an IP address
+   private $dmpMasterConfig;     // The config to the master database
+   private $server;               // The origin of this request. Usually an IP address
    private $user;          // The user who originated the request
    private $cur_session;       // The current session
    private $uuid;
@@ -28,11 +29,10 @@ class ODKWorkflowAPI extends Repository {
       $this->lH = new LogHandler("./");
 
       $this->settingsDir = $this->ROOT."config/main.ini";
-      $this->config = Config::$config;
+      $this->readDbSettings();
       $this->config['common_folder_path'] = OPTIONS_COMMON_FOLDER_PATH;
       include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
 
-      $this->readDbSettings();
       $this->Dbase = new DBase("mysql");
       $this->Dbase->InitializeConnection($this->config);
       $this->lH->log(4, $this->TAG, "ODK Workflow API called");
@@ -152,14 +152,11 @@ class ODKWorkflowAPI extends Repository {
    private function readDbSettings(){
       if(file_exists($this->settingsDir)) {
 			$settings = parse_ini_file($this->settingsDir);
-
 			// dmp db settings
-
          if(parse_ini_file($settings['dmp_dbsettings_file']) !== false) {//check for both availability and ini correctness
-				$dmp_settings = parse_ini_file($settings['dmp_dbsettings_file']);
-              $this->config['testbed_dbloc'] = $dmp_settings['dbloc'];
-              $this->config['testbed_user'] = $dmp_settings['user'];
-              $this->config['testbed_pass'] = $dmp_settings['cypher'];
+				$dmp_settings = parse_ini_file($settings['dmp_dbsettings_file'], true);
+              $this->config = $dmp_settings['dmp_admin'];
+              $this->dmpMasterConfig = $dmp_settings['dmp_master'];
 			}
 			else {
 				$this->lH->log(1, $this->TAG, "The file '{$settings['dmp_dbsettings_file']}' with the DMP database settings doesn't exist or is not parsable as an ini file");
@@ -249,7 +246,7 @@ class ODKWorkflowAPI extends Repository {
                     && array_search("workflow_name", $jsonKeys) !== false){
 
                //initialize a workflow object
-               $workflow = new Workflow($this->config, $json['workflow_name'], $this->uuid);
+               $workflow = new Workflow($this->config, $json['workflow_name'], $this->uuid, NULL, $this->dmpMasterConfig);
 
                //fetch the form data file from the client
                $workflow->addRawDataFile($json['data_file_url']);

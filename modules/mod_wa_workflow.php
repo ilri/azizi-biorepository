@@ -7,6 +7,7 @@ class Workflow {
    private static $VERSION = 1;
    private $TAG = "workflow";
    private $config;
+   private $dmpMasterConfig;
    private $workflowName;
    private $instanceId;
    private $database;
@@ -39,7 +40,7 @@ class Workflow {
     * @param String $instanceID  Unique instance ID for the Workflow.
     *                            Set to null if new workflow
     */
-   public function __construct($config, $workflowName, $currUser, $instanceId = null) {
+   public function __construct($config, $workflowName, $currUser, $instanceId = null, $dmpMasterConfig = NULL) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
@@ -57,6 +58,7 @@ class Workflow {
       $this->workflowName = $workflowName;
       $this->processing = false;
       $this->dataTables = NULL;
+      $this->dmpMasterConfig = $dmpMasterConfig;
 
       $this->instanceId = $instanceId;
 
@@ -79,6 +81,9 @@ class Workflow {
 
          //make sure meta tables have been created
          $this->initMetaDBTables();
+
+         // add global settings for this instance
+         $this->addGlobalSettings();
 
          $this->grantUserAccess($this->currUser, Workflow::$ACCESS_LEVEL_ADMIN, true);//this user will automatically become the admin
          $this->saveWorkflowDetails();
@@ -152,6 +157,89 @@ class Workflow {
          $this->healthy = false;
          array_push($this->errors, new WAException("Could not get the user's access level", WAException::$CODE_DB_QUERY_ERROR, $ex));
       }
+   }
+
+   /**
+    * Add the global settings for this instance
+    */
+   public function addGlobalSettings(){
+      //add this project instance in the access tables
+      // change the database to the dmp master db
+      $this->lH->log(3, $this->TAG, "Changing the database connection to DMP master");
+      try{
+         $this->initDbConnection($this->dmpMasterConfig, 'dmp_master');
+      }
+      catch(WAException $ex){
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while changing the db connection to the DMP master instance");
+      }
+      $this->addProject2GlobalList();
+      $this->addUser2GlobalAccessList($this->currUser, Workflow::$ACCESS_LEVEL_ADMIN);
+      // change the database to the instance db
+      $this->lH->log(3, $this->TAG, "Changing the database connection to instance db");
+      try{
+         $this->initDbConnection($this->config);
+      }
+      catch(WAException $ex){
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while changing the db connection to the project instance");
+      }
+   }
+
+   /**
+    * Add the instance to the list of all instances in the project table in dmp_master
+    */
+   public function addProject2GlobalList(){
+      // add this instance in the list of projects in the projects table
+      $this->lH->log(4, $this->TAG, "Add the instance '{$this->instanceId}' to the global list");
+      try{
+         $columns = array(
+            "dmp_name" => "'{$this->instanceId}'",
+            "db_name" => "'{$this->workflowName}'",
+            "time_created" => "'".Database::getMySQLTime()."'",
+            "created_by" => "'{$this->currUser}'",
+            "is_active" => "'".Database::$BOOL_TRUE."'"
+         );
+         $this->database->runInsertQuery('projects', $columns);
+      }
+      catch(WAException $ex){
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to add the workflow '{$this->instanceId}' to the global list of workflows");
+      }
+      $this->lH->log(4, $this->TAG, "The instance '{$this->instanceId}' has been added successfully to the global list");
+   }
+
+   /**
+    * Add a user to the global list of users with access to this instance
+    * @param type $user             The user to add access
+    * @param type $userAccessLevel  The user access settings for this new user
+    * @param type $isNewWorkflow    Whether the instance is a new instance
+    */
+   public function addUser2GlobalAccessList($user, $userAccessLevel){
+      // add this user in the list of users for the new project
+      $this->lH->log(4, $this->TAG, "Adding the user'{$user}' to the global access list");
+      try{
+         $this->lH->log(3, $this->TAG, "Granting '$user' access to workflow with id = '{$this->instanceId}'");
+         $admin = Database::$BOOL_FALSE;
+         if($userAccessLevel == Workflow::$ACCESS_LEVEL_ADMIN) $admin = Database::$BOOL_TRUE;
+         $columns = array(
+             "instance" => "'{$this->instanceId}'",
+             "user_granted" => "'{$user}'",
+             "time_granted" => "'".Database::getMySQLTime()."'",
+             "granted_by" => "'{$this->currUser}'",
+             "is_admin" => "'".$admin."'"
+         );
+         $this->database->runInsertQuery('project_access', $columns);
+      }
+      catch(WAException $ex){
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "An error occurred while trying to grant '$user' access to the workflow '{$this->instanceId}'");
+      }
+      $this->lH->log(4, $this->TAG, "The user'{$user}' has been added successfully to the global access list");
    }
 
    /**
@@ -640,11 +728,14 @@ class Workflow {
    /**
     * This function intializes the database object
     */
-   private function initDbConnection(){
-      $this->lH->log(4, $this->TAG, "Initializing the database object for the workflow instance");
+   private function initDbConnection($config = NULL, $dbName = NULL){
+      $useConfig = ($config != NULL) ? $config : $this->config;
+      $instance = ($dbName != NULL) ? $dbName : $this->instanceId;
+      $this->lH->log(4, $this->TAG, "Initializing the database object for the instance '$instance'");
 
       //close current database connection
       if($this->database != null) {
+         $this->lH->log(4, $this->TAG, "We have an active connection. Closing it first before initializing a new connection");
          try {
             $this->database->close();
          } catch (WAException $ex) {
@@ -656,12 +747,13 @@ class Workflow {
 
       //reinitiate new database connection
       try {
-         $this->database = new Database($this->config, $this->instanceId);
+         $this->database = new Database($useConfig, $instance);
       } catch (WAException $ex) {
          array_push($this->errors, $ex);
          $this->healthy = false;
-         $this->lH->log(1, $this->TAG, "Unable to initialize the database object for workflow with id = {$this->instanceId}");
+         $this->lH->log(1, $this->TAG, "Unable to initialize the database object for workflow with id = {$instance}");
       }
+      $this->lH->log(4, $this->TAG, "A new database connection initialized successfully");
    }
 
    /**
@@ -2711,11 +2803,11 @@ class Workflow {
             $db2->runGenericQuery($query);
             $credentials['user'] = $username;
             $credentials['password'] = $password;
-            if($config['testbed_dbloc'] == "localhost" || $config['testbed_dbloc'] == "127.0.0.1"){
+            if($config['dbloc'] == "localhost" || $config['dbloc'] == "127.0.0.1"){
                $credentials['host'] = $_SERVER['SERVER_ADDR'];
             }
             else {
-               $credentials['host'] = $config['testbed_dbloc'];
+               $credentials['host'] = $config['dbloc'];
             }
          }
       } catch (WAException $ex) {
