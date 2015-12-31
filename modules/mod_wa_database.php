@@ -649,8 +649,6 @@ class Database {
             if($databaseExists == true) {
                $db2 = new Database($this->config, $databaseName);
                $db2->dropAllOtherConnections();
-               $db2->runGenericQuery("drop schema public cascade");
-               $db2->runGenericQuery("create schema public");
                $db2->close();
                $this->runDropDatabaseQuery($databaseName);
             }
@@ -670,11 +668,15 @@ class Database {
       }
    }
 
+   /**
+    * Drop existing connections opened by the current user
+    * @throws WAException
+    */
    public function dropAllOtherConnections() {
       $query = "SELECT pg_terminate_backend(pg_stat_activity.pid)
                FROM pg_stat_activity
                WHERE datname = current_database()
-               AND pid <> pg_backend_pid()";
+               AND pid <> pg_backend_pid() AND usename=current_user";
       //change procpid to pid when updating to PostgreSQL 9.2 and above
       try {
          $this->runGenericQuery($query);
