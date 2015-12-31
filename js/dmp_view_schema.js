@@ -767,6 +767,13 @@ DMPVSchema.prototype.refreshNotes = function() {
 DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
    if(window.dvs.diffProject != null && window.dvs.project != null && $("#merged_version_name").val().length > 0) {
       $("#apply_version_changes").prop('disabled', true);
+      // attempt to resolve the critical changes before applying the trivial changes
+       var success = window.dvs.applySchemaChanges();//calling this function will trigger refreshSavePoints at some point
+       if(success === false){
+          $("#apply_version_changes").prop('disabled', false);
+          return;    // cant continue
+       }
+
       //first resolve the trivial conflicts then apply the non trivial ones one by one
       $("#loading_box").show();
       var sData = JSON.stringify({
@@ -815,7 +822,8 @@ DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
                else {
                   console.log("Successfully resolved trivial changes");
                   wasSuccessful = true;//this will prevent this function from refreshing save points in onComplete
-                  window.dvs.applySchemaChanges();//calling this function will trigger refreshSavePoints at some point
+                  window.dvs.invalidateCachedProjectData();
+                  window.dvs.updateSheetList();
                   $("#version_diff_wndw").hide();
                }
             }
@@ -2748,6 +2756,15 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
                   details['length'] = details['vlength'];
                }
 
+               // ensure that all varchar modification have a length defined
+               if(details['type'] === 'varchar' && details['length'] === null){
+                  $("#enotification_pp").html("Provide the length of varchar for the column "+details['name']);
+                  $("#enotification_pp").jqxNotification("open");
+                  canContinue = false;
+                  $("#loading_box").hide();
+                  return false;
+               }
+
                var sData = JSON.stringify({
                      "workflow_id": window.dvs.project,
                      "sheet":sheetName,
@@ -3275,50 +3292,61 @@ DMPVSchema.prototype.initColumnGrid = function() {
       },
       columns: [
          {text: 'Name', datafield: 'name', width: gridWidth*0.2647 - 10},
-         {text: 'Type', columntype: 'dropdownlist', datafield: 'type', width: gridWidth*0.2206,initeditor: function (row, cellvalue, editor) {
+         {text: 'Type', columntype: 'dropdownlist', datafield: 'type', width: gridWidth*0.2206,
+            initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: columnTypes});
-         }},
+            }
+         },
          {text: 'Length', columntype: 'numberinput', datafield: 'vlength', width: gridWidth*0.1103},
-         {text: 'Nullable', columntype: 'dropdownlist', datafield: 'nullable', width: gridWidth*0.1103,initeditor: function (row, cellvalue, editor) {
+         {text: 'Nullable', columntype: 'dropdownlist', datafield: 'nullable', width: gridWidth*0.1103,
+            initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: nullableTypes});
-         }},
+            }
+         },
          {text: 'Default', datafield: 'default', width: gridWidth*0.1471},
-         {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1471*0.5,initeditor: function (row, cellvalue, editor) {
+         {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1471*0.5,
+            initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: keyTypes});
-         }},
-         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.047,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+            }
+         },
+         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.047, buttonclick:window.dvs.foreignKeyButtonClicked,
+            cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
                if(value == false) return "Add";
                else return "Edit";
-         },buttonclick:window.dvs.foreignKeyButtonClicked},
-         {text: 'Delete', columntype: 'button', datafield: 'present', width: gridWidth*0.047,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+            }
+         },
+         {text: 'Delete', columntype: 'button', datafield: 'present', width: gridWidth*0.047,
+            cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
                return "Delete";
-         },buttonclick:function(rowIndex, event){
-            var sheetData = window.dvs.schema.sheets[$("#sheets").jqxListBox('selectedIndex')];
-            if(typeof sheetData != 'undefined') {
-               var sheetName = sheetData.name;
-               var sheetIndex = $("#sheets").jqxListBox('selectedIndex');
-               var columnData = window.dvs.schema.sheets[sheetIndex].columns[rowIndex];
-               var currValue = columnData.present;
-               var newValue = false;//new value defaults as delete
-               if(currValue == false) newValue = true;
-               var columnChanged = window.dvs.changeColumnDetails(sheetName, rowIndex, "present", currValue, newValue, columnData);
-               if(columnChanged == true) {
-                  if(newValue == true) {
-                     $(event.target).val("Delete");
-                  }
-                  else {
-                     $(event.target).val("Restore");
+            },
+            buttonclick:function(rowIndex, event){
+               var sheetData = window.dvs.schema.sheets[$("#sheets").jqxListBox('selectedIndex')];
+               if(typeof sheetData != 'undefined') {
+                  var sheetName = sheetData.name;
+                  var sheetIndex = $("#sheets").jqxListBox('selectedIndex');
+                  var columnData = window.dvs.schema.sheets[sheetIndex].columns[rowIndex];
+                  var currValue = columnData.present;
+                  var newValue = false;//new value defaults as delete
+                  if(currValue == false) newValue = true;
+                  var columnChanged = window.dvs.changeColumnDetails(sheetName, rowIndex, "present", currValue, newValue, columnData);
+                  if(columnChanged == true) {
+                     if(newValue == true) {
+                        $(event.target).val("Delete");
+                     }
+                     else {
+                        $(event.target).val("Restore");
+                     }
                   }
                }
             }
-         }}
+         }
       ]
    });
-
    $("#columns").on('cellendedit', window.dvs.columnGridCellValueChanged);
 };
 
 DMPVSchema.prototype.updateDataGrid = function(sheetData) {
+   console.log('Updating the data grid with the necessary data...');
    var columnNames = Object.keys(sheetData);
    var dataFields = [];
    var columns = [];
