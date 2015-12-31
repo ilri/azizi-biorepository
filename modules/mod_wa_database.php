@@ -735,7 +735,7 @@ class Database {
             $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['psql']." -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} < $path";
             $this->logH->log(4, $this->TAG, "Importing the new table dump for '$tableName' with the command '$command'");
             $output = shell_exec($command);
-            $this->logH->log(4, $this->TAG, "Output from the command is '$output'");
+            $this->logH->log(4, $this->TAG, "Finished importing. Can't display the results... to much spam. Check fatal log in case of any errors.");
 
             //if column was previously part of the primary key, the primary key will be deleted
             //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
