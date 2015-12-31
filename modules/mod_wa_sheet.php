@@ -353,7 +353,7 @@ class WASheet {
 
          if($column != null) {
             if($columnDetails['delete'] === false) {
-               $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' in '{$this->sheetName}'");
+               $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' to '{$columnDetails['name']}' in '{$this->sheetName}'");
                try {
                   $column->update($this->sheetName, $columnDetails['name'], $columnDetails['type'], $columnDetails['length'], $columnDetails['nullable'], $columnDetails['default'], $columnDetails['key']);
                }

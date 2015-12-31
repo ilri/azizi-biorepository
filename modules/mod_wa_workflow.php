@@ -1392,7 +1392,7 @@ class Workflow {
       try {
          $this->lH->log(3, $this->TAG, "Modifying column in workflow with id = '{$this->instanceId}'. Sheet name = '$sheetName' and column details = ".  print_r($columnDetails, true));
          //try saving the workflow instance first
-         $description = "Modify $sheetName -> {$columnDetails['original_name']}";
+         $description = "Modify $sheetName:{$columnDetails['original_name']} to $sheetName:{$columnDetails['name']}";
          if($columnDetails['delete'] == true) {
             $description = "Delete $sheetName -> {$columnDetails['original_name']}";
          }

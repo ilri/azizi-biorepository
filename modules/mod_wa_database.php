@@ -686,6 +686,22 @@ class Database {
    }
 
    /**
+    * Change the name of a column
+    *
+    * @param type $tableName     The table where the column is
+    * @param type $oldName       The old column name
+    * @param type $newName       The new column name
+    */
+   public function runAlterColumnNameQuery($tableName, $oldName, $newName){
+      $this->logH->log(4, $this->TAG, "Changing a column name from '$oldName' to '$newName' using the rename function...");
+      $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+         . " rename column ".Database::$QUOTE_SI.$oldName.Database::$QUOTE_SI
+         . " to".Database::$QUOTE_SI.$newName.Database::$QUOTE_SI;
+      $this->runGenericQuery($query);
+      $this->logH->log(4, $this->TAG, "Finished changing a column name from '$oldName' to '$newName' using the rename function");
+   }
+
+   /**
     * This function alters a table column
     *
     * @param type $tableName  Name of the table where column is
@@ -699,26 +715,37 @@ class Database {
       try {
          if($isSpecial == false) {//column considered special if it is currently part of a key
             $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            //
+            /**
+             * New way of altering a column. Alter the column name and preserve its position
+             * 1. Get the table dump where this column belongs
+             * 2. Alter the column in that dump
+             * 3. Drop the existing table
+             * 4. Re-import the modified table
+             */
+            $path = "temp/{$tableName}_".date('Y-m-dH:i:s').'.txt';
+            $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['pg_dump']." --schema-only --table=".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} > $path";
+            $this->logH->log(4, $this->TAG, "Creating a dump of the table '$tableName' with the command '$command'");
+            $output = shell_exec($command);
+            $this->logH->log(4, $this->TAG, "Output from the command is '$output'");
+            $this->renameColumnInFile($path, $existing['name'], $new);
+            // import the new table definition but first drop the old table
+            $query = "drop table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+            $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['psql']." -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} < $path";
+            $this->logH->log(4, $this->TAG, "Importing the new table dump for '$tableName' with the command '$command'");
+            $output = shell_exec($command);
+            $this->logH->log(4, $this->TAG, "Output from the command is '$output'");
+
             //if column was previously part of the primary key, the primary key will be deleted
             //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
-            $tmpName = 'temp_column_odk_will_delete';
-            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-            $this->logH->log(4, $this->TAG, "1. Renaming the column via $query");
-            $this->runGenericQuery($query);
-            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
-            $this->logH->log(4, $this->TAG, "2. Adding a column via $query");
-            $query .= $this->getColumnExpression($new['name'], $new['type'], $new['length'], $new['key'], $new['default'], $new['nullable']);
-            $this->runGenericQuery($query);
-            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-            $this->logH->log(4, $this->TAG, "3. Deleting a column via $query");
-            $this->runGenericQuery($query);
             if($new['key'] == Database::$KEY_PRIMARY){
                $this->addColumnsToPrimaryKey($tableName, array($new['name']));
             }
          }
          else {//column is special. That means the previous method (deleting existing column and replacing it with a new one wont work. The case for columns that are already part of a key)
             //check what needs to change in the column. Make sure you change the name last
-            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' being considered as special during alter");
             $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' current details".print_r($existing, true));
             $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' New details".print_r($new, true));
 
@@ -735,8 +762,10 @@ class Database {
             //type
             $this->logH->log(4, $this->TAG, "Column '{$existing['name']}' being considered as special during alter");
             $smFixed = false;
+
             if($new['type'] != null) {
                if($new['type'] == Database::$TYPE_VARCHAR) $new['type'] .= "({$new['length']})";
+
                $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
                      . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
                      . " type ".$new['type'];
@@ -757,6 +786,7 @@ class Database {
                $smFixed = true;
                $this->logH->log(4, $this->TAG, "Changing nullable of {$existing['name']} to $nullValue");
             }
+
             //default
             if($new['default'] != null) {//for default value of 'null' use null the string
                $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
@@ -797,6 +827,71 @@ class Database {
       } catch (WAException $ex) {
          throw new WAException("Could not alter '{$existing['name']}' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
+   }
+
+   /**
+    * Rename a column in a table dump
+    *
+    * @param type $filename         The file with the table dump
+    * @param type $oldColumnName    The old column name
+    * @param type $newColumn        The new column properties
+    * @throws WAException
+    */
+   public function renameColumnInFile($filename, $oldColumnName, $newColumn){
+      /**
+       * Logic: Open a temporary file to hold the changes.
+       * Read the file with the db dump, line by line. When we reach our intended line, modify it with the new paramaters of the column and write to the temp file
+       * Write to the temp file the new changes or just the previous column info
+       */
+      $this->logH->log(4, $this->TAG, "Creating a new table definition...");
+      try{
+         if(file_exists($filename)){
+            $pi = pathinfo($filename);
+            $tempfile = "{$pi['dirname']}/{$pi['filename']}_temp.{$pi['extension']}";
+            $fd = fopen($filename, 'rt');
+            if(!$fd){
+               $this->logH->log(1, $this->TAG, "Cannot open the provided file '$filename' for reading");
+               throw new WAException("Cannot open the provided file '$filename' for reading", WAException::$CODE_DB_CREATE_ERROR, NULL);
+            }
+            $newFile = fopen($tempfile, 'wt');
+            if(!$newFile){
+               $this->logH->log(1, $this->TAG, "Cannot open the provided file '$tempfile' for writing");
+               throw new WAException("Cannot open the provided file '$tempfile' for writing", WAException::$CODE_DB_CREATE_ERROR, NULL);
+            }
+            while($line = fgets($fd)){
+               $line = trim($line);
+               if(preg_match("/^\"?$oldColumnName.+/", $line)){
+                  // we have a match... now create the new column details
+                  $columnDef = $this->getColumnExpression($newColumn['name'], $newColumn['type'], $newColumn['length'], $newColumn['key'], $newColumn['default'], $newColumn['nullable']);
+                  if(!fwrite($newFile, "$columnDef,\n")){
+                     $this->logH->log(1, $this->TAG, "Could not write to the temp file '$tempfile'");
+                     throw new WAException("Could not write to the temp file '$tempfile'", WAException::$CODE_DB_CREATE_ERROR, NULL);
+                  }
+               }
+               else{    // no match, just put it in the new file
+                  if(!fwrite($newFile, "$line\n")){
+                     $this->logH->log(1, $this->TAG, "Could not write to the temp file '$tempfile'");
+                     throw new WAException("Could not write to the temp file '$tempfile'", WAException::$CODE_DB_CREATE_ERROR, NULL);
+                  }
+               }
+            }
+            fclose($newFile);
+            fclose($fd);
+
+            // move the temp file to the new file and delete it
+            if(!rename($tempfile, $filename)){
+               $this->logH->log(1, $this->TAG, "Could not rename the temp file '$tempfile'");
+               throw new WAException("Could not rename the temp file '$tempfile'", WAException::$CODE_DB_CREATE_ERROR, NULL);
+            }
+         }
+         else{
+            $this->logH->log(1, $this->TAG, "The provided file '$filename' does not exists while renaming a column");
+            throw new WAException("The provided file '$filename' does not exists", WAException::$CODE_DB_CREATE_ERROR, NULL);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not alter the column '$oldColumnName' in the file '$filename'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+      $this->logH->log(4, $this->TAG, "The new table definition has been created successfully");
    }
 
    /**

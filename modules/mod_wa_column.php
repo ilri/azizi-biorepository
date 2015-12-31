@@ -83,6 +83,21 @@ class WAColumn {
     * @throws WAException
     */
    public function update($sheetName, $name, $type, $length, $nullable, $default, $key) {
+      // check if its only a name change. If it is, call the name change function
+      try{
+         if($name != $this->name && $type == $this->type &&
+               $length == $this->length && $nullable == $this->nullable &&
+               $default == $this->default &&  $key == $this->key){
+                  $this->lH->log(3, $this->TAG, "The current change is only changing the column name.");
+                  $this->database->runAlterColumnNameQuery($sheetName, $this->name, $name);
+                  return;
+               }
+               else{
+                  $this->lH->log(3, $this->TAG, "The current change affects more than the name only. Will use the long version.");
+               }
+      } catch (Exception $ex) {
+         throw new WAException("Error while altering the column name of '{$this->name}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+      }
 
       try {
          $new = array("name" => $name, "type" => $type, "length" => $length, "nullable" => $nullable, "default" => $default, "key" => $key);
