@@ -44,7 +44,7 @@ class LogHandler {
 		}
 	}
 
-	private function getTime($format = 'l\, jS F Y H:i:s') {
+	private function getTime($format = 'D M d H:i:s y') {
 		$time = new DateTime('now', new DateTimeZone($this->timeZone));
 		return $time->format($format);
 	}

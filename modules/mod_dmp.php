@@ -85,6 +85,12 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdatetimeinput.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcalendar.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+
+<!-- Vizualization libraries -->
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>angularjs/angular.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>d3/d3.min.js"></script>
+<script type="text/javascript" src="js/d3.legend.js"></script>
+
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
 <div id="blanket_cover" style="position: absolute; background-color: white; opacity: 0.6; display: none; z-index: 5;"></div>
@@ -370,6 +376,13 @@ class DMP extends Repository{
          <li><a href="#" id="delete_sheet_btn">Delete</a></li>
       </ul>
    </div>
+   <div id="dynamic_viz" style="display: none; z-index: 6;">
+      <div>Visualization of the selected columns data</div>
+      <div id="charts">
+         <!-- div ng-app="control-panel" ng-controller="CtlPanelController"></div -->
+         <!-- div id="viz_pane" ng-controller="MyController"><donut-chart></donut-chart></div -->
+      </div>
+   </div>
    <div id="split_window">
       <div id="sheets"></div>
       <div id="tabs">
@@ -382,6 +395,7 @@ class DMP extends Repository{
       </div>
    </div>
    <div style="margin-top:20px; margin-right: 50px; text-align: right;">
+      <button type="button" id="viz_btn" class="btn btn-success" disabled>Visualize</button>
       <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>
       <button type="button" id="update_btn" class="btn btn-primary" disabled>Update</button>
    </div>

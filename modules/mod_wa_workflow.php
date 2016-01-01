@@ -3044,5 +3044,40 @@ class Workflow {
       $lH->log(3, "waworkflow_static", "Successfully cleaned up the project_access table");
 
    }
+
+   /**
+    * Given a list of columns, get data from those columns
+    *
+    * @param   string   $sheetName     The name of the sheet which the columns belong to
+    * @param   array    $columns       An array with the column names
+    * @return  array    The data from the columns
+    */
+   public function getGroupedColumnsData($sheetName, $columns){
+      if($this->healthy == true
+              && $this->database != null
+              && $this->instanceId != null
+              && $this->database->getDatabaseName() == $this->instanceId) {
+         try {
+            $allData = array();
+            $columnCount = count($columns);
+            for($i = 0; $i < $columnCount; $i++){
+               $colName = $columns[$i];
+               $Column = new WAColumn($this->config, $this->database, $colName, $this->lH);
+               $colData = $Column->fetchDataGroupedData($sheetName);
+               $allData[$colName] = $colData;
+            }
+            return $allData;
+         } catch (WAException $ex) {
+            array_push($this->errors, $ex);
+            $this->healthy = false;
+            $this->lH->log(1, $this->TAG, "Unable to get the data in the columns from the workflow with id = '{$this->instanceId}'");
+         }
+      }
+      else {
+         array_push($this->errors, new WAException("Unable to get columns' data because workflow instance wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null));
+         $this->healthy = false;
+         $this->lH->log(1, $this->TAG, "Unable to get columns' data because workflow with id = '{$this->instanceId}' wasn't initialized correctly");
+      }
+   }
 }
 ?>

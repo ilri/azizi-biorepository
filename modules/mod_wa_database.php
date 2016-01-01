@@ -124,16 +124,17 @@ class Database {
    /**
     * Executes a query
     *
-    * @param   string   $query         The query that will be executed
-    * @param   array    $query_vars    (Optional) An array with the query variables if any
-    * @param   boolean  $returnResult  (Optional) Whether to return a result
-    * @param   string   $fetchMode     (Optional) The type of array that will be fetched. Can be MYSQ_BOTH, MYSQL_ASSOC, MYSQL_NUM. Defaults to MYSQL_ASSOC
+    * @param   string   $query               The query that will be executed
+    * @param   array    $query_vars          (Optional) An array with the query variables if any
+    * @param   boolean  $returnResult        (Optional) Whether to return a result
+    * @param   string   $fetchMode           (Optional) The type of array that will be fetched. Can be MYSQ_BOTH, MYSQL_ASSOC, MYSQL_NUM. Defaults to MYSQL_ASSOC
+    * @param   mixed    $fetchModeArgument   (Optional)  The fetch mode argument to be used for special types of fetch
     * @return  mixed    A multi-dimensioanl array with the results as fetched from the dbase when successful else it returns 1
     * @throws Exception
     *
     * @since   v1.2
     */
-   public function executeQuery($query = '', $query_vars = NULL, $returnResult = false, $fetchMode = PDO::FETCH_ASSOC){
+   public function executeQuery($query = '', $query_vars = NULL, $returnResult = false, $fetchMode = PDO::FETCH_ASSOC, $fetchModeArgument = NULL){
       if($this->pdoObject !== null) {
          try {
             //run a prepared statement (PDO will handle escaping)
@@ -141,7 +142,8 @@ class Database {
             $result = $stmt->execute($query_vars);
             if($result === true) {
                if($returnResult === TRUE){
-                  return $stmt->fetchAll($fetchMode);
+                  if($fetchModeArgument == NULL) return $stmt->fetchAll($fetchMode);
+                  else return $stmt->fetchAll($fetchMode, $fetchModeArgument);
                }
             }
             else {

@@ -18,6 +18,8 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs.mainTimeColumns = [];
    window.dvs.schemaChanges={};
    window.dvs.columnDictionary={};//object storing the original and new column names
+   window.dvs.vizPreferences = {};     // object for storing the defined viz options
+   window.dvs.vizColumns = [];
    window.dvs.foreignKeys = null;
    window.dvs.leftSideWidth = 0;
    window.dvs.rightSideWidth = 0;
@@ -80,6 +82,8 @@ DMPVSchema.prototype.documentReady = function() {
       window.dvs.initWindow($("#grant_access_wndw"), 250, 600);
       window.dvs.initWindow($("#revoke_access_wndw"), 200, 600);
       window.dvs.initWindow($("#users_wndw"), 300, 700);
+      window.dvs.initWindow($("#dynamic_viz"), (window.innerHeight * 0.9), (window.innerWidth * 0.9));
+
       $("#manual_file_upload").jqxFileUpload({
          width:500,
          fileInputName: "data_file",
@@ -97,6 +101,7 @@ DMPVSchema.prototype.documentReady = function() {
       window.dvs.initSheetList();
       window.dvs.initColumnGrid();
       //window.dvs.initFileDropArea();
+      $("#viz_btn").unbind('click').click(window.dvs.vizButtonClicked);
       $("#cancel_btn").unbind('click').click(window.dvs.cancelButtonClicked);
       $("#update_btn").unbind('click').click(window.dvs.applySchemaChanges);
       $("#create_project_btn").unbind('click').click(window.dvs.createProjectButtonClicked);
@@ -767,13 +772,6 @@ DMPVSchema.prototype.refreshNotes = function() {
 DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
    if(window.dvs.diffProject != null && window.dvs.project != null && $("#merged_version_name").val().length > 0) {
       $("#apply_version_changes").prop('disabled', true);
-      // attempt to resolve the critical changes before applying the trivial changes
-       var success = window.dvs.applySchemaChanges();//calling this function will trigger refreshSavePoints at some point
-       if(success === false){
-          $("#apply_version_changes").prop('disabled', false);
-          return;    // cant continue
-       }
-
       //first resolve the trivial conflicts then apply the non trivial ones one by one
       $("#loading_box").show();
       var sData = JSON.stringify({
@@ -822,8 +820,7 @@ DMPVSchema.prototype.applyVersionDiffButtonClicked = function() {
                else {
                   console.log("Successfully resolved trivial changes");
                   wasSuccessful = true;//this will prevent this function from refreshing save points in onComplete
-                  window.dvs.invalidateCachedProjectData();
-                  window.dvs.updateSheetList();
+                  window.dvs.applySchemaChanges();//calling this function will trigger refreshSavePoints at some point
                   $("#version_diff_wndw").hide();
                }
             }
@@ -1043,7 +1040,7 @@ DMPVSchema.prototype.dbCredentailsButtonClicked = function() {
    if(window.dvs.project != null && window.dvs.project.length > 0) {
       $("#loading_box").show();
       var sData = JSON.stringify({
-         "workflow_id": window.dvs.project,
+         "workflow_id": window.dvs.project
       });
       var sToken = JSON.stringify({
          "server":window.dvs.server,
@@ -2533,6 +2530,200 @@ DMPVSchema.prototype.processProjectSchema = function() {
 };
 
 /**
+ * Process the event on clicking the visualization button
+ *
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.vizButtonClicked = function(){
+   console.log('Viz button clicked');
+   // check that we have at least one column with an active viz property
+   var canVisualize = false, vizColumns = [];
+   window.dvs.vizColumns = [];
+   $.each(window.dvs.vizPreferences, function(uid, pref){
+      if(pref.vizType !== ""){
+         canVisualize = true;
+         window.dvs.vizColumns[window.dvs.vizColumns.length] = pref.colName;
+      }
+   });
+   // lets get the data for the necessary columns
+   $("#loading_box").show();
+   var selectedSheet = $('#sheets').jqxListBox('getSelectedItem');
+   var sData = JSON.stringify({
+      workflow_id: window.dvs.project,
+      columns: JSON.stringify(window.dvs.vizColumns),
+      sheetName: selectedSheet.label
+   });
+   var sToken = JSON.stringify({
+      "server":window.dvs.server,
+      "user": window.dvs.user,
+      "session": window.dvs.session
+   });
+
+   $.ajax({
+      url: "mod_ajax.php?page=odk_workflow&do=get_columns_data",
+      type: "POST",
+      async: true,
+      data: {data: sData, token: sToken},
+      statusCode: {
+         400: function() {//bad request
+            $("#enotification_pp").html("Could not fetch the data from the server");
+            $("#enotification_pp").jqxNotification("open");
+         },
+         403: function() {//forbidden
+            $("#enotification_pp").html("User not allowed to fetch data");
+            $("#enotification_pp").jqxNotification("open");
+         },
+         500: function() {//forbidden
+            $("#enotification_pp").html("An error occurred in the server");
+            $("#enotification_pp").jqxNotification("open");
+         }
+      },
+      success: function(jsonResult, textStatus, jqXHR){
+         console.log("Response from process_mysql_schema endpoint = ", jsonResult);
+         if(jsonResult !== null) {
+            if(jsonResult.status.healthy == true) {
+               $("#loading_box").hide();
+               $("#inotification_pp").html("Done loading the selected column data");
+               $("#inotification_pp").jqxNotification("open");
+               // call the function for visualization
+               window.dvs.startVisualization(jsonResult);
+            }
+            else if(jsonResult.status.healthy == false) {
+               var message = "";
+               if(typeof jsonResult.status.errors != 'undefined' && jsonResult.status.errors.length > 0) {
+                  if(typeof jsonResult.status.errors[0].message != 'undefined') {
+                     message = "<br />"+jsonResult.status.errors[0].message;
+                  }
+               }
+               $("#enotification_pp").html("Could load data for visualization "+message);
+               $("#enotification_pp").jqxNotification("open");
+            }
+         }
+         else {
+            $("#enotification_pp").html("Could not load the data");
+            $("#enotification_pp").jqxNotification("open");
+         }
+      },
+      complete: function() {
+      }
+   });
+
+};
+
+DMPVSchema.prototype.startVisualization = function(jsonData){
+   // first lets create the framework for visualization
+   $("#dynamic_viz").show();
+   $.each(window.dvs.vizPreferences, function(uid, pref){
+      // create the place for the donut chart
+      if(pref['vizType'] === 'Donut Chart'){
+         $('#charts').append("<div id='"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><donut-chart></donut-chart></div>");
+         window.dvs.createDonutChart(jsonData['columnsData'][pref['colName']], pref['colName']);
+      }
+      else if(pref['vizType'] === 'Pie Chart'){}
+      else if(pref['vizType'] === 'Barchart'){
+         $('#charts').append("<div id='"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><bar-chart></bar-chart></div>");
+         window.dvs.createBarChart(jsonData['columnsData'][pref['colName']], pref['colName']);
+      }
+      else if(pref['vizType'] === 'Histogram'){}
+      else if(pref['vizType'] === 'Line Chart'){}
+      else if(pref['vizType'] === 'Map'){}
+   });
+};
+
+DMPVSchema.prototype.createBarChart = function(data, holder){
+   var viz = angular.module(holder+'App', [])
+      .controller('M'+ holder +'Controller', ['$scope', function($scope){
+         console.log('bootstrapping the app');
+      }])
+      .directive('barChart', function(){
+         function link(scope, element){
+            // the D3 bits..
+            console.log('adding the d3 bits for a barchart');
+            console.log('client-width: '+ element.clientWidth +'; client-height'+ element.clientHeight);
+            var color = d3.scale.category10();
+            var barHeight = 40;
+            var barWidth = 420;
+
+            // get the svg and set the max width and height of the svg
+            var svg = d3.select(element[0]).append('svg')
+                 .attr({width: 500, height: 500});
+
+            var x = d3.scale.linear()
+                .domain([0, 100])
+                .range([0, barWidth]);
+
+            var bar = svg.selectAll("g")
+                .data(data)
+                .enter().append("g")
+                .attr('fill', function(d, i){ return color(d.count); })
+                .attr("transform", function(d, i) { return "translate(0," + i * barHeight + ")"; });
+
+            bar.append("rect")
+                .attr("width", function(d) { return x(d.count); })
+                .attr("height", barHeight - 1);
+
+            bar.append("text")
+                .attr("x", function(d) { return x(d.count) - 3; })
+                .attr("y", barHeight / 2)
+                .attr("dy", ".35em")
+                .text(function(d) { return d.count; });
+         };
+         return {
+            link: link,
+            restrict: 'E'
+         };
+      });
+   angular.bootstrap(document.getElementById(holder), [holder+'App']);
+};
+
+DMPVSchema.prototype.createDonutChart = function(data, holder){
+   var viz = angular.module(holder+'App', [])
+      .controller('M'+ holder +'Controller', ['$scope', function($scope){
+         console.log('bootstrapping the app');
+      }])
+      .directive('donutChart', function(){
+         function link(scope, element){
+            // the D3 bits..
+            console.log('adding the d3 bits');
+            var color = d3.scale.category10();
+            var el = element[0];
+            var width = el.clientWidth;
+            var height = el.clientHeight;
+            var min = Math.min(width, height);
+            var pie = d3.layout.pie().sort(null).value(function(d){ return d.count; });
+
+            var arc = d3.svg.arc().outerRadius(min / 2 * 0.9).innerRadius(min / 2 * 0.5);
+            var svg = d3.select(el).append('svg')
+                  .attr({width: width, height: height})
+                  .append('g').attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
+
+            // add the <path>s for each arc slice
+            svg.selectAll('path').data(pie(data))
+              .enter().append('path')
+              .style('stroke', 'white')
+              .attr('d', arc)
+              .attr('data-legend', function(d){
+                 return d.data.d_name;
+              })
+              .attr("data-legend-pos",function(d) { return d.data.pos; })
+              .attr('fill', function(d, i){ return color(d.data.d_name); });
+
+            legend = svg.append("g")
+               .attr("class", "legend")
+               .attr("transform", "translate(-30,-30)")
+               .style("font-size", "12px")
+               .style("color", "white")
+               .call(d3.legend);
+         };
+         return {
+            link: link,
+            restrict: 'E'
+         };
+      });
+   angular.bootstrap(document.getElementById(holder), [holder+'App']);
+};
+
+/**
  * This function is fired wheneve the cancel button (below the jqxGrid) is clicked
  *
  * @returns {undefined}
@@ -2754,15 +2945,6 @@ DMPVSchema.prototype.applySchemaChanges = function(updateSheetList) {
                }
                if(typeof details["vlength"] != 'undefined'){
                   details['length'] = details['vlength'];
-               }
-
-               // ensure that all varchar modification have a length defined
-               if(details['type'] === 'varchar' && details['length'] === null){
-                  $("#enotification_pp").html("Provide the length of varchar for the column "+details['name']);
-                  $("#enotification_pp").jqxNotification("open");
-                  canContinue = false;
-                  $("#loading_box").hide();
-                  return false;
                }
 
                var sData = JSON.stringify({
@@ -3247,15 +3429,14 @@ DMPVSchema.prototype.initColumnGrid = function() {
          {name: 'vlength'},
          {name: 'nullable'},
          {name: 'default'},
+         {name: 'viz'},
          {name: 'key'},
          {name: 'link'}
       ],
       root: 'columns',
       localdata: data
    };
-
    window.dvs.columnGridAdapter = new $.jqx.dataAdapter(source);
-
    var columnTypes = [
          'varchar',
          'numeric',
@@ -3276,6 +3457,15 @@ DMPVSchema.prototype.initColumnGrid = function() {
       'primary',
       'unique'
    ];
+   var vizTypes = [
+      'Map',
+      'Pie Chart',
+      'Donut Chart',
+      'Barchart',
+      'Histogram',
+      'Line Chart'
+   ];
+
    var gridWidth = window.dvs.rightSideWidth * 0.975;
    $("#columns").jqxGrid({
       width: window.dvs.rightSideWidth,
@@ -3291,30 +3481,25 @@ DMPVSchema.prototype.initColumnGrid = function() {
          return window.dvs.columnGridAdapter.records;
       },
       columns: [
-         {text: 'Name', datafield: 'name', width: gridWidth*0.2647 - 10},
-         {text: 'Type', columntype: 'dropdownlist', datafield: 'type', width: gridWidth*0.2206,
-            initeditor: function (row, cellvalue, editor) {
+         {text: 'Name', datafield: 'name', width: gridWidth*0.2647},
+         {text: 'Type', columntype: 'dropdownlist', datafield: 'type', width: gridWidth*0.1765,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: columnTypes});
-            }
-         },
-         {text: 'Length', columntype: 'numberinput', datafield: 'vlength', width: gridWidth*0.1103},
-         {text: 'Nullable', columntype: 'dropdownlist', datafield: 'nullable', width: gridWidth*0.1103,
-            initeditor: function (row, cellvalue, editor) {
+         }},
+         {text: 'Length', columntype: 'numberinput', datafield: 'vlength', width: gridWidth*0.0882},
+         {text: 'Nullable', columntype: 'dropdownlist', datafield: 'nullable', width: gridWidth*0.0882,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: nullableTypes});
-            }
-         },
-         {text: 'Default', datafield: 'default', width: gridWidth*0.1471},
-         {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1471*0.5,
-            initeditor: function (row, cellvalue, editor) {
+         }},
+         {text: 'Default', datafield: 'default', width: gridWidth*0.1177},
+         {text: 'Visualize', columntype: 'dropdownlist', datafield: 'viz', width: gridWidth*0.1277*0.5,initeditor: function (row, cellvalue, editor) {
+               editor.jqxDropDownList({ source: vizTypes});
+         }},
+         {text: 'Key', columntype: 'dropdownlist', datafield: 'key', width: gridWidth*0.1177*0.5,initeditor: function (row, cellvalue, editor) {
                editor.jqxDropDownList({ source: keyTypes});
-            }
-         },
-         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.047, buttonclick:window.dvs.foreignKeyButtonClicked,
-            cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
+         }},
+         {text: 'Link', columntype: 'button', datafield: 'link', width: gridWidth*0.047,cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
                if(value == false) return "Add";
                else return "Edit";
-            }
-         },
+         },buttonclick:window.dvs.foreignKeyButtonClicked},
          {text: 'Delete', columntype: 'button', datafield: 'present', width: gridWidth*0.047,
             cellsrenderer: function(row, columnfield, value, defaulthtml, columnproperties){
                return "Delete";
@@ -3342,11 +3527,11 @@ DMPVSchema.prototype.initColumnGrid = function() {
          }
       ]
    });
+
    $("#columns").on('cellendedit', window.dvs.columnGridCellValueChanged);
 };
 
 DMPVSchema.prototype.updateDataGrid = function(sheetData) {
-   console.log('Updating the data grid with the necessary data...');
    var columnNames = Object.keys(sheetData);
    var dataFields = [];
    var columns = [];
@@ -3522,78 +3707,11 @@ DMPVSchema.prototype.addForeignKeyButtonClicked = function() {
  */
 DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
    if(window.dvs.schema != null && event.args.oldvalue !== event.args.value) {
-      console.log(event);
       var columnData = event.args.row;
       var sheetData = window.dvs.schema.sheets[$("#sheets").jqxListBox('selectedIndex')];
       if(typeof sheetData !== 'undefined') {
          var sheetName = sheetData.name;
          var columnChanged = window.dvs.changeColumnDetails(sheetName, event.args.rowindex, event.args.datafield, event.args.oldvalue, event.args.value, columnData);
-
-         /*if(typeof window.dvs.schemaChanges[sheetName] === 'undefined') {//initialize the sheet in the changes object
-            window.dvs.schemaChanges[sheetName] = {};
-         }
-
-         if(event.args.datafield == 'name') {//name of the field is what changed
-            console.log("oldvalue "+event.args.oldvalue);
-            console.log("value "+event.args.value);
-            if(typeof window.dvs.columnDictionary[sheetName] === 'undefined') {
-               window.dvs.columnDictionary[sheetName] = [];
-            }
-
-            var found = false;
-
-            for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
-               if(window.dvs.columnDictionary[sheetName][i].new_name === event.args.oldvalue) {
-                  window.dvs.columnDictionary[sheetName][i].new_name = event.args.value;
-                  found = true;
-                  columnName = window.dvs.columnDictionary[sheetName][i].old_name;
-                  break;
-               }
-            }
-            if(found == false) {
-               window.dvs.columnDictionary[sheetName][window.dvs.columnDictionary[sheetName].length] = {old_name:event.args.oldvalue, new_name:event.args.value};
-               columnName = event.args.oldvalue;
-            }
-         }
-         else {//something else apart from the name changed. Look for the columns original name
-            if(event.args.datafield == 'present') {
-               var columnIndex = event.args.rowindex;
-               var sheetIndex = $("#sheets").jqxListBox('selectedIndex');
-               var columnData = window.dvs.schema.sheets[sheetIndex].columns[columnIndex];
-               columnData.present = event.args.value;
-            }
-            if(typeof window.dvs.columnDictionary[sheetName] === 'undefined') {//none the columns in the current sheet have their column names edited yet
-               columnName = columnData.name;
-            }
-            else {//at least one column in the current sheet has a modified name
-               var found = false;
-               for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
-                  if(window.dvs.columnDictionary[sheetName][i].new_name === columnData.name) {
-                     columnName = window.dvs.columnDictionary[sheetName][i].old_name;
-                     found = true;
-                     break;
-                  }
-               }
-
-               if(found == false) {//current column's name has not been edited
-                  columnName = columnData.name;
-               }
-            }
-         }*/
-
-         /*console.log("Original column name is "+columnName);
-
-         if(typeof window.dvs.schemaChanges[sheetName][columnName] === 'undefined') {
-            window.dvs.schemaChanges[sheetName][columnName] = {};
-         }
-
-         window.dvs.schemaChanges[sheetName][columnName] = columnData;
-         window.dvs.schemaChanges[sheetName][columnName].original_name = columnName;
-
-         $("#cancel_btn").prop('disabled', false);
-         $("#update_btn").prop('disabled', false);
-
-         console.log(window.dvs.schemaChanges);*/
       }
    }
 
@@ -3623,7 +3741,6 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
       }
 
       var found = false;
-
       for(var i = 0; i < window.dvs.columnDictionary[sheetName].length; i++) {
          if(window.dvs.columnDictionary[sheetName][i].new_name === oldValue) {
             window.dvs.columnDictionary[sheetName][i].new_name = newValue;
@@ -3636,6 +3753,11 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
          window.dvs.columnDictionary[sheetName][window.dvs.columnDictionary[sheetName].length] = {old_name:oldValue, new_name:newValue};
          columnName = oldValue;
       }
+   }
+   else if(changedField == 'viz'){
+      console.log('Adding viz');
+      $("#viz_btn").prop('disabled', false);
+      window.dvs.vizPreferences[columnData.uid] = {colType: columnData.type, vizType: newValue, colName: columnData.name};    // using uid because the column name might change
    }
    else {//something else apart from the name changed. Look for the columns original name
       if(changedField == 'present') {

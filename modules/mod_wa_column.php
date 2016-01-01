@@ -118,8 +118,30 @@ class WAColumn {
       $this->data = $data;
    }
 
+   /**
+    * Get the data associated with this column
+    */
    public function getData() {
       return $this->data;
+   }
+
+   /**
+    * Fetches the data from the database
+    *
+    * @param   type     $sheetName     The name of the sheet where this column belongs to
+    * @return  array    An array with the column's data
+    *
+    * @todo The name of the sheet to which this column belong to must be specified when the constructor is called and not passed when a function is called
+    */
+   public function fetchDataGroupedData($sheetName){
+      $this->lH->log(4, $this->TAG, "Fetching data from '$sheetName' belonging to column ". $this->name);
+      try{
+         $query = 'select '. Database::$QUOTE_SI.$this->name.Database::$QUOTE_SI ." as d_name, count(*) as count from $sheetName group by ". Database::$QUOTE_SI.$this->name.Database::$QUOTE_SI;
+         $this->lH->log(4, $this->TAG, "Query to use: $query");
+         return $this->database->runGenericQuery($query, TRUE);
+      } catch (Exception $ex) {
+         throw new WAException("Unable to fetch data from the column $sheetName:'{$this->name}'", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+      }
    }
 
    public function getKey() {

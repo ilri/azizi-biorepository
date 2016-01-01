@@ -45,6 +45,9 @@
     "leaflet": "https://github.com/Leaflet/Leaflet.git#v0.7.3",
     "Leaflet.heat": "https://github.com/Leaflet/Leaflet.heat.git#gh-pages",
     "lightgallery": "~1.1.5",
-    "jQuery-Autocomplete": "https://github.com/devbridge/jQuery-Autocomplete.git"
+    "jQuery-Autocomplete": "https://github.com/devbridge/jQuery-Autocomplete.git",
+    "angularjs": "1.4.8",
+    "d3-legend": "https://github.com/susielu/d3-legend.git",
+    "d3": "https://github.com/mbostock/d3.git"
   }
 }

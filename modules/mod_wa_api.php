@@ -119,6 +119,7 @@ class ODKWorkflowAPI extends Repository {
                   else if(OPTIONS_REQUESTED_SUB_MODULE == "revoke_user_access") $this->handleRevokeUserAccessEndpoint();
                   else if(OPTIONS_REQUESTED_SUB_MODULE == "get_access_level") $this->handleGetAccessLevelEndpoint();
                   else if(OPTIONS_REQUESTED_SUB_MODULE == "get_users") $this->handleGetUsersEndpoint();
+                  else if(OPTIONS_REQUESTED_SUB_MODULE == "get_columns_data") $this->handleGetColumnsDataEndpoint();
                   else {
                      $this->lH->log(2, $this->TAG, "No recognised endpoint specified in data provided to API");
                      $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
@@ -1531,6 +1532,33 @@ class ODKWorkflowAPI extends Repository {
          throw new WAException("Unable to record the client's session ID because of a database error", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
       return null;
+   }
+
+   private function handleGetColumnsDataEndpoint(){
+      include_once 'mod_wa_column.php';
+
+      if(isset($_REQUEST['data'])) {
+         $json = $this->getData($_REQUEST['data']);
+         $this->lH->log(4, $this->TAG, "Data:: ". print_r($json, true));
+
+         if(array_key_exists("workflow_id", $json)) {
+            $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
+            $data = $workflow->getGroupedColumnsData($json['sheetName'], json_decode($json['columns']));
+            $status = $workflow->getCurrentStatus();
+            $this->returnResponse(array(
+               "columnsData" => $data,
+               "status" => $status
+            ));
+         }
+         else {
+            $this->lH->log(2, $this->TAG, "One of the required fields not set in data provided to get_columns_data endpoint");
+            $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+         }
+      }
+      else {
+         $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_columns_data endpoint");
+         $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
+      }
    }
 }
 ?>
