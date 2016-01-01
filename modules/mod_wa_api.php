@@ -1539,11 +1539,11 @@ class ODKWorkflowAPI extends Repository {
 
       if(isset($_REQUEST['data'])) {
          $json = $this->getData($_REQUEST['data']);
-         $this->lH->log(4, $this->TAG, "Data:: ". print_r($json, true));
+         $this->lH->log(4, $this->TAG, "Data:: ". print_r(json_decode($json['columns'], true), true));
 
          if(array_key_exists("workflow_id", $json)) {
             $workflow = new Workflow($this->config, null, $this->uuid, $json['workflow_id']);
-            $data = $workflow->getGroupedColumnsData($json['sheetName'], json_decode($json['columns']));
+            $data = $workflow->getGroupedColumnsData(json_decode($json['columns'], true));
             $status = $workflow->getCurrentStatus();
             $this->returnResponse(array(
                "columnsData" => $data,

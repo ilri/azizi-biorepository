@@ -29,13 +29,12 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs.diffProjectSchema = null;
    window.dvs.mergeKeys = null;
    window.dvs.isDumping = false;
+   window.dvs.resizeNow = null;
+   window.lastHeight = null;
+   window.lastWidth = null;
    $("#whoisme").hide();
    //initialize source for project_list_box
    $(document).ready(function() {
-      window.dvs.documentReady();
-   });
-   $(window).resize(function() {
-      console.log("window resized");
       window.dvs.documentReady();
    });
 
@@ -56,10 +55,13 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
  * @returns {undefined}
  */
 DMPVSchema.prototype.documentReady = function() {
+   console.log('Initializing the stuff');
    var currTime = new Date().getTime();
    if(typeof window.dvs.lastDocumentReload == 'undefined' || (currTime - window.dvs.lastDocumentReload) > 1000) {
       //console.log("documentReady called");
       window.dvs.lastDocumentReload = currTime;
+      window.dvs.lastHeight = window.innerHeight;
+      window.dvs.lastWidth = window.innerWidth;
       var pWidth = window.innerWidth*0.942;//split_window width
       window.dvs.leftSideWidth = pWidth*0.2;//30% of split_window
       window.dvs.rightSideWidth = pWidth - window.dvs.leftSideWidth;
@@ -171,6 +173,18 @@ DMPVSchema.prototype.documentReady = function() {
    else {
       //console.log("ignoring documentReady call");
    }
+   $(window).resize(function() {
+      if(window.innerHeight === window.dvs.lastHeight && window.innerWidth === window.dvs.lastWidth){
+         return; // no need to resize it
+      }
+      // the window has been resized, but lets wait until we are done with resizing
+      clearTimeout(window.dvs.resizeNow);
+      window.dvs.resizeNow = setTimeout(function(){
+         console.log('time to resize window last settings: '+ window.dvs.lastHeight +': '+window.dvs.lastWidth +' ==> current settings: '+ window.innerHeight +': '+window.innerWidth);
+         window.dvs.documentReady();
+      }, 200);
+
+   });
 };
 
 DMPVSchema.prototype.menuItemClicked = function(event) {
@@ -691,6 +705,7 @@ DMPVSchema.prototype.addNoteButtonClicked = function() {
 };
 
 DMPVSchema.prototype.initWindow = function(wndw, height, width) {
+   console.log('Initializing the window');
    (function ($) {
       $.each(['show', 'hide'], function (i, ev) {
         var el = $.fn[ev];
@@ -707,6 +722,26 @@ DMPVSchema.prototype.initWindow = function(wndw, height, width) {
    wndw.jqxWindow({height: height, width: width, position: windowPos, theme: ''});
    wndw.on("show", function(){$("#blanket_cover").show();});
    wndw.on("hide", function(){$("#blanket_cover").hide();});
+   wndw.unbind('close').on('close', window.dvs.clearWindowResources);
+};
+
+/**
+ * Do some garbage cleanup on closing windows
+ *
+ * @param {type} event
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.clearWindowResources = function(event){
+   console.log(event);
+   if(event.type === 'close'){
+      if(event.target.id === 'dynamic_viz'){
+         console.log('We are closing '+ event.target.id);
+         if(window.dvs.vizColumns.length > 1){
+            console.log('Destroying the tab which were created');
+            $('#vizTabs').jqxTabs('destroy');
+         }
+      }
+   }
 };
 
 DMPVSchema.prototype.refreshNotes = function() {
@@ -2550,7 +2585,7 @@ DMPVSchema.prototype.vizButtonClicked = function(){
    var selectedSheet = $('#sheets').jqxListBox('getSelectedItem');
    var sData = JSON.stringify({
       workflow_id: window.dvs.project,
-      columns: JSON.stringify(window.dvs.vizColumns),
+      columns: JSON.stringify(window.dvs.vizPreferences),
       sheetName: selectedSheet.label
    });
    var sToken = JSON.stringify({
@@ -2611,21 +2646,51 @@ DMPVSchema.prototype.vizButtonClicked = function(){
 };
 
 DMPVSchema.prototype.startVisualization = function(jsonData){
-   // first lets create the framework for visualization
+   // first lets create the framework for visualization and clear any previous visualizations
+   $("#viz_pane").html('');
+   $("#left_panel").html('');
    $("#dynamic_viz").show();
+   if(window.dvs.vizColumns.length !== 1){
+      // create the base framework for the tabs
+      $('#viz_pane').append("<div id='vizTabs'><ul id='viz_list'></ul></div>");
+
+      // loop through the columns and add the necessary info
+      $.each(window.dvs.vizPreferences, function(uid, pref){
+         // add the li to the ul
+         $('#viz_list').append("<li class='viz_tab'><div class='tab_name'>"+ pref['colName'] +"</div></li>");
+         // create the div placeholder and append it
+         $('#vizTabs').append("<div id='cont_"+ pref['colName'] +"'></div>");
+      });
+      $('#vizTabs').jqxTabs({ width: '90%', height: '90%', position: 'top'});
+   }
+   else{
+      // just create one container for the 1 chart viz
+      $('#viz_pane').append("<div id='cont_"+ window.dvs.vizColumns[0] +"'></div>");
+   }
+
+   // now start the process of creating the charts
    $.each(window.dvs.vizPreferences, function(uid, pref){
       // create the place for the donut chart
       if(pref['vizType'] === 'Donut Chart'){
-         $('#charts').append("<div id='"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><donut-chart></donut-chart></div>");
+         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><donut-chart></donut-chart></div>");
          window.dvs.createDonutChart(jsonData['columnsData'][pref['colName']], pref['colName']);
       }
-      else if(pref['vizType'] === 'Pie Chart'){}
+      else if(pref['vizType'] === 'Pie Chart'){
+         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><pie-chart></pie-chart></div>");
+         window.dvs.createPieChart(jsonData['columnsData'][pref['colName']], pref['colName']);
+      }
       else if(pref['vizType'] === 'Barchart'){
-         $('#charts').append("<div id='"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><bar-chart></bar-chart></div>");
+         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><bar-chart></bar-chart></div>");
          window.dvs.createBarChart(jsonData['columnsData'][pref['colName']], pref['colName']);
       }
-      else if(pref['vizType'] === 'Histogram'){}
-      else if(pref['vizType'] === 'Line Chart'){}
+      else if(pref['vizType'] === 'Histogram'){
+         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><histogram-chart></histogram-chart></div>");
+         window.dvs.createHistogram(jsonData['columnsData'][pref['colName']], pref['colName']);
+      }
+      else if(pref['vizType'] === 'Line Chart'){
+         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><line-chart></line-chart></div>");
+         window.dvs.createLineChart(jsonData['columnsData'][pref['colName']], pref['colName']);
+      }
       else if(pref['vizType'] === 'Map'){}
    });
 };
@@ -2673,7 +2738,7 @@ DMPVSchema.prototype.createBarChart = function(data, holder){
             restrict: 'E'
          };
       });
-   angular.bootstrap(document.getElementById(holder), [holder+'App']);
+   angular.bootstrap(document.getElementById('cont_'+ holder), [holder+'App']);
 };
 
 DMPVSchema.prototype.createDonutChart = function(data, holder){
@@ -2720,7 +2785,7 @@ DMPVSchema.prototype.createDonutChart = function(data, holder){
             restrict: 'E'
          };
       });
-   angular.bootstrap(document.getElementById(holder), [holder+'App']);
+   angular.bootstrap(document.getElementById('cont_'+ holder), [holder+'App']);
 };
 
 /**
@@ -3467,6 +3532,11 @@ DMPVSchema.prototype.initColumnGrid = function() {
    ];
 
    var gridWidth = window.dvs.rightSideWidth * 0.975;
+   // if we have column grid already initiated kill destroy it
+   if($('#columns :regex(class, jqx\-grid)').length === 1){
+      $("#columns").jqxGrid('refresh');
+      return;
+   }
    $("#columns").jqxGrid({
       width: window.dvs.rightSideWidth,
       height: '100%',
@@ -3527,7 +3597,6 @@ DMPVSchema.prototype.initColumnGrid = function() {
          }
       ]
    });
-
    $("#columns").on('cellendedit', window.dvs.columnGridCellValueChanged);
 };
 
@@ -3562,7 +3631,12 @@ DMPVSchema.prototype.updateDataGrid = function(sheetData) {
       localdata: formattedData
    };
 
-   window.dvs.dataGridAdapter = new $.jqx.dataAdapter(source);
+   window.dvs.dataGridAdapter = new $.jqx.dataAdapter(source);// if we have column grid already initiated kill destroy it
+   if($('#sheet_data :regex(class, jqx\-grid)').length === 1){
+      console.log('We already have the grid loaded, just refresh it and return');
+      $("#sheet_data").jqxGrid('refresh');
+      return;
+   }
    $("#sheet_data").jqxGrid({
       width: window.dvs.rightSideWidth,
       height: '100%',
@@ -3714,7 +3788,6 @@ DMPVSchema.prototype.columnGridCellValueChanged = function(event) {
          var columnChanged = window.dvs.changeColumnDetails(sheetName, event.args.rowindex, event.args.datafield, event.args.oldvalue, event.args.value, columnData);
       }
    }
-
 };
 
 /**
@@ -3757,7 +3830,8 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
    else if(changedField == 'viz'){
       console.log('Adding viz');
       $("#viz_btn").prop('disabled', false);
-      window.dvs.vizPreferences[columnData.uid] = {colType: columnData.type, vizType: newValue, colName: columnData.name};    // using uid because the column name might change
+      // using uid because the column name might change
+      window.dvs.vizPreferences[sheetName+'_'+columnData.uid] = {colType: columnData.type, vizType: newValue, colName: columnData.name, sheetName: sheetName};
    }
    else {//something else apart from the name changed. Look for the columns original name
       if(changedField == 'present') {

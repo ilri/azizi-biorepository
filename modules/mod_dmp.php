@@ -379,8 +379,8 @@ class DMP extends Repository{
    <div id="dynamic_viz" style="display: none; z-index: 6;">
       <div>Visualization of the selected columns data</div>
       <div id="charts">
-         <!-- div ng-app="control-panel" ng-controller="CtlPanelController"></div -->
-         <!-- div id="viz_pane" ng-controller="MyController"><donut-chart></donut-chart></div -->
+         <div id="left_panel"></div>
+         <div id="viz_pane"></div>
       </div>
    </div>
    <div id="split_window">

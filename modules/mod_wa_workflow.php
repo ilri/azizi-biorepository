@@ -3052,16 +3052,17 @@ class Workflow {
     * @param   array    $columns       An array with the column names
     * @return  array    The data from the columns
     */
-   public function getGroupedColumnsData($sheetName, $columns){
+   public function getGroupedColumnsData($columns){
       if($this->healthy == true
               && $this->database != null
               && $this->instanceId != null
               && $this->database->getDatabaseName() == $this->instanceId) {
          try {
             $allData = array();
-            $columnCount = count($columns);
-            for($i = 0; $i < $columnCount; $i++){
-               $colName = $columns[$i];
+            foreach($columns as $index => $column){
+               $this->lH->log(4, $this->TAG, "Data:: ". print_r($columns[$i], true));
+               $colName = $column['colName'];
+               $sheetName = $column['sheetName'];
                $Column = new WAColumn($this->config, $this->database, $colName, $this->lH);
                $colData = $Column->fetchDataGroupedData($sheetName);
                $allData[$colName] = $colData;
