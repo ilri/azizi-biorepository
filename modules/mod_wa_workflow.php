@@ -2269,12 +2269,10 @@ class Workflow {
             for($index = 0; $index < $noSheets; $index++){
                $sheet1Indexes[$schema1['sheets'][$index]['name']] = $index;
             }
-            $lH->log(4, "waworkflow_static", "Sheet 1 indexes = ".print_r($sheet1Indexes, true));
             $noSheets = count($schema2['sheets']);
             for($index = 0; $index < $noSheets; $index++){
                $sheet2Indexes[$schema2['sheets'][$index]['name']] = $index;
             }
-            $lH->log(4, "waworkflow_static", "Sheet 2 indexes = ".print_r($sheet2Indexes, true));
 
             $schema1SheetNames = array_keys($sheet1Indexes);
             $schema2SheetNames = array_keys($sheet2Indexes);
@@ -2329,12 +2327,10 @@ class Workflow {
                for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                   $col1Indexes[$currSheetIn1['columns'][$colIndex]['name']] = $colIndex;
                }
-               $lH->log(4, "waworkflow_static", "Column1Indexes = ".  print_r($col1Indexes, TRUE));
                $colSize = count($currSheetIn2['columns']);
                for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                   $col2Indexes[$currSheetIn2['columns'][$colIndex]['name']] = $colIndex;
                }
-               $lH->log(4, "waworkflow_static", "Column2Indexes = ".  print_r($col2Indexes, TRUE));
 
                $col1Names = array_keys($col1Indexes);
                $col2Names = array_keys($col2Indexes);
@@ -2497,12 +2493,10 @@ class Workflow {
             for($index = 0; $index < $noSheets; $index++){
                $sheet1Indexes[$schema1['sheets'][$index]['name']] = $index;
             }
-            $lH->log(4, "waworkflow_static", "Sheet 1 indexes = ".print_r($sheet1Indexes, true));
             $noSheets = count($schema2['sheets']);
             for($index = 0; $index < $noSheets; $index++){
                $sheet2Indexes[$schema2['sheets'][$index]['name']] = $index;
             }
-            $lH->log(4, "waworkflow_static", "Sheet 2 indexes = ".print_r($sheet2Indexes, true));
 
             $schema1SheetNames = array_keys($sheet1Indexes);
             $schema2SheetNames = array_keys($sheet2Indexes);
@@ -2592,12 +2586,10 @@ class Workflow {
                   for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                      $col1Indexes[$currSheetIn1['columns'][$colIndex]['name']] = $colIndex;
                   }
-                  $lH->log(4, "waworkflow_static", "Column1Indexes = ".  print_r($col1Indexes, TRUE));
                   $colSize = count($currSheetIn2['columns']);
                   for($colIndex = 0; $colIndex < $colSize; $colIndex++){
                      $col2Indexes[$currSheetIn2['columns'][$colIndex]['name']] = $colIndex;
                   }
-                  $lH->log(4, "waworkflow_static", "Column2Indexes = ".  print_r($col2Indexes, TRUE));
 
                   $col1Names = array_keys($col1Indexes);
                   $col2Names = array_keys($col2Indexes);
