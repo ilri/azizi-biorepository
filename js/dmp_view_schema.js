@@ -20,6 +20,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs.columnDictionary={};//object storing the original and new column names
    window.dvs.vizPreferences = {};     // object for storing the defined viz options
    window.dvs.vizColumns = [];
+   window.dvs.vizRefColumn = null;
    window.dvs.foreignKeys = null;
    window.dvs.leftSideWidth = 0;
    window.dvs.rightSideWidth = 0;
@@ -736,7 +737,7 @@ DMPVSchema.prototype.clearWindowResources = function(event){
    if(event.type === 'close'){
       if(event.target.id === 'dynamic_viz'){
          console.log('We are closing '+ event.target.id);
-         if(window.dvs.vizColumns.length > 1){
+         if(window.dvs.vizColumns.length > 1 && window.dvs.vizRefColumn === null){
             console.log('Destroying the tab which were created');
             $('#vizTabs').jqxTabs('destroy');
          }
@@ -2650,7 +2651,7 @@ DMPVSchema.prototype.startVisualization = function(jsonData){
    $("#viz_pane").html('');
    $("#left_panel").html('');
    $("#dynamic_viz").show();
-   if(window.dvs.vizColumns.length !== 1){
+   if(window.dvs.vizColumns.length !== 1 && window.dvs.vizRefColumn === null){
       // create the base framework for the tabs
       $('#viz_pane').append("<div id='vizTabs'><ul id='viz_list'></ul></div>");
 
@@ -2667,7 +2668,7 @@ DMPVSchema.prototype.startVisualization = function(jsonData){
             var curTabName = window.dvs.vizColumns[tab];
             $.each(window.dvs.vizPreferences, function(uid, pref){
                if(pref['propColName'] === curTabName){
-                  window.dvs.initializingCharts(pref, jsonData['columnsData'][pref['propColName']]);
+                  window.dvs.initializingSimpleCharts(pref, jsonData['columnsData'][pref['propColName']]);
                   return false;
                }
             });
@@ -2675,13 +2676,32 @@ DMPVSchema.prototype.startVisualization = function(jsonData){
       });
    }
    else{
-      // just create one container for the 1 chart viz
-      $('#viz_pane').append("<div id='cont_"+ window.dvs.vizColumns[0] +"'></div>");
-      window.dvs.initializingCharts(window.dvs.vizPreferences[Object.keys(window.dvs.vizPreferences)[0]], jsonData['columnsData'][window.dvs.vizColumns[0]]);
+      if(window.dvs.vizHasRefColumn !== null){
+         // just create one container for the 1 complex chart
+         $('#viz_pane').append("<div id='cont_complex'></div>");
+         window.dvs.initializingComplexCharts(jsonData['columnsData']['linkedData']);
+      }
+      else{
+         // just create one container for the 1 chart viz
+         $('#viz_pane').append("<div id='cont_"+ window.dvs.vizColumns[0] +"'></div>");
+         window.dvs.initializingSimpleCharts(window.dvs.vizPreferences[Object.keys(window.dvs.vizPreferences)[0]], jsonData['columnsData'][window.dvs.vizColumns[0]]);
+      }
    }
 };
 
-DMPVSchema.prototype.initializingCharts = function(pref, data){
+DMPVSchema.prototype.initializingComplexCharts = function(data){
+   var chartHolder = "<jqx-chart jqx-settings='complexChartSettings' jqx-watch='complexChartSettings.seriesGroups' style='width: 690px; height: 480px;'></jqx-chart>";
+   $("#cont_complex").append("<div id='cont_complexChart' ng-controller='ComplexChartController'>"+ chartHolder +"</div>");
+
+   var chartSettings = {
+      holder: 'complexChart',
+      data: data,
+      settingsName: 'complexChartSettings'
+   };
+   window.dvs.createComplexBarChart(chartSettings);
+};
+
+DMPVSchema.prototype.initializingSimpleCharts = function(pref, data){
    var chartSettings = {
       holder: pref['propColName'],
       data: data,
@@ -2699,7 +2719,7 @@ DMPVSchema.prototype.initializingCharts = function(pref, data){
    }
    else if(pref['vizType'] === 'Barchart'){
       chartSettings['type'] = 'column';
-      window.dvs.createBarChart(chartSettings);
+      window.dvs.createSimpleBarChart(chartSettings);
    }
    else if(pref['vizType'] === 'Line Chart'){
       $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><line-chart></line-chart></div>");
@@ -2708,7 +2728,13 @@ DMPVSchema.prototype.initializingCharts = function(pref, data){
    else if(pref['vizType'] === 'Map'){}
 };
 
-DMPVSchema.prototype.createBarChart = function(settings){
+/**
+ * Creates a simple bar chart
+ *
+ * @param {type} settings
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.createSimpleBarChart = function(settings){
    var viz = angular.module(settings.holder+'App', ['jqwidgets'])
       .controller('M'+ settings.holder +'Controller', ['$scope', function($scope){
          console.log('bootstrapping the app: ' +settings.holder);
@@ -2741,6 +2767,60 @@ DMPVSchema.prototype.createBarChart = function(settings){
                   dataField: 'count',
                   displayText: settings.holder
                }]
+            }]
+         };
+         $scope[settings.settingsName] = chartSettings;
+      }])
+      .directive('donutChart', function(){
+         function link(scope, element){};
+         return {
+            link: link,
+            restrict: 'E'
+         };
+      });
+   angular.bootstrap(document.getElementById('cont_'+ settings.holder), [settings.holder+'App']);
+};
+
+DMPVSchema.prototype.createComplexBarChart = function(settings){
+   // lets create the series
+   var chartSeries = [];
+   $.each(window.dvs.vizPreferences, function(uid, pref){
+      if(pref.vizType !== 'Ref Column'){
+         chartSeries[chartSeries.length] = {dataField: pref.propColName, displayText: pref.colName};
+      }
+   });
+
+   var viz = angular.module(settings.holder+'App', ['jqwidgets'])
+      .controller('ComplexChartController', ['$scope', function($scope){
+         console.log('bootstrapping the app: ' +settings.holder);
+         var source ={ datatype: "json",
+            datafields: [{ name: 'd_name' }, { name: 'count' }],
+            localdata: settings.data
+         };
+         var chartAdapter = new $.jqx.dataAdapter(source);
+
+         // prepare donut chart settings
+         var chartSettings = {
+            title: settings.holder+" distribution",
+            description: "No description defined",
+            enableAnimations: true,
+            showLegend: true,
+            showBorderLine: true,
+            legendLayout: { left: 520, top: 10, width: 100, height: 100, flow: 'vertical' },
+            padding: { left: 5, top: 5, right: 5, bottom: 5 },
+            titlePadding: { left: 0, top: 0, right: 0, bottom: 10 },
+            source: chartAdapter,
+            colorScheme: 'scheme05',
+            valueAxis:{
+               title: {visible: true, text: 'Counts'}
+            },
+            xAxis:{
+               dataField: window.dvs.vizRefColumn.propColName,
+               displayText: window.dvs.vizRefColumn.colName
+            },
+            seriesGroups: [{
+               type: 'column',
+               series: chartSeries
             }]
          };
          $scope[settings.settingsName] = chartSettings;
@@ -3853,7 +3933,7 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
          columnName = oldValue;
       }
    }
-   else if(changedField == 'viz'){
+   else if(changedField === 'viz'){
       console.log('Adding viz');
       $("#viz_btn").prop('disabled', false);
       // using uid because the column name might change
@@ -3864,6 +3944,9 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
          propColName: columnData.name.replace(/[\.\-]/g,'_'),
          sheetName: sheetName
       };
+      if(newValue === 'Ref Column'){
+         window.dvs.vizRefColumn = window.dvs.vizPreferences[sheetName+'_'+columnData.uid];
+      }
    }
    else {//something else apart from the name changed. Look for the columns original name
       if(changedField == 'present') {

@@ -1330,12 +1330,15 @@ class Database {
 
          $diff = array_diff($tables, $usedTables);
          $selectColumns = '';
+         $selectGroupColumns = '';
          $from = 'FROM '. Database::$QUOTE_SI.$diff[0].Database::$QUOTE_SI;
          $groupByColumns = '';
 
          foreach($columns as $col){
             $selectColumns .= ($selectColumns == '') ? '' : ', ';
-            $selectColumns .= Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI;
+            $selectGroupColumns .= ($selectGroupColumns == '') ? '' : ', ';
+            $selectColumns .= Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI .' as '.$col['propColName'];
+            $selectGroupColumns .= Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI;
             // if it is a ref column, add it to the group section
             if($col['vizType'] == 'Ref Column'){
                $groupByColumns .= ($groupByColumns == '') ? '' : ', ';
@@ -1343,7 +1346,7 @@ class Database {
             }
             $this->logH->log(4, $this->TAG, "Data:: ". print_r($col, true));
          }
-         $query = "SELECT $selectColumns, count(*) as count $from $joins GROUP BY $groupByColumns, $selectColumns ORDER BY $selectColumns";
+         $query = "SELECT $selectColumns, count(*) as count $from $joins GROUP BY $groupByColumns, $selectGroupColumns ORDER BY $selectGroupColumns";
          $this->logH->log(4, $this->TAG, "Fetching data from the database using the query '$query'");
          $data = $this->runGenericQuery($query, TRUE);
          return $data;
