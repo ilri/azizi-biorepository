@@ -3065,7 +3065,7 @@ class Workflow {
                $sheetName = $column['sheetName'];
                $Column = new WAColumn($this->config, $this->database, $colName, $this->lH);
                $colData = $Column->fetchDataGroupedData($sheetName);
-               $allData[$colName] = $colData;
+               $allData[preg_replace('/[\.\-]/', '_', $colName)] = $colData;
             }
             return $allData;
          } catch (WAException $ex) {

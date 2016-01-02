@@ -2577,7 +2577,7 @@ DMPVSchema.prototype.vizButtonClicked = function(){
    $.each(window.dvs.vizPreferences, function(uid, pref){
       if(pref.vizType !== ""){
          canVisualize = true;
-         window.dvs.vizColumns[window.dvs.vizColumns.length] = pref.colName;
+         window.dvs.vizColumns[window.dvs.vizColumns.length] = pref.propColName;
       }
    });
    // lets get the data for the necessary columns
@@ -2657,17 +2657,17 @@ DMPVSchema.prototype.startVisualization = function(jsonData){
       // loop through the columns and add the necessary info
       $.each(window.dvs.vizPreferences, function(uid, pref){
          // add the li to the ul
-         $('#viz_list').append("<li class='viz_tab'><div class='tab_name'>"+ pref['colName'] +"</div></li>");
+         $('#viz_list').append("<li class='viz_tab'><div class='tab_name'>"+ pref['propColName'] +"</div></li>");
          // create the div placeholder and append it
-         $('#vizTabs').append("<div id='cont_"+ pref['colName'] +"'>initial text</div>");
+         $('#vizTabs').append("<div id='cont_"+ pref['propColName'] +"'></div>");
       });
 
       $('#vizTabs').jqxTabs({ width: '98%', height: '99%', position: 'top',
          initTabContent: function(tab){
             var curTabName = window.dvs.vizColumns[tab];
             $.each(window.dvs.vizPreferences, function(uid, pref){
-               if(pref['colName'] === curTabName){
-                  window.dvs.initializingCharts(pref, jsonData['columnsData'][pref['colName']]);
+               if(pref['propColName'] === curTabName){
+                  window.dvs.initializingCharts(pref, jsonData['columnsData'][pref['propColName']]);
                   return false;
                }
             });
@@ -2683,12 +2683,12 @@ DMPVSchema.prototype.startVisualization = function(jsonData){
 
 DMPVSchema.prototype.initializingCharts = function(pref, data){
    var chartSettings = {
-      holder: pref['colName'],
+      holder: pref['propColName'],
       data: data,
-      settingsName: pref['colName'] +'_chartSettings'
+      settingsName: pref['propColName'] +'_chartSettings'
    };
-   var chartHolder = "<jqx-chart jqx-settings='"+ pref['colName'] +"_chartSettings' jqx-watch='"+ pref['colName'] +"_chartSettings.seriesGroups' style='width: 690px; height: 480px;'></jqx-chart>";
-   $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'>"+ chartHolder +"</div>");
+   var chartHolder = "<jqx-chart jqx-settings='"+ pref['propColName'] +"_chartSettings' jqx-watch='"+ pref['propColName'] +"_chartSettings.seriesGroups' style='width: 690px; height: 480px;'></jqx-chart>";
+   $("#cont_"+ pref['propColName']).append("<div id='cont_"+ pref['propColName'] +"' ng-controller='M"+ pref['propColName'] +"Controller'>"+ chartHolder +"</div>");
    if(pref['vizType'] === 'Donut Chart'){
       chartSettings['type'] = 'donut';
       window.dvs.createDonutChart(chartSettings);
@@ -2698,12 +2698,8 @@ DMPVSchema.prototype.initializingCharts = function(pref, data){
       window.dvs.createDonutChart(chartSettings);
    }
    else if(pref['vizType'] === 'Barchart'){
-      $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><bar-chart></bar-chart></div>");
-      window.dvs.createBarChart(jsonData['columnsData'][pref['colName']], pref['colName']);
-   }
-   else if(pref['vizType'] === 'Histogram'){
-      $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><histogram-chart></histogram-chart></div>");
-      window.dvs.createHistogram(jsonData['columnsData'][pref['colName']], pref['colName']);
+      chartSettings['type'] = 'column';
+      window.dvs.createBarChart(chartSettings);
    }
    else if(pref['vizType'] === 'Line Chart'){
       $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><line-chart></line-chart></div>");
@@ -2712,50 +2708,51 @@ DMPVSchema.prototype.initializingCharts = function(pref, data){
    else if(pref['vizType'] === 'Map'){}
 };
 
-DMPVSchema.prototype.createBarChart = function(data, holder){
-   var viz = angular.module(holder+'App', [])
-      .controller('M'+ holder +'Controller', ['$scope', function($scope){
-         console.log('bootstrapping the app');
-      }])
-      .directive('barChart', function(){
-         function link(scope, element){
-            // the D3 bits..
-            console.log('adding the d3 bits for a barchart');
-            console.log('client-width: '+ element.clientWidth +'; client-height'+ element.clientHeight);
-            var color = d3.scale.category10();
-            var barHeight = 40;
-            var barWidth = 420;
-
-            // get the svg and set the max width and height of the svg
-            var svg = d3.select(element[0]).append('svg')
-                 .attr({width: 500, height: 500});
-
-            var x = d3.scale.linear()
-                .domain([0, 100])
-                .range([0, barWidth]);
-
-            var bar = svg.selectAll("g")
-                .data(data)
-                .enter().append("g")
-                .attr('fill', function(d, i){ return color(d.count); })
-                .attr("transform", function(d, i) { return "translate(0," + i * barHeight + ")"; });
-
-            bar.append("rect")
-                .attr("width", function(d) { return x(d.count); })
-                .attr("height", barHeight - 1);
-
-            bar.append("text")
-                .attr("x", function(d) { return x(d.count) - 3; })
-                .attr("y", barHeight / 2)
-                .attr("dy", ".35em")
-                .text(function(d) { return d.count; });
+DMPVSchema.prototype.createBarChart = function(settings){
+   var viz = angular.module(settings.holder+'App', ['jqwidgets'])
+      .controller('M'+ settings.holder +'Controller', ['$scope', function($scope){
+         console.log('bootstrapping the app: ' +settings.holder);
+         var source ={ datatype: "json",
+            datafields: [{ name: 'd_name' }, { name: 'count' }],
+            localdata: settings.data
          };
+         var chartAdapter = new $.jqx.dataAdapter(source);
+
+         // prepare donut chart settings
+         var chartSettings = {
+            title: settings.holder+" distribution",
+            description: "No description defined",
+            enableAnimations: true,
+            showLegend: true,
+            showBorderLine: true,
+            legendLayout: { left: 520, top: 10, width: 100, height: 100, flow: 'vertical' },
+            padding: { left: 5, top: 5, right: 5, bottom: 5 },
+            titlePadding: { left: 0, top: 0, right: 0, bottom: 10 },
+            source: chartAdapter,
+            colorScheme: 'scheme05',
+            valueAxis:{
+               title: {visible: true, text: settings.holder +' count'}
+            },
+            xAxis:{dataField: 'd_name', displayText: settings.holder},
+            seriesGroups:[{
+               type: settings.type,
+               showLabels: true,
+               series:[{
+                  dataField: 'count',
+                  displayText: settings.holder
+               }]
+            }]
+         };
+         $scope[settings.settingsName] = chartSettings;
+      }])
+      .directive('donutChart', function(){
+         function link(scope, element){};
          return {
             link: link,
             restrict: 'E'
          };
       });
-   angular.bootstrap(document.getElementById('cont_'+ holder), [holder+'App']);
+   angular.bootstrap(document.getElementById('cont_'+ settings.holder), [settings.holder+'App']);
 };
 
 /**
@@ -3553,12 +3550,11 @@ DMPVSchema.prototype.initColumnGrid = function() {
       'unique'
    ];
    var vizTypes = [
+      'Ref Column',
       'Map',
       'Pie Chart',
       'Donut Chart',
-      'Barchart',
-      'Histogram',
-      'Line Chart'
+      'Barchart'
    ];
 
    var gridWidth = window.dvs.rightSideWidth * 0.975;
@@ -3861,7 +3857,13 @@ DMPVSchema.prototype.changeColumnDetails = function(sheetName, rowIndex, changed
       console.log('Adding viz');
       $("#viz_btn").prop('disabled', false);
       // using uid because the column name might change
-      window.dvs.vizPreferences[sheetName+'_'+columnData.uid] = {colType: columnData.type, vizType: newValue, colName: columnData.name, sheetName: sheetName};
+      window.dvs.vizPreferences[sheetName+'_'+columnData.uid] = {
+         colType: columnData.type,
+         vizType: newValue,
+         colName: columnData.name,
+         propColName: columnData.name.replace(/[\.\-]/g,'_'),
+         sheetName: sheetName
+      };
    }
    else {//something else apart from the name changed. Look for the columns original name
       if(changedField == 'present') {
