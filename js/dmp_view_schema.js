@@ -84,7 +84,7 @@ DMPVSchema.prototype.documentReady = function() {
       window.dvs.initWindow($("#grant_access_wndw"), 250, 600);
       window.dvs.initWindow($("#revoke_access_wndw"), 200, 600);
       window.dvs.initWindow($("#users_wndw"), 300, 700);
-      window.dvs.initWindow($("#dynamic_viz"), (window.innerHeight * 0.9), (window.innerWidth * 0.9));
+      window.dvs.initWindow($("#dynamic_viz"), 600, 700);
 
       $("#manual_file_upload").jqxFileUpload({
          width:500,
@@ -2659,40 +2659,57 @@ DMPVSchema.prototype.startVisualization = function(jsonData){
          // add the li to the ul
          $('#viz_list').append("<li class='viz_tab'><div class='tab_name'>"+ pref['colName'] +"</div></li>");
          // create the div placeholder and append it
-         $('#vizTabs').append("<div id='cont_"+ pref['colName'] +"'></div>");
+         $('#vizTabs').append("<div id='cont_"+ pref['colName'] +"'>initial text</div>");
       });
-      $('#vizTabs').jqxTabs({ width: '90%', height: '90%', position: 'top'});
+
+      $('#vizTabs').jqxTabs({ width: '98%', height: '99%', position: 'top',
+         initTabContent: function(tab){
+            var curTabName = window.dvs.vizColumns[tab];
+            $.each(window.dvs.vizPreferences, function(uid, pref){
+               if(pref['colName'] === curTabName){
+                  window.dvs.initializingCharts(pref, jsonData['columnsData'][pref['colName']]);
+                  return false;
+               }
+            });
+         }
+      });
    }
    else{
       // just create one container for the 1 chart viz
       $('#viz_pane').append("<div id='cont_"+ window.dvs.vizColumns[0] +"'></div>");
+      window.dvs.initializingCharts(window.dvs.vizPreferences[Object.keys(window.dvs.vizPreferences)[0]], jsonData['columnsData'][window.dvs.vizColumns[0]]);
    }
+};
 
-   // now start the process of creating the charts
-   $.each(window.dvs.vizPreferences, function(uid, pref){
-      // create the place for the donut chart
-      if(pref['vizType'] === 'Donut Chart'){
-         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><donut-chart></donut-chart></div>");
-         window.dvs.createDonutChart(jsonData['columnsData'][pref['colName']], pref['colName']);
-      }
-      else if(pref['vizType'] === 'Pie Chart'){
-         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><pie-chart></pie-chart></div>");
-         window.dvs.createPieChart(jsonData['columnsData'][pref['colName']], pref['colName']);
-      }
-      else if(pref['vizType'] === 'Barchart'){
-         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><bar-chart></bar-chart></div>");
-         window.dvs.createBarChart(jsonData['columnsData'][pref['colName']], pref['colName']);
-      }
-      else if(pref['vizType'] === 'Histogram'){
-         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><histogram-chart></histogram-chart></div>");
-         window.dvs.createHistogram(jsonData['columnsData'][pref['colName']], pref['colName']);
-      }
-      else if(pref['vizType'] === 'Line Chart'){
-         $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><line-chart></line-chart></div>");
-         window.dvs.createLineChart(jsonData['columnsData'][pref['colName']], pref['colName']);
-      }
-      else if(pref['vizType'] === 'Map'){}
-   });
+DMPVSchema.prototype.initializingCharts = function(pref, data){
+   var chartSettings = {
+      holder: pref['colName'],
+      data: data,
+      settingsName: pref['colName'] +'_chartSettings'
+   };
+   var chartHolder = "<jqx-chart jqx-settings='"+ pref['colName'] +"_chartSettings' jqx-watch='"+ pref['colName'] +"_chartSettings.seriesGroups' style='width: 690px; height: 480px;'></jqx-chart>";
+   $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'>"+ chartHolder +"</div>");
+   if(pref['vizType'] === 'Donut Chart'){
+      chartSettings['type'] = 'donut';
+      window.dvs.createDonutChart(chartSettings);
+   }
+   else if(pref['vizType'] === 'Pie Chart'){
+      chartSettings['type'] = 'pie';
+      window.dvs.createDonutChart(chartSettings);
+   }
+   else if(pref['vizType'] === 'Barchart'){
+      $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><bar-chart></bar-chart></div>");
+      window.dvs.createBarChart(jsonData['columnsData'][pref['colName']], pref['colName']);
+   }
+   else if(pref['vizType'] === 'Histogram'){
+      $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><histogram-chart></histogram-chart></div>");
+      window.dvs.createHistogram(jsonData['columnsData'][pref['colName']], pref['colName']);
+   }
+   else if(pref['vizType'] === 'Line Chart'){
+      $("#cont_"+ pref['colName']).append("<div id='cont_"+ pref['colName'] +"' ng-controller='M"+ pref['colName'] +"Controller'><line-chart></line-chart></div>");
+      window.dvs.createLineChart(jsonData['columnsData'][pref['colName']], pref['colName']);
+   }
+   else if(pref['vizType'] === 'Map'){}
 };
 
 DMPVSchema.prototype.createBarChart = function(data, holder){
@@ -2741,51 +2758,64 @@ DMPVSchema.prototype.createBarChart = function(data, holder){
    angular.bootstrap(document.getElementById('cont_'+ holder), [holder+'App']);
 };
 
-DMPVSchema.prototype.createDonutChart = function(data, holder){
-   var viz = angular.module(holder+'App', [])
-      .controller('M'+ holder +'Controller', ['$scope', function($scope){
-         console.log('bootstrapping the app');
+/**
+ * Creates a donut chart
+ *
+ * @param   {json}   data           The JSON data to use to create the chart
+ * @param   {string} holder         The id where to place the chart
+ * @param   {string} chartSettings  The name of the inside chart placeholder
+ * @returns {undefined}
+ */
+DMPVSchema.prototype.createDonutChart = function(settings){
+   var viz = angular.module(settings.holder+'App', ['jqwidgets'])
+      .controller('M'+ settings.holder +'Controller', ['$scope', function($scope){
+         console.log('bootstrapping the app: ' +settings.holder);
+         var source ={ datatype: "json",
+            datafields: [{ name: 'd_name' }, { name: 'count' }],
+            localdata: settings.data
+         };
+         var chartAdapter = new $.jqx.dataAdapter(source);
+
+         // prepare donut chart settings
+         var chartSettings = {
+            title: settings.holder+" distribution",
+            description: "No description defined",
+            enableAnimations: true,
+            showLegend: true,
+            showBorderLine: true,
+            legendLayout: { left: 520, top: 10, width: 100, height: 100, flow: 'vertical' },
+            padding: { left: 5, top: 5, right: 5, bottom: 5 },
+            titlePadding: { left: 0, top: 0, right: 0, bottom: 10 },
+            source: chartAdapter,
+            colorScheme: 'scheme02',
+            seriesGroups:[{
+               type: settings.type,
+               showLabels: true,
+               series:[{
+                  dataField: 'count',
+                  displayText: 'd_name',
+                  labelRadius: 120,
+                  initialAngle: 15,
+                  radius: 170,
+                  innerRadius: (settings.type === 'pie') ? 0 : 70,
+                  centerOffset: 0
+               }]
+            }]
+         };
+         $scope[settings.settingsName] = chartSettings;
+         $scope.setPieChartType = function () {
+            $scope[settings.settingsName].seriesGroups[0].series[0].innerRadius = 0;
+            $scope[settings.settingsName].seriesGroups[0].type = settings.type;
+         };
       }])
       .directive('donutChart', function(){
-         function link(scope, element){
-            // the D3 bits..
-            console.log('adding the d3 bits');
-            var color = d3.scale.category10();
-            var el = element[0];
-            var width = el.clientWidth;
-            var height = el.clientHeight;
-            var min = Math.min(width, height);
-            var pie = d3.layout.pie().sort(null).value(function(d){ return d.count; });
-
-            var arc = d3.svg.arc().outerRadius(min / 2 * 0.9).innerRadius(min / 2 * 0.5);
-            var svg = d3.select(el).append('svg')
-                  .attr({width: width, height: height})
-                  .append('g').attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
-
-            // add the <path>s for each arc slice
-            svg.selectAll('path').data(pie(data))
-              .enter().append('path')
-              .style('stroke', 'white')
-              .attr('d', arc)
-              .attr('data-legend', function(d){
-                 return d.data.d_name;
-              })
-              .attr("data-legend-pos",function(d) { return d.data.pos; })
-              .attr('fill', function(d, i){ return color(d.data.d_name); });
-
-            legend = svg.append("g")
-               .attr("class", "legend")
-               .attr("transform", "translate(-30,-30)")
-               .style("font-size", "12px")
-               .style("color", "white")
-               .call(d3.legend);
-         };
+         function link(scope, element){};
          return {
             link: link,
             restrict: 'E'
          };
       });
-   angular.bootstrap(document.getElementById('cont_'+ holder), [holder+'App']);
+   angular.bootstrap(document.getElementById('cont_'+ settings.holder), [settings.holder+'App']);
 };
 
 /**

@@ -408,10 +408,6 @@ ul.ui-autocomplete {z-index: 1000!important; }
 /* ============================== Farm animals module ============================================== */
 
 /* ============================== DMP Visualization ============================================== */
-donut-chart, bar-chart {width: 500px; height: 500px; display: inline-block; };
-.legend { font-size: 12px; }
-.legend rect { stroke-width: 2; }
-bar-chart rect{ font: 10px sans-serif; background-color: steelblue; text-align: right; padding: 3px; margin: 1px; color: white; }
 /* ============================== DMP Visualization ============================================== */
 
 #mta_box_list_div{
