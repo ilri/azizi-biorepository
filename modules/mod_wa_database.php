@@ -1217,5 +1217,143 @@ class Database {
       return $number;
    }
 
+   /**
+    * Given columns from 1 table, fetch aggregate data
+    *
+    * @param type $tableName
+    * @param type $columns
+    * @return type
+    * @throws WAException
+    */
+   public function getGroupedTableData($tableName, $columns){
+      try {
+         // create the query to fetch the data and group by the reference column(s)
+         $selectColumns = '';
+         $from = "FROM ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI;
+         $groupByColumns = '';
+         foreach($columns as $column){
+            $selectColumns .= ($selectColumns == '') ? '' : ', ';
+            $selectColumns .= Database::$QUOTE_SI.$column['colName'].Database::$QUOTE_SI;
+            // if it is a ref column, add it to the group section
+            if($column['vizType'] == 'Ref Column'){
+               $groupByColumns .= ($groupByColumns == '') ? '' : ', ';
+               $groupByColumns .= Database::$QUOTE_SI.$column['colName'].Database::$QUOTE_SI;
+            }
+         }
+         $query = "SELECT $selectColumns, count(*) as count $from $groupByColumns";
+         $this->logH->log(4, $this->TAG, "Fetching data from the database using the query '$query'");
+         $data = $this->runGenericQuery($query, TRUE);
+         return $data;
+      }
+      catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->logH->log(1, $this->TAG, "{$this->connectedDb}: Unable to get grouped data from a single table '$tableName'", $ex);
+         throw new WAException("{$this->connectedDb}: Unable to get grouped data from a single table $tableName", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+   }
+
+   /**
+    * Attempts to create linkages between a set of given tables and then fetch data from the given columns across the tables using the created linkage
+    *
+    * Using the linkage information contained in the INFORMATION_SCHEMA tables, this function creates linkages across the tables and get aggregate data
+    *
+    * @param type $tables
+    * @param type $columns
+    * @return type
+    * @todo    Determine the best link(INNER, OUTER, RIGHT, LEFT) to use when joining the tables.
+    *          Hint, the link to use will be determined by the direction of the join in the KEY_COLUMN_USAGE in the INFORMATION_SCHEMA DB
+    */
+   public function getLinkedGroupedData($tables, $columns){
+      try {
+         // we anticipate linked tables, attempt to understand the linkages first
+         $tablesStr = implode(Database::$QUOTE_SI.', '.Database::$QUOTE_SI, $tables);
+         $tablesStr = Database::$QUOTE_SI.$tablesStr.Database::$QUOTE_SI;
+         $query = "SELECT
+              KCU1.CONSTRAINT_NAME AS FK_CONSTRAINT_NAME
+             ,KCU1.TABLE_NAME AS FK_TABLE_NAME
+             ,KCU1.COLUMN_NAME AS FK_COLUMN_NAME
+             ,KCU1.ORDINAL_POSITION AS FK_ORDINAL_POSITION
+             ,KCU2.CONSTRAINT_NAME AS REFERENCED_CONSTRAINT_NAME
+             ,KCU2.TABLE_NAME AS REFERENCED_TABLE_NAME
+             ,KCU2.COLUMN_NAME AS REFERENCED_COLUMN_NAME
+             ,KCU2.ORDINAL_POSITION AS REFERENCED_ORDINAL_POSITION
+         FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS AS RC
+
+         INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KCU1
+             ON KCU1.CONSTRAINT_CATALOG = RC.CONSTRAINT_CATALOG
+             AND KCU1.CONSTRAINT_SCHEMA = RC.CONSTRAINT_SCHEMA
+             AND KCU1.CONSTRAINT_NAME = RC.CONSTRAINT_NAME
+
+         INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KCU2
+             ON KCU2.CONSTRAINT_CATALOG = RC.UNIQUE_CONSTRAINT_CATALOG
+             AND KCU2.CONSTRAINT_SCHEMA = RC.UNIQUE_CONSTRAINT_SCHEMA
+             AND KCU2.CONSTRAINT_NAME = RC.UNIQUE_CONSTRAINT_NAME";
+
+//         WHERE KCU1.TABLE_NAME in ($tablesStr) or KCU2.TABLE_NAME in ($tablesStr)";
+
+         $linkedTables = $this->runGenericQuery($query, TRUE);
+         $this->logH->log(4, $this->TAG, "Linked tables: ". print_r($linkedTables, true));
+         $linkedTC = count($linkedTables);
+         if($linkedTC == 0){
+            $this->logH->log(3, $this->TAG, "{$this->connectedDb}: There are no joins defined in this dataset, no need to continue");
+            throw new WAException("There are no linkages defined in this worksheet. Cannot fetch the data", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+         }
+
+         // now lets create the linkages
+         $joins = '';
+         $tc = count($tables);
+         // we need to determine which will be our main table. So we shall start with an empty array and add the tables used and then get the diff
+         $usedTables = array();
+         // given our array of tables, iterate through them and evaluate possible relations vis a vis what is found in the INFORMATION_SCHEMA records
+         for($i = 0; $i < $tc-1; $i++){
+            for($j = $i + 1; $j <= $tc; $j++){
+               for($k = 0; $k < $linkedTC; $k++){
+                  // evaluate if this linkage exists
+                  $table1 = $tables[$i]; $table2 = $tables[$j]; $curLink = $linkedTables[$k];
+                  $this->logH->log(4, $this->TAG, 'Testing: '.print_r($curLink, true));
+                  $this->logH->log(4, $this->TAG, "Testing tables: $table1 -- $table2");
+                  if( ($table1 == $curLink['fk_table_name'] && $table2 == $curLink['referenced_table_name']) ||
+                        ($table2 == $curLink['fk_table_name'] && $table1 == $curLink['referenced_table_name']) ){
+                           // which link should be used here???? LEFT, INNER, RIGHT, OUTER??? For now, lets use INNER
+                           $joins .= ' INNER JOIN '.Database::$QUOTE_SI.$curLink['fk_table_name'].Database::$QUOTE_SI
+                               .' ON ' .Database::$QUOTE_SI.$curLink['fk_table_name'].Database::$QUOTE_SI .'.'.Database::$QUOTE_SI.$curLink['fk_column_name'].Database::$QUOTE_SI .' = '
+                               .Database::$QUOTE_SI.$curLink['referenced_table_name'].Database::$QUOTE_SI .'.'.Database::$QUOTE_SI.$curLink['referenced_column_name'].Database::$QUOTE_SI;
+                         $usedTables[] = $curLink['fk_table_name'];
+                  }
+               }
+            }
+         }
+         if($joins == ''){
+            $this->logH->log(3, $this->TAG, "{$this->connectedDb}: The joins defined in this dataset does not fulfil the user's requirements, can't proceed");
+            throw new WAException("There are no linkages defined between the specified tables. Cannot fetch the data", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+         }
+
+         $diff = array_diff($tables, $usedTables);
+         $selectColumns = '';
+         $from = 'FROM '. Database::$QUOTE_SI.$diff[0].Database::$QUOTE_SI;
+         $groupByColumns = '';
+
+         foreach($columns as $col){
+            $selectColumns .= ($selectColumns == '') ? '' : ', ';
+            $selectColumns .= Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI;
+            // if it is a ref column, add it to the group section
+            if($col['vizType'] == 'Ref Column'){
+               $groupByColumns .= ($groupByColumns == '') ? '' : ', ';
+               $groupByColumns .= Database::$QUOTE_SI.$col['sheetName'].Database::$QUOTE_SI.'.'.Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI;
+            }
+            $this->logH->log(4, $this->TAG, "Data:: ". print_r($col, true));
+         }
+         $query = "SELECT $selectColumns, count(*) as count $from $joins GROUP BY $groupByColumns, $selectColumns ORDER BY $selectColumns";
+         $this->logH->log(4, $this->TAG, "Fetching data from the database using the query '$query'");
+         $data = $this->runGenericQuery($query, TRUE);
+         return $data;
+      }
+      catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->logH->log(1, $this->TAG, "Unable to get the data in the columns from the workflow with id = '{$this->connectedDb}'");
+         throw new WAException("Unable to get the data in the columns from the workflow with id = '{$this->connectedDb}'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
 }
 ?>

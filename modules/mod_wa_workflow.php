@@ -3050,9 +3050,23 @@ class Workflow {
               && $this->instanceId != null
               && $this->database->getDatabaseName() == $this->instanceId) {
          try {
-            $allData = array();
+            // check if we have a reference column... if we do, use the getLinkedGroupedData function instead
+            $hasRef = false; $uniqueTables = array();
             foreach($columns as $index => $column){
-               $this->lH->log(4, $this->TAG, "Data:: ". print_r($columns[$i], true));
+               if($column['vizType'] == 'Ref Column') $hasRef = true;
+               if(!in_array($column['sheetName'], $uniqueTables)) $uniqueTables[] = $column['sheetName'];
+            }
+
+            $allData = array();
+            if($hasRef && count($uniqueTables) == 1){
+               $allData['linkedData'] = $this->database->getGroupedTableData($uniqueTables[0], $columns);
+               return $allData;
+            }
+            if($hasRef && count($uniqueTables) > 1){
+               $allData['linkedData'] = $this->database->getLinkedGroupedData($uniqueTables, $columns);
+               return $allData;
+            }
+            foreach($columns as $index => $column){
                $colName = $column['colName'];
                $sheetName = $column['sheetName'];
                $Column = new WAColumn($this->config, $this->database, $colName, $this->lH);
