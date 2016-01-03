@@ -1328,10 +1328,10 @@ class Database {
             throw new WAException("There are no linkages defined between the specified tables. Cannot fetch the data", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
          }
 
-         $diff = array_diff($tables, $usedTables);
+         $diff = array_shift(array_diff($tables, $usedTables));
          $selectColumns = '';
          $selectGroupColumns = '';
-         $from = 'FROM '. Database::$QUOTE_SI.$diff[0].Database::$QUOTE_SI;
+         $from = 'FROM '. Database::$QUOTE_SI.$diff.Database::$QUOTE_SI;
          $groupByColumns = '';
 
          foreach($columns as $col){

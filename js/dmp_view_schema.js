@@ -2693,12 +2693,37 @@ DMPVSchema.prototype.initializingComplexCharts = function(data){
    var chartHolder = "<jqx-chart jqx-settings='complexChartSettings' jqx-watch='complexChartSettings.seriesGroups' style='width: 690px; height: 480px;'></jqx-chart>";
    $("#cont_complex").append("<div id='cont_complexChart' ng-controller='ComplexChartController'>"+ chartHolder +"</div>");
 
+   data = window.dvs.refactorComplexChartData(data, window.dvs.vizRefColumn);
+
    var chartSettings = {
       holder: 'complexChart',
       data: data,
       settingsName: 'complexChartSettings'
    };
    window.dvs.createComplexBarChart(chartSettings);
+};
+
+DMPVSchema.prototype.refactorComplexChartData = function(data){
+   var reData = {};
+   var refCol = window.dvs.vizRefColumn;
+   $.each(window.dvs.vizPreferences, function(uid, pref){
+      if(pref.vizType !== 'Ref Column'){
+         $.each(data, function(i, cur){
+            if(reData[cur[refCol['propColName']]] === undefined){
+               reData[cur[refCol['propColName']]] = {};
+            }
+            reData[cur[refCol['propColName']]][cur[pref['propColName']]] = cur['count'];
+         });
+      }
+   });
+
+   // now since we have our data in JSON format, convert it to an array of JSONs
+   var objArray = [];
+   $.each(reData, function(index, cur){
+      cur['refCol'] = index;
+      objArray[objArray.length] = cur;
+   });
+   return objArray;
 };
 
 DMPVSchema.prototype.initializingSimpleCharts = function(pref, data){
@@ -2782,19 +2807,21 @@ DMPVSchema.prototype.createSimpleBarChart = function(settings){
 };
 
 DMPVSchema.prototype.createComplexBarChart = function(settings){
-   // lets create the series
-   var chartSeries = [];
-   $.each(window.dvs.vizPreferences, function(uid, pref){
-      if(pref.vizType !== 'Ref Column'){
-         chartSeries[chartSeries.length] = {dataField: pref.propColName, displayText: pref.colName};
+   var chartSeries = [], dataFields= [];
+   // lets create the series from just the first data object
+   $.each(settings.data[0], function(curName, value){
+      if(curName !== 'refCol'){
+         chartSeries[chartSeries.length] = {dataField: curName, displayText: curName};
+         dataFields[dataFields.length] = { name: window.dvs.vizRefColumn.propColName };
       }
+      dataFields[dataFields.length] = { name: curName };
    });
 
    var viz = angular.module(settings.holder+'App', ['jqwidgets'])
       .controller('ComplexChartController', ['$scope', function($scope){
          console.log('bootstrapping the app: ' +settings.holder);
          var source ={ datatype: "json",
-            datafields: [{ name: 'd_name' }, { name: 'count' }],
+            datafields: dataFields,
             localdata: settings.data
          };
          var chartAdapter = new $.jqx.dataAdapter(source);
@@ -2815,8 +2842,8 @@ DMPVSchema.prototype.createComplexBarChart = function(settings){
                title: {visible: true, text: 'Counts'}
             },
             xAxis:{
-               dataField: window.dvs.vizRefColumn.propColName,
-               displayText: window.dvs.vizRefColumn.colName
+               dataField: 'refCol',
+               displayText: window.dvs.vizRefColumn.propColName
             },
             seriesGroups: [{
                type: 'column',
