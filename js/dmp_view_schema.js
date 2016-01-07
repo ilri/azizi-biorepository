@@ -20,6 +20,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs.columnDictionary={};//object storing the original and new column names
    window.dvs.vizPreferences = {};     // object for storing the defined viz options
    window.dvs.vizColumns = [];
+   window.dvs.groupNames = [];
    window.dvs.vizRefColumn = null;
    window.dvs.foreignKeys = null;
    window.dvs.leftSideWidth = 0;
@@ -961,6 +962,9 @@ DMPVSchema.prototype.reload = function() {
 };
 
 DMPVSchema.prototype.getProjectGroups = function() {
+   if(window.dvs.groupNames.length !== 0){
+      return window.dvs.groupNames;
+   }
    var groupNames = [];
    for(var sIndex = 0; sIndex < window.dvs.schema.sheets.length; sIndex++) {
       var currSection = window.dvs.schema.sheets[sIndex];
@@ -972,6 +976,7 @@ DMPVSchema.prototype.getProjectGroups = function() {
          }
       }
    }
+   window.dvs.groupNames = groupNames;
    console.log(groupNames);
    return groupNames;
 };
