@@ -66,6 +66,13 @@ class DMP extends Repository{
       $forms = $this->Dbase->ExecuteQuery($query, array("user" => $_SESSION['username']));
       $query = "SELECT email FROM users WHERE login = :login";
       $userData = $this->Dbase->ExecuteQuery($query, array("login" => $_SESSION['username']));
+
+      // Vizualization libraries to be included when needed
+      $str = '"'. OPTIONS_COMMON_FOLDER_PATH .'angularjs/angular.js", '.
+      '"'. OPTIONS_COMMON_FOLDER_PATH .'jqwidgets/jqwidgets/jqxdraw.js", '.
+      '"'. OPTIONS_COMMON_FOLDER_PATH .'jqwidgets/jqwidgets/jqxangular.js", '.
+      '"'. OPTIONS_COMMON_FOLDER_PATH .'jqwidgets/jqwidgets/jqxchart.core.js"';
+
 ?>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcore.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
@@ -87,11 +94,7 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcalendar.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
 
-<!-- Vizualization libraries -->
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>angularjs/angular.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdraw.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxangular.js"></script>
-<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxchart.core.js"></script>
+
 
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
@@ -407,6 +410,8 @@ class DMP extends Repository{
 </div>
 <script type="text/javascript">
    var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>", "<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>", "<?php echo $userData[0]['email'];?>");
+   // Vizualization libraries
+   window.dvs.jsVisualizationScripts = [<?php echo "$str"; ?>];
 </script>
 <?php
    }

@@ -1021,7 +1021,6 @@ class Database {
     * @throws WAException
     */
    public function runCreateTableQuery($name, $columns, $linkTables = false, $parentTable = null) {
-
       try {//check if table already exists
          $result = $this->getTableNames($this->getDatabaseName());
          if(in_array($name, $result) === false) {//the table does not exist

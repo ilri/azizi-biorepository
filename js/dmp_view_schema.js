@@ -21,6 +21,7 @@ function DMPVSchema(server, user, session, project, userFullName, userEmail) {
    window.dvs.vizPreferences = {};     // object for storing the defined viz options
    window.dvs.vizColumns = [];
    window.dvs.groupNames = [];
+   window.dvs.jsVisualizationScriptsLoaded = false;
    window.dvs.vizRefColumn = null;
    window.dvs.foreignKeys = null;
    window.dvs.leftSideWidth = 0;
@@ -2570,6 +2571,18 @@ DMPVSchema.prototype.processProjectSchema = function() {
    }
 };
 
+DMPVSchema.prototype.loadVisualizationLibraries = function(){
+   $(window.dvs.jsVisualizationScripts).each(function(i, path){
+      $.ajax({
+         async:false,
+         url: path,
+         dataType: "script",
+         success: function(){ console.log('loading.. '+ path); }
+      });
+   });
+   window.dvs.jsVisualizationScriptsLoaded = true;
+};
+
 /**
  * Process the event on clicking the visualization button
  *
@@ -2577,6 +2590,11 @@ DMPVSchema.prototype.processProjectSchema = function() {
  */
 DMPVSchema.prototype.vizButtonClicked = function(){
    console.log('Viz button clicked');
+
+   // angular.js and the visualization libraries, takes a while to load and compile, hence we just include it when we need to perform visualization
+   if(window.dvs.jsVisualizationScriptsLoaded === false){
+      window.dvs.loadVisualizationLibraries();
+   }
    // check that we have at least one column with an active viz property
    var canVisualize = false, vizColumns = [];
    window.dvs.vizColumns = [];
