@@ -1229,19 +1229,22 @@ class Database {
       try {
          // create the query to fetch the data and group by the reference column(s)
          $selectColumns = '';
-         $from = "FROM ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI;
+         $from = "FROM " . Database::$QUOTE_SI . $tableName . Database::$QUOTE_SI;
          $groupByColumns = '';
-         foreach($columns as $column){
+         $selectGroupByColumns = '';
+         foreach ($columns as $column) {
             $selectColumns .= ($selectColumns == '') ? '' : ', ';
-            $selectColumns .= Database::$QUOTE_SI.$column['colName'].Database::$QUOTE_SI;
+            $selectGroupByColumns .= ($selectGroupByColumns == '') ? '' : ', ';
+            $selectGroupByColumns .= Database::$QUOTE_SI . $column['colName'] . Database::$QUOTE_SI;
+            $selectColumns .= Database::$QUOTE_SI . $column['colName'] . Database::$QUOTE_SI . ' as ' . $column['propColName'];
             // if it is a ref column, add it to the group section
-            if($column['vizType'] == 'Ref Column'){
+            if ($column['vizType'] == 'Ref Column') {
                $groupByColumns .= ($groupByColumns == '') ? '' : ', ';
-               $groupByColumns .= Database::$QUOTE_SI.$column['colName'].Database::$QUOTE_SI;
+               $groupByColumns .= Database::$QUOTE_SI . $column['colName'] . Database::$QUOTE_SI;
             }
          }
-         $query = "SELECT $selectColumns, count(*) as count $from $groupByColumns";
-         $this->logH->log(4, $this->TAG, "Fetching data from the database using the query '$query'");
+         $query = "SELECT $selectColumns, count(*) as count $from group by $groupByColumns, $selectGroupByColumns";
+         $this->logH->log(4, $this->TAG, "And fetching data from the database using the query '$query'");
          $data = $this->runGenericQuery($query, TRUE);
          return $data;
       }
