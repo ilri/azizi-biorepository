@@ -136,7 +136,7 @@ class WAColumn {
    public function fetchDataGroupedData($sheetName){
       $this->lH->log(4, $this->TAG, "Fetching data from '$sheetName' belonging to column ". $this->name);
       try{
-         $query = 'select '. Database::$QUOTE_SI.$this->name.Database::$QUOTE_SI ." as d_name, count(*) as count from $sheetName group by ". Database::$QUOTE_SI.$this->name.Database::$QUOTE_SI;
+         $query = 'select '. Database::$QUOTE_SI.$this->name.Database::$QUOTE_SI ." as d_name, count(*) as count from ". Database::$QUOTE_SI.$sheetName.Database::$QUOTE_SI ." group by ". Database::$QUOTE_SI.$this->name.Database::$QUOTE_SI;
          $this->lH->log(4, $this->TAG, "Query to use: $query");
          return $this->database->runGenericQuery($query, TRUE);
       } catch (Exception $ex) {
