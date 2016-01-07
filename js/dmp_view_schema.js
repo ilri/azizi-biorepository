@@ -2681,7 +2681,7 @@ DMPVSchema.prototype.startVisualization = function(jsonData){
       });
    }
    else{
-      if(window.dvs.vizHasRefColumn !== null){
+      if(window.dvs.vizHasRefColumn != null){
          // just create one container for the 1 complex chart
          $('#viz_pane').append("<div id='cont_complex'></div>");
          window.dvs.initializingComplexCharts(jsonData['columnsData']['linkedData']);
