@@ -2512,7 +2512,7 @@ DMPVSchema.prototype.processProjectSchema = function() {
       $("#loading_box").show();
       var sData = JSON.stringify({
          "workflow_id": window.dvs.project,
-         "link_sheets": false
+         "link_sheets": true
       });
       var sToken = JSON.stringify({
          "server":window.dvs.server,
