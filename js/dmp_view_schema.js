@@ -959,7 +959,10 @@ DMPVSchema.prototype.applyMergeDiffButtonClicked = function() {
 };
 
 DMPVSchema.prototype.reload = function() {
-   window.location.href = "?page=dmp&do=view_schema&project="+window.dvs.project+"&session="+window.dvs.session;
+   console.log('Reloading the window..... delete the previous main object');
+   var project = window.dvs.project, session = window.dvs.session;
+   delete(window.dvs);
+   window.location.href = "?page=dmp&do=view_schema&project="+project+"&session="+session;
 };
 
 DMPVSchema.prototype.getProjectGroups = function() {
