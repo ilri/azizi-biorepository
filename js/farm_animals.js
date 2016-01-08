@@ -55,7 +55,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
                  var filter = filtergroup.createfilter('stringfilter', filtervalue, filtercondition);
                  filtergroup.addfilter(1, filter);
                  $("#inventory").jqxGrid('addfilter', 'status', filtergroup);
-                 $("#inventory").jqxGrid('applyfilters');
+                 // $("#inventory").jqxGrid('applyfilters');
             },
             rowdetailstemplate: {rowdetails: "<div id='grid' style='margin: 10px;'></div>", rowdetailsheight: 150, rowdetailshidden: true},
             columns: [
