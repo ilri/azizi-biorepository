@@ -43,6 +43,10 @@ class Toolkit{
          if(OPTIONS_REQUESTED_ACTION == '') $this->homePage();
       }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'match_gps') $this->matchGPSCoordinatesHome ();
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'odk_form_stats'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->odkFormStatHome ();
+         elseif(OPTIONS_REQUESTED_ACTION == 'fetch_all') $this->odkFetchAllForms ();
+      }
    }
 
    /**
@@ -57,10 +61,14 @@ class Toolkit{
    <h3 class="center">Azizi collection of tools</h3>
    <div class="toolkit">
       <ul>
-         <li><a href="?page=toolkit&do=match_gps">Match GPS Coordinates</a></li>
+         <!-- li><a href="?page=toolkit&do=match_gps">Match GPS Coordinates</a></li -->
+         <li><a href="?page=toolkit&do=odk_form_stats">Uploaded ODK forms statistics</a></li>
       </ul>
    </div>
 </div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=home\'>Back</a>');//back link
+</script>
 <?php
    }
 
@@ -104,5 +112,101 @@ class Toolkit{
     </div>
 </div>
 <?php
+   }
+
+   /**
+    *
+    */
+   private function odkFormStatHome(){
+?>
+<script type="text/javascript" src="js/toolkit.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxmenu.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.sort.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+
+<div id="main">
+   <div id="odk_forms"></div>
+</div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=toolkit\'>Back</a>');       //back link
+   var Toolkit = new Toolkit();
+
+   // call the function to initiate the form grid
+   window.toolkit.initODKForms();
+</script>
+<?php
+   }
+
+   private function odkFetchAllForms(){
+      // before creating the db connection, lets import the db settings
+      $this->settings = parse_ini_file(Config::$configFile, true);
+
+      $ODKConn = new DBase('mysql');
+      $ODKConn->InitializeConnection($this->settings['odk_ro']);
+      if(is_null($ODKConn->dbcon)) {
+         ob_start();
+         $this->LoginPage(OPTIONS_MSSG_DB_CON_ERROR);
+         $this->errorPage = ob_get_contents();
+         ob_end_clean();
+         return;
+      }
+      $ODKConn->InitializeLogs();
+
+      // get all defined ODK forms in the ODK tables and return their stats
+      $formsQuery = 'select a.FORM_NAME as form_name, c.SUBMISSION_FORM_ID as form_id, d.PERSIST_AS_TABLE_NAME as table_name, d.URI_SUBMISSION_DATA_MODEL as data_model '
+            . 'from _form_info_fileset as a '
+            . 'inner join _form_info as b on a._PARENT_AURI=b._URI '
+            . 'inner join _form_info_submission_association as c on b._URI=c.URI_MD5_FORM_ID '
+            . 'inner join _form_data_model as d on c.URI_SUBMISSION_DATA_MODEL=d.URI_SUBMISSION_DATA_MODEL '
+            . 'where d.PERSIST_AS_TABLE_NAME like "%core%" '
+            . 'group by PERSIST_AS_TABLE_NAME';
+
+      $ODKConn->CreateLogEntry(print_r($ODKConn, true), 'fatal');
+      $forms = $ODKConn->ExecuteQuery($formsQuery);
+      if($forms == 1){
+         $ODKConn->CreateLogEntry($ODKConn->lastError, 'fatal');
+         die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
+      }
+      $formsCount = count($forms);
+      die(json_encode($forms));
+      $allForms = array();
+      for($i = 0; $i < $formsCount; $i++){
+         $f = $forms[$i];
+         if(!isset($allForms[$f['form_id']])){
+            $allForms[$f['form_id']] = array('form_name' => $f['form_name'], 'form_id' => $f['form_id'], 'no_cores' => 0);
+         }
+         $coreQuery = "select count(*) as count from {$f['table_name']}";
+         $coreCount = $ODKConn->ExecuteQuery($coreQuery);
+         if($coreCount == 1){
+            $ODKConn->CreateLogEntry($ODKConn->lastError, 'fatal');
+            die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
+         }
+         $matches = array();
+         preg_match('/.+core([0-9]{1,2})?$/i', $f['table_name'], $matches);
+         $tableIndex = (count($matches[1]) == 0) ? '' : $matches[1];
+         $allForms[$f['form_id']]["core{$tableIndex}"] = $coreCount[0]['count'];
+         $allForms[$f['form_id']]['no_cores'] += 1;
+      }
+      die(json_encode($allForms));
+
+      // now loop through all the forms and format the data well
+      $formsCount = count($allForms);
+      $forms2send = array();
+      foreach($allForms as $f){
+         if(!isset($f['core2'])) $f['core2'] = 'N/A';
+         if(!isset($f['core3'])) $f['core3'] = 'N/A';
+         $forms2send[] = $f;
+      }
+      die(json_encode($forms2send));
    }
 }

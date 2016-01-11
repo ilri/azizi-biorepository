@@ -22,3 +22,48 @@ function Toolkit(sub_module){
 Toolkit.prototype.initMatchGPSHome = function(){
 
 };
+
+/**
+ * Initiiate the ODK forms sub module
+ * @returns {undefined}
+ */
+Toolkit.prototype.initODKForms = function(){
+   // create the source for the grid
+   var source = {
+      datatype: 'json', datafields: [ {name: 'form_name'}, {name: 'form_id'}, {name: 'no_cores'}, {name: 'core'}, {name: 'core2'}, {name: 'core3'}, {name: 'actions'}],
+         id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'fetch_all'}, url: 'mod_ajax.php?page=toolkit&do=odk_form_stats'
+     };
+     var odkFormsAdapter = new $.jqx.dataAdapter(source);
+   // initialize jqxGrid
+     if($('#odk_forms :regex(class, jqx\-grid)').length === 0){
+        $("#odk_forms").jqxGrid({
+            width: 917,
+            source: source,
+            pageable: true,
+            autoheight: true,
+            sortable: true,
+            showfilterrow: false,
+            autoshowfiltericon: true,
+            filterable: true,
+            altrows: true,
+            touchmode: false,
+            pagesize: 20,
+            pagesizeoptions: ['20', '50', '100'],
+            columns: [
+              { text: 'Form Name', datafield: 'form_name', width: 300 },
+              { text: 'Form ID', datafield: 'form_id', width: 300 },
+              { text: 'Cores', datafield: 'no_cores', width: 50 },
+              { text: 'Core1', datafield: 'core', width: 50 },
+              { text: 'Core2', datafield: 'core2', width: 50 },
+              { text: 'Core3', datafield: 'core3', width: 50},
+              { text: 'Actions', datafield: 'actions', width: 95, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
+                    return '<a href="javascript:;" id="'+ rowdata.id +'" class="delete_form">&nbsp;'+ value +'</a>';
+                 }
+              },
+            ]
+        });
+     }
+     else{
+        $("#odk_forms").jqxGrid({source: odkFormsAdapter});
+     }
+};
