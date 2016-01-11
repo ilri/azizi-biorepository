@@ -169,21 +169,21 @@ class Toolkit{
             . 'inner join _form_info_submission_association as c on b._URI=c.URI_MD5_FORM_ID '
             . 'inner join _form_data_model as d on c.URI_SUBMISSION_DATA_MODEL=d.URI_SUBMISSION_DATA_MODEL '
             . 'where d.PERSIST_AS_TABLE_NAME like "%core%" '
-            . 'group by PERSIST_AS_TABLE_NAME';
+            . 'group by PERSIST_AS_TABLE_NAME '
+            . 'order by a.FORM_NAME ';
 
-      $ODKConn->CreateLogEntry(print_r($ODKConn, true), 'fatal');
       $forms = $ODKConn->ExecuteQuery($formsQuery);
+      $ODKConn->CreateLogEntry(print_r($forms, true), 'fatal');
       if($forms == 1){
          $ODKConn->CreateLogEntry($ODKConn->lastError, 'fatal');
          die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
       }
       $formsCount = count($forms);
-      die(json_encode($forms));
       $allForms = array();
       for($i = 0; $i < $formsCount; $i++){
          $f = $forms[$i];
          if(!isset($allForms[$f['form_id']])){
-            $allForms[$f['form_id']] = array('form_name' => $f['form_name'], 'form_id' => $f['form_id'], 'no_cores' => 0);
+            $allForms[$f['form_id']] = array('form_name' => utf8_encode($f['form_name']), 'form_id' => $f['form_id'], 'no_cores' => 0);
          }
          $coreQuery = "select count(*) as count from {$f['table_name']}";
          $coreCount = $ODKConn->ExecuteQuery($coreQuery);
@@ -197,7 +197,6 @@ class Toolkit{
          $allForms[$f['form_id']]["core{$tableIndex}"] = $coreCount[0]['count'];
          $allForms[$f['form_id']]['no_cores'] += 1;
       }
-      die(json_encode($allForms));
 
       // now loop through all the forms and format the data well
       $formsCount = count($allForms);
