@@ -31,7 +31,7 @@ class DMP extends Repository{
          if(OPTIONS_REQUESTED_ACTION == "upload_data_file") $this->uploadDataFile();
       }
    }
-   
+
    /**
     * This function renders the home page
     */
@@ -54,15 +54,27 @@ class DMP extends Repository{
 </script>
 <?php
    }
-   
+
    /**
-    * 
+    *
     */
    public function viewSchemaPage() {
       $this->jqGridFiles();//import vital jqx files
       $sessionId = $_GET['session'];
       $project = $_GET['project'];
+      $query = "SELECT a.* FROM odk_forms AS a INNER JOIN odk_access AS b ON a.id = b.form_id WHERE b.user = :user AND a.is_active=1";
+      $forms = $this->Dbase->ExecuteQuery($query, array("user" => $_SESSION['username']));
+      $query = "SELECT email FROM users WHERE login = :login";
+      $userData = $this->Dbase->ExecuteQuery($query, array("login" => $_SESSION['username']));
+
+      // Vizualization libraries to be included when needed
+      $str = '"'. OPTIONS_COMMON_FOLDER_PATH .'angularjs/angular.js", '.
+      '"'. OPTIONS_COMMON_FOLDER_PATH .'jqwidgets/jqwidgets/jqxdraw.js", '.
+      '"'. OPTIONS_COMMON_FOLDER_PATH .'jqwidgets/jqwidgets/jqxangular.js", '.
+      '"'. OPTIONS_COMMON_FOLDER_PATH .'jqwidgets/jqwidgets/jqxchart.core.js"';
+
 ?>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcore.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxwindow.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxsplitter.js"></script>
@@ -78,6 +90,12 @@ class DMP extends Repository{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxmenu.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxtabs.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxdatetimeinput.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxcalendar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH; ?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+
+
+
 <script type="text/javascript" src="js/dmp_view_schema.js"></script>
 <div id="project_title" style="font-size: 18px;margin-top: 10px;margin-bottom: 15px;color: #0088cc;cursor: pointer;">New Project</div>
 <div id="blanket_cover" style="position: absolute; background-color: white; opacity: 0.6; display: none; z-index: 5;"></div>
@@ -127,7 +145,24 @@ class DMP extends Repository{
             <label for="project_name">Project name</label>
             <input type="text" id="project_name" style="height: 25px; width: 300px;" />
          </div>
-         <div id="file_drop_area" style="position: relative; width: 90%; height: 60px; margin-left: 5%; margin-right: 5%;">
+         <div style="margin-left: 5%">
+            <label for="data_source">Data source</label>
+            <select id="data_source">
+               <option value="odk">ODK</option>
+               <option value="local">Local file</option>
+            </select>
+         </div>
+         <div id="odk_forms_div" style="margin-left: 5%">
+            <label for="odk_forms">Available forms</label>
+            <select id="odk_forms">
+               <option value=""></option>
+               <?php
+               foreach ($forms as $currForm)
+                  echo "<option value='".$currForm['id']."'>".$currForm['form_name']."</option>"
+               ?>
+            </select>
+         </div>
+         <div id="file_drop_area" style="position: relative; width: 90%; height: 60px; margin-left: 5%; margin-right: 5%;display: none;">
             <label for="manual_file_upload">Data file</label>
             <div id="manual_file_upload" style="position: absolute; bottom: 0;"></div>
          </div>
@@ -143,17 +178,24 @@ class DMP extends Repository{
                <option value="all">All</option>
                <option value="prefix">Groups</option>
                <option value="query">Query</option>
+               <option value="time">Time</option>
             </select>
          </div>
          <div style="margin-left: 5%; display: none;" id="filter_query_div">
-            <label for="filter_query">Query</label>
             <textarea id="filter_query" style="width: 500px;" cols="1" placeholder="Valid PostgreSQL select query"></textarea>
          </div>
          <div style="margin-left: 5%; display: none;" id="filter_prefix_div">
-            <label for="filter_prefix">Groups</label>
-            <div id="data_project_groups_div" style="margin-left: 3%;max-height: 110px;overflow-y: scroll;">
+            <div id="data_project_groups_div" style="margin-left: 3%; height: 80%;overflow-y: scroll;">
             </div>
          </div>
+         <div style="margin-left: 5%; display: none;" id="filter_time_div">
+            <label for="time_column">Column</label>
+            <select id="time_column" style="margin-left: 3%;max-height: 110px;"></select>
+            <label for="start_time">Start date</label>
+            <div id="start_time" style="margin-left: 3%;max-height: 110px;"></div>
+            <label for="end_time" style="margin-top: 3%;">End date</label>
+            <div id="end_time" style="margin-left: 3%;max-height: 110px;"></div>
+          </div>
          <button type="button" id="get_data_btn2" class="btn btn-primary" style="margin-left: 5%; margin-top: 10px;">Get Data</button>
       </div>
    </div>
@@ -314,7 +356,7 @@ class DMP extends Repository{
             <label for="merged_version_name">Merged Project Name</label>
             <input type="text" id="merged_version_name" style="height: 25px; width: 300px;" />
          </div>
-         <div id="version_diff_grid" style="width: 90%"></div>
+         <div id="version_diff_grid" style="width: 97%"></div>
          <div style="position: relative; width: 90%; margin-left: 5%; margin-right: 5%; text-align: right;">
             <button type="button" id="apply_version_changes" class="btn btn-primary" style="margin-right: 5%; margin-top: 10px;">Apply all changes</button>
          </div>
@@ -339,6 +381,13 @@ class DMP extends Repository{
          <li><a href="#" id="delete_sheet_btn">Delete</a></li>
       </ul>
    </div>
+   <div id="dynamic_viz" style="display: none; z-index: 6;">
+      <div>Visualization of the selected columns data</div>
+      <div id="charts">
+         <div id="left_panel"></div>
+         <div id="viz_pane"></div>
+      </div>
+   </div>
    <div id="split_window">
       <div id="sheets"></div>
       <div id="tabs">
@@ -351,6 +400,7 @@ class DMP extends Repository{
       </div>
    </div>
    <div style="margin-top:20px; margin-right: 50px; text-align: right;">
+      <button type="button" id="viz_btn" class="btn btn-success" disabled>Visualize</button>
       <button type="button" id="cancel_btn" class="btn btn-danger" disabled>Cancel</button>
       <button type="button" id="update_btn" class="btn btn-primary" disabled>Update</button>
    </div>
@@ -359,11 +409,13 @@ class DMP extends Repository{
    <div id="inotification_pp" style="z-index: 2000;"></div>
 </div>
 <script type="text/javascript">
-   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>");
+   var dmpVSchema = new DMPVSchema("<?php echo $_SERVER['SERVER_ADDR']; ?>", "<?php echo $_SESSION['username']; ?>", "<?php echo $sessionId; ?>", "<?php echo $project;?>", "<?php echo $_SESSION['onames']." ".$_SESSION['surname'];?>", "<?php echo $userData[0]['email'];?>");
+   // Vizualization libraries
+   window.dvs.jsVisualizationScripts = [<?php echo "$str"; ?>];
 </script>
 <?php
    }
-   
+
    /**
     * This function returns the session ID corresponding to the current user
     * @return string
@@ -371,9 +423,6 @@ class DMP extends Repository{
    private function getAPISessionID() {
       include_once OPTIONS_COMMON_FOLDER_PATH."azizi-shared-libs/authmodules/mod_security_v0.1.php";
       $security = new Security($this->Dbase);
-      /*$cypherSecret = $_SESSION['password'];
-      $username = $_SESSION['username'];
-      $authType = $_SESSION['auth_type'];*/
       $this->Dbase->CreateLogEntry("Repository username = ".$_SESSION['username'], "debug");
       $tokenString = json_encode(array(
           "server" => $_SERVER['SERVER_ADDR'],
@@ -381,7 +430,7 @@ class DMP extends Repository{
           "auth_mode" => $_SESSION['auth_type'],
           "secret" => base64_encode($_SESSION['password'])
       ));
-      $authURL = "http://azizi.ilri.cgiar.org/repository/mod_ajax.php?page=odk_workflow&do=auth";
+      $authURL = Config::$azizi_url .'/repository/mod_ajax.php?page=odk_workflow&do=auth';
       $authCh = curl_init($authURL);
       curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
@@ -401,7 +450,7 @@ class DMP extends Repository{
       }
       return null;
    }
-   
+
    /**
     * This function uploads files from javascript into the server
     */

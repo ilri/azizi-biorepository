@@ -20,8 +20,8 @@ class ParseODK extends Repository{
       if(OPTIONS_REQUEST_TYPE == 'normal'){
          echo "<script type='text/javascript' src='js/odk_parser.js'></script>";
          echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "jquery/jquery.min.js' /></script>";
-         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bootstrap/dist/js/bootstrap.min.js' /></script>";
-         echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."bootstrap/dist/css/bootstrap.min.css'/>";
+         echo "<script type='text/javascript' src='" . OPTIONS_COMMON_FOLDER_PATH . "bootstrap/docs/assets/js/bootstrap.min.js' /></script>";
+         echo "<link rel='stylesheet' type='text/css' href='". OPTIONS_COMMON_FOLDER_PATH ."bootstrap/docs/assets/css/bootstrap.css'/>";
       }
 
       if (OPTIONS_REQUESTED_SUB_MODULE == '') $this->HomePage();
@@ -36,10 +36,10 @@ class ParseODK extends Repository{
       $username = $_SESSION['username'];
       if(strlen($username) === 0)
          $username = $_SESSION['onames']." ". $_SESSION['sname'];
-      
-      $query = "SELECT a.* FROM odk_forms AS a INNER JOIN odk_access AS b ON a.id = b.form_id WHERE b.user = :user AND a.is_active=1";
+
+      $query = "SELECT a.* FROM odk_forms AS a INNER JOIN odk_access AS b ON a.id = b.form_id WHERE b.user = :user AND a.is_active=1 order by a.form_name";
       $forms = $this->Dbase->ExecuteQuery($query, array("user" => $username));
-      
+
 ?>
 <h3 id="odk_heading">ODK Parser</h3>
 <form class="form-horizontal odk_parser">
@@ -110,7 +110,7 @@ class ParseODK extends Repository{
             $("#file_name").val($("#form_on_server option:selected").html());
          }
       });
-      
+
       $("#generate_b").click(function (){ var parser = new Parse(); });
       $("#xml_file").change(function (){
          $("#file_name").val( $('#xml_file').val().split('\\').pop().split('.').shift() );
@@ -120,7 +120,7 @@ class ParseODK extends Repository{
 </script>
    <?php
    }
-   
+
    private function procODKForm(){
       include_once 'mod_proc_onserv_odk_form.php';
       $procODKFormOnServer = new ProcODKForm($this->Dbase);

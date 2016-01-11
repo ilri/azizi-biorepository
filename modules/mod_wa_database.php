@@ -3,13 +3,13 @@
 /**
  * This calss implements the Database class for the Workflow API.
  * Should only be used in the Workflow class and its child fields.
- * 
+ *
  * Not using the repository's Dbase object because that points to ILRI's main
- * MySQL Database. This object should be able to create a MySQL database in the 
+ * MySQL Database. This object should be able to create a MySQL database in the
  * MySQL testbed, add tables to that database etc.
  */
 class Database {
-   
+
    /**
     * Default constructor for this class. Initializes a PDO object to be used
     * in this class
@@ -23,16 +23,17 @@ class Database {
    public static $TYPE_TIME = "time without time zone";
    public static $TYPE_DATE = "date";
    public static $TYPE_DATETIME = "timestamp without time zone";
+   public static $TYPE_TIMESTAMP = "timestamp with time zone";
    public static $TYPE_BOOLEAN = "boolean";
    public static $MAX_TABLE_NAME_LENGTH = 63;
-   
+
    public static $BOOL_TRUE = 't';
    public static $BOOL_FALSE = 'f';
-   
+
    public static $KEY_PRIMARY = "primary";
    public static $KEY_UNIQUE = "unique";
    public static $KEY_NONE = null;
-   
+
    private $TAG = "database";
    private $logH;//logging class
    private $config;//the repository_config object
@@ -41,15 +42,15 @@ class Database {
    private $wInstanceId;//the workflow instance ID. Should correspond to the database name linked to that instance
 
    private $DEFAULT_DATABASE = "dmp_master";//default database
-   
+
    /**
     * Default constructor for this class.
-    * 
+    *
     * @param type $config        The repository_config object
     * @param type $wInstanceId   The instance Id for the workflow. Should correspond
     *                            to the database specified in the PDO connection string.
     *                            Provide null if instance ID is still unknown
-    * 
+    *
     * @throws WAException
     */
    public function __construct($config, $wInstanceId = null) {
@@ -57,27 +58,24 @@ class Database {
       include_once 'mod_wa_exception.php';
       include_once 'mod_wa_file.php';
       //include_once $config['common_folder_path'].'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.2.php';//TODO: make sure you are using dbase from this version and none other
-      
+
       $this->config = $config;
-      
       $this->logH = new LogHandler("./");//TODO: not sure if the default root dir specified in LogHandler is correct
-      
+
       //initialize the PDO connection
       try {
          $this->connectedDb = $wInstanceId;
          if($this->connectedDb === NULL) $this->connectedDb = $this->DEFAULT_DATABASE;
-         
          $this->logH->log(4, $this->TAG, "Trying to initialize database connection to {$this->connectedDb}");
-         
-         $this->pdoObject = new PDO("pgsql:dbname={$this->connectedDb};host={$config['testbed_dbloc']}", $config['testbed_user'], $config['testbed_pass']);
+
+         $this->pdoObject = new PDO("pgsql:dbname={$this->connectedDb};host={$config['pg_dbloc']}", $config['pg_user'], $config['pg_pass']);
          $this->pdoObject->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
       } catch (PDOException $ex) {
-         $this->logH->log(1, $this->TAG, "An error occurred while trying to initialize database connection");
-         
+         $this->logH->log(1, $this->TAG, "An error occurred while trying to initialize database connection to {$this->connectedDb}");
          throw new WAException("Unable to initialize connection to testbed database", WAException::$CODE_DB_CONNECT_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function returns the name of the database that has been bound to the
     * PDO object
@@ -85,13 +83,13 @@ class Database {
    public function getDatabaseName() {
       return $this->connectedDb;
    }
-   
+
    /**
     * This function runs a generic SQL query
-    * 
+    *
     * @param string  $query         The query to be executed
     * @param boolean $fetchResult   Set to true if expecting result
-    * 
+    *
     * @return Multi Returns an associative array from the query or false if unable to execute query
     * @throws WAException
     */
@@ -99,12 +97,10 @@ class Database {
       if($this->pdoObject !== null) {
          try {
             //run a prepared statement (PDO will handle escaping)
-            $this->logH->log(4, $this->TAG, "About to run the following statement '$query'");
             $stmt = $this->pdoObject->prepare($query);
 
             $result = $stmt->execute();
             if($result === true) {
-               $this->logH->log(4, $this->TAG, "Successfully run the statement '{$query}'");
                if($fetchResults === TRUE){
                   return $stmt->fetchAll(PDO::FETCH_ASSOC);
                }
@@ -123,38 +119,85 @@ class Database {
          $this->logH->log(1, $this->TAG, "Unable to run statement because PDO object is null for database object connected to '{$this->connectedDb}'");
          throw new WAException("Unable to run statement because PDO object is null", WAException::$CODE_DB_QUERY_ERROR, null);
       }
-      
-      /*try {
-         $dbase = new DBase("pgsql");
-         $config = $this->config;
-         $config['dbase'] = $this->getDatabaseName();
-         $config['dbloc'] = $config['testbed_dbloc'];
-         $config['user'] = $config['testbed_user'];
-         $config['pass'] = $config['testbed_pass'];
-         $dbase->InitializeConnection($config);
-         $this->logH->log(4, $this->TAG, "About to run query '$query'");
-         $result = $dbase->ExecuteQuery($query, NULL, PDO::FETCH_ASSOC, $fetchResults);
-         if($fetchResults) return $result;
-      } catch (PDOException $pdoException) {//thrown while trying to create dbase object
-         $this->logH->log(1, $this->TAG, "PDO Exception {$pdoException->getMessage()} thrown while trying to initialize Dbase object");
-         throw new WAException("PDO Exception {$pdoException->getMessage()} thrown while trying to initialize Dbase object", WAException::$CODE_DB_CONNECT_ERROR, $pdoException);
-      }
-      catch (Exception $genericException) {//thrown while trying to execute the actual query
-         $this->logH->log(1, $this->TAG, "Exception {$genericException->getMessage()} thrown while trying to execute this SQL query '$query'");
-         throw new WAException("Exception {$genericException->getMessage()} thrown while trying to execute this SQL query '$query'", WAException::$CODE_DB_QUERY_ERROR, $genericException);
-      }*/
    }
-   
+
+   /**
+    * Executes a query
+    *
+    * @param   string   $query               The query that will be executed
+    * @param   array    $query_vars          (Optional) An array with the query variables if any
+    * @param   boolean  $returnResult        (Optional) Whether to return a result
+    * @param   string   $fetchMode           (Optional) The type of array that will be fetched. Can be MYSQ_BOTH, MYSQL_ASSOC, MYSQL_NUM. Defaults to MYSQL_ASSOC
+    * @param   mixed    $fetchModeArgument   (Optional)  The fetch mode argument to be used for special types of fetch
+    * @return  mixed    A multi-dimensioanl array with the results as fetched from the dbase when successful else it returns 1
+    * @throws Exception
+    *
+    * @since   v1.2
+    */
+   public function executeQuery($query = '', $query_vars = NULL, $returnResult = false, $fetchMode = PDO::FETCH_ASSOC, $fetchModeArgument = NULL){
+      if($this->pdoObject !== null) {
+         try {
+            //run a prepared statement (PDO will handle escaping)
+            $stmt = $this->pdoObject->prepare($query);
+            $result = $stmt->execute($query_vars);
+            if($result === true) {
+               if($returnResult === TRUE){
+                  if($fetchModeArgument == NULL) return $stmt->fetchAll($fetchMode);
+                  else return $stmt->fetchAll($fetchMode, $fetchModeArgument);
+               }
+            }
+            else {
+               $this->logH->log(1, $this->TAG, "An error occurred while trying to execute the SQL query '$query'");
+               throw new WAException("Unable to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, null);
+            }
+
+         } catch (PDOException $ex) {
+            $this->logH->log(1, $this->TAG, "PDO Exception {$ex->getMessage()} thrown while trying to execute this SQL query '$query'");
+            throw new WAException("PDOException thrown while trying to execute this SQL statement '$query'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      }
+      else {
+         $this->logH->log(1, $this->TAG, "Unable to run statement because PDO object is null for database object connected to '{$this->connectedDb}'");
+         throw new WAException("Unable to run statement because PDO object is null", WAException::$CODE_DB_QUERY_ERROR, null);
+      }
+
+////      echo '<pre> ***'. $query . print_r($query_vars, true) .'</pre>';
+//      $this->dbStmt = $this->dbcon->prepare($query);
+//      if(!$this->dbStmt->execute($query_vars)){
+//         $err1 = $this->dbStmt->errorInfo();
+//         if($err1[0] == 'HY093'){
+//            $this->CreateLogEntry("Improper bound data types.\nStmt: $query\nVars:". print_r($query_vars, true), 'fatal');
+//            $this->lastError = "There was an error while fetching data from the database.";
+//            throw new Exception("Improper bound data types.\nStmt: $query\nVars:". print_r($query_vars, true), 0, null);
+//         }
+//         else{
+//            $this->CreateLogEntry("Error while executing a db statement.\nVars:". print_r($query_vars, true) ."\nError Log:\n". print_r($err1, true), 'fatal', true);
+//            $this->lastError = "There was an error while fetching data from the database.";
+//            throw new Exception("Error while executing a db statement.\nVars:". print_r($query_vars, true) ."\nError Log:\n". print_r($err1, true), 0, null);
+//         }
+//      }
+//      $err = $this->dbcon->errorInfo();
+//      if($err[0] != 0){
+//         $this->CreateLogEntry("Error while fetching data from the db.\n$err1[2]", 'fatal', true, '', '', true);
+//         $this->lastError = "There was an error while fetching data from the database.";
+//         throw new Exception("Error while fetching data from the db.\n$err1[2]", 0, null);
+//      }
+//
+//      if($returnResult) {
+//         return $this->dbStmt->fetchAll($fetchMode);
+//      }
+   }
+
    /**
     * This function quotes strings and escapes special characters
     */
    public function quote($string) {
       return $this->pdoObject->quote($string);
    }
-   
+
    /**
     * This function closes the database connection held by this object
-    * 
+    *
     * @throws WAException
     */
    public function close() {
@@ -166,10 +209,10 @@ class Database {
          throw new WAException("The PDO connection is inactive or null", WAException::$CODE_DB_INACTIVE_ERROR, null);
       }
    }
-   
+
    /**
     * This function tries to create the database for the workflow instance
-    * 
+    *
     * @param string $name Name of the database to be created
     * @throws WAException
     */
@@ -177,13 +220,14 @@ class Database {
       if($name !== null) {
          //check if the database exists
          try {
-            $result = $this->getDatabaseNames();
-            
-            if(in_array($name, $result) === false) {//no database with said name exists
-               $query = "create database {$name} with owner = ".$this->config['testbed_user'];
+            $result = $this->checkIfDatabaseExists($name);
+
+            if($result === false) {//no database with said name exists
+               $this->logH->log(4, $this->TAG, "Database '$name' does not exists. Creating it");
+               $query = "create database {$name} with owner = ".$this->config['pg_user'];
                try {
                   $this->runGenericQuery($query);
-               } 
+               }
                catch (WAException $ex) {
                   throw new WAException("Unable to create the {$name} database", WAException::$CODE_DB_CREATE_ERROR, $ex);
                }
@@ -200,7 +244,7 @@ class Database {
          throw new WAException("Database name is null. Cannot create database", WAException::$CODE_DB_CREATE_ERROR, null);
       }
    }
-   
+
    public function runDropDatabaseQuery($name) {
       if($name != null && $this->getDatabaseName() != $name) {
          try {
@@ -217,47 +261,69 @@ class Database {
          throw new WAException("Unable to drop database because object is currently connected to it", WAException::$CODE_DB_CLOSE_ERROR, null);
       }
    }
-   
+
    /**
     * This function returns time is an string that is insertable in MySQL
-    * 
+    *
     * @return string Current time, insertable in MySQL as a DATETIME
     */
    public static function getMySQLTime() {
       return date('Y-m-d H:i:s');//current time in format MySQL understands
    }
-   
+
+   /**
+    * Check if a database exists in the server
+    *
+    * @param   string   $db_name    The name of the database
+    * @return  boolean  Returns false if the database does not exists else it returns true
+    * @throws  WAException    Throws an exception if there is an error while running the query
+    */
+   public function checkIfDatabaseExists($db_name){
+      $this->logH->log(4, $this->TAG, "Check if the database '$db_name' exists");
+      $query = "SELECT datname FROM pg_database WHERE datistemplate = false and datname=:datname";
+      try {
+         $result = $this->executeQuery($query,array('datname' => $db_name), true);
+         if(count($result) == 0) return false;
+         else if(count($result) == 1) return false;
+         else{
+            $this->logH->log(1, $this->TAG, "There are multiple database with the name '$db_name'");
+            throw new WAException("Multiple databases with the same name '$db_name'", WAException::$CODE_DB_QUERY_ERROR, $ex);
+         }
+      } catch (WAException $ex) {
+         $this->logH->log(1, $this->TAG, "Error while checking if the database '$db_name' exists");
+         throw new WAException("Unable to get database names from the server", WAException::$CODE_DB_QUERY_ERROR, $ex);
+      }
+   }
+
    /**
     * This function returns a list of all database names from the server
-    * 
+    *
     * @return Array
     * @throws WAException
     */
-   public function getDatabaseNames() {
+   public function getDatabaseNames($user) {
       //$query = "show databases";
-      $query = "SELECT datname FROM pg_database WHERE datistemplate = false";
+      $query = "select a.db_name, a.dmp_name from projects as a inner join project_access as b on a.db_name=b.instance where b.user_granted = :cur_user order by a.dmp_name";
+      $this->logH->log(4, $this->TAG, "Getting all the databases which the user '$user' has access to...");
       try {
-         $result = $this->runGenericQuery($query, true);
-         $this->logH->log(4, $this->TAG, "Result from '$query' = ".print_r($result, TRUE));
+         $result = $this->executeQuery($query, array('cur_user' => $user), true);
          $names = array();
-         for($index = 0; $index < count($result); $index++) {
-            array_push($names, $result[$index]['datname']);
+         $dbCount = count($result);
+         for($index = 0; $index < $dbCount; $index++) {
+            array_push($names, $result[$index]['db_name']);
          }
-         
-         $this->logH->log(4, $this->TAG, "Database names = ".print_r($names, TRUE));
-         
          return $names;
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "Unable to get database names from the server");
          throw new WAException("Unable to get database names from the server", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This funciton returns a list of all table names in the specified database
-    * 
+    *
     * @param type $databaseName  The database to check for tables in
-    * 
+    *
     * @return Array
     * @throw WAException
     */
@@ -267,27 +333,27 @@ class Database {
       try {
          $result = $this->runGenericQuery($query, true);
          $tables = array();
-         for($index = 0; $index < count($result); $index++) {
+         $res_count = count($result);
+         for($index = 0; $index < $res_count; $index++) {
             array_push($tables, $result[$index]['table_name']);
          }
-         
          return $tables;
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "Unable to get names of tables in '{$databaseName}'");
          throw new WAException("Unable to get table names from database server", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function returns column details for the specified table
-    * 
+    *
     * @param string $tableName Name of the table
     * @return Array Indexed array with column details for the specified table
     * @throws WAException
     */
    public function getTableDetails($database, $tableName) {
       //refer to http://www.postgresql.org/docs/9.4/static/infoschema-columns.html
-      
+
       $query = "select column_name, data_type, character_maximum_length, is_nullable, column_default"
               . " from information_schema.columns"
               . " where table_name = '$tableName' and table_catalog = '$database'";
@@ -297,21 +363,22 @@ class Database {
          $uKeys = $this->getTableUniqueKeys($tableName);
          $result = $this->runGenericQuery($query, true);
          $columns = array();
-         
+
          if(count($result) == 0){
             $this->logH->log(2, $this->TAG, "'$tableName' appears not to have any columns");
          }
-         
-         for($index = 0; $index < count($result); $index++) {
+
+         $res_count = count($result);
+         for($index = 0; $index < $res_count; $index++) {
             $type = strtolower($result[$index]['data_type']);
-            
+
             if($type == "character varying") $type = Database::$TYPE_VARCHAR;
 
             $nullable = false;
             if($result[$index]['is_nullable'] == "YES") {
                $nullable = true;
             }
-            
+
             $default = $result[$index]['column_default'];
             if($default == "NULL") $default = null;//TODO: not sure if this will work with PostgreSQL
 
@@ -328,34 +395,32 @@ class Database {
                 "default" => $default,
                 "key" => $key
             );
-            
+
             array_push($columns, $currColumn);
          }
-         
+
          return $columns;
       } catch (WAException $ex) {
          $this->logH->log(1, $this->TAG, "Unable to get column details for table '$tableName' in '$database'");
          throw new WAException("Unable to get column details for table '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function runs an insert query
-    * 
+    *
     * @param string $table       The table where the query should be run
     * @param array $columns      An associative array with keys as column names and values as insert values
-    * 
+    *
     * @throws WAException
     */
    public function runInsertQuery($table, $columns, $returnStatement = false) {
-      $this->logH->log(4, $this->TAG, "runInsertQuery called");
-      $this->logH->log(4, $this->TAG, "columns = ".print_r($columns, true));
-      
       $keys = array_keys($columns);
+      $key_count = count($keys);
       $query = "insert into ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." (".Database::$QUOTE_SI.implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $keys).Database::$QUOTE_SI.") ";
       $values ="values(";
-      
-      for($index = 0; $index < count($keys); $index++) {
+
+      for($index = 0; $index < $key_count; $index++) {
          $values .= $columns[$keys[$index]];
          if($index == count($keys) - 1) {//last element
             $values .= ")";
@@ -364,9 +429,8 @@ class Database {
             $values .=", ";
          }
       }
-      
+
       $query .= $values;
-      $this->logH->log(4, $this->TAG, "Insert query = ".$query);
       try {
          if($returnStatement == true){
             return $query;
@@ -378,7 +442,7 @@ class Database {
          throw new WAException("An error occurred while trying to run insert query in '$table'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    public function runUpdateQuery($table, $columns, $condition) {
       try {
          $this->logH->log(4, $this->TAG, "runUpdateQuery called");
@@ -397,12 +461,12 @@ class Database {
          $query = "update ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." set ".$columnValues." where ".$condition;
          $this->logH->log(4, $this->TAG, "Update query = ".$query);
          $this->runGenericQuery($query);
-      } 
+      }
       catch (WAException $ex) {
          throw new WAException("An error occurred while trying to run insert query in '$table'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function gets the primary keys corresponding to a table
     * @param type $tableName  Name of the table to get the keys
@@ -416,12 +480,14 @@ class Database {
          AND i.indisprimary";
       try {
          $result = $this->runGenericQuery($query, true);
+         $res_count = count($result);
          $pkeys = array();
          if(is_array($result)) {
-            if(count($result) == 0) {
+            if($res_count == 0) {
                $this->logH->log(2, $this->TAG, "'$tableName' does not have a primary key in the database '{$this->getDatabaseName()}'");
             }
-            for($index = 0; $index < count($result); $index++) {
+
+            for($index = 0; $index < $res_count; $index++) {
                array_push($pkeys, $result[$index]['attname']);
             }
             return $pkeys;
@@ -433,12 +499,18 @@ class Database {
          throw new WAException("Unable to retrieve primary keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
+   /**
+    * Get the foreign keys for the given table name
+    * @param type $tableName
+    * @return type
+    * @throws WAException
+    */
    public function getTableForeignKeys($tableName) {
-      $query = "SELECT tc.constraint_name, array_agg(kcu.column_name::text) columns, 
+      $query = "SELECT tc.constraint_name, array_agg(kcu.column_name::text) columns,
          max(ccu.table_name::text) AS foreign_table_name,
-         array_agg(ccu.column_name::text) AS foreign_column_name 
-         FROM information_schema.table_constraints AS tc 
+         array_agg(ccu.column_name::text) AS foreign_column_name
+         FROM information_schema.table_constraints AS tc
          JOIN information_schema.key_column_usage AS kcu
          ON tc.constraint_name = kcu.constraint_name
          JOIN information_schema.constraint_column_usage AS ccu
@@ -448,9 +520,9 @@ class Database {
          $result = $this->runGenericQuery($query, true);
          if(is_array($result)) {
             $foreignKeys = array();
-            for($index = 0; $index < count($result); $index++) {
-               $this->logH->log(3, $this->TAG, "foreign key = ".$result[$index]['columns']);
-               $this->logH->log(3, $this->TAG, "First character in foreign key = ".substr($result[$index]['columns'], 0, 1));
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++) {
+               $this->logH->log(3, $this->TAG, "First character in foreign key '{$result[$index]['columns']}'  = ".substr($result[$index]['columns'], 0, 1));
                if(substr($result[$index]['columns'], 0, 2) == '{"') {
                   $columns = array_values(array_unique(explode('","', substr($result[$index]['columns'], 2, -2))));
                }
@@ -475,10 +547,10 @@ class Database {
          throw new WAException("Unable to get foreign keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    public function getTableUniqueKeys($tableName) {
       $query = "SELECT kcu.column_name
-         FROM information_schema.table_constraints AS tc 
+         FROM information_schema.table_constraints AS tc
          JOIN information_schema.key_column_usage AS kcu
          ON tc.constraint_name = kcu.constraint_name
          JOIN information_schema.constraint_column_usage AS ccu
@@ -488,7 +560,8 @@ class Database {
          $result = $this->runGenericQuery($query, true);
          if(is_array($result)) {
             $keys = array();
-            for($index = 0; $index < count($result); $index++) {
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++) {
                array_push($keys, $result[$index]['column_name']);
             }
             return $keys;
@@ -500,10 +573,10 @@ class Database {
          throw new WAException("Unable to retrieve unique keys for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function dumps the currently connected database to an SQL file
-    * 
+    *
     * @param type $workingDir    The workflow's working directory
     * @param type $filename      Name to be given to the backup file
     */
@@ -525,7 +598,7 @@ class Database {
          $dumpFile = new WAFile($this->config, $this->getDatabaseName(), new Database($this->config, $this->getDatabaseName()), $workingDir, WAFile::$TYPE_BACKUP, $filename);
          $subDirPath = $dumpFile->createWorkingSubdir();
          $path = $subDirPath . "/" . $filename;
-         $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
+         $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} > $path";
          $this->logH->log(4, $this->TAG, "Backup command is '$command'");
          $output = shell_exec($command);
          $this->logH->log(3, $this->TAG, "Output from backup command is '$output'");
@@ -549,11 +622,11 @@ class Database {
             throw new WAException("An error occurred while trying to create backup file for database", WAException::$CODE_DB_BACKUP_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function restores a database from an SQL file. If the database does not
     * exist, it creates it (instead of restoring it).
-    * 
+    *
     * @param type $databaseName     The name of the database
     * @param type $restoreFile      The sql file to be used to restore the file
     * @param type $databaseExists   True if the database already exists
@@ -574,22 +647,15 @@ class Database {
       if(file_exists($restoreFile)) {
          try {
             $this->logH->log(3, $this->TAG, "Restoring '$databaseName' to state defined in '$restoreFile'");
-            /*$query = "drop database $databaseName";
-            $this->runGenericQuery($query);*/
-            /*$command = "export PGPASSWORD=".$this->config['testbed_pass'].";dropdb -U ".$this->config['testbed_user']." {$databaseName}";
-            shell_exec($command);*/
             //drop all the tables
             if($databaseExists == true) {
                $db2 = new Database($this->config, $databaseName);
                $db2->dropAllOtherConnections();
-               $db2->runGenericQuery("drop schema public cascade");
-               $db2->runGenericQuery("create schema public");
                $db2->close();
                $this->runDropDatabaseQuery($databaseName);
             }
             $this->runCreatDatabaseQuery($databaseName);//make sure the database exists
-            //$command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['pg_dump']." --clean -U ".$this->config['testbed_user']." {$this->getDatabaseName()} -h {$this->config['testbed_dbloc']} > $path";
-            $command = "export PGPASSWORD='".$this->config['testbed_pass']."';".$this->config['psql']." -U ".$this->config['testbed_user']." {$databaseName} -f $restoreFile -h {$this->config['testbed_dbloc']}";
+            $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['psql']." -U ".$this->config['pg_user']." {$databaseName} -f $restoreFile -h {$this->config['pg_dbloc']}";
             $this->logH->log(4, $this->TAG, "pg_restore command is ".$command);
             $output = shell_exec($command);
             $this->logH->log(4, $this->TAG, "Message from pg_restore is ".$output);
@@ -603,12 +669,16 @@ class Database {
          throw new WAException("Could not restore database because backup file does not exist", WAException::$CODE_DB_BACKUP_ERROR, null);
       }
    }
-   
+
+   /**
+    * Drop existing connections opened by the current user
+    * @throws WAException
+    */
    public function dropAllOtherConnections() {
       $query = "SELECT pg_terminate_backend(pg_stat_activity.pid)
                FROM pg_stat_activity
                WHERE datname = current_database()
-               AND pid <> pg_backend_pid()";
+               AND pid <> pg_backend_pid() AND usename=current_user";
       //change procpid to pid when updating to PostgreSQL 9.2 and above
       try {
          $this->runGenericQuery($query);
@@ -616,10 +686,26 @@ class Database {
          throw new WAException("Could not drop all other exisiting connections to database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
+   /**
+    * Change the name of a column
+    *
+    * @param type $tableName     The table where the column is
+    * @param type $oldName       The old column name
+    * @param type $newName       The new column name
+    */
+   public function runAlterColumnNameQuery($tableName, $oldName, $newName){
+      $this->logH->log(4, $this->TAG, "Changing a column name from '$oldName' to '$newName' using the rename function...");
+      $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
+         . " rename column ".Database::$QUOTE_SI.$oldName.Database::$QUOTE_SI
+         . " to".Database::$QUOTE_SI.$newName.Database::$QUOTE_SI;
+      $this->runGenericQuery($query);
+      $this->logH->log(4, $this->TAG, "Finished changing a column name from '$oldName' to '$newName' using the rename function");
+   }
+
    /**
     * This function alters a table column
-    * 
+    *
     * @param type $tableName  Name of the table where column is
     * @param type $existing   All properties for the existing column
     * @param type $new        All properties for the column after altering
@@ -631,26 +717,40 @@ class Database {
       try {
          if($isSpecial == false) {//column considered special if it is currently part of a key
             $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            //
+            /**
+             * New way of altering a column. Alter the column name and preserve its position
+             * 1. Get the table dump where this column belongs
+             * 2. Alter the column in that dump
+             * 3. Drop the existing table
+             * 4. Re-import the modified table
+             */
+            $path = "temp/{$tableName}_".date('Y-m-dH:i:s').'.txt';
+            $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['pg_dump']." --schema-only --table=".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} > $path";
+            $this->logH->log(4, $this->TAG, "Creating a dump of the table '$tableName' with the command '$command'");
+            $output = shell_exec($command);
+            $this->logH->log(4, $this->TAG, "Output from the command is '$output'");
+            $this->renameColumnInFile($path, $existing['name'], $new);
+            // import the new table definition but first drop the old table
+            $query = "drop table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI;
+            $this->runGenericQuery($query);
+            $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['psql']." -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} < $path";
+            $this->logH->log(4, $this->TAG, "Importing the new table dump for '$tableName' with the command '$command'");
+            $output = shell_exec($command);
+            $this->logH->log(4, $this->TAG, "Finished importing. Can't display the results... to much spam. Check fatal log in case of any errors.");
+
             //if column was previously part of the primary key, the primary key will be deleted
             //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
-            $tmpName = $existing['name']."_odk_w_delete";
-            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." rename column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI." to ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-            $this->runGenericQuery($query);
-            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add column ";
-            $query .= $this->getColumnExpression($new['name'], $new['type'], $new['length'], $new['key'], $new['default'], $new['nullable']);
-            $this->runGenericQuery($query);
-            $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." drop column ".Database::$QUOTE_SI.$tmpName.Database::$QUOTE_SI;
-            $this->runGenericQuery($query);
             if($new['key'] == Database::$KEY_PRIMARY){
                $this->addColumnsToPrimaryKey($tableName, array($new['name']));
             }
          }
          else {//column is special. That means the previous method (deleting existing column and replacing it with a new one wont work. The case for columns that are already part of a key)
             //check what needs to change in the column. Make sure you change the name last
-            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' being considered as special during alter");
             $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' current details".print_r($existing, true));
             $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' New details".print_r($new, true));
-            
+
             if($new['name'] == $existing['name']) $new['name'] = null;
             if($new['type'] == $existing['type'] && $new['length'] == $existing['length']) {
                $new['type'] = null;
@@ -664,8 +764,10 @@ class Database {
             //type
             $this->logH->log(4, $this->TAG, "Column '{$existing['name']}' being considered as special during alter");
             $smFixed = false;
+
             if($new['type'] != null) {
                if($new['type'] == Database::$TYPE_VARCHAR) $new['type'] .= "({$new['length']})";
+
                $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
                      . " alter column ".Database::$QUOTE_SI.$existing['name'].Database::$QUOTE_SI
                      . " type ".$new['type'];
@@ -686,6 +788,7 @@ class Database {
                $smFixed = true;
                $this->logH->log(4, $this->TAG, "Changing nullable of {$existing['name']} to $nullValue");
             }
+
             //default
             if($new['default'] != null) {//for default value of 'null' use null the string
                $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI
@@ -727,10 +830,75 @@ class Database {
          throw new WAException("Could not alter '{$existing['name']}' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
-   
+
+   /**
+    * Rename a column in a table dump
+    *
+    * @param type $filename         The file with the table dump
+    * @param type $oldColumnName    The old column name
+    * @param type $newColumn        The new column properties
+    * @throws WAException
+    */
+   public function renameColumnInFile($filename, $oldColumnName, $newColumn){
+      /**
+       * Logic: Open a temporary file to hold the changes.
+       * Read the file with the db dump, line by line. When we reach our intended line, modify it with the new paramaters of the column and write to the temp file
+       * Write to the temp file the new changes or just the previous column info
+       */
+      $this->logH->log(4, $this->TAG, "Creating a new table definition...");
+      try{
+         if(file_exists($filename)){
+            $pi = pathinfo($filename);
+            $tempfile = "{$pi['dirname']}/{$pi['filename']}_temp.{$pi['extension']}";
+            $fd = fopen($filename, 'rt');
+            if(!$fd){
+               $this->logH->log(1, $this->TAG, "Cannot open the provided file '$filename' for reading");
+               throw new WAException("Cannot open the provided file '$filename' for reading", WAException::$CODE_DB_CREATE_ERROR, NULL);
+            }
+            $newFile = fopen($tempfile, 'wt');
+            if(!$newFile){
+               $this->logH->log(1, $this->TAG, "Cannot open the provided file '$tempfile' for writing");
+               throw new WAException("Cannot open the provided file '$tempfile' for writing", WAException::$CODE_DB_CREATE_ERROR, NULL);
+            }
+            while($line = fgets($fd)){
+               $line = trim($line);
+               if(preg_match("/^\"?$oldColumnName.+/", $line)){
+                  // we have a match... now create the new column details
+                  $columnDef = $this->getColumnExpression($newColumn['name'], $newColumn['type'], $newColumn['length'], $newColumn['key'], $newColumn['default'], $newColumn['nullable']);
+                  if(!fwrite($newFile, "$columnDef,\n")){
+                     $this->logH->log(1, $this->TAG, "Could not write to the temp file '$tempfile'");
+                     throw new WAException("Could not write to the temp file '$tempfile'", WAException::$CODE_DB_CREATE_ERROR, NULL);
+                  }
+               }
+               else{    // no match, just put it in the new file
+                  if(!fwrite($newFile, "$line\n")){
+                     $this->logH->log(1, $this->TAG, "Could not write to the temp file '$tempfile'");
+                     throw new WAException("Could not write to the temp file '$tempfile'", WAException::$CODE_DB_CREATE_ERROR, NULL);
+                  }
+               }
+            }
+            fclose($newFile);
+            fclose($fd);
+
+            // move the temp file to the new file and delete it
+            if(!rename($tempfile, $filename)){
+               $this->logH->log(1, $this->TAG, "Could not rename the temp file '$tempfile'");
+               throw new WAException("Could not rename the temp file '$tempfile'", WAException::$CODE_DB_CREATE_ERROR, NULL);
+            }
+         }
+         else{
+            $this->logH->log(1, $this->TAG, "The provided file '$filename' does not exists while renaming a column");
+            throw new WAException("The provided file '$filename' does not exists", WAException::$CODE_DB_CREATE_ERROR, NULL);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not alter the column '$oldColumnName' in the file '$filename'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+      $this->logH->log(4, $this->TAG, "The new table definition has been created successfully");
+   }
+
    /**
     * This function adds a column to an already existing table
-    * 
+    *
     * @param type $tableName     Name of the table where column is
     * @param type $columnDetails All properties for the column
     */
@@ -746,10 +914,10 @@ class Database {
          throw new WAException("Could not alter '{$existing['name']}' in '$tableName'", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function adds the specified columns to the table's primary key
-    * 
+    *
     * @param type $tableName
     * @param type $primaryKeyColumns
     */
@@ -761,25 +929,26 @@ class Database {
             $this->runGenericQuery($query);
          }
          //make sure only unique columns exist in $primaryKeyColumns
-         for($index = 0; $index < count($existingKey); $index++) {
+         $exk_count = count($existingKey);
+         for($index = 0; $index < $exk_count; $index++) {
             if(!in_array($existingKey[$index], $primaryKeyColumns)) {
                array_push($primaryKeyColumns, $existingKey[$index]);
             }
          }
-         
+
          //try creating the new primary key
          $pKey = Database::$QUOTE_SI . implode(Database::$QUOTE_SI.",".Database::$QUOTE_SI, $primaryKeyColumns) . Database::$QUOTE_SI;
          $query = "alter table ".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." add primary key($pKey)";
          $this->runGenericQuery($query);
-         
+
       } catch (WAException $ex) {
          throw new WAException("Unable to update the primary key for '$tableName'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function adds a foreign key to the specified table
-    * 
+    *
     * @param type $table         The table to add the foreign key
     * @param type $columns       The columns in the foreign key
     * @param type $refTable      The reference table
@@ -791,8 +960,9 @@ class Database {
             $this->logH->log(3, $this->TAG, "Creating a foreign key in '$table'");
             $foreignKeys = $this->getTableForeignKeys($table);
             $fKeys = array_keys($foreignKeys);
+            $fkey_count = count($fKeys);
             //check if a foreign key joins table with refTable
-            for($index = 0; $index < count($fKeys); $index++) {
+            for($index = 0; $index < $fkey_count; $index++) {
                if($foreignKeys[$fKeys[$index]]['ref_table'] == $refTable) {
                   $query = "alter table ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." drop constraint ".Database::$QUOTE_SI.$fKeys[$index].Database::$QUOTE_SI;
                   $this->logH->log(2, $this->TAG, "About to drop '$table' foreign key ".  print_r($foreignKeys[$fKeys[$index]], true));
@@ -812,13 +982,13 @@ class Database {
          throw new WAException("Could not create foreign key from '$table' referencing '$refTable' because of a column count missmatch", WAException::$CODE_DB_QUERY_ERROR, null);
       }
    }
-   
+
    /**
     * This function alters a table
-    * 
+    *
     * @param string $currName    Current table name
     * @param string $newName     New table name
-    * 
+    *
     * @throws WAException
     */
    public function runAlterTableQuery($currName, $newName) {
@@ -829,10 +999,10 @@ class Database {
          throw new WAException("Unable to rename '$currName' to '$newName'", WAException::$CODE_DB_QUERY_ERROR, null);
       }
    }
-   
+
    /**
     * This function creates an InnoDB table in the default database
-    * 
+    *
     * @param string $name     The name of the table
     * @param array $columns   An array with the column details. Each array element
     *                         is an associative array and should contain the following
@@ -847,11 +1017,10 @@ class Database {
     *                                          NULL defult value not supported if nullable is false
     *                            - key       : Can either be $KEY_PRIMARY, $KEY_UNIQUE or $KEY_NONE.
     *                            - auto_incr : Can either be true or false. Only applies to $TYPE_INT type and non nullable fields
-    * 
+    *
     * @throws WAException
     */
-   public function runCreateTableQuery($name, $columns, $linkTables = false) {
-      
+   public function runCreateTableQuery($name, $columns, $linkTables = false, $parentTable = null) {
       try {//check if table already exists
          $result = $this->getTableNames($this->getDatabaseName());
          if(in_array($name, $result) === false) {//the table does not exist
@@ -859,7 +1028,8 @@ class Database {
             $pKey = array();
             $createString = "create table ".Database::$QUOTE_SI.$name.Database::$QUOTE_SI." ";
             $columnNames = array();
-            for($cIndex = 0; $cIndex < count($columns); $cIndex++) {
+            $clmn_count = count($columns);
+            for($cIndex = 0; $cIndex < $clmn_count; $cIndex++) {
                if($cIndex == 0){
                   $createString .= "(";
                }
@@ -881,7 +1051,7 @@ class Database {
                   } catch (WAException $ex) {
                      throw new WAException("Unable to create database column expression", WAException::$CODE_DB_CREATE_ERROR, $ex);
                   }
-                  
+
                   if($cIndex == (count($columns) - 1)) {//last element
                      $createString .= ") ";
                   }
@@ -899,8 +1069,8 @@ class Database {
             try {
                $this->runGenericQuery($createString);
                if(count($pKey) > 0) $this->addColumnsToPrimaryKey($name, $pKey);
-               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false) {
-                  $this->addForeignKey($name, array("secondary_key"), "main_sheet", array("primary_key"));
+               if($linkTables == true && $name != "main_sheet" && array_search("secondary_key", $columnNames) !== false && $parentTable != null) {
+                  $this->addForeignKey($name, array("secondary_key"), $parentTable, array("primary_key"));
                }
             } catch (WAException $ex) {
                $this->logH->log(1, $this->TAG, "An error occurred while trying to run the following query '{$createString}'");
@@ -915,11 +1085,11 @@ class Database {
          throw new WAException("Unable to check whether the table '$name' already exists", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function returns a column expression string that defines the characteristics
     * of a column to be used in insert and update statements
-    * 
+    *
     * @throws WAException
     */
    private function getColumnExpression($name, $type, $length, $key, $default, $isNullable) {
@@ -946,7 +1116,7 @@ class Database {
          }
 
          //add default value
-         if($isNullable == true 
+         if($isNullable == true
                  && ($default == null || $default == "NULL" || $default == "null")) {
             //column is nullable and default value is null
             $createString .= "default null ";
@@ -979,9 +1149,216 @@ class Database {
             throw new WAException("Column with name '{$name}' defined as the primary key but nullable", WAException::$CODE_DB_CREATE_ERROR, null);
          }
       }*/
-      
+
       return $createString;
    }
-      
+
+   public function getFromClause($table, $mainTable, $fromClause = "") {
+      if($table != $mainTable) {
+         //get the foreign keys
+         $foreignKeys = $this->getTableForeignKeys($table);
+         if(count($foreignKeys) == 0) {
+            $this->logH->log(1, $this->TAG, "No foreign keys gotten");
+            throw new WAException("$table is not tied to any othe table", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+         else if(count($foreignKeys) == 1) {
+            $arrayKeys = array_keys($foreignKeys);
+            $foreignKeys = $foreignKeys[$arrayKeys[0]];
+            if(strlen($fromClause) == 0) {
+               $fromClause = "from ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI." inner join".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI;
+            }
+            else {
+               $fromClause .= " inner join".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI;
+            }
+            $fromClause .= " on ";
+            $onClause = "";
+            $fkc_count = count($foreignKeys['columns']);
+            for($index = 0; $index < $fkc_count; $index++) {
+               if(strlen($onClause) == 0) {
+                  $onClause .= Database::$QUOTE_SI.$table.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['columns'][$index].Database::$QUOTE_SI." = ".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['ref_columns'][$index].Database::$QUOTE_SI;
+               }
+               else {
+                  $onClause .= " and ".Database::$QUOTE_SI.$table.Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['columns'][$index].Database::$QUOTE_SI." = ".Database::$QUOTE_SI.$foreignKeys['ref_table'].Database::$QUOTE_SI.".".Database::$QUOTE_SI.$foreignKeys['ref_columns'][$index].Database::$QUOTE_SI;
+               }
+            }
+            $fromClause .= $onClause;
+            if($foreignKeys['ref_table'] == $mainTable) {
+               return $fromClause;
+            }
+            else {
+               return $this->getFromClause($foreignKeys['ref_table'], $mainTable, $fromClause);
+            }
+         }
+         else {
+            $this->logH->log(1, $this->TAG, "'$table' is linked to more than one parent table");
+            throw new WAException("$table is linked to more than one parent table", WAException::$CODE_WF_PROCESSING_ERROR, null);
+         }
+      }
+      else {
+         $this->logH->log(1, $this->TAG, "'$table' is linked $'$mainTable'");
+      }
+   }
+
+   public function getNumberOfParents($table, $number = 0) {
+      try {
+         $foreignKeys = $this->getTableForeignKeys($table);
+         if(count($foreignKeys) == 1) {
+            $arrayKeys = array_keys($foreignKeys);
+            $number++;
+            $number = $this->getNumberOfParents($foreignKeys[$arrayKeys[0]]['ref_table'], $number);
+         }
+         else if(count($foreignKeys) > 1){
+            throw new WAException("Cannot get number of parents for $table since it has more than one foreign key", WAException::$CODE_WF_FEATURE_UNSUPPORTED_ERROR, null);
+         }
+      } catch (WAException $ex) {
+         throw new WAException("Could not get the number of parents for $table", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+      return $number;
+   }
+
+   /**
+    * Given columns from 1 table, fetch aggregate data
+    *
+    * @param type $tableName
+    * @param type $columns
+    * @return type
+    * @throws WAException
+    */
+   public function getGroupedTableData($tableName, $columns){
+      try {
+         // create the query to fetch the data and group by the reference column(s)
+         $selectColumns = '';
+         $from = "FROM " . Database::$QUOTE_SI . $tableName . Database::$QUOTE_SI;
+         $groupByColumns = '';
+         $selectGroupByColumns = '';
+         foreach ($columns as $column) {
+            $selectColumns .= ($selectColumns == '') ? '' : ', ';
+            $selectGroupByColumns .= ($selectGroupByColumns == '') ? '' : ', ';
+            $selectGroupByColumns .= Database::$QUOTE_SI . $column['colName'] . Database::$QUOTE_SI;
+            $selectColumns .= Database::$QUOTE_SI . $column['colName'] . Database::$QUOTE_SI . ' as ' . $column['propColName'];
+            // if it is a ref column, add it to the group section
+            if ($column['vizType'] == 'Ref Column') {
+               $groupByColumns .= ($groupByColumns == '') ? '' : ', ';
+               $groupByColumns .= Database::$QUOTE_SI . $column['colName'] . Database::$QUOTE_SI;
+            }
+         }
+         $query = "SELECT $selectColumns, count(*) as count $from group by $groupByColumns, $selectGroupByColumns";
+         $this->logH->log(4, $this->TAG, "And fetching data from the database using the query '$query'");
+         $data = $this->runGenericQuery($query, TRUE);
+         return $data;
+      }
+      catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->logH->log(1, $this->TAG, "{$this->connectedDb}: Unable to get grouped data from a single table '$tableName'", $ex);
+         throw new WAException("{$this->connectedDb}: Unable to get grouped data from a single table $tableName", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+   }
+
+   /**
+    * Attempts to create linkages between a set of given tables and then fetch data from the given columns across the tables using the created linkage
+    *
+    * Using the linkage information contained in the INFORMATION_SCHEMA tables, this function creates linkages across the tables and get aggregate data
+    *
+    * @param type $tables
+    * @param type $columns
+    * @return type
+    * @todo    Determine the best link(INNER, OUTER, RIGHT, LEFT) to use when joining the tables.
+    *          Hint, the link to use will be determined by the direction of the join in the KEY_COLUMN_USAGE in the INFORMATION_SCHEMA DB
+    */
+   public function getLinkedGroupedData($tables, $columns){
+      try {
+         // we anticipate linked tables, attempt to understand the linkages first
+         $tablesStr = implode(Database::$QUOTE_SI.', '.Database::$QUOTE_SI, $tables);
+         $tablesStr = Database::$QUOTE_SI.$tablesStr.Database::$QUOTE_SI;
+         $query = "SELECT
+              KCU1.CONSTRAINT_NAME AS FK_CONSTRAINT_NAME
+             ,KCU1.TABLE_NAME AS FK_TABLE_NAME
+             ,KCU1.COLUMN_NAME AS FK_COLUMN_NAME
+             ,KCU1.ORDINAL_POSITION AS FK_ORDINAL_POSITION
+             ,KCU2.CONSTRAINT_NAME AS REFERENCED_CONSTRAINT_NAME
+             ,KCU2.TABLE_NAME AS REFERENCED_TABLE_NAME
+             ,KCU2.COLUMN_NAME AS REFERENCED_COLUMN_NAME
+             ,KCU2.ORDINAL_POSITION AS REFERENCED_ORDINAL_POSITION
+         FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS AS RC
+
+         INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KCU1
+             ON KCU1.CONSTRAINT_CATALOG = RC.CONSTRAINT_CATALOG
+             AND KCU1.CONSTRAINT_SCHEMA = RC.CONSTRAINT_SCHEMA
+             AND KCU1.CONSTRAINT_NAME = RC.CONSTRAINT_NAME
+
+         INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KCU2
+             ON KCU2.CONSTRAINT_CATALOG = RC.UNIQUE_CONSTRAINT_CATALOG
+             AND KCU2.CONSTRAINT_SCHEMA = RC.UNIQUE_CONSTRAINT_SCHEMA
+             AND KCU2.CONSTRAINT_NAME = RC.UNIQUE_CONSTRAINT_NAME";
+
+//         WHERE KCU1.TABLE_NAME in ($tablesStr) or KCU2.TABLE_NAME in ($tablesStr)";
+
+         $linkedTables = $this->runGenericQuery($query, TRUE);
+         $this->logH->log(4, $this->TAG, "Linked tables: ". print_r($linkedTables, true));
+         $linkedTC = count($linkedTables);
+         if($linkedTC == 0){
+            $this->logH->log(3, $this->TAG, "{$this->connectedDb}: There are no joins defined in this dataset, no need to continue");
+            throw new WAException("There are no linkages defined in this worksheet. Cannot fetch the data", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+         }
+
+         // now lets create the linkages
+         $joins = '';
+         $tc = count($tables);
+         // we need to determine which will be our main table. So we shall start with an empty array and add the tables used and then get the diff
+         $usedTables = array();
+         // given our array of tables, iterate through them and evaluate possible relations vis a vis what is found in the INFORMATION_SCHEMA records
+         for($i = 0; $i < $tc-1; $i++){
+            for($j = $i + 1; $j <= $tc; $j++){
+               for($k = 0; $k < $linkedTC; $k++){
+                  // evaluate if this linkage exists
+                  $table1 = $tables[$i]; $table2 = $tables[$j]; $curLink = $linkedTables[$k];
+                  $this->logH->log(4, $this->TAG, 'Testing: '.print_r($curLink, true));
+                  $this->logH->log(4, $this->TAG, "Testing tables: $table1 -- $table2");
+                  if( ($table1 == $curLink['fk_table_name'] && $table2 == $curLink['referenced_table_name']) ||
+                        ($table2 == $curLink['fk_table_name'] && $table1 == $curLink['referenced_table_name']) ){
+                           // which link should be used here???? LEFT, INNER, RIGHT, OUTER??? For now, lets use INNER
+                           $joins .= ' INNER JOIN '.Database::$QUOTE_SI.$curLink['fk_table_name'].Database::$QUOTE_SI
+                               .' ON ' .Database::$QUOTE_SI.$curLink['fk_table_name'].Database::$QUOTE_SI .'.'.Database::$QUOTE_SI.$curLink['fk_column_name'].Database::$QUOTE_SI .' = '
+                               .Database::$QUOTE_SI.$curLink['referenced_table_name'].Database::$QUOTE_SI .'.'.Database::$QUOTE_SI.$curLink['referenced_column_name'].Database::$QUOTE_SI;
+                         $usedTables[] = $curLink['fk_table_name'];
+                  }
+               }
+            }
+         }
+         if($joins == ''){
+            $this->logH->log(3, $this->TAG, "{$this->connectedDb}: The joins defined in this dataset does not fulfil the user's requirements, can't proceed");
+            throw new WAException("There are no linkages defined between the specified tables. Cannot fetch the data", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+         }
+
+         $diff = array_shift(array_diff($tables, $usedTables));
+         $selectColumns = '';
+         $selectGroupColumns = '';
+         $from = 'FROM '. Database::$QUOTE_SI.$diff.Database::$QUOTE_SI;
+         $groupByColumns = '';
+
+         foreach($columns as $col){
+            $selectColumns .= ($selectColumns == '') ? '' : ', ';
+            $selectGroupColumns .= ($selectGroupColumns == '') ? '' : ', ';
+            $selectColumns .= Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI .' as '.$col['propColName'];
+            $selectGroupColumns .= Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI;
+            // if it is a ref column, add it to the group section
+            if($col['vizType'] == 'Ref Column'){
+               $groupByColumns .= ($groupByColumns == '') ? '' : ', ';
+               $groupByColumns .= Database::$QUOTE_SI.$col['sheetName'].Database::$QUOTE_SI.'.'.Database::$QUOTE_SI.$col['colName'].Database::$QUOTE_SI;
+            }
+            $this->logH->log(4, $this->TAG, "Data:: ". print_r($col, true));
+         }
+         $query = "SELECT $selectColumns, count(*) as count $from $joins GROUP BY $groupByColumns, $selectGroupColumns ORDER BY $selectGroupColumns";
+         $this->logH->log(4, $this->TAG, "Fetching data from the database using the query '$query'");
+         $data = $this->runGenericQuery($query, TRUE);
+         return $data;
+      }
+      catch (WAException $ex) {
+         array_push($this->errors, $ex);
+         $this->healthy = false;
+         $this->logH->log(1, $this->TAG, "Unable to get the data in the columns from the workflow with id = '{$this->connectedDb}'");
+         throw new WAException("Unable to get the data in the columns from the workflow with id = '{$this->connectedDb}'", WAException::$CODE_DB_CREATE_ERROR, $ex);
+      }
+   }
 }
 ?>

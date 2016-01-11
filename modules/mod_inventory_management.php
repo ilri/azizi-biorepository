@@ -247,7 +247,7 @@ class InventoryManager extends Repository{
               " $criteria".
               " ORDER BY {$_POST['sortname']} {$_POST['sortorder']}";
       //$this->Dbase->query = $query." LIMIT $startRow, {$_POST['rp']}";
-      
+
       $this->Dbase->CreateLogEntry("mod_inventory_management: About to run the following query ".$query, 'debug', true);
       $data = $this->Dbase->ExecuteQuery($query." LIMIT $startRow, {$_POST['rp']}" , $criteriaArray);
 
@@ -283,7 +283,7 @@ class InventoryManager extends Repository{
 
       die(json_encode($response));
    }
-   
+
    /**
     * Returns all the projects in the database in a associative array
     *
@@ -294,7 +294,7 @@ class InventoryManager extends Repository{
       $result = $this->Dbase->ExecuteQuery($query);
       return $result;
    }
-   
+
    /**
     * Gets the project ID corresponding to the specified charge code
     * @param   string   $chargeCode   The charge code for which the wanted project corresponds to
@@ -315,25 +315,25 @@ class InventoryManager extends Repository{
          return 0;
       }
    }
-   
+
    /**
     * This function writes a return of a borrowed item to the database
     */
    private function returnItem(){
       $itemID = $_POST['id'];
       $comment = $_POST['comment'];
-      
+
       $this->Dbase->CreateLogEntry($_POST['comment'], "fatal");
-      
-      $query = "SELECT item_borrowed FROM inventory WHERE id = ? AND item_borrowed = 1";//check if there is an item with the same 
+
+      $query = "SELECT item_borrowed FROM inventory WHERE id = ? AND item_borrowed = 1";//check if there is an item with the same
       $result = $this->Dbase->ExecuteQuery($query, array($itemID));
-      
+
       if(is_array($result) && count($result) == 1){
          $query = "UPDATE inventory SET item_returned = 1, ret_comment = :comment WHERE id = :id";
          $this->Dbase->ExecuteQuery($query, array("id" => $itemID, "comment" => $comment));
       }
    }
-   
+
    /**
     * This function generates a csv file for recharging items acquired from the biorepository
     */
@@ -344,18 +344,19 @@ class InventoryManager extends Repository{
                  . " left join ln2_chargecodes as b on a.chargecode_id=b.id"
                  . " where item_borrowed = 0 and rc_timestamp is null";
          $result = $this->Dbase->ExecuteQuery($query);
-         
+
          if(is_array($result)){
-            for($i = 0 ; $i < count($result); $i++){
+            $res_count = count($result);
+            for($i = 0 ; $i < $res_count; $i++){
                if($result[$i]['charge_code'] == null){
                   $result[$i]['charge_code'] = $result[$i]['alt_ccode'];
                }
-               
+
                $query = "update inventory"
                        . " set rc_timestamp = now(), rc_charge_code = :charge_code"
                        . " where id = :id";
                $this->Dbase->ExecuteQuery($query, array("charge_code" => $result[$i]['charge_code'], "id" => $result[$i]['id']));
-               
+
                unset($result[$i]['alt_ccode']);
             }
             $headings = array(
@@ -368,20 +369,20 @@ class InventoryManager extends Repository{
                 "pp_unit" => "Price per Unit",
                 "quantity" => "Quantity"
             );
-            
+
             $csv = $this->generateCSV(array_merge(array($headings), $result), FALSE);
             $fileName = "item_recharge_".date('Y_m_d').".csv";
-            
+
             file_put_contents("/tmp/".$fileName, $csv);
             header('Content-type: document');
             header('Content-Disposition: attachment; filename='. $fileName);
-            header("Expires: 0"); 
-            header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+            header("Expires: 0");
+            header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
             header("Content-length: " . filesize("/tmp/".$fileName));
             header('Content-Transfer-Encoding: binary');
             readfile("/tmp/" . $fileName);
-            
-            if(count($result) > 0){   
+
+            if(count($result) > 0){
                $emailSubject = "Item Recharge";
                $emailBody = "Find attached a csv file containing data for item recharges.";
                $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody, "/tmp/".$fileName);
@@ -391,13 +392,13 @@ class InventoryManager extends Repository{
                $emailBody = "No items found that can be recharged.";
                $this->sendRechargeEmail(Config::$managerEmail, $emailSubject, $emailBody);
             }
-            
+
             $this->Dbase->CreateLogEntry("Recharging file at /tmp/".$fileName, "info");
             unlink("/tmp/" . $fileName);
          }
       }
    }
-   
+
    /**
     * This function generates a CSV string from a two dimensional array.
     * Make sure each of the second level associative arrays the same size.
@@ -407,7 +408,7 @@ class InventoryManager extends Repository{
     *    [0,1]
     *    [0,1,2]
     *  ]
-    * 
+    *
     * @param type $array
     * @param type $headingsFromKeys
     */
@@ -415,23 +416,23 @@ class InventoryManager extends Repository{
       $csv = "";
       if(count($array) > 0){
          $colNum = count($array[0]);
-         
+
          if($headingsFromKeys === true){
             $keys = array_keys($array[0]);
             $csv .= "\"".implode("\",\"", $keys)."\"\n";
          }
-         
+
          foreach($array as $currRow){
             $csv .= "\"".implode("\",\"", $currRow)."\"\n";
          }
       }
-      
+
       return $csv;
    }
-   
+
    /**
     * This function sends emails using the biorepository's email address. Duh
-    * 
+    *
     * @param type $address Email address of the recipient
     * @param type $subject Email's subject
     * @param type $message Email's body/message

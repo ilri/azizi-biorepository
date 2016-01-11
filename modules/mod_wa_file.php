@@ -14,7 +14,7 @@ class WAFile {
        "tmp" => "/tmp"
       );
    public static $TABLE_META_FILES = "__meta_files";
-   
+
    private $TAG = "wafile";
    private $config;
    private $workflowID;
@@ -29,10 +29,10 @@ class WAFile {
    private $comment;
    private $mergeTable;
    private $mergeColumn;
-   
+
    /**
     * Default constructor for this class
-    * 
+    *
     * @param Object     $config           The repository_config object
     * @param string     $workflowID       Id for the workflow holding this file
     * @param Database   $database         The database object to use to run queries
@@ -45,13 +45,13 @@ class WAFile {
     * @param string     $comment          Comment appended to the file
     * @param string     $mergeTable       The name of the table to be used to merge data during data dumps
     * @param string     $mergeColumn      The name of the column in the mergeTable to be used to merge data during data dumps
-    * 
+    *
     * @throws WAException
     */
    public function __construct($config, $workflowID, $database, $workingDir, $type, $filename = null, $creator = null, $timeCreated = null, $timeLastModified = null, $comment = null, $mergeTable = null, $mergeColumn = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
-      
+
       $this->config = $config;
       $this->lH = new LogHandler("./");
       $this->database = $database;
@@ -72,10 +72,10 @@ class WAFile {
          throw new WAException("Unable to correctly initialize WAFile object", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function returns all file details as an array
-    * 
+    *
     * @return Array An array with the file details
     */
    public function getFileDetails() {
@@ -83,12 +83,12 @@ class WAFile {
       if($this->timeCreated != null) {
          $time = $this->timeCreated->format(DateTime::ISO8601);
       }
-      
+
       $modifiedTime = null;
       if($this->timeLastModified != null) {
          $modifiedTime = $this->timeLastModified->format(DateTime::ISO8601);
       }
-      
+
       $details = array(
          "filename" => $this->filename,
          "type" => $this->type,
@@ -99,16 +99,16 @@ class WAFile {
          "merge_table" => $this->mergeTable,
          "merge_column" => $this->mergeColumn
       );
-      
+
       return $details;
    }
-   
+
    /**
     * This function tries to save the current file as an excel file
-    * 
+    *
     * @param PHPExcel $excelObject  The PHPExcel object to be saved as a file
     * @return String The URL to the file
-    * 
+    *
     * @throws WAException
     */
    public function saveAsExcelFile($excelObject) {
@@ -123,11 +123,11 @@ class WAFile {
          throw new WAException("An error occurred while trying to save excel object as a file", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function checks whether the file exists in the filesystem.
     * Make sure the filename is set first.
-    * 
+    *
     * @return boolean TRUE if file exists in the filesystem
     * @throws WAException
     */
@@ -146,34 +146,34 @@ class WAFile {
          throw new WAException("Unable to check wheter file exists because it wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
    /**
     * This fuction returns the config class held by this object
     */
    public function getConfig() {
       return $this->config;
    }
-   
+
    /**
     * This function returns the database object held by this object
-    * 
+    *
     * @return Database
     */
    public function getDatabase() {
       return $this->database;
    }
-   
+
    /**
     * This function returns the workflow type for the file
     */
    public function getType() {
       return $this->type;
    }
-   
+
    /**
     * This function checks whether the metaFiles table is created and creates it if not.
     * This table stores locations for the varioius files for the workspace instance
-    * 
+    *
     * @throws WAException
     */
    private function createMetaFilesTable() {
@@ -204,15 +204,15 @@ class WAFile {
          throw new WAException("Unable to create the meta files table because the database object is liked to the wrong database", WAException::$CODE_DB_CREATE_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function tries to download the file and records its details in the
     * database
-    * 
+    *
     * @param string $filename    Name to give to downloaded file
     * @param string $url         Valid url from where to download the file
     * @param string $addedBy     Name of the user downloading the file
-    * 
+    *
     * @throws WAException
     */
    public function downloadFile($filename, $url, $addedBy) {
@@ -265,7 +265,7 @@ class WAFile {
          throw new WAException("The provided URL doesn't point to a valid data file", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
       }
    }
-   
+
    /**
     * This function sets the table and column to be used for merging data during
     * data dumps if this file has been imported from another project
@@ -279,7 +279,7 @@ class WAFile {
          throw new WAException("Unable to record the merge table and column for '{$this->filename}'", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function records in the database the existence of this file
     */
@@ -293,16 +293,16 @@ class WAFile {
              "last_modified" => "'{$this->database->getMySQLTime()}'",
              "workflow_type" => "'{$this->type}'"
          );
-         
+
          $this->database->runInsertQuery(WAFile::$TABLE_META_FILES, $columns);
       } catch (WAException $ex) {
          throw new WAException("Unable to record the existence of a new file in the database", WAException::$CODE_DB_REGISTER_FILE_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function creates subdirectories in the working directory
-    * 
+    *
     * @return the path for the created sub directory
     * @throws WAException
     */
@@ -313,7 +313,7 @@ class WAFile {
          if(array_search($subDirKey, $dirKeys) !== false){//subdir recognised
             $this->lH->log(4, $this->TAG, "Trying to create subdir ".WAFile::$WORKING_SUB_DIRS[$subDirKey]." in {$this->workingDir}");
             $subDirPath = $this->workingDir.WAFile::$WORKING_SUB_DIRS[$subDirKey];
-            
+
             if(file_exists($subDirPath)) {//subdirectory already exists
                //check if is directory or file
                if(!is_dir($subDirPath)) {//file is not a directory
@@ -339,10 +339,10 @@ class WAFile {
          }
       }
    }
-   
+
    /**
     * This function returns the file system location for the file
-    * 
+    *
     * @throws WAException
     */
    public function getFSLocation() {
@@ -352,7 +352,7 @@ class WAFile {
               && $this->filename !== null) {
          if(array_key_exists($this->type, WAFile::$WORKING_SUB_DIRS)) {
             $name = $this->workingDir.WAFile::$WORKING_SUB_DIRS[$this->type]."/".$this->filename;
-            
+
             //check if file exists
             if(file_exists($name)) {
                return $name;
@@ -372,14 +372,14 @@ class WAFile {
          throw new WAException("Could not get filesystem location for file", WAException::$CODE_FS_UNKNOWN_LOCATION_ERROR, null);
       }
    }
-   
+
    /**
     * This function completely erases a directory from disk
-    * 
+    *
     * @return boolean   True if able to completely delete directory
     */
    public static function rmDir($dir) {
-      
+
       if (!file_exists($dir)) {
           return true;
       }
@@ -400,14 +400,14 @@ class WAFile {
       }
       return rmdir($dir);
    }
-   
+
    /**
     * This function returns a list of all WAFiles connected to a workflow
-    * 
+    *
     * @param Database $database
     * @param string $workflowId
     * @param string $workingDir
-    * 
+    *
     * @return Array  An array with WAFile objects
     * @throws WAException
     */
@@ -415,16 +415,17 @@ class WAFile {
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
       $lH = new LogHandler("./");
-      
+
       $database = new Database($config, $workflowId);
-      
+
       $query = "select *"
               . " from ".WAFile::$TABLE_META_FILES." order by id";
       try {
          $result = $database->runGenericQuery($query, true);
          if($result !== false){
             $files = array();
-            for($index = 0; $index < count($result); $index++){
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++){
                //initialize all the files
                try {
                   //$currFile = new WAFile($config, $workflowId, $database, $workingDir, $result[$index]['workflow_type'], $result[$index]['location']);
@@ -435,9 +436,9 @@ class WAFile {
                   throw new Exception("An error occurred while trying to initialize one of the workflow files", WAException::$CODE_WF_INSTANCE_ERROR, null);
                }
             }
-            
+
             //$database->close();
-            
+
             return $files;
          }
          else {
@@ -449,10 +450,10 @@ class WAFile {
          throw new Exception("Unable to determine which files are owned by workflow", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function returns all valid save point files
-    * 
+    *
     * @param Object     $config        repository_config object
     * @param Workflow   $workflowID    Instance id for the workflow
     * @param Database   $database      Database object to run queries in
@@ -477,19 +478,19 @@ class WAFile {
             throw new WAException("Unable to fetch backup file details from the database", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function returns the path for the backup file correspoinding to the provided save point
-    * 
+    *
     * @param string  $savePoint  Name of the save point file
-    * 
+    *
     * @return string Path to the .sql dump file corresponding to the save point
     */
    public static function getSavePointFilePath($workingDir, $savePoint) {
       $location = $workingDir.WAFile::$WORKING_SUB_DIRS[WAFile::$TYPE_BACKUP]."/".$savePoint;
       return $location;
    }
-   
+
    /**
     * This function deletes the php_excel caches
     */
@@ -499,15 +500,15 @@ class WAFile {
       $phpExcelCache = $workingDir.WAFile::$WORKING_SUB_DIRS["raw_data"]."/phpexcel_cache";
       WAFile::rmDir($phpExcelCache);
    }
-   
+
    /**
     * This function copies the contents of a source directory to a destination
     * directory
-    * 
+    *
     * @param String $src   The source directory
     * @param String $dst   The destination directory
     */
-   public static function copyDir($src, $dst) { 
+   public static function copyDir($src, $dst) {
       $dir = opendir($src);
       @mkdir($dst);
       while(false !== ( $file = readdir($dir)) ) {
@@ -520,7 +521,7 @@ class WAFile {
             }
          }
       }
-      closedir($dir); 
+      closedir($dir);
    }
 }
 ?>

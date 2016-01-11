@@ -1,6 +1,6 @@
 <?php
 
-/* 
+/*
  * This module is responsible for handling recharges for the following items:
  *    - inventory (including cryoboxes)
  *    - liquid nitrogen
@@ -8,18 +8,18 @@
  *    - labels
  */
 class Recharges{
-   
+
    private $Dbase;
-   
+
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
    }
-   
+
    /**
     * This function determines what user wants to do
     */
    public function trafficController(){
-      
+
       if(OPTIONS_REQUESTED_SUB_MODULE == '' || OPTIONS_REQUESTED_SUB_MODULE == 'home'){
          $this->showHomePage();
       }
@@ -91,10 +91,10 @@ class Recharges{
          }
       }
    }
-   
+
    /**
     * This function renders the home page
-    * 
+    *
     * @param type $addInfo Info you want displayed to the user
     */
    public function showHomePage($addInfo = ''){
@@ -121,15 +121,15 @@ class Recharges{
 </script>
       <?php
    }
-   
+
    /**
     * This function shows the Price List/Manage Prices Page
-    * 
+    *
     * @param type $addInfo Any extra message you want displayed on the page
     */
    private function showManagePricesPage($addInfo = ''){
       Repository::jqGridFiles();//Really important if you want jqx to load
-      
+
       $query = "select id, label_type"
               . " from labels_settings"
               . " order by label_type";
@@ -241,7 +241,7 @@ class Recharges{
          <div id="ln2_prices_table" style="margin-top: 10px;margin-left: 20px;margin-bottom: 20px;"></div>
       </div>
    </div>
-   
+
 </div>
 <script type="text/javascript">
    $(document).ready(function(){
@@ -252,15 +252,15 @@ class Recharges{
 </script>
 <?php
    }
-   
+
    /**
     * This function renders the Recharge Storage space page to the user
-    * 
+    *
     * @param type $addInfo Info you want displayed to the user
     */
    public function showStorageSpacePage($addInfo = ''){
       Repository::jqGridFiles();//Really important if you want jqx to load
-      
+
       $periodStarting = $this->getSSpaceNextPeriodStarting();
       $psTimestamp = 0;
       if($periodStarting != null){
@@ -307,20 +307,20 @@ class Recharges{
    $(document).ready(function(){
       var recharges = new Recharges(MODE_STORAGE);
       recharges.setStorageRechargePeriods(<?php echo $psTimestamp; ?>);
-      
+
       $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
    });
 </script>
       <?php
    }
-   
+
    /**
     * This function shows the Recharge Inventory page
-    * 
+    *
     * @param type $addInfo Any extra message you want displayed on the page
     */
    public function showInventoryPage($addInfo = ''){
-      
+
       Repository::jqGridFiles();//Really important if you want jqx to load
 ?>
 <script type="text/javascript" src="js/recharges.js"></script>
@@ -341,9 +341,9 @@ class Recharges{
          <option value=""></option>
          <?php
          $dateBounds = $this->getInventoryRechargesBoundDates();
-         
+
          if($dateBounds['error'] == false){
-            
+
             $months = array(
                 "January",
                 "February",
@@ -358,14 +358,14 @@ class Recharges{
                 "November",
                 "December"
             );
-            
+
             $maxDateTime = strtotime($dateBounds['data']['max']);
             $minDateTime = strtotime($dateBounds['data']['min']);
             $minDate = new DateTime();
             $minDate->setTimestamp($minDateTime);
             $maxDate = new DateTime();
             $maxDate->setTimestamp($maxDateTime);
-            
+
             $minYear = intval($minDate->format('Y'));
             $minMonth = intval($minDate->format('m'));
             $maxYear = intval($maxDate->format('Y'));
@@ -374,7 +374,7 @@ class Recharges{
             $currYear = $minYear;
             while($currYear <= $maxYear){
                /*$currDay = 31;
-               
+
                if($currMonth == 4
                        || $currMonth == 6
                        || $currMonth == 9
@@ -391,7 +391,7 @@ class Recharges{
                }*/
                $currDay = 1;
                echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
-               
+
                $currMonth++;
                if($currYear == $maxYear && $currMonth > $maxMonth){
                   break;
@@ -411,9 +411,9 @@ class Recharges{
          <option value=""></option>
          <?php
          $dateBounds = $this->getInventoryRechargesBoundDates();
-         
+
          if($dateBounds['error'] == false){
-            
+
             $months = array(
                 "January",
                 "February",
@@ -428,14 +428,14 @@ class Recharges{
                 "November",
                 "December"
             );
-            
+
             $maxDateTime = strtotime($dateBounds['data']['max']);
             $minDateTime = strtotime($dateBounds['data']['min']);
             $minDate = new DateTime();
             $minDate->setTimestamp($minDateTime);
             $maxDate = new DateTime();
             $maxDate->setTimestamp($maxDateTime);
-            
+
             $minYear = intval($minDate->format('Y'));
             $minMonth = intval($minDate->format('m'));
             $maxYear = intval($maxDate->format('Y'));
@@ -444,7 +444,7 @@ class Recharges{
             $currYear = $minYear;
             while($currYear <= $maxYear){
                $currDay = 31;
-               
+
                if($currMonth == 4
                        || $currMonth == 6
                        || $currMonth == 9
@@ -459,9 +459,9 @@ class Recharges{
                      $currDay = 28;
                   }
                }
-               
+
                echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
-               
+
                $currMonth++;
                if($currYear == $maxYear && $currMonth > $maxMonth){
                   break;
@@ -486,16 +486,16 @@ class Recharges{
 <script type="text/javascript">
    $(document).ready(function(){
       var recharges = new Recharges(MODE_INVENTORY);
-      
+
       $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
    });
 </script>
       <?php
    }
-   
+
    /**
     * This function shows the recharge Liquid nitrogen page
-    * 
+    *
     * @param type $addInfo Any extra message you want displayed on the page
     */
    public function showLN2page($addInfo = ''){
@@ -519,9 +519,9 @@ class Recharges{
          <option value=""></option>
          <?php
          $dateBounds = $this->getLN2RechargesBoundDates();
-         
+
          if($dateBounds['error'] == false){
-            
+
             $months = array(
                 "January",
                 "February",
@@ -536,14 +536,14 @@ class Recharges{
                 "November",
                 "December"
             );
-            
+
             $maxDateTime = strtotime($dateBounds['data']['max']);
             $minDateTime = strtotime($dateBounds['data']['min']);
             $minDate = new DateTime();
             $minDate->setTimestamp($minDateTime);
             $maxDate = new DateTime();
             $maxDate->setTimestamp($maxDateTime);
-            
+
             $minYear = intval($minDate->format('Y'));
             $minMonth = intval($minDate->format('m'));
             $maxYear = intval($maxDate->format('Y'));
@@ -552,7 +552,7 @@ class Recharges{
             $currYear = $minYear;
             while($currYear <= $maxYear){
                /*$currDay = 31;
-               
+
                if($currMonth == 4
                        || $currMonth == 6
                        || $currMonth == 9
@@ -569,7 +569,7 @@ class Recharges{
                }*/
                $currDay = 1;
                echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
-               
+
                $currMonth++;
                if($currYear == $maxYear && $currMonth > $maxMonth){
                   break;
@@ -589,9 +589,9 @@ class Recharges{
          <option value=""></option>
          <?php
          $dateBounds = $this->getLN2RechargesBoundDates();
-         
+
          if($dateBounds['error'] == false){
-            
+
             $months = array(
                 "January",
                 "February",
@@ -606,14 +606,14 @@ class Recharges{
                 "November",
                 "December"
             );
-            
+
             $maxDateTime = strtotime($dateBounds['data']['max']);
             $minDateTime = strtotime($dateBounds['data']['min']);
             $minDate = new DateTime();
             $minDate->setTimestamp($minDateTime);
             $maxDate = new DateTime();
             $maxDate->setTimestamp($maxDateTime);
-            
+
             $minYear = intval($minDate->format('Y'));
             $minMonth = intval($minDate->format('m'));
             $maxYear = intval($maxDate->format('Y'));
@@ -622,7 +622,7 @@ class Recharges{
             $currYear = $minYear;
             while($currYear <= $maxYear){
                $currDay = 31;
-               
+
                if($currMonth == 4
                        || $currMonth == 6
                        || $currMonth == 9
@@ -637,9 +637,9 @@ class Recharges{
                      $currDay = 28;
                   }
                }
-               
+
                echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
-               
+
                $currMonth++;
                if($currYear == $maxYear && $currMonth > $maxMonth){
                   break;
@@ -664,16 +664,16 @@ class Recharges{
 <script type="text/javascript">
    $(document).ready(function(){
       var recharges = new Recharges(MODE_LN2);
-      
+
       $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
    });
 </script>
       <?php
    }
-   
+
    /**
     * This function displays the recharge labels page
-    * 
+    *
     * @param type $addInfo Any extra message you want displayed on the page
     */
    private function showLabelsPage($addInfo = ''){
@@ -697,9 +697,9 @@ class Recharges{
          <option value=""></option>
          <?php
          $dateBounds = $this->getLabelsRechargesBoundDates();
-         
+
          if($dateBounds['error'] == false){
-            
+
             $months = array(
                 "January",
                 "February",
@@ -714,14 +714,14 @@ class Recharges{
                 "November",
                 "December"
             );
-            
+
             $maxDateTime = strtotime($dateBounds['data']['max']);
             $minDateTime = strtotime($dateBounds['data']['min']);
             $minDate = new DateTime();
             $minDate->setTimestamp($minDateTime);
             $maxDate = new DateTime();
             $maxDate->setTimestamp($maxDateTime);
-            
+
             $minYear = intval($minDate->format('Y'));
             $minMonth = intval($minDate->format('m'));
             $maxYear = intval($maxDate->format('Y'));
@@ -730,7 +730,7 @@ class Recharges{
             $currYear = $minYear;
             while($currYear <= $maxYear){
                /*$currDay = 31;
-               
+
                if($currMonth == 4
                        || $currMonth == 6
                        || $currMonth == 9
@@ -747,7 +747,7 @@ class Recharges{
                }*/
                $currDay = 1;
                echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
-               
+
                $currMonth++;
                if($currYear == $maxYear && $currMonth > $maxMonth){
                   break;
@@ -767,9 +767,9 @@ class Recharges{
          <option value=""></option>
          <?php
          $dateBounds = $this->getLabelsRechargesBoundDates();
-         
+
          if($dateBounds['error'] == false){
-            
+
             $months = array(
                 "January",
                 "February",
@@ -784,14 +784,14 @@ class Recharges{
                 "November",
                 "December"
             );
-            
+
             $maxDateTime = strtotime($dateBounds['data']['max']);
             $minDateTime = strtotime($dateBounds['data']['min']);
             $minDate = new DateTime();
             $minDate->setTimestamp($minDateTime);
             $maxDate = new DateTime();
             $maxDate->setTimestamp($maxDateTime);
-            
+
             $minYear = intval($minDate->format('Y'));
             $minMonth = intval($minDate->format('m'));
             $maxYear = intval($maxDate->format('Y'));
@@ -800,7 +800,7 @@ class Recharges{
             $currYear = $minYear;
             while($currYear <= $maxYear){
                $currDay = 31;
-               
+
                if($currMonth == 4
                        || $currMonth == 6
                        || $currMonth == 9
@@ -815,9 +815,9 @@ class Recharges{
                      $currDay = 28;
                   }
                }
-               
+
                echo "<option value='$currYear-$currMonth-$currDay'>{$months[$currMonth-1]} $currYear</option>";
-               
+
                $currMonth++;
                if($currYear == $maxYear && $currMonth > $maxMonth){
                   break;
@@ -842,13 +842,13 @@ class Recharges{
 <script type="text/javascript">
    $(document).ready(function(){
       var recharges = new Recharges(MODE_LABELS);
-      
+
       $('#whoisme .back').html('<a href=\'?page=home\'>Home</a> | <a href=\'?page=recharges\'>Back</a>');//back link
    });
 </script>
       <?php
    }
-   
+
    /**
     * This function returns the date to be used as the next period starting
     */
@@ -856,37 +856,37 @@ class Recharges{
       $query = "select rc_period_ending"
               . " from lcmod_boxes_def"
               . " group by rc_period_ending";//gets the period ending from the last recharges made
-      
+
       $dates = $this->Dbase->ExecuteQuery($query);
-      
+
       if($dates == 1){
          $this->Dbase->CreateLogEntry("An error occurred while trying to fetch period ending dates from the last storage space recharges made. Wont be able to proceed", "fatal");
          return null;
       }
-      
+
       //get the oldest date that is not 0000-00-00
       $oldest = null;
       foreach($dates as $currDateString){
          if($currDateString['rc_period_ending'] != '0000-00-00' && $currDateString['rc_period_ending'] != null){
             $this->Dbase->CreateLogEntry($currDateString['rc_period_ending'], "fatal");
             $currDate = new DateTime($currDateString['rc_period_ending']);//date from mysql already converted to int
-            
+
             if($oldest == null || $currDate->getTimestamp() < $oldest->getTimestamp()){
                $oldest = $currDate;
             }
          }
       }
-      
+
       return $oldest;
    }
-   
+
    /**
     * This function returns pending space recharges grouped by projects
     */
    private function getPendingSpaceRecharges(){
       $sortColumn = $_REQUEST['sortdatafield'];
       $sortOrder = $_REQUEST['sortorder'];
-      
+
       $orderBy = " order by b.value asc";
       if(strlen($sortColumn) > 0 && strlen($sortOrder) > 0){
          if($sortColumn == 'project'){
@@ -896,7 +896,7 @@ class Recharges{
             $orderBy = " order by a.rc_period_ending ".$sortOrder;
          }
       }
-      
+
       $priceBoxDay = $_POST['price']/365;//price per box per day
       $periodEnding = $_POST['period_ending'];//date in format yyyy-mm-dd
 
@@ -909,14 +909,15 @@ class Recharges{
               . $orderBy;
       $result = $this->Dbase->ExecuteQuery($query, array("newPeriodEnding" => $periodEnding));
       $this->Dbase->CreateLogEntry("query for fetching recharge boxes = ".$query, "info");
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("An error occurred while trying to get recharge details from the database. Sending user nothing","fatal");
          $result = array();
       }
-      
+
       $total = 0;
-      for($i = 0; $i < count($result); $i++){
+      $res_count = count($result);
+      for($i = 0; $i < $res_count; $i++){
          //calculate the number of days between last charged date and current recharge end date
          //charge nothing if last charged date not set
          $start = strtotime($result[$i]['last_period']);
@@ -925,32 +926,32 @@ class Recharges{
             //get number of days
             $duration = ($end - $start)/86400;
             $result[$i]['duration'] = $duration;
-            
+
             $result[$i]['last_period'] = date('Y-m-d', $start);
          }
          else {
             $result[$i]['duration'] = 0;
          }
-         
-         
+
+
          $result[$i]['recharge'] = 1;
          if($result[$i]['project'] == ''){
             $result[$i]['project'] = "Unknown";
             $result[$i]['project_id'] = -1;
             $result[$i]['recharge'] = 0;
          }
-         
+
          //calculate the total recharge price
          $result[$i]['box_price'] = $_POST['price'];
          $result[$i]['total_price'] = round($result[$i]['duration'] * $priceBoxDay * $result[$i]['no_boxes'], 2);
-         
+
          $total = $total + $result[$i]['total_price'];
       }
-      
+
       $json = array('data'=>$result, 'grand_total' => $total);
       die(json_encode($json));
    }
-   
+
    /**
     * This function returns pending inventory recharges
     */
@@ -958,7 +959,7 @@ class Recharges{
       $sortColumn = $_REQUEST['sortdatafield'];
       $sortOrder = $_REQUEST['sortorder'];
       $where = "";
-      
+
       $orderBy = " order by a.id desc";
       if(strlen($sortColumn) > 0 && strlen($sortOrder) > 0){
          if($sortColumn == 'item'){
@@ -980,30 +981,31 @@ class Recharges{
             $orderBy = " order by a.quantity ".$sortOrder;
          }
       }
-      
+
       if(isset($_REQUEST['period_starting']) && strlen($_REQUEST['period_starting'] > 0)){
          $where .= " and DATE(a.date_issued) >= STR_TO_DATE('{$_REQUEST['period_starting']}', '%Y-%c-%d')";
       }
-      
+
       if(isset($_REQUEST['period_ending']) && strlen($_REQUEST['period_ending'] > 0)){
          $where .= " and DATE(a.date_issued) <= STR_TO_DATE('{$_REQUEST['period_ending']}', '%Y-%c-%d')";
       }
-      
+
       $query = "select 1 as recharge, a.id, a.item, a.issued_by, a.issued_to, a.date_issued, b.name as charge_code, a.alt_ccode, a.pp_unit, a.quantity"
                . " from inventory as a"
                . " left join ln2_chargecodes as b on a.chargecode_id=b.id"
                . " where item_borrowed = 0 and rc_timestamp is null".$where
               .  $orderBy;
-      
+
       $this->Dbase->CreateLogEntry($query, "fatal");
       $result = $this->Dbase->ExecuteQuery($query);
       if(is_array($result)){
-         for($i = 0 ; $i < count($result); $i++){
+         $res_count = count($result);
+         for($i = 0 ; $i < $res_count; $i++){
             if($result[$i]['charge_code'] == null){
                $result[$i]['charge_code'] = $result[$i]['alt_ccode'];
             }
             unset($result[$i]['alt_ccode']);
-            
+
             $result[$i]['total'] = 0;
             if(is_numeric($result[$i]['pp_unit']) && is_numeric($result[$i]['quantity'])){
                $result[$i]['total'] = $result[$i]['pp_unit'] * $result[$i]['quantity'];
@@ -1013,11 +1015,11 @@ class Recharges{
       else {
          $result = array();
       }
-      
+
       $json = array('data'=>$result);
       die(json_encode($json));
    }
-   
+
    /**
     * This function gets the date bounds for uncharged inventory items
     */
@@ -1028,24 +1030,24 @@ class Recharges{
                . " group by date_issued"
                . " order by date_issued asc";
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("A problem occurred while trying to get date bounds for inventory recharges","fatal");
          $result = array();
       }
-      
+
       if(count($result) > 0){
-         
+
          $json = array("error" => false, "data" => array("max" => $result[count($result) - 1]['date'], "min" => $result[0]['date']));
       }
       else {
          $json = array("error" => true, "data" => array());
       }
-      
+
       //$this->Dbase->CreateLogEntry(print_r($json, true), "fatal");
       return $json;
    }
-   
+
    /**
     * This function outputs pending Liquid Nitrogen recharges as a json object
     */
@@ -1070,12 +1072,12 @@ class Recharges{
             $orderBy = " order by b.name ".$sortOrder.", a.alt_ccode ".$sortOrder;
          }
       }
-      
+
       $where = "";
       if(isset($_REQUEST['period_starting']) && strlen($_REQUEST['period_starting'] > 0)){
          $where .= " and DATE(a.date) >= STR_TO_DATE('{$_REQUEST['period_starting']}', '%Y-%c-%d')";
       }
-      
+
       if(isset($_REQUEST['period_ending']) && strlen($_REQUEST['period_ending'] > 0)){
          $where .= " and DATE(a.date) <= STR_TO_DATE('{$_REQUEST['period_ending']}', '%Y-%c-%d')";
       }
@@ -1089,7 +1091,8 @@ class Recharges{
        $result = $this->Dbase->ExecuteQuery($query);
        $price = $this->getNitrogenPrice();
        if(is_array($result)){
-         for($i = 0; $i < count($result); $i++){
+         $res_count = count($result);
+         for($i = 0; $i < $res_count; $i++){
             $result[$i]['price'] = $price;
             $result[$i]['cost'] = $price * $result[$i]['amount_appr'];
 
@@ -1099,11 +1102,11 @@ class Recharges{
             unset($result[$i]['alt_ccode']);
          }
       }
-      
+
       $json = array('data' => $result);
       die(json_encode($json));
    }
-   
+
    /**
     * This function gets the date bounds for uncharged LN2
     */
@@ -1113,26 +1116,26 @@ class Recharges{
               . " where amount_appr is not null and rc_timestamp is null"
               . " group by date"
               . " order by date asc";
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("A problem occurred while trying to get date bounds for ln2 recharges","fatal");
          $result = array();
       }
-      
+
       if(count($result) > 0){
-         
+
          $json = array("error" => false, "data" => array("max" => $result[count($result) - 1]['date'], "min" => $result[0]['date']));
       }
       else {
          $json = array("error" => true, "data" => array());
       }
-      
+
       //$this->Dbase->CreateLogEntry(print_r($json, true), "fatal");
       return $json;
    }
-   
+
    /**
     * This function outputs pending labels recharges as a json object
     */
@@ -1157,12 +1160,12 @@ class Recharges{
             $orderBy = " order by a.total ".$sortOrder;
          }
       }
-      
+
       $where = "";
       if(isset($_REQUEST['period_starting']) && strlen($_REQUEST['period_starting'] > 0)){
          $where .= " and DATE(a.date) >= STR_TO_DATE('{$_REQUEST['period_starting']}', '%Y-%c-%d')";
       }
-      
+
       if(isset($_REQUEST['period_ending']) && strlen($_REQUEST['period_ending'] > 0)){
          $where .= " and DATE(a.date) <= STR_TO_DATE('{$_REQUEST['period_ending']}', '%Y-%c-%d')";
       }
@@ -1173,13 +1176,14 @@ class Recharges{
               . " where rc_timestamp is null".$where
               . $orderBy;
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("An error occurred while trying to get labels for recharging", "fatal");
          $result = array();
       }
-      
-      for($index = 0; $index < count($result); $index++){
+
+      $res_count = count($result);
+      for($index = 0; $index < $res_count; $index++){
          $price = $this->getLabelsPrice($result[$index]['type']);
          $result[$index]['price'] = $price;
          $result[$index]['labels_printed'] = $result[$index]['labels_printed'] * $result[$index]['copies'];
@@ -1189,7 +1193,7 @@ class Recharges{
       $json = array('data' => $result);
       die(json_encode($json));
    }
-   
+
    /**
     * This function gets the date bounds for uncharged LN2
     */
@@ -1199,31 +1203,31 @@ class Recharges{
               . " where rc_timestamp is null"
               . " group by date"
               . " order by date asc";
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $this->Dbase->CreateLogEntry("A problem occurred while trying to get date bounds for labels recharges","fatal");
          $result = array();
       }
-      
+
       if(count($result) > 0){
-         
+
          $json = array("error" => false, "data" => array("max" => $result[count($result) - 1]['date'], "min" => $result[0]['date']));
       }
       else {
          $json = array("error" => true, "data" => array());
       }
-      
+
       //$this->Dbase->CreateLogEntry(print_r($json, true), "fatal");
       return $json;
    }
-   
+
    /**
     * This function returns the current price of a label type
-    * 
+    *
     * @param type $type The id of the type of label from the Database
-    * 
+    *
     * @return int The actual price if gotten or 0 if no price found or an error
     *             occurres
     */
@@ -1234,20 +1238,20 @@ class Recharges{
               . " order by id desc"
               . " limit 1";
       $result = $this->Dbase->ExecuteQuery($query, array("type" => $type));
-      
+
       if($result == 1){
-         $this->Dbase->CreateLogEntry("An error occurred while trying to fetch the labels prices", "fatal");   
+         $this->Dbase->CreateLogEntry("An error occurred while trying to fetch the labels prices", "fatal");
          return 0;
       }
       else if(count($result) == 1){
          return $result[0]['price'];
       }
       else{
-         $this->Dbase->CreateLogEntry("No price gotten for label type with id = $type. Returning 0 as label price", "warnings");   
+         $this->Dbase->CreateLogEntry("No price gotten for label type with id = $type. Returning 0 as label price", "warnings");
          return 0;
       }
    }
-   
+
    /**
     * Gets the price of nitrogen from the database that is valid for today
     *
@@ -1272,7 +1276,7 @@ class Recharges{
          return 0;
       }
    }
-   
+
    /**
     * Gets the price of storage space from the database that is valid for today
     *
@@ -1297,14 +1301,14 @@ class Recharges{
          return 0;
       }
    }
-   
+
    /**
     * This function processes the current request containing space recharge info
     */
    private function submitSpaceRecharge(){
       //get all project ids
       $projects = $_REQUEST['projects'];
-      
+
       if(count($projects) > 0){
          //get all boxes for the projects
          //$projectID, $periodEnding, $pricePerBoxPerDay, $chargeCode
@@ -1332,7 +1336,7 @@ class Recharges{
                $this->Dbase->CreateLogEntry("Current project from web client doesnt have a numeric id ({$currProject['project_id']})","fatal");
             }
          }
-         
+
          //headings should be in the order of respective items in associative array
          $headings = array(
              "project" => "Project",
@@ -1346,7 +1350,7 @@ class Recharges{
              "total" => "Total Cost (USD)",
              "box_ids" => "Box IDs"
          );
-         
+
          $summaryHeadings = array(
              'project' => 'Project',
              'charge_code' => 'Charge Code',
@@ -1355,9 +1359,9 @@ class Recharges{
              'price_per_box' => "Price per Box (USD)",
              'total' => 'Total Cost for Period (USD)',
          );
-         
+
          $fileName = null;
-         
+
          if(count($result) > 0){
             $phpExcel = $this->initExcelSheet("Storage Space Recharge");
             $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
@@ -1382,8 +1386,8 @@ class Recharges{
          //send the file back
          /*header('Content-type: document');
          header('Content-Disposition: attachment; filename='. $fileName);
-         header("Expires: 0"); 
-         header("Cache-Control: must-revalidate, post-check=0, pre-check=0"); 
+         header("Expires: 0");
+         header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
          header("Content-length: " . filesize("/tmp/".$fileName));
          header('Content-Transfer-Encoding: binary');
          readfile("/tmp/" . $fileName);*/
@@ -1399,10 +1403,10 @@ class Recharges{
       else {
          $this->Dbase->CreateLogEntry("No project ids provided for storage space recharge", "fatal");
       }
-      
+
       die(json_encode(array("error" => true, "error_message" => "Something unexpected happened while trying to recharge storage space")));
    }
-   
+
    /**
     * This function processes the current request containing inventory recharge info
     */
@@ -1410,9 +1414,9 @@ class Recharges{
       $return = array("error" => false, "error_message" => "");
       $this->Dbase->CreateLogEntry(print_r($_REQUEST, true), "fatal");
       $items = $_REQUEST['items'];
-      
+
       $this->Dbase->CreateLogEntry(print_r($items, true), "fatal");
-      
+
       /*
        * What can be updated in an item:
        *  - pp_unit (and hence total price)
@@ -1429,11 +1433,11 @@ class Recharges{
          $this->Dbase->ExecuteQuery($query, array(/*"pp_unit" => $currItem['pp_unit'], */"charge_code" => $currItem['charge_code']/*, "quantity" => $currItem['quantity'], "item" => $currItem['item']*/, "id"=> $currItem['id']));
          $ids[] = $currItem['id'];
       }
-      
+
       $query = "select a.id, a.item, a.issued_by, a.issued_to, a.date_issued, a.rc_charge_code as charge_code, a.pp_unit, a.quantity"
                  . " from inventory as a"
                  . " where a.id in (".  implode(",", $ids).")";
-       
+
        $this->Dbase->CreateLogEntry($query, "fatal");
        $result = $this->Dbase->ExecuteQuery($query);
        if($result == 1){
@@ -1441,13 +1445,13 @@ class Recharges{
           $return = array("error" => true, "error_message" => "An error occurred while running one of the queries in the database");
           $result = array();
        }
-       
+
        $query = "select a.item, a.rc_charge_code as charge_code, sum(a.quantity) as quantity, sum(a.pp_unit * a.quantity) as total"
                . " from inventory as a"
                . " where a.id in (".  implode(",", $ids).")"
                . " group by a.rc_charge_code, a.item";
        $summary = $this->Dbase->ExecuteQuery($query);
-       
+
        $headings = array(
            "id" => "Item ID",
            "item" => "Item",
@@ -1459,51 +1463,52 @@ class Recharges{
            "quantity" => "Quantity",
            "total" => "Total Price (USD)"
        );
-       
+
        $summaryHeadings = array(
            "charge_code" => "Charge Code",
            "item" => "Item",
            "quantity" => "Quantity",
            "total" => "Total Cost (USD)"
        );
-       
-       for($index = 0; $index < count($result); $index++){
+
+       $res_count = count($result);
+       for($index = 0; $index < $res_count; $index++){
           $result[$index]['total'] = $result[$index]['quantity'] * $result[$index]['pp_unit'];
        }
-       
+
        $fileName = null;
-       
+
        if(count($result) > 0){
           $phpExcel = $this->initExcelSheet("Item Recharge");
           $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
           $phpExcel = $this->addSheetToExcel($phpExcel, 1, "Breakdown", $headings, $result);
-          
+
           $fileName = "/tmp/item_recharge_".date('Y_m_d')."-".time().".xlsx";
           $emailSubject = "Item Recharge";
           $emailBody = "Find attached an Excel spreadsheet containing data for item recharges.";
           $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
           $objWriter->save($fileName);
-          
+
           $this->sendRechargeEmail($emailSubject, $emailBody, $fileName);
           unlink($fileName);
-       } 
+       }
        else {
           $emailSubject = "Item Recharge";
           $emailBody = "No items found that can be recharged.";
           $this->sendRechargeEmail($emailSubject, $emailBody);
        }
-       
+
        die(json_encode($return));
    }
-   
+
    /**
     * This function processes the current request containing Liquid Nitrogen recharge info
     */
    private function submitLN2Recharge(){
       $return = array("error" => false, "error_message" => "");
-      
+
       $items = $_REQUEST['items'];
-      
+
       $ids = array();
       foreach($items as $currItem){
          //id: rowData.id, amount_appr: rowData.amount_appr, charge_code: rowData.charge_code, price: rowData.price
@@ -1512,10 +1517,10 @@ class Recharges{
                  . " set rc_timestamp = now(), rc_charge_code = :charge_code, rc_price = :price"
                  . " where id = :id";
          $this->Dbase->ExecuteQuery($query, array(/*"amount_appr" => $currItem['amount_appr'], */"charge_code" => $currItem['charge_code'], "price" => $currItem['price'], "id" => $currItem['id']));
-         
+
          $ids[] = $currItem['id'];
       }
-      
+
       /*$query = "select b.name as charge_code, a.alt_ccode, count(*) as number_requests, group_concat(a.id) as request_ids, group_concat(distinct a.added_by) as requesters, sum(a.amount_appr) as total_ln2_requested"
             . " from ln2_acquisitions as a"
             . " left join ln2_chargecodes as b on a.project_id = b.id"
@@ -1524,9 +1529,9 @@ class Recharges{
       $query = "select a.id, a.rc_charge_code as charge_code, a.added_by, a.date as request_date, a.apprvd_by, a.amount_appr, a.rc_price as price"
               . " from ln2_acquisitions as a"
               . " where a.id in (".  implode(",", $ids).")";
-      
+
       $headings = array(
-          "id" => "Request ID", 
+          "id" => "Request ID",
           "charge_code" => "Charge Code",
           "added_by" => "Requested By",
           "request_date" => "Request Date",
@@ -1535,59 +1540,60 @@ class Recharges{
           "price" => "Price Per Litre (USD)",
           "total" => "Total Cost (USD)"
       );
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       $query = "select a.rc_charge_code as charge_code, sum(a.amount_appr) quantity, sum(a.rc_price * a.amount_appr) as total"
               . " from ln2_acquisitions as a"
               . " where a.id in (".  implode(",", $ids).")"
               . " group by a.rc_charge_code";
-      
+
       $summary = $this->Dbase->ExecuteQuery($query);
-      
+
       $summaryHeadings = array(
           "charge_code" => "Charge Code",
           "quantity" => "Quantity of Liquid Nitrogen (Litres)",
           "total" => "Total Cost (USD)"
       );
-      
-      for($index = 0; $index < count($result); $index++){
+
+      $res_count = count($result);
+      for($index = 0; $index < $res_count; $index++){
          $result[$index]['total'] = $result[$index]['price'] * $result[$index]['amount_appr'];
       }
-      
+
       $fileName = null;
-      
+
       if(count($result) > 0){
          $fileName = "/tmp/ln2_recharge_".date('Y_m_d')."-".time().".xlsx";
-         
+
          $emailSubject = "Liquid Nitrogen Recharge";
          $emailBody = "Find attached an Excel spreadsheet containing data for liquid nitrogen recharges.";
-         
+
          $phpExcel = $this->initExcelSheet("Liquid Nitrogen Recharge");
          $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
          $phpExcel = $this->addSheetToExcel($phpExcel, 1, "Breakdown", $headings, $result);
          $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
          $objWriter->save($fileName);
-         
+
          $this->sendRechargeEmail($emailSubject, $emailBody, $fileName);
          unlink($fileName);
-      } 
+      }
       else {
          $emailSubject = "Liquid Nitrogen Recharge";
          $emailBody = "No items found that can be recharged.";
          $this->sendRechargeEmail($emailSubject, $emailBody);
       }
-      
+
       die(json_encode($return));
    }
-   
+
    /**
     * This function processes the current request containing labels recharge info
     */
    private function submitLabelsRecharge(){
       //id: rowData.id, charge_code: rowData.charge_code, price: rowData.price
       $return = array("error" => false, "error_message" => "");
-      
+
       $items = $_REQUEST['items'];
       $ids = array();
       foreach($items as $currItem){
@@ -1595,17 +1601,17 @@ class Recharges{
                  . " set rc_charge_code = :charge_code, rc_price = :price, rc_timestamp = now()"
                  . " where id = :id";
          $this->Dbase->ExecuteQuery($query, array("charge_code" => $currItem['charge_code'], "price" => $currItem['price'], "id" => $currItem['id']));
-         
+
          $ids[] = $currItem['id'];
       }
-      
+
       $query = "select a.id, a.requester, b.project_name, a.rc_charge_code, c.label_type, a.date as date_printed, a.total as labels_printed, a.copies, a.rc_price"
               . " from labels_printed as a"
               . " inner join lcmod_projects as b on a.project = b.id"
               . " inner join labels_settings as c on a.type = c.id"
               . " where a.id in (".  implode(",", $ids).")";
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       $query = "select a.rc_charge_code, c.label_type, sum(a.total + a.copies) as labels_printed, sum(a.rc_price * (a.total + a.copies)) as total"
               . " from labels_printed as a"
               . " inner join lcmod_projects as b on a.project = b.id"
@@ -1613,13 +1619,14 @@ class Recharges{
               . " where a.id in (".  implode(",", $ids).")"
               . " group by a.rc_charge_code, a.type";
       $summary = $this->Dbase->ExecuteQuery($query);
-      
-      for($index = 0; $index < count($result); $index++){
+
+      $res_count = count($result);
+      for($index = 0; $index < $res_count; $index++){
          $result[$index]['total'] = $result[$index]['labels_printed'] * $result[$index]['copies'] * $result[$index]['rc_price'];
       }
-      
+
       $headings = array(
-          "id" => "Printing ID", 
+          "id" => "Printing ID",
           "requester" => "Requester",
           "project_name" => "Project",
           "rc_charge_code" => "Charge Code",
@@ -1636,42 +1643,42 @@ class Recharges{
           "labels_printed" => "Number of Labels Printed",
           "total" => "Total Cost (USD)"
       );
-      
+
       $fileName = null;
-      
-      if(count($result) > 0){    
+
+      if(count($result) > 0){
          $fileName = "/tmp/labels_recharge_".date('Y_m_d')."-".time().".xlsx";
-         
+
          $phpExcel = $this->initExcelSheet("Barcode Labels Recharge");
          $phpExcel = $this->addSheetToExcel($phpExcel, 0, "Summary", $summaryHeadings, $summary);
          $phpExcel = $this->addSheetToExcel($phpExcel, 1, "Breakdown", $headings, $result);
          $objWriter = new PHPExcel_Writer_Excel2007($phpExcel);
          $objWriter->save($fileName);
-         
+
          $emailSubject = "Barcode Labels Recharge";
          $emailBody = "Find attached a csv file containing data for barcode label recharges.";
          $this->sendRechargeEmail($emailSubject, $emailBody, $fileName);
          unlink($fileName);
-      } 
+      }
       else {
          $emailSubject = "Barcode Labels Recharge";
          $emailBody = "No items found that can be recharged.";
          $this->sendRechargeEmail($emailSubject, $emailBody);
       }
-      
+
       die(json_encode($return));
    }
-   
+
    /**
     * This function generates a csv file containing data for space recharges to the specified (in get request) project
     */
    private function getSpaceBoxes($projectID, $periodEnding, $pricePerBox, $chargeCode){
-      
+
       $pricePerBoxPerDay = 0;
       if(is_numeric($pricePerBox)){
          $pricePerBoxPerDay = $pricePerBox/356;
       }
-      
+
       if(strlen($projectID) > 0 && strlen($periodEnding) > 0 && strlen($pricePerBoxPerDay) > 0 && strlen($chargeCode) > 0){
          $query = "select b.value as project, count(*) as no_boxes, d.facility as sector, group_concat(c.box_id) as box_ids, a.rc_period_ending as start_date"
                  . " from ".Config::$config['azizi_db'].".boxes_def as c"
@@ -1680,10 +1687,10 @@ class Recharges{
                  . " left join ".Config::$config['azizi_db'].".boxes_local_def as d on c.location = d.id"
                  . " where a.project = :project and a.rc_period_ending != '0000-00-00'"
                  . " group by a.rc_period_ending, d.id";
-         
+
          $this->Dbase->CreateLogEntry("query for fetching boxes to be updated with recharges ".$query, "info");
          $result = $this->Dbase->ExecuteQuery($query, array("project" => $projectID));
-         
+
          if($result == 1){
             $this->Dbase->CreateLogEntry("Unable to get details of boxes for recharging from the database. Sending empty file", "fatal");
             $result = array();
@@ -1691,7 +1698,8 @@ class Recharges{
          else {
             $allBoxIDs = array();
             $summary = null;
-            for($i = 0; $i < count($result); $i++){
+            $res_count = count($result);
+            for($i = 0; $i < $res_count; $i++){
                //calculate days between current period ending and last period ending
                $from = strtotime($result[$i]['start_date']);
                $to = strtotime($periodEnding);
@@ -1699,7 +1707,7 @@ class Recharges{
                if($to != false && $from != false && $result[$i]['start_date'] != "0000-00-00"){
                   $duration = ($to - $from)/86400;
                }
-               
+
                $total = round($pricePerBoxPerDay * $duration * $result[$i]['no_boxes'], 2);
                $result[$i]['duration'] = $duration;
                $result[$i]['end_date'] = $periodEnding;
@@ -1707,7 +1715,7 @@ class Recharges{
                $result[$i]['total'] = $total;
                $result[$i]['charge_code'] = $chargeCode;
                $result[$i]['box_ids'] = " ".$result[$i]['box_ids'];//so that the excel sheet looks more presentable
-               
+
                if($summary == null){
                   $summary = array();
                   $summary['charge_code'] = $chargeCode;
@@ -1721,10 +1729,10 @@ class Recharges{
                   $summary['no_boxes'] = $summary['no_boxes'] + $result[$i]['no_boxes'];
                   $summary['total'] = $summary['total'] + $total;
                }
-               
+
                $allBoxIDs[] = $result[$i]['box_ids'];//list of box ids seperated using commas
             }
-            
+
             //update boxes
             foreach($allBoxIDs as $currBoxIDs){
                 $query = "update ".Config::$config['dbase'].".lcmod_boxes_def"
@@ -1734,18 +1742,18 @@ class Recharges{
                 $this->Dbase->CreateLogEntry("query for updating boxes = ".$query, "info");
                 $this->Dbase->CreateLogEntry("updated box ids = ".$currBoxIDs, "info");
             }
-            
+
             $this->Dbase->CreateLogEntry("for project with id = $projectID boxes to be recharged ".print_r($result,true), "info");
-            
+
             return array("summary" => $summary, "breakdown" => $result);
          }
       }
-      
+
       $this->Dbase->CreateLogEntry("Problem with the data provided by user".print_r($_REQUEST, true), "fatal");
-      
+
       return array("summary" => array(), "breakdown" => array());
    }
-   
+
    /**
     * This function outputs all labels prices in the database as a json object
     */
@@ -1754,19 +1762,19 @@ class Recharges{
               . " from labels_prices as a"
               . " inner join labels_settings as b on a.label_type = b.id"
               . " where a.id in (select max(id) from labels_prices group by label_type)";
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $result = array();
          $this->Dbase->CreateLogEntry("An error occurred while trying to get labels prices");
       }
-      
+
       $json = array('data' => $result);
       $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
       die(json_encode($json));
    }
-   
+
    /**
     * This function outputs all Liquid Nitrogen prices in the database as a json object
     */
@@ -1774,19 +1782,19 @@ class Recharges{
       $query = "select id, price, DATE_FORMAT(start_date, '%D %M %Y') as start_date, DATE_FORMAT(end_date, '%D %M %Y') as end_date"
               . " from ln2_prices"
               . " order by id desc limit 3";
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $result = array();
          $this->Dbase->CreateLogEntry("An error occurred while trying to get LN2 prices");
       }
-      
+
       $json = array('data' => $result);
       $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
       die(json_encode($json));
    }
-   
+
    /**
     * This function outputs all storage space prices in the database as a json object
     */
@@ -1794,19 +1802,19 @@ class Recharges{
       $query = "select id, price, DATE_FORMAT(start_date, '%D %M %Y') as start_date, DATE_FORMAT(end_date, '%D %M %Y') as end_date"
               . " from storage_prices"
               . " order by id desc limit 3";
-      
+
       $result = $this->Dbase->ExecuteQuery($query);
-      
+
       if($result == 1){
          $result = array();
          $this->Dbase->CreateLogEntry("An error occurred while trying to get LN2 prices");
       }
-      
+
       $json = array('data' => $result);
       $this->Dbase->CreateLogEntry(print_r($result, true), "fatal");
       die(json_encode($json));
    }
-   
+
    /**
     * This function generates a CSV string from a two dimensional array.
     * Make sure each of the second level associative arrays the same size.
@@ -1816,7 +1824,7 @@ class Recharges{
     *    [0,1]
     *    [0,1,2]
     *  ]
-    * 
+    *
     * @param type $array
     * @param type $headingsFromKeys
     */
@@ -1824,23 +1832,23 @@ class Recharges{
       $csv = "";
       if(count($array) > 0){
          $colNum = count($array[0]);
-         
+
          if($headingsFromKeys === true){
             $keys = array_keys($array[0]);
             $csv .= "\"".implode("\",\"", $keys)."\"\n";
          }
-         
+
          foreach($array as $currRow){
             $csv .= "\"".implode("\",\"", $currRow)."\"\n";
          }
       }
-      
+
       return $csv;
    }
-   
+
    /**
     * This function sends emails using the biorepository's email address. Duh
-    * 
+    *
     * @param type $address Email address of the recipient
     * @param type $subject Email's subject
     * @param type $message Email's body/message
@@ -1855,7 +1863,7 @@ class Recharges{
       else if(strtolower($address) !== strtolower(Config::$managerEmail)){
          $cc = Config::$managerEmail;
       }
-      
+
       if($file != null){
          if($cc == null) shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" -a '.$file.' -- '.$address);
          else shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" '.' -c '.$cc.' -a '.$file.' -- '.$address);
@@ -1865,7 +1873,7 @@ class Recharges{
          else shell_exec('echo "'.$message.'"|'.Config::$muttBinary.' -F '.Config::$muttConfig.' -s "'.$subject.'" '.' -c '.$cc.' -a '.$file.' -- '.$address);
       }
    }
-   
+
    private function addSheetToExcel($phpExcel, $sheetIndex, $sheetLabel, $headings, $rows){
       if($sheetIndex != 0){
          $phpExcel->createSheet($sheetIndex);
@@ -1889,16 +1897,16 @@ class Recharges{
       $phpExcel->setActiveSheetIndex(0);
       return $phpExcel;
    }
-   
+
    /**
     * This function creates a PHPExcel object with the relevant metadata info
-    * 
+    *
     * @param type $title The title you want to give the excel document
-    * 
+    *
     * @return PHPExcel
     */
    private function initExcelSheet($title){
-      require_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
       $phpExcel = new PHPExcel();
       $phpExcel->getProperties()->setCreator("Azizi Biorepository");
       $phpExcel->getProperties()->setLastModifiedBy("Azizi Biorepository");
@@ -1907,7 +1915,7 @@ class Recharges{
       $phpExcel->getProperties()->setDescription("This Excel file has been generated using Azizi Biorepository's Software Systems that utilize the PHPExcel library on PHP. These Software Systems were created by Absolomon Kihara (a.kihara@cgiar.org) and Jason Rogena (j.rogena@cgiar.org)");
       return $phpExcel;
    }
-   
+
    /**
     * This function adds the Liquid nitrogen price in the current request into the database
     */
@@ -1915,7 +1923,7 @@ class Recharges{
       $periodStarting = $_POST['ln2_period_starting'];
       $periodEnding = $_POST['ln2_period_ending'];
       $price = $_POST['ln2_price'];
-      
+
       if(strlen($periodStarting) > 0 && strlen($periodEnding) > 0 && is_numeric($price)){
          $query = "insert into ln2_prices(start_date, end_date, price)"
                  . " values(:start_date, :end_date, :price)";
@@ -1926,7 +1934,7 @@ class Recharges{
          $this->showManagePricesPage("The data provided was mulformed. LN2 price not added.");
       }
    }
-   
+
    /**
     * This function adds the lable price in the current request into the database
     */
@@ -1935,7 +1943,7 @@ class Recharges{
       $periodEnding = $_POST['labels_period_ending'];
       $price = $_POST['labels_price'];
       $type = $_POST['labels_type'];
-      
+
       if(strlen($periodStarting) > 0 && strlen($periodEnding) > 0 && is_numeric($price) && is_numeric($type)){
          $query = "insert into labels_prices(start_date, end_date, label_type, price)"
                  . " values(:start_date, :end_date, :type, :price)";
@@ -1946,7 +1954,7 @@ class Recharges{
          $this->showManagePricesPage("The data provided was mulformed. Labels price not added.");
       }
    }
-   
+
    /**
     * This function adds the storage space price in the current request into the database
     */
@@ -1954,7 +1962,7 @@ class Recharges{
       $periodStarting = $_POST['storage_period_starting'];
       $periodEnding = $_POST['storage_period_ending'];
       $price = $_POST['storage_price'];
-      
+
       if(strlen($periodStarting) > 0 && strlen($periodEnding) > 0 && is_numeric($price)){
          $query = "insert into storage_prices(start_date, end_date, price)"
                  . " values(:start_date, :end_date, :price)";

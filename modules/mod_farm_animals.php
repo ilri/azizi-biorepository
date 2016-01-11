@@ -99,6 +99,12 @@ class FarmAnimals{
          else if(OPTIONS_REQUESTED_ACTION == 'save_exp') $this->saveNewExperiment();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->saveExperimentAnimals();      // An ambigous action name....
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'graphs'){
+         if(OPTIONS_REQUESTED_ACTION == 'weights'){
+            if(isset($_POST['animal_id'])) $this->getAnimalWeights();
+            else $this->weightGraphsHome();
+         }
+      }
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'images'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->fileUploadsHome();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->processAndSaveUploads();
@@ -127,7 +133,8 @@ class FarmAnimals{
                <li><a href="?page=farm_animals&do=events">Animal Events</a></li>
                <li><a href="?page=farm_animals&do=events&action=quick_events">Add Quick Events</a></li>
                <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
-               <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>';
+               <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>
+               <li><a href="?page=farm_animals&do=graphs&action=weights">Weight Graphs</a></li>';
          }
 ?>
       </ul>
@@ -511,7 +518,7 @@ class FarmAnimals{
     * @param   boolean        $withAnimals   Whether to get the locations with animals
     * @return  string|array   Returns a string incase of an error, else it returns an array
     */
-   private function getAnimalLocations($withAnimals = false, $groupByTopLocations = false){
+   private function getAnimalLocations($withAnimals = false, $groupByTopLocations = false, $includeDeadAnimals = true){
       // get all the level1 locations
       $query = 'select level1 from '. Config::$farm_db .'.farm_locations group by level1 order by level1';
       $res = $this->Dbase->ExecuteQuery($query);
@@ -525,7 +532,8 @@ class FarmAnimals{
       $animalLocations = array();
 
       // get all animals
-      $animalsQuery = 'select b.id, if(b.status="Alive", b.animal_id, concat(b.animal_id, " (", b.status, ")")) `name` from '. Config::$farm_db .'.farm_animal_locations as a right join '. Config::$farm_db .'.farm_animals as b on a.animal_id = b.id where a.end_date is null order by b.animal_id';
+      $deadAnimals = ($includeDeadAnimals == true) ? '' : " and b.status='Alive'";
+      $animalsQuery = 'select b.id, if(b.status="Alive", b.animal_id, concat(b.animal_id, " (", b.status, ")")) `name` from '. Config::$farm_db .'.farm_animal_locations as a right join '. Config::$farm_db .".farm_animals as b on a.animal_id = b.id where a.end_date is null $deadAnimals order by b.animal_id";
       $allAnimals = $this->Dbase->ExecuteQuery($animalsQuery);
       if($allAnimals == 1) return $this->Dbase->lastError;
 
@@ -836,7 +844,7 @@ class FarmAnimals{
    private function animalOwnersHistory(){
       $query = 'select a.animal_id, a.owner_id, c.animal_id animal, start_date, end_date, a.comments, concat(d.sname, " ", d.onames) as owner '
          . 'from '. Config::$farm_db .'.farm_animal_owners as a inner join '. Config::$farm_db .'.farm_animals as c on a.animal_id=c.id '
-         . 'inner join '. Config::$config['lims_extension'] .'.users as d on a.owner_id = d.id '
+         . 'inner join '. Config::$config['dbase'] .'.users as d on a.owner_id = d.id '
          . 'where a.animal_id = :animal_id '
          . 'order by start_date';
       $ownership = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
@@ -892,7 +900,7 @@ class FarmAnimals{
     * Move animals between pens
     */
    private function moveAnimals(){
-      $animalLocations = $this->getAnimalLocations(true, true);
+      $animalLocations = $this->getAnimalLocations(true, true, false);
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
@@ -1021,6 +1029,8 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxwindow.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/globalization/globalize.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.export.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.export.js"></script>
 <div id="events_home">
    <div id="events_grid"></div>
 </div>
@@ -1520,18 +1530,31 @@ class FarmAnimals{
     *
     * @todo Define the farm manager email as a setting
     */
-   private function emailEventsDigest(){
+   private function emailEventsDigest($email_type){
       global $Repository;
       // load the settings from the main file
       $settings = $Repository->loadSettings();
+      $this->Dbase->CreateLogEntry("sending daily digest", 'info');
 
       // get a list of all the day's events and send them to the concerned user
-      $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
-            . 'a.event_date, record_date as time_recorded, recorded_by, performed_by, b.animal_id, b.sex, event_value, a.comments  '
-          . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
-          . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
-          . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date = :event_date';
-      $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d')));
+      if($email_type == 'weekly'){
+         $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
+               . 'a.event_date, record_date as time_recorded, recorded_by, performed_by, b.animal_id, b.sex, event_value, a.comments  '
+             . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+             . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
+             . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date < :end_date and event_date > :start_date';
+         $events = $this->Dbase->ExecuteQuery($eventsQuery, array('start_date' => date('Y-m-d', strtotime('-7 days')), 'end_date' => date('Y-m-d', strtotime('+1 days'))));
+         $intro = 'Below is a digest of activities carried out on animals assigned to you and <b>RECORDED IN THE LAST 7 DAYS</b><b></b>. If you have any questions, kindly contact the farm manager through '. Config::$farmManagerEmail .'<br /><br />';
+      }
+      elseif($email_type == 'daily'){
+         $eventsQuery = 'select a.event_type_id, a.sub_event_type_id, if(d.id is null, c.event_name, concat(c.event_name, " >> ", d.sub_event_name)) as event_name, b.current_owner, '
+               . 'a.event_date, record_date as time_recorded, recorded_by, performed_by, b.animal_id, b.sex, event_value, a.comments  '
+             . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+             . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
+             . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id where event_date = :event_date and c.event_category = :cat';
+         $events = $this->Dbase->ExecuteQuery($eventsQuery, array('event_date' => date('Y-m-d'), 'cat' => 'heightened'));
+         $intro = "Below are the activities carried out on your animals and were recorded <b>". date('dS M Y') .'</b>. If you have any questions, kindly contact the farm manager through '. Config::$farmManagerEmail .'<br /><br />';
+      }
 
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
@@ -1550,8 +1573,14 @@ class FarmAnimals{
       foreach ($uniqueOwners as $owner){
          $animalsByOwner = array();
          // loop through all the affected animals and create the report
-         $content = "Dear {$owners[$owner]['name']}, <br /><br />Below is a report of the activities carried out on the farm animals assigned to you on ". date('dS M Y') .'. If you have any questions, kindly contact the farm manager through '. Config::$farmManagerEmail .'<br /><br />';
-         $content .= '<table border="1"><tr><th>Animal ID</th><th>Event Date</th><th>Event</th><th>Event Value</th><th>Recorded By</th><th>Performed By</th><th>Time Recorded</th><th>Comments</th></tr>';
+         $style = '<style type="text/css">';
+         $style .= 'table{font-family: verdana,arial,sans-serif; font-size:10px; color:#333333; border-width: 1px; border-color: #666666; border-collapse: collapse; }';
+         $style .= 'th { border-width: 1px; padding: 8px; border-style: solid; border-color: #666666; background-color: #dedede; }';
+         $style .= 'td { border-width: 1px; padding: 8px; border-style: solid; border-color: #666666; background-color: #ffffff; }';
+         $style .= '</style>';
+         $content = "Dear {$owners[$owner]['name']}, <br /><br />$intro";
+         $content .= "$style";
+         $content .= '<table><tr><th>Animal ID</th><th>Event Date</th><th>Event</th><th>Event Value</th><th>Recorded By</th><th>Performed By</th><th>Time Recorded</th><th>Comments</th></tr>';
          foreach($events as $id => $event){
             if($event['current_owner'] == $owner){
                $animalsByOwner[$id] = $event;
@@ -1563,7 +1592,9 @@ class FarmAnimals{
          // email this user with the animal report
 
          $this->Dbase->CreateLogEntry("sending an email to {$owners[$owner]['name']} with the daily digest", 'info');
-         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c 'azizibiorepository@cgiar.org' -c 's.kemp@cgiar.org' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- ". Config::$farmManagerEmail);
+//         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c 'azizibiorepository@cgiar.org' -c 's.kemp@cgiar.org' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- ". Config::$farmManagerEmail);
+//         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c '".Config::$farmManagerEmail."' -c '".Config::$farmRecordKeeperEmail."' -c '".Config::$farmManagerSupervisorEmail."' -c '".Config::$farmSystemDeveloperEmail."' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- {$owner['email']}");
+         shell_exec("echo '$content' | {$settings['mutt_bin']} -e 'set content_type=text/html' -c '".Config::$farmSystemDeveloperEmail."' -F {$settings['mutt_config']} -s 'Farm animals activities digest' -- a.kihara@cgiar.org");
       }
       die(json_encode(array('error' => false, 'mssg' => 'All processed')));
    }
@@ -1719,5 +1750,95 @@ class FarmAnimals{
       if($res1 == 1) die(json_encode(array('error' => true, 'mssg' => 'There was an error while fetching data from the database. Contact the system administrator')));
 
       die(json_encode(array('error' => false, 'mssg' => 'The record was succesfully recorded.')));
+   }
+
+   /**
+    * The home page for visualizing cow weights
+    */
+   private function weightGraphsHome(){
+      $animals = $this->getAnimalsByWeight();
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdraw.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxchart.core.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxlistbox.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxscrollbar.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdropdownlist.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+
+<div id="weights_graphs">
+   <div id="addinfo" style="font-weight: normal;">
+      This module presents a quick way of visualizing cow weights. The cows on the left are ordered by the ones losing weight the fastest. Select an animal on the left to show its weight plotted over time.
+   </div>
+   <div id="cow_details"></div>
+   <div id="cow_list"></div>
+   <div id="weight_graph"></div>
+</div>
+<div id="messageNotification"><div class="">&nbsp;&nbsp;</div></div>
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+   var animals = new Animals();
+   animals.allAnimals = <?php echo json_encode($animals); ?>;
+   $("#cow_list").jqxListBox({width: 215, source: animals.allAnimals, displayMember: 'animal_id', valueMember: 'id', height: '400px', filterable: true});
+   $("#cow_list").on('select', animals.initiateWeightsChart);
+</script>
+<?php
+   }
+
+   /**
+    * Fetch a list of animals sorted by loss of weight
+    */
+   private function getAnimalsByWeight(){
+      $animalQuery = 'select b.id, b.animal_id '
+            . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
+            . 'where event_type_id=13 and b.status="Alive"'
+            . 'group by a.animal_id';
+      $res = $this->Dbase->ExecuteQuery($animalQuery);
+      if($res == 1) return 1;
+      else{
+         $weights = array();
+         foreach($res as $r){
+            $weights[] = array('id' => $r['id'], 'animal_id' => $r['animal_id']);
+         }
+      }
+      return $weights;
+   }
+
+   /**
+    * Fetch the weights of the selected animal
+    */
+   private function getAnimalWeights(){
+      $weighingId = $this->getEventId('Weighing');
+      if(!is_numeric($weighingId)) die(json_encode(array('error' => true, 'mssg' => $weighingId)));
+
+      $weightQ = 'select date_format(event_date, "%m/%d/%Y") as eventdate, event_value as weight from '. Config::$farm_db .'.farm_animal_events where event_type_id = :event and animal_id = :animal_id order by event_date';
+      $events = $this->Dbase->ExecuteQuery($weightQ, array('event' => $weighingId, 'animal_id' => $_POST['animal_id']));
+      if($events == 1) die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+
+      header("Content-type: text/csv");
+      header("Content-Disposition: attachment; filename=file.csv");
+      header("Pragma: no-cache");
+      header("Expires: 0");
+      foreach($events as $e){
+         echo "{$e['eventdate']},{$e['weight']}\n";
+      }
+
+   }
+
+   /**
+    * Return the id of an event from the database
+    *
+    * @param   string   $eventName  The name of the event that we want to get its id
+    * @return  mixed    Returns the id if successfull else returns the error
+    */
+   private function getEventId($eventName){
+      $weightsEventQ = 'select id from '. Config::$farm_db .'.farm_events where event_name = :event_name';
+      $weightsEventName = $this->Dbase->ExecuteQuery($weightsEventQ, array('event_name' => $eventName));
+      if($weightsEventName == 1) return $this->Dbase->lastError;
+      else return $weightsEventName[0]['id'];
    }
 }

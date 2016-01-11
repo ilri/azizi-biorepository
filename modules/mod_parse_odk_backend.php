@@ -165,8 +165,14 @@ class Parser {
    private $authURL;
 
    private $selectNodesOptions;
-   
+
    private $primaryKeys;
+
+   private $sendToDMP;
+   private $dmpUser;
+   private $dmpServer;
+   private $dmpSession;
+   private $dmpLinkSheets;
 
    /**
     * This function does XML parsing of the XML structure file to obtain
@@ -183,11 +189,11 @@ class Parser {
       else {
          $this->logHandler->log(3, $this->TAG, 'Successfully parsed the form\'s XML file');
       }
-      
+
       $allInstanceNodes = $xml->getElementsByTagName('instance');
       //get the instance id for the form
       /**/
-      
+
       $optionsFromOldODK = array();//support for older odk forms
       $nodesLength = $allInstanceNodes->length;
       for($i = 0; $i < $nodesLength; $i++) {
@@ -203,7 +209,7 @@ class Parser {
                }
             }
          }
-         
+
          $instanceId = $node->attributes->item(0)->value;
          //check if instance has <options> child
          $optionsInInstance = $node->getElementsByTagName('options');
@@ -222,15 +228,13 @@ class Parser {
       $allSelectNodes = $xml->getElementsByTagName('select');
       $nodesLength = $allSelectNodes->length;
       $allNodes = array();
-      
+
       // traverse all nodes and get the name of the node and the possible options
       for($i = 0; $i < $nodesLength; $i++){
          //$nodeName = $allSelectNodes[$i]->attributes->item(0)->value;
          $node = $allSelectNodes->item($i);
-         $this->logHandler->log(4, $this->TAG, "Value of current node = ".$node->nodeValue);
          $nodeName = $node->attributes->item(0)->value;
-         $this->logHandler->log(4, $this->TAG, "Value of nodeName = ".$nodeName);
-         
+
          // format the nodeName by removing the leading form name before the first / and then replace the rest of the / with '-' to match the column names as per the csv files
          $nodeName = substr($nodeName, strpos($nodeName, '/', 1)+1);
          $nodeName = str_replace('/', '-', $nodeName);
@@ -273,7 +277,6 @@ class Parser {
       }
       $this->selectNodesOptions = $allNodes;
       $this->logHandler->log(3, $this->TAG, "Done getting all multiselect questions");
-      $this->logHandler->log(4, $this->TAG, "Multi select options  = ".  print_r($this->selectNodesOptions, true));
       return;
    }
 
@@ -294,6 +297,20 @@ class Parser {
       $this->idPrefix = null;
       $this->odkInstance = null;
       $this->parseType = $_POST['parseType'];
+      $this->sendToDMP = "no";//default is no
+      $this->dmpUser = "";
+      $this->dmpServer = "";
+      $this->dmpSession = "";
+      $this->dmpLinkSheets = false;
+      if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
+      if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
+      if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
+      if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
+      if(isset($_POST['dmpLinkSheets'])) {
+         $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
+         if($this->dmpLinkSheets == "yes") $this->dmpLinkSheets = true;
+         else $this->dmpLinkSheets = false;
+      }
       $this->logHandler->log(3, $this->TAG, 'requested parse type is '.$this->parseType);
       $this->sheetIndexes = array();
       $this->allColumnNames = array();
@@ -320,10 +337,10 @@ class Parser {
 
       //$this->rootDirURI = "/~jason/ilri/ODKParser/";
       $this->rootDirURI = $this->settings['root_uri'];
-      
+
       // get the multiple select options
       $this->parseXML();
-      
+
       $this->loadXML();
       include_once $this->settings['common_lib_dir'].'PHPExcel/Classes/PHPExcel.php';
 
@@ -380,7 +397,6 @@ class Parser {
 
           //replace all : in headings with -
           $multiSelectQuestions = array_keys($this->selectNodesOptions);//includes those in main_sheet and other sheets
-          $this->logHandler->log(4, $this->TAG, "headings before = ".  print_r($this->cells[0], true));
           for($i=0; $i < count($this->cells[0]); $i++){
              $this->cells[0][$i] = str_replace(":", "-", $this->cells[0][$i]);
           }
@@ -406,15 +422,6 @@ class Parser {
          unlink($this->authCookies);
       }
 
-
-      //clean all sheets
-      /*if($this->parseType !== "viewing"){
-          $sheetArrayKeys = array_keys($this->sheetIndexes);
-          foreach ($sheetArrayKeys as $currSheet){
-              $this->cleanSheet($currSheet);
-          }
-      }*/
-
       $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$mainSheetKey]);
 
       //save the excel object
@@ -422,8 +429,9 @@ class Parser {
       if(!file_exists($this->downloadDir)){
          mkdir($this->downloadDir,0777,true);
       }
+      $dataFileLoc = $this->downloadDir.'/'.$_POST['fileName'].'.xlsx';
       $objWriter = new PHPExcel_Writer_Excel2007($this->phpExcel);
-      $objWriter->save($this->downloadDir.'/'.$_POST['fileName'].'.xlsx');
+      $objWriter->save($dataFileLoc);
 
       //create dictionary and save in download dir
       $this->logHandler->log(3, $this->TAG, 'Creating dictionary');
@@ -465,24 +473,144 @@ class Parser {
 
       $dicObjWriter = new PHPExcel_Writer_Excel2007($dictionary);
       $dicObjWriter->save($this->downloadDir.'/dictionary.xlsx');
+      if($this->sendToDMP == "yes") {
+         $this->logHandler->log(3, $this->TAG, "Creating a new DMP project with parsed files");
+         if(strlen($this->dmpServer) > 0 && strlen($this->dmpSession) > 0 && strlen($this->dmpUser) > 0) {
+            $authToken = array(
+               "server" => $this->dmpServer,
+               "user" => $this->dmpUser,
+               "session" => $this->dmpSession
+            );
+            $dataPayload = array(
+               "data_file_url" => str_replace($this->ROOT, "", $dataFileLoc),
+               "workflow_name" => $_POST['fileName']
+            );
+            $dmpData = $this->sendDataFileToDMP($dataPayload, $authToken);
+            if($dmpData != null) {
+               if($dmpData['status']['healthy'] == true) {
+                  $workflowId = $dmpData['workflow_id'];
+                  $dataPayload = array(
+                     "workflow_id" => $workflowId,
+                     "link_sheets" => $this->dmpLinkSheets
+                  );
+                  $schemaData = $this->initializeDMPSchema($dataPayload, $authToken);
+                  if($schemaData['status']['healthy'] == true){
+                     $this->logHandler->log(3, $this->TAG, "Successfully created DMP project with id '$workflowId' for '{$_POST['fileName']}'");
+                     $this->sendEmail("DMP Project for ".$_POST['fileName']." (".$workflowId.")", "Successfully created a DMP project for {$_POST['fileName']}. You can access this project by visiting the Biorepository site.");
+                  }
+                  else {
+                     $this->logHandler->log(1, $this->TAG, "Unable to create a DMP schema for '{$_POST['fileName']}' ($workflowId). An error occurred.");
+                     $this->logHandler->log(1, $this->TAG, print_r($dmpData['status'], true));
+                     $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not generate the database schema for {$_POST['fileName']}. An system error occurred. Please contact the system administrators for assistance.\n".print_r($dmpData['status']['errors'], true));
+                  }
+                  //TODO: send the images and dictionary
+               }
+               else {
+                  $this->logHandler->log(1, $this->TAG, "Unable to create the DMP project for '{$_POST['fileName']}'. An error occurred while creating the project");
+                  $this->logHandler->log(1, $this->TAG, print_r($dmpData['status'], true));
+                  $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. An system error occurred while trying to initialize the project. Please contact the system administrators for assistance.\n".print_r($dmpData['status']['errors'], true));
+               }
+            }
+         }
+         else {
+            $this->logHandler->log(1, $this->TAG, "Unable to create the DMP project for '{$_POST['fileName']}'. One or more of the authentication token variables is not set");
+            $this->logHandler->log(1, $this->TAG, "server = {$this->dmpServer}, username = {$this->dmpUser}, session = {$this->dmpSession}");
+            $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. The authentication token provided to the server is incomplete. Please contact the system administrators for assistance.");
+         }
+      }
+      else {
+         //zip parsed files
+         $zipName = 'download/'.$_POST['fileName']."_".$this->sessionID.'.zip';
+         $downloadFileName = 'download/'.rawurlencode($_POST['fileName'])."_".$this->sessionID.'.zip';
+         //$this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
+         $this->logHandler->log(3, $this->TAG, 'zipping output files into '.$zipName);
+         $this->gTasks->zipDir($this->downloadDir, $this->ROOT.$zipName);
+         //$this->deleteDir($this->downloadDir);
+         $this->logHandler->log(3, $this->TAG, 'deleting temporary dir '.$this->downloadDir);
+         $this->gTasks->deleteDir($this->downloadDir);
 
-      //zip parsed files
-      $zipName = 'download/'.$_POST['fileName']."_".$this->sessionID.'.zip';
-      $downloadFileName = 'download/'.rawurlencode($_POST['fileName'])."_".$this->sessionID.'.zip';
-      //$this->zipParsedItems($this->downloadDir, $this->ROOT.$zipName);
-      $this->logHandler->log(3, $this->TAG, 'zipping output files into '.$zipName);
-      $this->gTasks->zipDir($this->downloadDir, $this->ROOT.$zipName);
-      //$this->deleteDir($this->downloadDir);
-      $this->logHandler->log(3, $this->TAG, 'deleting temporary dir '.$this->downloadDir);
-      $this->gTasks->deleteDir($this->downloadDir);
-
-      //send zip file to specified email
-      $this->sendZipURL($downloadFileName);
+         //send zip file to specified email
+         $this->sendZipURL($downloadFileName);
+      }
    }
-   
+
+   private function sendDataFileToDMP($dataPayload, $authToken) {
+      $postData = array(
+         "data" => $dataPayload,
+         "token" => $authToken
+      );
+      $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=init_workflow");
+
+      curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+
+      $result = curl_exec($ch);
+      $http_status = curl_getinfo($ch);
+      curl_close($ch);
+      if($http_status == 400) {//bad request
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Bad request");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. The data provided to the server is incomplete. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 403) {//forbidden
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 403 - Forbidden");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. Your account was denied permission to create the project. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 500) {//server error
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Server error");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. An error occurred while processing the parsed data file. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else {
+         return json_decode($result, true);
+      }
+   }
+
+   private function initializeDMPSchema($dataPayload, $authToken) {
+      $postData = array(
+         "data" => $dataPayload,
+         "token" => $authToken
+      );
+      $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=process_mysql_schema");
+
+      curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+
+      $result = curl_exec($ch);
+      $http_status = curl_getinfo($ch);
+      curl_close($ch);
+      if($http_status == 400) {//bad request
+         $this->logHandler->log(1, $this->TAG, "Could not initialize the schema for DMP project corresponding to {$_POST['fileName']}. DMP returned status code 400 - Bad request");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not initialize the DMP database schema for {$_POST['fileName']}. The data provided to the server is incomplete. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 403) {//forbidden
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 403 - Forbidden");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not initialize the DMP database schema for {$_POST['fileName']}. Your account was denied permission to create the project. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 500) {//server error
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Server error");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not initialize the DMP database schema for {$_POST['fileName']}. An error occurred while processing the parsed data file. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else {
+         return json_decode($result, true);
+      }
+   }
+
    private function addColumnsToRows($multiDimensionArray, $columnIndex, $columnsToInsert) {
       $arraySize = count($multiDimensionArray);
-      
+
       //if column index is 0 just array_merge the two arrays
       if($columnIndex == 0){
          for($index = 0; $index < $arraySize; $index++) {
@@ -974,15 +1102,16 @@ class Parser {
             }
         }
     }
-    
+
     /**
      * This function trys to shorten the provided sheet name if it's more than
      * 30 characters long
-     * 
+     *
      * @param String $sheetName  The current sheet name
      * @return String   The shortened sheet name
      */
     private function shortenSheetName($sheetName) {
+       $sheetName = str_replace(":", "-", $sheetName);
        if(strlen($sheetName) > 30){
           $sheetName = substr($sheetName, -30);//get the last 30 characters of the name
           if(strstr($sheetName, "-") !== false){//there is at least one '-' in the shortened sheet name
@@ -1081,7 +1210,7 @@ class Parser {
       if (!in_array($sheetName, $sheetNames)) {
          $this->nextRowName[$sheetName] = 0;
       }
-      
+
       if(!isset($this->primaryKeys[$sheetName])){
          $this->primaryKeys[$sheetName] = 1;
       }
@@ -1123,8 +1252,6 @@ class Parser {
 
          if (sizeof($htmlTables[1]) === 1) {//allow only http redirects and 200 status codes
             $dataTable = $htmlTables[1][0];
-            //print_r($htmlTables);
-            //get the table headers <th>
             $th = array();
             $uncleanTHs = explode('</th>', $dataTable);
             $cleanTHCount = 0;
@@ -1146,7 +1273,6 @@ class Parser {
                }
                $cleanCSVRows[0][$i] = $headings[$i];
             }
-            $this->logHandler->log(4, $this->TAG, "cleanCSVRows looks like this " . print_r($cleanCSVRows, true));
 
             $tr = array();
             preg_match_all("/<\/th>\s*(<tr>.*<\/tr>$)/", $dataTable, $tr);
@@ -1210,7 +1336,6 @@ class Parser {
                      //$this->nextRowName[$sheetName] ++;
                   }
                }
-               $this->logHandler->log(4, $this->TAG, "cleanCSVRows now looks like this " . print_r($cleanCSVRows, true));
                //clean csv rows
                $cleanCSVRows = $this->expandMultiSelectQuestions($cleanCSVRows);
                $sheetNames = array_keys($this->sheets);
@@ -1243,7 +1368,6 @@ class Parser {
    private function expandMultiSelectQuestions($originalCSVRows){
        if($this->parseType !== "viewing"){
           $multiSelectQuestions = array_keys($this->selectNodesOptions);//includes those in main_sheet and other sheets
-          $this->logHandler->log(4, $this->TAG, "headings before = " . print_r($originalCSVRows[0], true));
           for ($i = 0; $i < count($originalCSVRows[0]); $i++) {
            //check if current cell is a multi select question
            if (array_search($originalCSVRows[0][$i], $multiSelectQuestions) !== false) {//current cell contains the heading of a multi select question
@@ -1279,43 +1403,9 @@ class Parser {
               $originalCSVRows = $this->addColumnsToRows($originalCSVRows, $i + 1, $toBeInserted);
            }
         }
-        $this->logHandler->log(4, $this->TAG, "headings after = " . print_r($originalCSVRows[0], true));
        }
       return $originalCSVRows;
    }
-
-    /**
-    * This method checks all cells in the sheet specified to see if they are blank and inserts a 0 if blank found
-    *
-    * @param    string      $sheetName      The name of the sheet eg main_sheet
-    */
-   private function cleanSheet($sheetName){
-       $this->logHandler->log(3, $this->TAG, 'cleaning '.$sheetName.' sheet ');
-       $this->phpExcel->setActiveSheetIndex($this->sheetIndexes[$sheetName]);
-       foreach($this->phpExcel->getActiveSheet()->getRowIterator() as $row){
-           $rowIndex = $row->getRowIndex();
-           //get array of all column headings in sheet
-           if(sizeof($this->allColumnNames)>0)//means we are parsing json
-               $sheetRowHeadings = $this->allColumnNames[$sheetName];
-           else if(sizeof($this->sheets)>0)//means we are parsing csv
-               $sheetRowHeadings = $this->sheets[$sheetName];
-           foreach($sheetRowHeadings as $columnHeading){
-               //get column name/id corresponding to columnHeading
-               if(sizeof($this->allColumnNames)>0)//means we are parsing json
-                   $columnName = $this->getColumnName($sheetName, $columnHeading);
-               else if(sizeof($this->sheets)>0)//means we are parsing csv
-                   $columnName = $this->getColumnName(NULL, NULL, array_search($columnHeading, $sheetRowHeadings));
-               $cellName = $columnName.$rowIndex;
-               $cell = $this->phpExcel->getActiveSheet()->getCell($cellName);
-               if(strlen($cell->getValue()) === 0){
-                   // $this->logHandler->log(4, $this->TAG, 'cell '.$cellName.' in '.$sheetName.' is empty, inserting 0 into it');
-                   //setting cell value to 0 if cell is blank
-                   $this->phpExcel->getActiveSheet()->setCellValue($cellName, "0");
-               }
-           }
-       }
-   }
-
 
    /**
     * This function gets the string corresponding to a string code used in ODK eg if mlk is passed to this function and mlk = Milk according to the xml file
@@ -1392,7 +1482,7 @@ class Parser {
            $columns[0] = str_replace("\"","",$columns[0]);
            $columns[$columnCount - 1] = str_replace("\"", "", $columns[$columnCount - 1]);
            $columns[$columnCount - 1] = trim($columns[$columnCount - 1], "\n\r");//remove new lines from last column
-           
+
            if($index===0){
                array_unshift($columns,"primary_key");
            }
@@ -1506,6 +1596,10 @@ class Parser {
        else {
             return TRUE;
        }
+   }
+
+   private function sendEmail($subject, $message) {
+      shell_exec('echo "'."Hi {$_POST['creator']},\n".$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$subject.'" -- '.$_POST['email']);
    }
 
 }

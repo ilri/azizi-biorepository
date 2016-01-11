@@ -1,4 +1,4 @@
 <?php
-require_once 'repository_config';
+include_once 'repository_config';
 die (Config::$rsaPubKey);
 ?>

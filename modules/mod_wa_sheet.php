@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This class implements logic for a table in the workflow. Tables can be 
+ * This class implements logic for a table in the workflow. Tables can be
  * described as What was initially excel sheets in data files
  */
 
@@ -10,27 +10,28 @@ class WASheet {
    private $config;
    private $lH;
    private $database;
-   private $excelObject; //excel object and columns can be used interchangebly. They both store the sheet schema
-   private $columns;//array of WAColumns in this object
+   private $excelObject;   //excel object and columns can be used interchangebly. They both store the sheet schema
+   private $columns;        //array of WAColumns in this object
    private $sheetName;
-   private $columnArray;//this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
+   private $columnArray;   //this array stores the sheet columns in an array with the first excel sheet being the indexes of the first level arrays consecutive rows as array items
    private $fileDetails;
-   
+   private $isMain;
+
    /**
     * Default constructor for this class
-    * 
+    *
     * @param Object   $config       The repository_config object
     * @param Database $database     The database object to be used for queries
     * @param PHPExcel $excelObject  The excel object where data is to be read from
     * @param string   $sheetName    Name of the sheet in the excelObject to process
-    * 
+    *
     */
    public function __construct($config, $database, $excelObject, $sheetName, $fileDetails = null) {
       include_once 'mod_log.php';
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_wa_column.php';
-      
+
       $this->config = $config;
       $this->lH = new LogHandler("./");
       $this->database = $database;
@@ -38,20 +39,48 @@ class WASheet {
       $this->sheetName = $sheetName;
       $this->columns = array();
       $this->fileDetails = $fileDetails;
-      
+      $this->isMain = false;
+
       if($this->excelObject == null) {//means data already stored in database
          $this->getCachedCopy();//this function will not initialize $this->excelObject but instead will initialize $this->$columnSchemas
       }
    }
-   
+
    public function getSheetName() {
       return $this->sheetName;
    }
-   
+
+   public function setIsMain($isMain) {
+      $this->isMain = $isMain;
+   }
+
+   public function getColumns() {
+      return $this->columns;
+   }
+
+   public function getColumn($columnName) {
+      foreach ($this->columns as $currColumn) {
+         if($currColumn->getName() == $columnName) {
+            return $currColumn;
+         }
+      }
+      throw WAException("Unable to get column with the name '$columnName' in $this->sheetName", WAException::$CODE_WF_INSTANCE_ERROR, null);
+   }
+
+   public function getPrimaryKey() {
+      foreach($this->columns as $currColumn) {
+         if($currColumn->getKey() == Database::$KEY_PRIMARY) {
+            return $currColumn;
+         }
+      }
+      $this->lH->log(1, $this->TAG, "Could not get the primary key for '{$this->sheetName}'");
+      throw WAException("$this->sheetName does not have a primary key", WAException::$CODE_WF_INSTANCE_ERROR, null);
+   }
+
    /**
     * This function initializes this object using details stored in the MySQL database
     * @param boolean $initColumns   Whether to also initialize all the columns
-    * 
+    *
     * @throws WAException
     */
    private function getCachedCopy() {
@@ -60,8 +89,9 @@ class WASheet {
          try {
             //$query = "describe `{$this->sheetName}`";
             $result = $this->database->getTableDetails($this->database->getDatabaseName(), $this->sheetName);//TODO: might need a check on whether database name is same as workflow instance
-            for($index = 0; $index < count($result); $index++) {
-               $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
+            $res_count = count($result);
+            for($index = 0; $index < $res_count; $index++) {
+               $currColumn = new WAColumn($this->config, $this->database, $result[$index]['name'], $this->lH, null, $result[$index]['type'], $result[$index]['length'], $result[$index]['nullable'], $result[$index]['default'], $result[$index]['key']);
                array_push($this->columns, $currColumn);
             }
          } catch (WAException $ex) {
@@ -74,23 +104,24 @@ class WASheet {
          throw new WAException("Unable to get schema details for data table (sheet) with name = '$this->sheetName' from the database because sheet object not initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
    /**
     * This function gets data for this sheet that has been dumped in the database
-    * 
+    *
     * @param String $prefix   The prefix to determine which columns to get data for
-    * 
+    *
     * @return array  An associative array with the data
     */
-   public function getDatabaseData($prefix = array()) {
+   public function getDatabaseData($prefix = array(), $whereClause = "") {
       $data = array();
       $selectColumnsString = "";
       $entireSheetMatches = false;//whether the entire sheet matches prefix
-      if(count($prefix) == 0){
+      $pref_count = count($prefix);
+      if($pref_count == 0){
          $entireSheetMatches = true;
       }
       else {
-         for($pIndex = 0; $pIndex < count($prefix); $pIndex++) {
+         for($pIndex = 0; $pIndex < $pref_count; $pIndex++) {
             $currPrefix = $prefix[$pIndex];
             if($currPrefix === "" || strrpos($this->sheetName, $currPrefix, -strlen($this->sheetName)) !== FALSE) {//column has prefix
                $entireSheetMatches = true;
@@ -100,7 +131,8 @@ class WASheet {
          }
       }
       try {
-         for($cIndex = 0; $cIndex < count($this->columns); $cIndex++) {
+         $clmn_count = count($this->columns);
+         for($cIndex = 0; $cIndex < $clmn_count; $cIndex++) {
             $currColumn = $this->columns[$cIndex];
             if($entireSheetMatches == true) {//add the column since the entire sheet matches at least one prefix
                if(strlen($selectColumnsString) == 0) $selectColumnsString = Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
@@ -108,7 +140,8 @@ class WASheet {
             }
             else {
                //search if the current column matches any of the prefixes
-               for($pIndex = 0; $pIndex < count($prefix); $pIndex++){
+
+               for($pIndex = 0; $pIndex < $pref_count; $pIndex++){
                   $currPrefix = $prefix[$pIndex];
                   if(strrpos($currColumn->getName(), $currPrefix, -strlen($currColumn->getName())) !== FALSE) {
                      if(strlen($selectColumnsString) == 0) $selectColumnsString = Database::$QUOTE_SI.$currColumn->getName().Database::$QUOTE_SI;
@@ -119,7 +152,7 @@ class WASheet {
             }
          }
          if(strlen($selectColumnsString) > 0) {
-            $query = "select $selectColumnsString from ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI;
+            $query = "select $selectColumnsString from ".Database::$QUOTE_SI.$this->sheetName.Database::$QUOTE_SI." ".$whereClause;
             $data = $this->database->runGenericQuery($query, TRUE);
          }
          else {
@@ -131,10 +164,10 @@ class WASheet {
          throw new WAException("An error occurred while trying to get database data from ".$this->sheetName, WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function renames this sheet even in the database
-    * 
+    *
     * @param type $newName
     * @throws WAException
     */
@@ -152,7 +185,7 @@ class WASheet {
          throw new WAException("Could not rename '{$this->sheetName}' because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
    /**
     * This function dumps data from the data file into the sheet's database table
     */
@@ -167,19 +200,22 @@ class WASheet {
             $this->processColumns();
             //move what is in columnArray to an sql insert statement
             $dataColumns = array();
-            for($index = 0; $index < count($this->columns); $index++) {
+            $clmn_count = count($this->columns);
+            for($index = 0; $index < $clmn_count; $index++) {
                $currColumn = $this->columns[$index];
-               
+
                $oColumnName = WAColumn::getOriginalColumnName($this->database, $this->fileDetails['filename'], $this->sheetName, $currColumn->getName());
                $this->lH->log(4, $this->TAG, "Current original column name = ".$oColumnName);
                $currColumn->setData($this->columnArray[$oColumnName]);
                $dataColumns[] = $currColumn;
             }
-            $this->lH->log(4, $this->TAG, "Number of data columns = ".count($dataColumns));
-            if(count($dataColumns) > 0) {
+            $dcl_count = count($dataColumns);
+            $this->lH->log(4, $this->TAG, "Number of data columns = $dcl_count");
+            if($dcl_count > 0) {
                //get the maximum row count
                $rowCount = 0;
-               foreach($dataColumns as $currDataColumn) {
+               for($z = 0; $z < $dcl_count; $z++) {
+                  $currDataColumn = $dataColumns[$z];
                   if(count($currDataColumn->getData()) > $rowCount) {
                      $rowCount = count($currDataColumn->getData());
                   }
@@ -189,7 +225,7 @@ class WASheet {
                $fullQuery = "";
                for($rIndex = 0; $rIndex < $rowCount; $rIndex++) {
                   $row = array();
-                  for($cIndex = 0; $cIndex < count($dataColumns); $cIndex++){
+                  for($cIndex = 0; $cIndex < $dcl_count; $cIndex++){
                      if(count($dataColumns[$cIndex]->getData()) > 0){
                         $cData = $dataColumns[$cIndex]->getData();
                         $cValue = $cData[$rIndex];
@@ -262,10 +298,10 @@ class WASheet {
          throw new WAException("Could not dump data into '{$this->sheetName}' because the sheet object wasn't initialized correctly", WAException::$CODE_WF_PROCESSING_ERROR, null);
       }
    }
-   
+
    /**
     * This function deletes this sheet from the database
-    * 
+    *
     * @throws WAException
     */
    public function delete() {
@@ -284,7 +320,7 @@ class WASheet {
          throw new WAException("Could not delete '{$this->sheetName}' because sheet object wasn't initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
    /**
     * This function unloads all the columns owned by this sheet from memory
     */
@@ -294,10 +330,10 @@ class WASheet {
       unset($this->columns);
       unset($this->columnArray);
    }
-   
+
    public function alterColumn($columnDetails) {
       //check whether column already exists
-      if(array_key_exists("original_name", $columnDetails) 
+      if(array_key_exists("original_name", $columnDetails)
               && array_key_exists("name", $columnDetails)
               && array_key_exists("delete", $columnDetails)
               && array_key_exists("type", $columnDetails)
@@ -306,7 +342,8 @@ class WASheet {
               && array_key_exists("default", $columnDetails)
               && array_key_exists("key", $columnDetails)) {
          $column = null;
-         for($index = 0; $index < count($this->columns); $index++) {
+         $clmn_count = count($this->columns);
+         for($index = 0; $index < $clmn_count; $index++) {
             $currColumn = $this->columns[$index];
             if($currColumn->getName() == $columnDetails['original_name']) {
                $column = $currColumn;
@@ -316,7 +353,7 @@ class WASheet {
 
          if($column != null) {
             if($columnDetails['delete'] === false) {
-               $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' in '{$this->sheetName}'");
+               $this->lH->log(3, $this->TAG, "Altering '{$columnDetails['original_name']}' to '{$columnDetails['name']}' in '{$this->sheetName}'");
                try {
                   $column->update($this->sheetName, $columnDetails['name'], $columnDetails['type'], $columnDetails['length'], $columnDetails['nullable'], $columnDetails['default'], $columnDetails['key']);
                }
@@ -346,10 +383,10 @@ class WASheet {
          throw new WAException("Column details for '{$columnDetails['original_name']}' mulformed", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
    /**
     * This function returns the schema corresponding to this sheet as an array
-    * 
+    *
     * @return Array
     */
    public function getSchema() {
@@ -357,16 +394,18 @@ class WASheet {
               && $this->columns != null) {
          $schema = array(
              "name" => $this->sheetName,
+             "is_main" => $this->isMain,
              "columns" => array()
          );
-         
+
          //$this->lH->log(4, $this->TAG, "Columns = ".print_r($this->columns, true));
-         
-         for($index = 0; $index < count($this->columns); $index++) {
+
+         $clmn_count = count($this->columns);
+         for($index = 0; $index < $clmn_count; $index++) {
             $currColumn = $this->columns[$index];
             array_push($schema['columns'], $currColumn->getSchema());
          }
-         
+
          return $schema;
       }
       else {
@@ -374,14 +413,14 @@ class WASheet {
          throw new WAException("Unable to get schema details for data table (sheet) with name = '$this->sheetName' because sheet object not initialized correctly", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
    /**
     * This function saves this object as a MySQL table. Sheet columns become
     * MySQL columns
-    * 
+    *
     * @throws WAException
     */
-   public function saveAsMySQLTable($linkSheets, $mysqlColumns = array()) {
+   public function saveAsMySQLTable($workflow, $linkSheets, $mysqlColumns = array(), $allSheetNames = null) {
       try {
          $columnNames = array_keys($this->columnArray);
          $columnsProvided = false;
@@ -394,19 +433,14 @@ class WASheet {
          }
          if($columnsProvided == false){
             $this->processColumns();
-            if(is_array($this->columnArray) 
+            if(is_array($this->columnArray)
               && count($this->columnArray) > 0) {
                $this->switchToThisSheet();
-               for($index = 0; $index < count($columnNames); $index++) {
-                  if(strlen($columnNames[$index]) <= Database::$MAX_TABLE_NAME_LENGTH){
-                     $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->columnArray[$columnNames[$index]]);
-                     $currMySQLColumn = $currColumn->getMySQLDetails($linkSheets);
-                     array_push($mysqlColumns, $currMySQLColumn);
-                  }
-                  else {
-                     $this->lH->log(1, $this->TAG, "Column '{$columnNames[$index]}' has a name that is longer than ".Database::$MAX_TABLE_NAME_LENGTH." characters long");
-                     throw new WAException("Column '{$columnNames[$index]}' has a name that is longer than ".Database::$MAX_TABLE_NAME_LENGTH." characters long", WAException::$CODE_WF_PROCESSING_ERROR, null);
-                  }
+               $columnCount = count($columnNames);
+               for($index = 0; $index < $columnCount; $index++) {
+                  $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->lH, $this->columnArray[$columnNames[$index]]);
+                  $currMySQLColumn = $currColumn->getMySQLDetails($workflow, $this->sheetName, $linkSheets);
+                  array_push($mysqlColumns, $currMySQLColumn);
                }
             }
             else {
@@ -416,16 +450,23 @@ class WASheet {
          }
 
          $columnCount = count($columnNames);
-         if($linkSheets) $columnCount++;
+         if($linkSheets == true && $columnsProvided == false) $columnCount++;
+
          if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
             $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
             throw new WAException("Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in data file", WAException::$CODE_WF_PROCESSING_ERROR, null);
          }
          else {//everything seems to be fine with the data to be pushed to the MySQL database
             try {
-
-               $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns, $linkSheets);
-
+               //determine the parent table
+               $parentSheet = null;
+               if($linkSheets == true && $allSheetNames != null) {
+                  $parentSheet = $this->getParentSheet($allSheetNames);
+               }
+               else if($linkSheets == true) {
+                  throw new WAException("Could not determine the parent sheet for '$this->sheetName'. The names of all the workflow sheets were not provided", WAException::$CODE_WF_PROCESSING_ERROR, null);
+               }
+               $this->database->runCreateTableQuery($this->sheetName, $mysqlColumns, $linkSheets, $parentSheet);
             } catch (WAException $ex) {
                $this->lH->log(1, $this->TAG, "Unable to create database table for sheet with name = '{$this->sheetName}' for workflow with id = '{$this->database->getDatabaseName()}'");
                throw new WAException("Unable to create MySQL table for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
@@ -436,7 +477,41 @@ class WASheet {
          throw new WAException("Unable to process columns for sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
+   private function getParentSheet($allSheetNames) {
+      if($this->columnArray != null && count($this->columnArray) > 0) {
+         if(isset($this->columnArray['secondary_key'])) {
+            $firstSeconaryKey = $this->columnArray['secondary_key'][0];
+            if(isset($firstSeconaryKey) && strlen($firstSeconaryKey) > 0) {
+               $parent = "";
+               foreach ($allSheetNames as $currSheetName) {
+                  if($currSheetName != $this->sheetName && strpos($firstSeconaryKey, $currSheetName) !== false) {
+                     if(strlen($currSheetName) > strlen($parent)) $parent = $currSheetName;
+                  }
+               }
+               if(strlen($parent) > 0) {
+                  return $parent;
+               }
+               else {
+                  return "main_sheet";
+               }
+            }
+            else {
+               throw new WAException("Could not determine parent sheet for '{$this->sheetName}' since the first row for 'secondary_key' is not set", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+            }
+         }
+         else if($this->sheetName == "main_sheet") {//we don't expect main_sheet to have a parent
+            return null;
+         }
+         else {//file probably not generated by the parser
+            throw new WAException("Could not determine parent sheet for '{$this->sheetName}' since the sheet does not have the 'secondary_key' column and is not the main_sheet sheet", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+         }
+      }
+      else {
+         throw new WAException("Could not determine the parent sheet for {$this->sheetName} because column data has not been set", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
+      }
+   }
+
    /**
     * This function returns the sheet's data as an associative array
     */
@@ -449,11 +524,11 @@ class WASheet {
          throw new WAException("Unable to extract data from sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function processes each of the columns in the sheet to determin their
     * datatypes
-    * 
+    *
     * @throws WAException
     */
    public function processColumns($limit = false) {
@@ -463,10 +538,11 @@ class WASheet {
          /*Refer to http://stackoverflow.com/questions/8583915/phpexcel-read-all-values-date-time-numbers-as-strings
           * for an explanation on how to use toArray
           */
-         
+
          $activeSheet = $this->excelObject->getActiveSheet()->toArray(null, true, false, false);
-         for($rowIndex = 0; $rowIndex < count($activeSheet); $rowIndex++){
-            $this->lH->log(4, $this->TAG, "Current row index = $rowIndex");
+         $acs_count = count($activeSheet);
+         $this->lH->log(4, $this->TAG, "The sheet '{$this->sheetName}' has $acs_count rows");
+         for($rowIndex = 0; $rowIndex < $acs_count; $rowIndex++){
             $columnNumber = -1;
             if($rowIndex == 0) {//we are in the first row (assume first row has column headings)
                //create an array for each column heading
@@ -495,14 +571,15 @@ class WASheet {
                }
             }
             else {//iterating though data rows (not heading rows)
-               if(count($this->columnArray) > 0) {
-                  
-                  for($columnIndex = 0; $columnIndex < count($this->columnArray); $columnIndex++){
+               $cla_count = count($this->columnArray);
+               if($cla_count > 0) {
+
+                  for($columnIndex = 0; $columnIndex < $cla_count; $columnIndex++){
                      $headingCell = $activeSheet[0][$columnIndex];
                      $cellValue = trim($activeSheet[$rowIndex][$columnIndex]);
                      $this->columnArray[$headingCell][$rowIndex - 1] = $cellValue;
                   }
-                  
+
                   //$this->lH->log(4, $this->TAG, "Columns for sheet '{$this->sheetName}' are ".print_r($this->columnArray, true));
                }
                else {
@@ -513,60 +590,16 @@ class WASheet {
                }
             }
          }
-         /*foreach($this->excelObject->getActiveSheet()->getRowIterator() as $row){
-            $rowIndex = $row->getRowIndex();
-            
-            $columnNumber = -1;
-            if($rowIndex == 1){//the first row
-               $columnIndex = 0;
-               while($columnNumber == -1) {//while the number of columns is still unknown
-                  $cellValue = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName($rowIndex, $columnIndex))->getValue());
-                  if(strlen($cellValue) == 0) {//the cell is empty
-                     $columnNumber = $columnIndex;
-                     $this->lH->log(3, $this->TAG, "Sheet '{$this->sheetName}' has $columnNumber columns");
-                  }
-                  else {
-                     $this->columnArray[$cellValue] = array();
-                  }
-                  $columnIndex++;
-               }
-            }
-            else {
-               if(count($this->columnArray) > 0) {
-                  
-                  for($columnIndex = 0; $columnIndex < count($this->columnArray); $columnIndex++){
-                     $headingCell = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName(1, $columnIndex))->getValue());
-                     $cellValue = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName($rowIndex, $columnIndex))->getValue());
-                     $this->columnArray[$headingCell][$rowIndex - 2] = $cellValue;
-                     
-                     if($columnIndex == (count($this->columnArray) - 1)) {//the last column in this row
-                        //check if there is something in the column to the right
-                        $cellToRight = trim($this->excelObject->getActiveSheet()->getCell($this->getCellName($rowIndex, $columnIndex + 1))->getValue());
-                        if(strlen($cellToRight) > 0){//there is something in the column to the right
-                           //excel sheet data is mulformed
-                           $this->lH->log(1, $this->TAG, "Sheet '{$this->sheetName}' seems to be mulformed for workflow with id = '{$this->database->getDatabaseName()}'");
-                           throw new WAException("Sheet '{$this->sheetName}' seems to be mulformed", WAException::$CODE_WF_DATA_MULFORMED_ERROR, null);
-                        }
-                     }
-                  }
-                  
-                  //$this->lH->log(4, $this->TAG, "Columns for sheet '{$this->sheetName}' are ".print_r($this->columnArray, true));
-               }
-               else {
-                  $this->lH->log(2, $this->TAG, "Sheet with name = '{$this->sheetName}' has no heading columns. Will be ignoring this sheet");
-               }
-            }
-         }*/
          return $primaryKeyThere;
       } catch (WAException $ex) {
          $this->lH->log(1, $this->TAG, "Unable to process columns in sheet with name = '{$this->sheetName}' for workflow with id = {$this->database->getDatabaseName()}");
          throw new WAException("Unable to process columns in sheet with name = '{$this->sheetName}'", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
       }
    }
-   
+
    /**
     * This function makes the current sheet default in the excelObject
-    * 
+    *
     * @throws WAException
     */
    private function switchToThisSheet() {
@@ -580,23 +613,23 @@ class WASheet {
          throw new WAException("Unable to switch to sheet with name as '{$this->sheetName}'", WAException::$CODE_WF_CREATE_ERROR, null);
       }
    }
-   
+
    /**
     * This function returns a string representing the cell name
-    * 
+    *
     * @param type $rowIndex      The 1 based index of the cell row
     * @param type $columnIndex   The 1 based index of the cell column
-    * 
-    * @return String Name of the cell e.g 
+    *
+    * @return String Name of the cell e.g
     */
    public function getCellName($rowIndex, $columnIndex) {
       return PHPExcel_Cell::stringFromColumnIndex($columnIndex).$rowIndex;
    }
-   
+
    /**
-    * This function returns an array with names of all sheets that belong to 
+    * This function returns an array with names of all sheets that belong to
     * the provided workflow instance
-    * 
+    *
     * @param Object     $config
     * @param string     $workflowId
     * @param Database   $database
@@ -605,7 +638,7 @@ class WASheet {
       include_once 'mod_wa_database.php';
       include_once 'mod_log.php';
       include_once 'mod_wa_exception.php';
-      
+
       $lH = new LogHandler("./");
       if($database->getDatabaseName() == $workflowId) {
          try {
@@ -613,13 +646,14 @@ class WASheet {
             if(is_array($result)) {
                $tables = array();
                $metaTables = Workflow::getAllMetaTables();
-               
-               for($index = 0; $index < count($result); $index++) {
+
+               $res_count = count($result);
+               for($index = 0; $index < $res_count; $index++) {
                   if(!in_array($result[$index], $metaTables)) {
                      array_push($tables, $result[$index]);
                   }
                }
-               
+
                if(count($tables) == 0) {
                   $lH->log(2, "washeet_static", "Workflow with id = '$workflowId' does not have data tables");
                }
@@ -632,20 +666,50 @@ class WASheet {
                return $tables;
             }
             else {
-               $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}'");
-               throw new Exception("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, null);
+               throw new WAException("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, null);
             }
          } catch (WAException $ex) {
-            $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}'");
-            throw new Exception("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, $ex);
+            throw new WException("Unable to get data sheets for workflow", WAException::$CODE_DB_QUERY_ERROR, $ex);
          }
       }
       else {
-         $lH->log(1, $this->TAG, "Unable to get data sheets for workflow with id = '{$workflowId}' because connected to the wrong database");
-         throw new Exception("Unable to get data sheets for workflow  because connected to the wrong database", WAException::$CODE_WF_INSTANCE_ERROR, null);
+         throw new WAException("Unable to get data sheets for workflow  because connected to the wrong database", WAException::$CODE_WF_INSTANCE_ERROR, null);
       }
    }
-   
+
+   /**
+    * This function returns the name of the main sheet in the workflow. The main
+    * sheet is the one without foreign keys. If more than one sheet fits this criteria
+    * then null is returned
+    *
+    * @param Array      $config
+    * @param String     $workfowId
+    * @param Database   $database
+    */
+   public static function getMainSheet($config, $workflowId, $database) {
+      include_once 'mod_wa_database.php';
+      include_once 'mod_log.php';
+      include_once 'mod_wa_exception.php';
+
+      $lH = new LogHandler("./");
+      try {
+         $allSheets = WASheet::getAllWASheets($config, $workflowId, $database);
+         $mainSheets = array();
+         foreach($allSheets as $currSheetName) {
+            $currForeignKeys = $database->getTableForeignKeys($currSheetName);
+            if(count($currForeignKeys) == 0) $mainSheets[] = $currSheetName;
+         }
+         if(count($mainSheets) == 1) return $mainSheets[0];
+         else {
+            $lH->log(1, "wa_sheet_static", "More than one sheet can be considered as the main sheet");
+            throw new WAException("More than one sheet can be considered as the main sheet");
+         }
+      } catch (WAException $ex) {
+         $lH->log(1, "wa_sheet_static", "Unable to get the name of the main sheet in '{$workflowId}'");
+         throw new WAException("Unable to get the name of the main sheet", WAException::$CODE_WF_INSTANCE_ERROR, $ex);
+      }
+   }
+
    public static function getSheetOriginalName($database, $file, $currentName) {
       include_once 'mod_wa_exception.php';
       try {
@@ -669,7 +733,36 @@ class WASheet {
          throw new WAException("Unable to determine what '$currentName' was originally called", WAException::$CODE_DB_QUERY_ERROR, $ex);
       }
    }
-   
+
+   /**
+    * This function sorts the provided sheets based on the the parents with sheets
+    * that have no parents showing up first and sheets with the biggest heirarchy
+    * of parents showing up last
+    */
+   public static function sortSheets($database, $sheets) {
+      $lH = new LogHandler("./");
+      try {
+         $sheetClasses = array();
+         $maxNoParents = 0;
+         foreach($sheets as $currSheet) {
+            $lH->log(4, "wa_sheet_static", "Checking the number of parents for the sheet '$currSheet'");
+            $noParents = $database->getNumberOfParents($currSheet);
+            if(!isset($sheetClasses[$noParents])) {
+               $sheetClasses[$noParents] = array();
+            }
+            $sheetClasses[$noParents][] = $currSheet;
+            if($noParents > $maxNoParents) $maxNoParents = $noParents;
+         }
+         $sortedSheets = array();
+         for($index = 0; $index <= $maxNoParents; $index++) {
+            $sortedSheets = array_merge($sortedSheets, $sheetClasses[$index]);
+         }
+         return $sortedSheets;
+      } catch (WAException $ex) {
+         throw new WAException("Could not sort sheets based on their parents", WAException::$CODE_WF_PROCESSING_ERROR, $ex);
+      }
+   }
+
    public static function getSheetCurrentName($database, $originalName, $file = null){
       include_once 'mod_wa_exception.php';
       try {

@@ -19,7 +19,6 @@ function Users(context, pwSettingsS, publicKey){
    window.users.email = jQuery("#email");
    window.users.ldap = jQuery("#ldap");
    window.users.ldap.change(function(){
-      console.log("value of ldap = "+window.users.ldap.val());
       window.users.togglePasswords();
    });
 
@@ -27,6 +26,7 @@ function Users(context, pwSettingsS, publicKey){
 
    window.users.eUsers = new Array();//array of existing users
    window.users.getUsers();
+   window.users.sub_module = Common.getVariable('do', document.location.search.substring(1));
 
    window.users.pwSettings = jQuery.parseJSON(pwSettingsS);
    window.users.publicKey = publicKey;
@@ -126,17 +126,18 @@ Users.prototype.validateInput = function() {
    jQuery("#user_groups").val(window.users.groupIDs.join(","));
 
    //encrypt the password
-   if($('#pass_1').val().length > 0){//only encrypt if password is set. Password might not be set if we are updating
-      var encrypt = new JSEncrypt();
-
-      encrypt.setPublicKey(window.users.publicKey);
-      var cipherText = encrypt.encrypt($('#pass_1').val());
-      $('#pass_1').val(cipherText);
-      $('#pass_2').val(cipherText);
-   }
-   else {
-      $('#pass_1').val("");
-      $('#pass_2').val("");
+   if($('#pass_1').val() !== undefined){
+      if($('#pass_1').val().length > 0){//only encrypt if password is set. Password might not be set if we are updating
+         var encrypt = new JSEncrypt();
+         encrypt.setPublicKey(window.users.publicKey);
+         var cipherText = encrypt.encrypt($('#pass_1').val());
+         $('#pass_1').val(cipherText);
+         $('#pass_2').val(cipherText);
+      }
+      else {
+         $('#pass_1').val("");
+         $('#pass_2').val("");
+      }
    }
    return true;
 };
@@ -160,10 +161,13 @@ Users.prototype.saveChanges = function(){
       jsonData.append(that.name, that.value);
    });
    jsonData.append('user_groups', selectedGroups);
-   jsonData.append('user_id',  users.userData.id);
+   if(window.users.sub_module === 'manage_account'){
+      jsonData.append('user_id', users.userData.id);
+   }
+   var cur_action = (window.users.sub_module === 'manage_account') ? 'edit_user' : 'add_user';
 
     $.ajax({
-      type:"POST", url: 'mod_ajax.php?page=users&do=manage_account&action=edit_user', dataType:'json', cache: false, contentType: false, processData: false, data: jsonData,
+      type:"POST", url: 'mod_ajax.php?page=users&do='+window.users.sub_module+'&action='+cur_action, dataType:'json', cache: false, contentType: false, processData: false, data: jsonData,
       success: function (data) {
          if(data.error === true){
             Repository.showNotification(data.mssg, 'error');
@@ -262,7 +266,10 @@ Users.prototype.removeFromGroup = function(){
  * @returns {undefined}
  */
 Users.prototype.togglePasswords = function(){
-   if($("#ldap").val() == 0){//user using local auth
+   if(window.users.sub_module === 'create_account'){
+      return;
+   }
+   if($("#ldap").val() === '0'){//user using local auth
       $("#pass_1").prop("disabled", false);
       $("#pass_2").prop("disabled", false);
    }

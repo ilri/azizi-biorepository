@@ -623,7 +623,8 @@ class LabelPrinter extends Repository{
             $result = $this->Dbase->ExecuteQuery($query, array("project" => $project, "type" => $type));
 
             if(is_array($result)){
-               for($i = 0; $i < count($result); $i++){
+               $res_count = count($result);
+               for($i = 0; $i < $res_count; $i++){
                   $result[$i]['cost_per_label'] = $price;
                   $result[$i]['total_price'] = $price * $result[$i]['labels_printed'];
                   $result[$i]['charge_code'] = $chargeCode;
@@ -636,7 +637,7 @@ class LabelPrinter extends Repository{
 
                }
 
-               if(count($result) > 0){
+               if($res_count > 0){
                   $headings = array(
                       "printing_id" => "Printing ID",
                       "project_name" => "Project",

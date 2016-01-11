@@ -9,11 +9,11 @@
 
 define('OPTIONS_COMMON_FOLDER_PATH', '../bower/');
 
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.7.php';
-require_once 'repository_config';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_messages/mod_messages_v0.1.php';
-require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/authmodules/mod_security_v0.1.php';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_general/mod_general_v0.7.php';
+include_once 'repository_config';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/dbmodules/mod_objectbased_dbase_v1.1.php';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_messages/mod_messages_v0.1.php';
+include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/authmodules/mod_security_v0.1.php';
 
 
 //setting the date settings
@@ -44,7 +44,7 @@ $t = pathinfo($_SERVER['SCRIPT_FILENAME']);
 $requestType = ($t['basename'] == 'mod_ajax.php') ? 'ajax' : 'normal';
 define('OPTIONS_REQUEST_TYPE', $requestType);
 
-require_once 'mod_repository_general.php';
+include_once 'mod_repository_general.php';
 $Repository = new Repository();
 
 session_save_path(Config::$config['dbase']);
@@ -52,9 +52,22 @@ session_name('repository');
 //$Repository->Dbase->SessionStart();
 $Repository->sessionStart();
 
-$Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
-$Repository->Dbase->CreateLogEntry("Files: \n".print_r($_FILES, true), 'debug');
+// activate the loggings if there is need
+if(Config::$logSettings['loglevel'] == 'extensive'){
+   $p_count = count($_POST);
+   $f_count = count($_FILES);
+   $g_count = count($_GET);
+
+   if($p_count != 0 || $f_count != 0){
+      $Repository->Dbase->CreateLogEntry("\n\n======================  New request: ". OPTIONS_REQUESTED_MODULE .' ==> '. OPTIONS_REQUESTED_SUB_MODULE. ' ==> '. OPTIONS_REQUESTED_ACTION ."  ====================", 'debug');
+      if(count($_POST) != 0)
+         $Repository->Dbase->CreateLogEntry("Post User request: \n".print_r($_POST, true), 'debug');
+      if(count($_FILES) != 0)
+         $Repository->Dbase->CreateLogEntry("Files: \n".print_r($_FILES, true), 'debug');
+   }
+//      if(count($_GET) != 0)
+//         $Repository->Dbase->CreateLogEntry("GET User request: \n".print_r($_GET, true), 'debug');
+}
 
 if(Config::$downloadFile) $Repository->TrafficController();
-
 ?>

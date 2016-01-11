@@ -132,7 +132,7 @@ class LimsUploader{
     * Gets the requested template, processes it and outputs the results as html code
     */
    private function SampleSheet(){
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/excelParser/mod_excel_reader_v0.1.php';//TODO: Try to migrate to bower
+      include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/excelParser/mod_excel_reader_v0.1.php';//TODO: Try to migrate to bower
 
       if(OPTIONS_REQUESTED_ACTION == 'samples') $file = Config::$samplesTemplate;
       elseif(OPTIONS_REQUESTED_ACTION == 'primers') $file = Config::$primersTemplate;
@@ -176,13 +176,13 @@ class LimsUploader{
       set_include_path(get_include_path() . PATH_SEPARATOR . OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/' . PATH_SEPARATOR . '/www/common/PHPExcel/Classes/');     //add the classes path to the include path
 
       include 'PHPExcel/IOFactory.php';      //add the PHPExcel_IOFactory
-//      require_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.2.php';
-      require_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_spreadsheet/mod_spreadsheet_v0.2.php';
-      if($module == 'primers') require_once 'mod_primers.php';
-      elseif($module == 'samples') require_once 'mod_samples.php';
-      elseif($module == 'elisa') require_once 'mod_elisa.php';
-      elseif($module == 'strains') require_once 'mod_strains.php';
-      elseif($module == 'cell_lines') require_once 'mod_cell_lines.php';
+//      include_once OPTIONS_COMMON_FOLDER_PATH . 'excelParser/mod_excel_reader_v0.2.php';
+      include_once OPTIONS_COMMON_FOLDER_PATH . 'azizi-shared-libs/mod_spreadsheet/mod_spreadsheet_v0.2.php';
+      if($module == 'primers') include_once 'mod_primers.php';
+      elseif($module == 'samples') include_once 'mod_samples.php';
+      elseif($module == 'elisa') include_once 'mod_elisa.php';
+      elseif($module == 'strains') include_once 'mod_strains.php';
+      elseif($module == 'cell_lines') include_once 'mod_cell_lines.php';
 
       //determine the type of file that was uploaded
       $inputFileType = PHPExcel_IOFactory::identify($file);
