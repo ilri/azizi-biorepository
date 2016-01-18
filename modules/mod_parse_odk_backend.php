@@ -175,6 +175,16 @@ class Parser {
    private $dmpLinkSheets;
 
    /**
+    * The maximum number of retries when fetching data from aggregate before giving up on this
+    */
+   private $maxRetries = 5;
+
+   /**
+    * The number of seconds to pause between failed fetches of data from aggregate
+    */
+   private $sleepBetweenTries = 2;
+
+   /**
     * This function does XML parsing of the XML structure file to obtain
     *  - The instance id and id prefix for the form
     *  - Multiple selects in the form
@@ -961,6 +971,8 @@ class Parser {
     * @param   int         $rowIndex         This is the index of the row containing the cell. Rows start from 0
     * @param   string      $columnHeading    The heading of the column in which the cell is in e.g primary_key
     * @param   string      $parentSheetName  The name of the excel sheet in which the cell will be inserted eg main_sheet
+    *
+    * @todo    Find a better way to extract the answers
     */
    private function insertCSVCell($cellString, $rowIndex, $columnHeading, $parentSheetName){
        $sheetNames = array_keys($this->sheets);
@@ -987,12 +999,13 @@ class Parser {
         //check if string is non image url
         $rowID = $rowIndex + 1;
         $cellID = $this->getColumnName(NULL, NULL, $columnIndex) . $rowID;
-        if (filter_var($cellString, FILTER_VALIDATE_URL) && $this->isImage($cellString) === FALSE) {
+        $isCellImage = $this->isImage($cellString);
+        if (filter_var($cellString, FILTER_VALIDATE_URL) && $isCellImage === FALSE) {
             // is non-image url. Expecting a table with data... parse the HTML table
             $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $this->shortenSheetName($columnHeading) . " sheet");
             $this->parseHTMLTable($cellString, $columnHeading, $rowIndex, $this->shortenSheetName($parentSheetName));
         }
-        else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $this->isImage($cellString) ===TRUE && $this->dwnldImages === "yes"){
+        else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $isCellImage ===TRUE && $this->dwnldImages === "yes"){
             //is an image
             $this->logHandler->log(4, $this->TAG, 'checking if '.$values[$index].' is image');
             $cellString = $this->gTasks->downloadImage($cellString, $this->imagesDir, $this->logHandler);
@@ -1071,27 +1084,6 @@ class Parser {
                 else{//excel is for analysis purposes
                     //$this->phpExcel->getActiveSheet()->setCellValue($cellID, "null");
                    $this->phpExcel->getActiveSheet()->setCellValue($cellID, $cellString);
-                   //$selectAns = explode(" ", $cellString);//TODO: find a better way to extract the answers
-                    /*foreach ($selectAns as $currAns) {
-                        if (strlen($currAns) > 0) {
-                            $currAnsColmnIndex = 0;
-                            if (!in_array($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName])) {//will probably never be set to true since option headings now set before
-                                array_push($this->sheets[$parentSheetName], $columnHeading . "-" . $currAns);
-
-                                $currAnsColmnIndex = array_search($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName]);
-                                $currHeadingCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . "1";
-
-                                $this->phpExcel->getActiveSheet()->setCellValue($currHeadingCellID, $columnHeading . "-" . $currAns);
-                                $this->phpExcel->getActiveSheet()->getStyle($currHeadingCellID)->getFont()->setBold(TRUE);
-                                $this->phpExcel->getActiveSheet()->getColumnDimension($this->getColumnName(NULL, NULL, $currAnsColmnIndex))->setAutoSize(true);
-                            }
-
-                            $currAnsColmnIndex = array_search($columnHeading . "-" . $currAns, $this->sheets[$parentSheetName]);
-
-                            $currAnsCellID = $this->getColumnName(NULL, NULL, $currAnsColmnIndex) . $rowID;
-                            $this->phpExcel->getActiveSheet()->setCellValue($currAnsCellID, "1");
-                        }
-                    }*/
                 }
             }
             else {//is a multiple select question heading
@@ -1232,21 +1224,42 @@ class Parser {
          curl_close($authCh);
       }
 
-      $ch = curl_init($url);
-      curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
-      curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
+      $i = 0;
+      while($i < $this->maxRetries){
+         $ch = curl_init($url);
+         curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+         curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
 
-      $html = curl_exec($ch);
-      $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      curl_close($ch);
+         $html = curl_exec($ch);
+         $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+         $contentType = curl_getinfo($ch);
+         if($i == $this->maxRetries-1){
+            $this->logHandler->log(4, $this->TAG, 'Giving up on this url. Got a response with code 0 for a number of times. '. $url);
+            exit();
+         }
+         else if($contentType['http_code'] != 0){
+            curl_close($ch);
+            break;
+         }
+         else{
+            $this->logHandler->log(4, $this->TAG, 'A 0 response from the server... Sleeping for a while before trying again. '. print_r($contentType, true));
+            $i++;
+            sleep($this->sleepBetweenTries);
+         }
+      }
+
       $html = str_replace("\n", " ", $html);
 
       //check the number of tables in page (should be one)
-      if ($httpStatus < 400) {
-
+      if($httpStatus == 200 && $html == ''){
+            $this->logHandler->log(4, $this->TAG, 'Empty response from the server: '. $url);
+            $this->logHandler->log(1, $this->TAG, 'Empty response from the server: '. $url);
+            exit();
+         }
+      else if ($httpStatus < 400) {
          $htmlTables = array();
          preg_match_all("/<table(.*\n*.*)<\/table>/", $html, $htmlTables);
 
@@ -1329,6 +1342,7 @@ class Parser {
                         }
                      }
                      else {
+                        $this->logHandler->log(4, $this->TAG, 'Badly parsed tables were fetched from: '. $url);
                         $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: ' . sizeof($headings) . ' ' . sizeof($rowColumns) . ' ' . $html);
                         $this->logHandler->log(1, $this->TAG, 'it appears the rows in html table were parsed badly, exiting');
                         exit();
@@ -1354,7 +1368,9 @@ class Parser {
                }
             }
          } else {
+            $this->logHandler->log(4, $this->TAG, 'Badly parsed html was fetched from: '. $url);
             $this->logHandler->log(4, $this->TAG, 'Badly parsed html looks like this: ' . $html);
+            $this->logHandler->log(4, $this->TAG, 'curl details: : ' . print_r($contentType, true));
             $this->logHandler->log(1, $this->TAG, 'HTML appears to have been parsed badly, exiting');
             exit();
          }
@@ -1502,10 +1518,10 @@ class Parser {
     */
    private function loadXML() {
       $this->logHandler->log(3, $this->TAG, 'parsing xml obtained from post');
-      //$this->xmlString = file_get_contents($this->ROOT . "animals.xml");
       $tmpXMLString = $_POST['xmlString'];
 
       //replace all the ascii codes with the real sh*t
+      $this->logHandler->log(4, $this->TAG, 'Replacing the ASCII codes with the real values');
       $tmpXMLString = str_replace("&lt;", "<", $tmpXMLString);
       $tmpXMLString = str_replace("&gt;", ">", $tmpXMLString);
       $tmpXMLString = str_replace("&#61;", "=", $tmpXMLString);
@@ -1514,10 +1530,12 @@ class Parser {
       $matches = array();//temp var for inserting regex matches. Using one variable to save mem
 
       //get all the language codes for languages specifed as translations in xml
+      $this->logHandler->log(4, $this->TAG, 'Getting the translations');
       preg_match_all("/\s+<translation\s+lang=[\"'](.+)[\"']>/", $this->xmlString, $matches);
       $this->languageCodes = $matches[1];
 
       //associate all the barcode inputs in xml with their respective manual barcode inputs
+      $this->logHandler->log(4, $this->TAG, 'Associate all the barcode inputs in xml with their respective manual barcode inputs');
       preg_match_all("/<bind\s+nodeset\s*=\s*[\"'](.+)[\"']\s+type\s*=\s*[\"']barcode[\"']/i", $this->xmlString, $matches);
       $barcodeURLS = $matches[1];
       $barcodeManualURLS = array();
@@ -1540,11 +1558,16 @@ class Parser {
       }
 
       //get all the string codes codes
+      $this->logHandler->log(4, $this->TAG, 'Fetch all the string codes');
       preg_match_all("/\s+?<text\s+id=[\"'](.+)[\"']\s*>\s*<value>.+<\/value>\s*<\/text>/", $this->xmlString, $matches);
 
       //add all unique codes found into new array
+      $this->logHandler->log(4, $this->TAG, 'Create a unique array with the unique codes from the xml');
       $codes = array();
-      foreach ($matches[1] as $currCode) {
+      $matchCount = count($matches[1]);
+
+      for($i = 0; $i < $matchCount; $i++){
+         $currCode = $matches[1][$i];
          if(!in_array($currCode, $codes)){
             array_push($codes, $currCode);
          }
@@ -1553,7 +1576,7 @@ class Parser {
       $this->xmlValues = array();
       //get all values for each unique code
       foreach ($codes as $currCode){
-          preg_match_all("/\s+?<text\s+id=[\"']".$currCode."[\"']\s*>\s*<value>(.+)<\/value>\s*<\/text>/", $this->xmlString, $matches);
+          preg_match_all("/\s+?<text\s+id=[\"']". str_replace("/", "\/", $currCode) ."[\"']\s*>\s*<value>(.+)<\/value>\s*<\/text>/", $this->xmlString, $matches);
           $this->xmlValues[$currCode] = $matches[1];
       }
 
@@ -1586,10 +1609,30 @@ class Parser {
       shell_exec('echo "'.$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$emailSubject.'" -- '.$_POST['email']);
    }
 
+   /**
+    * Check if a given url is a link to an image from the aggregate
+    *
+    * @param   string   $url  The url to use in fetching the data
+    * @return  boolean  Returns TRUE if the url points  to a valid image else returns FALSE
+    */
    private function isImage($url) {
-       $contentType = get_headers($url, 1);
-       $contentType = $contentType["Content-Type"];
-       //(!is_array($contentType) && strpos($contentType, 'image') !== NULL)
+      if (filter_var($url, FILTER_VALIDATE_URL) === FALSE) {
+          return FALSE;
+      }
+      $ch = curl_init();
+      curl_setopt($ch, CURLOPT_URL, $url);
+      curl_setopt($ch, CURLOPT_HEADER, 1);
+      curl_setopt($ch, CURLOPT_NOBODY, 1);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+      $res = curl_exec($ch);
+      if ($res === false) {
+         $this->logHandler->log(4, $this->TAG, "URL in question: $url");
+         $this->logHandler->log(4, $this->TAG, 'Error while determining whether it is an image or not. Will assume it is not an image. Errors: '.curl_errno($ch).": ".curl_error($ch));
+         return FALSE;
+      }
+      $contentType = curl_getinfo($ch);
+      $contentType = $contentType["content_type"];
        if (is_array($contentType) || strpos($contentType, 'image') === FALSE) {
            return FALSE;
        }
