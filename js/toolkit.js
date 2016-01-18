@@ -13,6 +13,8 @@ function Toolkit(sub_module){
 
    this.serverURL = "./modules/mod_toolkit.php";
    this.procFormOnServerURL = "mod_ajax.php?page=toolkit";
+
+   window.toolkit.emptyForms = 0;
 };
 
 /**
@@ -57,9 +59,15 @@ Toolkit.prototype.initODKForms = function(){
               { text: 'Core2', datafield: 'core2', width: 50 },
               { text: 'Core3', datafield: 'core3', width: 50},
               { text: 'Actions', datafield: 'actions', width: 95, cellsrenderer: function (row, columnfield, value, defaulthtml, columnproperties, rowdata) {
-                    return '<a href="javascript:;" id="'+ rowdata.id +'" class="delete_form">&nbsp;'+ value +'</a>';
+                    var c1 = parseInt(rowdata.core), c2 = parseInt(rowdata.core3), c3 = parseInt(rowdata.core3);
+                    var isError;
+                    var deleteForm = (c1 === 0 && (c2 === 0 || isNaN(c2) === true) && (c3 === 0 || isNaN(c3) === true)) ? '<a href="javascript:;" id="'+ rowdata.form_id +'" class="delete_form">&nbsp;Delete</a>' : '';
+                    if(isNaN(c2) === false && c1 !== c2){ isError = '<a href="javascript:;" id="'+ rowdata.form_id +'" class="has_errors">&nbsp;Show Errors</a>'; }
+                    else if(isNaN(c3) === false && (c1 !== c2) && (c2 !== c3) && (c1 !== c3)){ isError = '<a href="javascript:;" id="'+ rowdata.form_id +'" class="has_errors">&nbsp;Show Errors</a>'; }
+                    else isError = '';
+                    return deleteForm +'&nbsp;&nbsp;'+ isError;
                  }
-              },
+              }
             ]
         });
      }

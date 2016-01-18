@@ -173,7 +173,7 @@ class Toolkit{
             . 'order by a.FORM_NAME ';
 
       $forms = $ODKConn->ExecuteQuery($formsQuery);
-      $ODKConn->CreateLogEntry(print_r($forms, true), 'fatal');
+      $ODKConn->CreateLogEntry($formsQuery, 'fatal');
       if($forms == 1){
          $ODKConn->CreateLogEntry($ODKConn->lastError, 'fatal');
          die(json_encode(array('error' => true, 'message' => 'There was an error while fetching data from the database. Contact the system administrator')));
@@ -207,5 +207,90 @@ class Toolkit{
          $forms2send[] = $f;
       }
       die(json_encode($forms2send));
+   }
+
+   private function getFormsDiscrepancies(){
+      $query = "select _URI, _PARENT_AURI from ACGBS4AV05_CORE2 where _PARENT_AURI in(select _PARENT_AURI from ACGBS4AV05_CORE2 group by _PARENT_AURI having count(*) > 1)";
+   }
+
+   private function deleteODKForm(){
+      $this->authCookies = "aggregate_auth";
+      $getXMLURL = Config::$config['odkDeleteURL'];//URL that handles the GWT Request for deleting Aggregate forms
+      $this->authUser();
+      $instanceId = $_POST['instance_id'];
+
+      // get the form id from the odk forms table
+      $formQuery = 'select id from odk_forms where instance_id = :instance_id';
+      $formId = $this->Dbase->ExecuteQuery($formQuery, array('instance_id' => $instanceId));
+      if($formId == 1) {
+         return $this->Dbase->lastError;
+      }
+
+      echo "About to delete $instanceId with form id $formId from the Aggregate server \n";
+      $ch = curl_init($getXMLURL);
+      curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0");
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+      curl_setopt($ch, CURLOPT_COOKIEFILE, $this->authCookies);
+      curl_setopt($ch, CURLOPT_POST, TRUE);
+      //insert the GWT RPC payload into the request. GWT Whaaat? Refer to -> http://blog.gdssecurity.com/labs/2009/10/8/gwt-rpc-in-a-nutshell.html
+      curl_setopt($ch, CURLOPT_POSTFIELDS, "7|0|6|".Config::$config['odkUIURL']."|1BAF2E8ED0CEB731FEA73A25EDD25330|org.opendatakit.aggregate.client.form.FormAdminService|deleteForm|java.lang.String/2004016611|".$instanceId."|1|2|3|4|1|5|6|");
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+          "Connection: Keep-Alive",
+          "Keep-Alive: 300",
+          "Content-Type: text/x-gwt-rpc; charset=UTF-8",
+          "X-GWT-Module-Base: ".Config::$config['odkUIURL'],
+          "X-GWT-Permutation: 131B412388B99E0A845272E4C5B3CDC8",
+          "X-opendatakit-gwt: yes",
+          "Accept: */*",
+          "Origin: ".Config::$config['repositoryURL'],
+          "Accept-Encoding: gzip, deflate",
+          "Accept-Language: en-US,en;q=0.8,en-GB;q=0.6,sw;q=0.4"
+      ));
+      curl_setopt($ch, CURLINFO_HEADER_OUT, TRUE);
+      curl_setopt($ch, CURLOPT_REFERER, Config::$config['odkBaseURL']);
+
+      $curlResult = curl_exec($ch);
+      $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+
+      //the server should return a status code 200 if it was able to process request.
+      if($http_status == 200) {//form was successfully deleted
+         echo "Updating database record for $instanceId \n";
+         $query = "update azizi_miscdb.odk_deleted_forms set status = 'deleted' where form = $formId";
+         $this->Dbase->ExecuteQuery($query);
+         $query = "update azizi_miscdb.odk_forms set is_active = 0 where id = $formId";
+         $this->Dbase->ExecuteQuery($query);
+      }
+      else echo "Aggregate server did not delete the form. HTTP status = '$http_status' \n";
+   }
+
+   private function authUser(){
+      if(file_exists($this->authCookies) === FALSE){
+         echo "about to auth \n";
+         $authURL = Config::$config['odkAuthURL'];
+         touch($this->authCookies);
+         chmod($this->authCookies, 0777);
+         $authCh = curl_init($authURL);
+
+         curl_setopt($authCh, CURLOPT_USERAGENT, "Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0");
+         curl_setopt($authCh, CURLOPT_RETURNTRANSFER, TRUE);
+         curl_setopt($authCh, CURLOPT_FOLLOWLOCATION, TRUE);
+         curl_setopt($authCh, CURLOPT_CONNECTTIMEOUT, TRUE);
+         curl_setopt($authCh, CURLOPT_COOKIEJAR, $this->authCookies);
+         curl_setopt($authCh, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+         curl_setopt($authCh, CURLOPT_USERPWD, Config::$config['odk_pruner_user'].":".Config::$config['odk_pruner_pass']);
+
+         $result = curl_exec($authCh);
+         $http_status = curl_getinfo($authCh, CURLINFO_HTTP_CODE);
+         curl_close($authCh);
+         if($http_status == 401){//user not authenticated
+            echo "The ODK user is not authorised to upload ODK forms \n";
+         }
+         else {
+            echo " \n **".$http_status."** \n";
+         }
+      }
    }
 }
