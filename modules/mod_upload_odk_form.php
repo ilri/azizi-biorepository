@@ -445,12 +445,11 @@ class UploadODK extends Repository{
                         $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "after" => $oneDayLater));
                      }
                      //email uploader
-                     $this->sendInstructionEmail($formTitle,$instanceID, $_POST['email']);
+                     $this->sendInstructionEmail($formTitle,$instanceID, $_POST['email'], $auto_process);
                   }
                   else{
                      $this->Dbase->CreateLogEntry("Unabe to find name of form in xml file just uploaded to ODK aggregate. XML = ".$xmlString, "fatal");
                   }
-
                   return "Form successfully uploaded. Check you email for further instructions";
                }
                else{
@@ -562,11 +561,24 @@ class UploadODK extends Repository{
       }
    }
 
-   private function sendInstructionEmail($formName, $instanceID,  $address) {
+   /**
+    * Compose an email to be sent to the user on uploading a form successfully
+    *
+    * @param   string   $formName   The name of the uploaded form
+    * @param   string   $instanceID The instance id of the form
+    * @param   string   $address    The email address to send the email to
+    * @param   boolean  $autoProcess   Whether or not the form is being auto processed. This will determine the additions to the email address
+    */
+   private function sendInstructionEmail($formName, $instanceID,  $address, $autoProcess = false) {
       $emailSubject = "Upload of ".$formName." Form on Azizi's ODK Server";
       $timeLimit = "";
       $oneDayLater = date('jS F Y H:i:s', time()+$this->maxTestingTime);
       if($_POST['upload_type'] === "testing") $timeLimit = " However you have until ".  $oneDayLater . " before the form is permanently removed from the server";
+
+      if($autoProcess){
+         $autoProcessMssg = "Submissions to this form will be auto processed and extracted to the DMP every day at 6 am. Incase there are no submissions to the form, the processing will abort.\n\n";
+      }
+      else $autoProcessMssg = '';
 
       $message = "Hi {$_SESSION['onames']},\n\n";
       $message .= "$formName (with an insance_id '$instanceID') has been successfully uploaded to the Azizi ODK Server.\n\n";
@@ -575,6 +587,7 @@ class UploadODK extends Repository{
       $message .= "             URL : http://azizi.ilri.cgiar.org/aggregate\n";
       $message .= "             Username  : collector\n";
       $message .= "             Password  : collector_2013\n\n";
+      $message .= $autoProcessMssg;
       $message .= "Should you need any assistance, feel free to contact anybody from the Biorepository's technical team.\n\n";
       $message .= "Regards\n";
       $message .= "The Biorepository team\n";

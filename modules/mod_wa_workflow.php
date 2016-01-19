@@ -11,6 +11,7 @@ class Workflow {
    private $dmpAdmin;
    private $workflowName;
    private $instanceId;
+   private $odkInstance;      // The corresponding ODK instance from azizi_miscdb.odk_forms in the mysql database
    private $database;
    private $lH;
    private $errors;//stores all the caught exceptions
@@ -41,7 +42,7 @@ class Workflow {
     * @param String $instanceID  Unique instance ID for the Workflow.
     *                            Set to null if new workflow
     */
-   public function __construct($config, $workflowName, $currUser, $instanceId = null) {
+   public function __construct($config, $workflowName, $currUser, $instanceId = null, $odkInstance = null) {
       include_once 'mod_wa_database.php';
       include_once 'mod_wa_exception.php';
       include_once 'mod_log.php';
@@ -59,6 +60,7 @@ class Workflow {
       $this->workflowName = $workflowName;
       $this->processing = false;
       $this->dataTables = NULL;
+      $this->odkInstance = ($odkInstance != null) ? $odkInstance : "";
 
       $this->instanceId = $instanceId;
 
@@ -194,6 +196,7 @@ class Workflow {
          $columns = array(
             "db_name" => "'{$this->instanceId}'",
             "dmp_name" => "'{$this->workflowName}'",
+            "odk_instance_id" => "'{$this->odkInstance}'",
             "time_created" => "'".Database::getMySQLTime()."'",
             "created_by" => "'{$this->currUser}'",
             "proj_status" => "'Active'",

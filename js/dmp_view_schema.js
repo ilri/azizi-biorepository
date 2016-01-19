@@ -2494,7 +2494,7 @@ DMPVSchema.prototype.createProjectButtonClicked = function() {
                   dmpServer: window.dvs.server,
                   dmpUser: window.dvs.user,
                   dmpSession: window.dvs.session,
-                  dmpLinkSheets: "no"
+                  dmpLinkSheets: "yes"
                }
             });
             alert("It may take some time to create the project. You can however close this browser window. An email will be sent to you when the project has been created.");

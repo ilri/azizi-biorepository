@@ -174,7 +174,7 @@ class Toolkit{
             . 'inner join _form_data_model as d on c.URI_SUBMISSION_DATA_MODEL=d.URI_SUBMISSION_DATA_MODEL '
             . 'where d.PERSIST_AS_TABLE_NAME like "%core%" '
             . 'group by PERSIST_AS_TABLE_NAME '
-            . 'order by a.FORM_NAME limit 10,30';
+            . 'order by a.FORM_NAME';
 
       $forms = $ODKConn->ExecuteQuery($formsQuery);
       $ODKConn->CreateLogEntry($formsQuery, 'fatal');

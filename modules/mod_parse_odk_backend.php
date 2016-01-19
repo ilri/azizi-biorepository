@@ -311,6 +311,7 @@ class Parser {
       $this->dmpUser = "";
       $this->dmpServer = "";
       $this->dmpSession = "";
+      $this->odkInstanceId = "";
       $this->dmpLinkSheets = false;
       if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
       if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
@@ -547,6 +548,7 @@ class Parser {
    private function sendDataFileToDMP($dataPayload, $authToken) {
       $postData = array(
          "data" => $dataPayload,
+         "odkInstanceId" => $this->odkInstance,
          "token" => $authToken
       );
       $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=init_workflow");
