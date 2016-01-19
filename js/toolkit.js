@@ -74,4 +74,36 @@ Toolkit.prototype.initODKForms = function(){
      else{
         $("#odk_forms").jqxGrid({source: odkFormsAdapter});
      }
+     $('.delete_form').live('click', function(event){
+        var response = confirm('Are you sure you want to delete the form with id: '+ event.currentTarget.id);
+        if(response === true) {
+           window.toolkit.deleteForm(event.currentTarget.id);
+        }
+     });
+};
+
+/**
+ * Delete a selected form
+ * @returns {undefined}
+ */
+Toolkit.prototype.deleteForm = function(instanceId){
+   console.log('Deleting the form with instance id: '+ instanceId);
+   $.ajax({
+      url: "mod_ajax.php?page=toolkit&do=odk_form_stats",
+      type: "POST",
+      async: true,
+      data: {instanceId: instanceId, action: 'delete_form'},
+      success: function(jsonResult){
+         console.log("Response from deleting an odk form = ", jsonResult);
+         if(jsonResult.isError === true) {
+            alert('There was an error while deleting the ODK form. It has not been deleted');
+         }
+         else {
+            alert('The form has been deleted successfully. Refreshing the grid....');
+            window.toolkit.initODKForms();
+         }
+      },
+      complete: function() {
+      }
+   });
 };

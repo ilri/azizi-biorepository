@@ -46,6 +46,7 @@ class Toolkit{
       else if(OPTIONS_REQUESTED_SUB_MODULE == 'odk_form_stats'){
          if(OPTIONS_REQUESTED_ACTION == '') $this->odkFormStatHome ();
          elseif(OPTIONS_REQUESTED_ACTION == 'fetch_all') $this->odkFetchAllForms ();
+         elseif(OPTIONS_REQUESTED_ACTION == 'delete_form') $this->deleteODKForm();
       }
    }
 
@@ -147,6 +148,9 @@ class Toolkit{
 <?php
    }
 
+   /**
+    * Fetch all defined ODK forms in ODK aggregate
+    */
    private function odkFetchAllForms(){
       // before creating the db connection, lets import the db settings
       $this->settings = parse_ini_file(Config::$configFile, true);
@@ -170,7 +174,7 @@ class Toolkit{
             . 'inner join _form_data_model as d on c.URI_SUBMISSION_DATA_MODEL=d.URI_SUBMISSION_DATA_MODEL '
             . 'where d.PERSIST_AS_TABLE_NAME like "%core%" '
             . 'group by PERSIST_AS_TABLE_NAME '
-            . 'order by a.FORM_NAME ';
+            . 'order by a.FORM_NAME limit 10,30';
 
       $forms = $ODKConn->ExecuteQuery($formsQuery);
       $ODKConn->CreateLogEntry($formsQuery, 'fatal');
@@ -209,15 +213,15 @@ class Toolkit{
       die(json_encode($forms2send));
    }
 
-   private function getFormsDiscrepancies(){
-      $query = "select _URI, _PARENT_AURI from ACGBS4AV05_CORE2 where _PARENT_AURI in(select _PARENT_AURI from ACGBS4AV05_CORE2 group by _PARENT_AURI having count(*) > 1)";
-   }
-
+   /**
+    * Delete an ODK form
+    * @return type
+    */
    private function deleteODKForm(){
       $this->authCookies = "aggregate_auth";
       $getXMLURL = Config::$config['odkDeleteURL'];//URL that handles the GWT Request for deleting Aggregate forms
       $this->authUser();
-      $instanceId = $_POST['instance_id'];
+      $instanceId = $_POST['instanceId'];
 
       // get the form id from the odk forms table
       $formQuery = 'select id from odk_forms where instance_id = :instance_id';
@@ -225,8 +229,9 @@ class Toolkit{
       if($formId == 1) {
          return $this->Dbase->lastError;
       }
+      $formId = $formId[0]['id'];
 
-      echo "About to delete $instanceId with form id $formId from the Aggregate server \n";
+      $this->Dbase->CreateLogEntry("About to delete $instanceId with form id $formId from the Aggregate server", 'info');
       $ch = curl_init($getXMLURL);
       curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0");
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
@@ -253,17 +258,22 @@ class Toolkit{
 
       $curlResult = curl_exec($ch);
       $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      $this->Dbase->CreateLogEntry(print_r(curl_getinfo($ch), true), 'debug');
       curl_close($ch);
 
       //the server should return a status code 200 if it was able to process request.
       if($http_status == 200) {//form was successfully deleted
-         echo "Updating database record for $instanceId \n";
+         $this->Dbase->CreateLogEntry("Updating database record for $instanceId", 'info');
          $query = "update azizi_miscdb.odk_deleted_forms set status = 'deleted' where form = $formId";
          $this->Dbase->ExecuteQuery($query);
          $query = "update azizi_miscdb.odk_forms set is_active = 0 where id = $formId";
          $this->Dbase->ExecuteQuery($query);
+         die(json_encode(array('isError' => FALSE, 'message' => 'The form was deleted successfully.')));
       }
-      else echo "Aggregate server did not delete the form. HTTP status = '$http_status' \n";
+      else{
+         $this->Dbase->CreateLogEntry("Aggregate server did not delete the form. HTTP status = '$http_status'", 'fatal');
+         die(json_encode(array('isError' => TRUE, 'message' => 'There was an error while deleting the form.')));
+      }
    }
 
    private function authUser(){
