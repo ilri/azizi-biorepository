@@ -182,7 +182,7 @@ class Parser {
    /**
     * The number of seconds to pause between failed fetches of data from aggregate
     */
-   private $sleepBetweenTries = 2;
+   private $sleepBetweenTries = 1;
 
    /**
     * This function does XML parsing of the XML structure file to obtain
@@ -1405,7 +1405,6 @@ class Parser {
                     if (!isset($toBeInserted[$rowIndex]))
                        $toBeInserted[$rowIndex] = array();
                     $stringValue = $originalCSVRows[$rowIndex][$i];
-                    $this->logHandler->log(4, $this->TAG, "Combined value = " . $stringValue . " vs curr option = " . $rawValue);
                     if (strpos($stringValue, $rawValue) !== false) {//for current row, choice was not selected
                        $toBeInserted[$rowIndex][$index] = 1;
                        $this->logHandler->log(4, $this->TAG, $rawValue . " in " . $stringValue);
@@ -1633,7 +1632,7 @@ class Parser {
       }
       $contentType = curl_getinfo($ch);
       $contentType = $contentType["content_type"];
-       if (is_array($contentType) || strpos($contentType, 'image') === FALSE) {
+       if(strpos($contentType, 'image') === FALSE) {
            return FALSE;
        }
        else {
