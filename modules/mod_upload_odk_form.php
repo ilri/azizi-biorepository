@@ -84,7 +84,7 @@ class UploadODK extends Repository{
    <div id="odk_instructions">
       <p>
          <p class='center'>Upload your ODK forms to the Azizi Biorepository's ODK Aggregate Server.</p>
-         <p>Refer to this <a href="http://opendatakit.org/help/form-design/xlsform/" target="_blank"><u>page</u></a> for guideline on creating ODK XLS forms. If you need help, feel free to contact us. Once you have created the form in Excel, upload it 
+         <p>Refer to this <a href="http://opendatakit.org/help/form-design/xlsform/" target="_blank"><u>page</u></a> for guideline on creating ODK XLS forms. If you need help, feel free to contact us. Once you have created the form in Excel, upload it
             here. The system will check for errors in form, and in case any are found, they will be displayed at the top of this page. If your form has no errors, it will be uploaded to the Aggregate Server. You should also receive an email with further instructions.<br />
          <p>Please note that this system is still under development. If you however experience any problem, send any of System Developers an email.</p>
       </p>
@@ -116,6 +116,10 @@ class UploadODK extends Repository{
          </select>
       </div>
    </div>
+   <div class="form-group">
+      <div class="odk_uploader_field_divs"><label for="auto_process" class="control-label" style="width: 200px;">Automatically export submissions to DMP</label></div>
+      <div class="odk_uploader_field_divs"><input type="checkbox" class="form-control" id="auto_process" name="auto_process" /></div>
+   </div>
    <div class="center"><input id="upload_b" name="upload_b" type="submit" value="Upload" class="btn btn-success" /></div>
 </form>
 
@@ -142,11 +146,11 @@ class UploadODK extends Repository{
             $this->xmlFileLoc = $this->tmpDir."/".$realName[0].".xml";
             move_uploaded_file($_FILES['excel_file']['tmp_name'], $this->excelFileLoc);
             $this->Dbase->CreateLogEntry("moved file from client to ".$this->excelFileLoc, "debug");
-            
+
             //download the media files
             $this->emptyMediaDir();//make sure the media dir is empty first
             /*
-             structure of $_FILES['media_files'] that contains 2 files is 
+             structure of $_FILES['media_files'] that contains 2 files is
              (
                   [name] => Array
                       (
@@ -178,7 +182,7 @@ class UploadODK extends Repository{
                      )
              )
              */
-            
+
             /*when checking if user is uploading media files, check if the name of the first media file has at least one character.
              * Seems like PHP inserts a 'phantom' media file if none is uploaded by the user. I'm assuming this phantom file has blank fields tied to it
              */
@@ -199,7 +203,7 @@ class UploadODK extends Repository{
                   }
                }
             }
-            
+
             //extract external_itemsets from the excel file
             $itemsetsRes = $this->extractExternalItemsets($this->excelFileLoc, $this->tmpDir."/media");
             if($itemsetsRes == 1){
@@ -208,10 +212,10 @@ class UploadODK extends Repository{
             else if ($itemsetsRes == 2){
                return "Your form's external_choices sheet and the itemsets.csv file contain similar data. You can use either but not both.";
             }
-            
+
             $result = exec("/usr/bin/python ".OPTIONS_COMMON_FOLDER_PATH."pyxform/pyxform/xls2xform.py ".$this->excelFileLoc." ".$this->xmlFileLoc." 2>&1", $execOutput);//assuming the working directory is where current php file is
             $errorOutput = join("\n", $execOutput);
-$this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
+            $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/pyxform/xls2xform.py " . $this->excelFileLoc . " " . $this->xmlFileLoc , "fatal");
             if(file_exists($this->xmlFileLoc) && strlen(file_get_contents($this->xmlFileLoc)) > 1){//no error
                $xmlString = file_get_contents($this->xmlFileLoc);
 
@@ -226,19 +230,7 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                      $random = microtime(true);
                      $newInstanceID = $instanceID.$random;
                      $xmlString = preg_replace("/<instance>[\s\n]*<".$preID."\s+id=[\"']".$instanceID."[\"']>/", "<instance>\n<".$preID." id=\"".$newInstanceID."\">", $xmlString);
-                     
-                     /*preg_match_all("/<h:title>(.*)<\/h:title>/i", $xmlString, $possibleTitle);
-                     
-                     if(isset($possibleTitle[1]) && count($possibleTitle[1]) == 1){
-                        $title = $possibleTitle[1][0];
-                        $newTitle = $title ." (". $random.")";
-                        $xmlString = preg_replace("/<h:title>".$title."<\/h:title>/", "<h:title>".$newTitle."<\/h:title>", $xmlString);
-                     }
-                     else{
-                        $this->Dbase->CreateLogEntry("The XML file returned multiple results for the title", "fatal");
-                        return "Something went wrong while trying to upload the form. This does not mean your form has a problem. Please contact the Systems Administrators";
-                     }*/
-                     
+
                      file_put_contents($this->xmlFileLoc, $xmlString);
                   }
                   else{
@@ -246,16 +238,16 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                      return "Something went wrong while trying to upload the form. This does not mean your form has a problem. Please contact the Systems Administrators";
                   }
                }
-               
+
                preg_match_all("/<instance>[\s\n]*<(.+)\s+id=[\"'](.*)[\"']>/i", $xmlString, $possibleInstanceIDs);
                if(isset($possibleInstanceIDs[1]) && count($possibleInstanceIDs[1]) == 1 && isset($possibleInstanceIDs[2]) && count($possibleInstanceIDs[2]) == 1){
                      $topElement = $possibleInstanceIDs[1][0];
                      $instanceID = $possibleInstanceIDs[2][0];
                }
-               
+
                preg_match_all("/<h:title>(.*)<\/h:title>/i", $xmlString, $possibleTitle);
                $formTitle = "";
-               
+
                if(isset($possibleTitle[1]) && count($possibleTitle[1]) == 1)
                   $formTitle = $possibleTitle[1][0];
                $error = "";
@@ -266,13 +258,13 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                if(is_array($result) && count($result)>0 && $_POST['upload_type'] != "testing"){//do not upload
                   $error .= "There already exists an ODK form with the same form_title. If this is the same form, consider incrementing it by a version<br />";
                }
-               
+
                $query = "SELECT id FROM odk_forms WHERE instance_id = :instance_id";
                $result = $this->Dbase->ExecuteQuery($query, array("instance_id" => $instanceID));
                if(is_array($result) && count($result)>0){//do not upload
                   $error .= "There is another ODK form in the server with the same instance id. Please change ".$instanceID. " to something else<br />";
                }
-               
+
                if(strlen($error) > 0){
                   return $error;
                }
@@ -304,7 +296,7 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
 
                /**
                 * Package the data and push to briefcase API's formUpload.
-                * Refer to https://code.google.com/p/opendatakit/wiki/BriefcaseAggregateAPI 
+                * Refer to https://code.google.com/p/opendatakit/wiki/BriefcaseAggregateAPI
                 */
                $fullXMLFilePath = realpath($this->xmlFileLoc);
                $fullMediaFilePath = realpath($this->tmpDir."/media");
@@ -321,14 +313,14 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                  )
                  make sure you ignore the first two elements in the generated array
                 */
-               
+
                if($mediaFileNames !== FALSE && count($mediaFileNames) > 2) { //media directory has at least one file in it
                   $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
                   for($mediaCount = 0; $mediaCount < count($mediaFileNames) - 2; $mediaCount++){
                      //, 'datafile'=>'@'.$fullMediaFilePath
                      $postFields["datafile[".$mediaCount."]"] = "@".$fullMediaFilePath."/".$mediaFileNames[$mediaCount + 2];
                   }
-                  
+
                }
                else {//user uploading form without media files
                   $postFields = array('form_def_file'=>'@'.$fullXMLFilePath);
@@ -384,7 +376,7 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                      else{//this is probably the first time the form is being uploaded
                         $this->Dbase->CreateLogEntry("First time form with instance id = ".$instanceID." is being uploaded", "fatal");
 
-                        $query = "INSERT INTO odk_forms(instance_id, created_by, email_address, top_element, form_name) VALUES(:instance_id, :user, :email, :top_element, :form_name)";
+                        $query = "INSERT INTO odk_forms(instance_id, created_by, email_address, top_element, form_name, auto_process_submissions) VALUES(:instance_id, :user, :email, :top_element, :form_name, :auto_process)";
                         $username = $_SESSION['username'];
                         if(strlen($username) === 0)
                            $username = $_SESSION['onames']." ".$_SESSION['sname'];
@@ -392,7 +384,10 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                         if(strlen($username) === 0)
                            $username = "unknown";
 
-                        $result = $this->Dbase->ExecuteQuery($query, array("instance_id" => $instanceID, "user" => $username, "email" => $_POST['email'], "top_element" => $topElement, "form_name" => $formTitle));
+                        $auto_process = ($_POST['auto_process'] == 'on') ? TRUE : FALSE;
+                        $vars = array("instance_id" => $instanceID, "user" => $username, "email" => $_POST['email'], "top_element" => $topElement,
+                           "form_name" => $formTitle, 'auto_process' => $auto_process);
+                        $result = $this->Dbase->ExecuteQuery($query, $vars);
 
                         $query = "SELECT id FROM odk_forms WHERE instance_id = :instance_id";//form names are unique in database
                         $result = $this->Dbase->ExecuteQuery($query, array("instance_id"=>$instanceID));
@@ -417,7 +412,7 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                            }
                         }
                      }
-                     
+
                      //give user access to form
                      $query = "SELECT id FROM odk_access WHERE user = :user AND form_id = :form_id";
                      $result = $this->Dbase->ExecuteQuery($query, array("form_id"=> $formID, "user" => $username));
@@ -425,7 +420,7 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                         $query = "INSERT INTO odk_access(form_id, `user`) VALUES(:form_id, :user)";
                         $this->Dbase->ExecuteQuery($query, array("form_id" => $formID, "user" => $username));
                      }
-                     
+
                      //give other users access
                      if(strlen($_POST['collaborators']) > 0){
                         $this->Dbase->CreateLogEntry("User has specified collaborators for this form","fatal");
@@ -442,7 +437,7 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                            }
                         }
                      }
-                     
+
                      //schedule testing form for a delete
                      if($_POST['upload_type'] == 'testing'){
                         $oneDayLater = date('Y-m-d H:i:s', time() + $this->maxTestingTime);
@@ -479,27 +474,27 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
          $this->Dbase->CreateLogEntry("The excel file container is empty", "fatal");
       }
    }
-   
+
    /**
     * This function checks whether the provided excel file has the external_choices
     * sheet and generates a itemset.csv file from this that will be uploaded alongside
     * the xml file to Aggregate
-    * 
+    *
     * @param string $excelFileLoc   The location of the excel file
     * @param string $mediaDirLoc    Directory to save the itemsets.csv file in
-    * 
+    *
     * @return Integer Returns -1 if excel file does not have an external choices, 0 if able to extract the data, 1 if an error occurred and 2 if itemsets.csv already exists in the media directory
     */
    private function extractExternalItemsets($excelFileLoc, $mediaDirLoc){
       include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel.php';
       include_once OPTIONS_COMMON_FOLDER_PATH.'PHPExcel/Classes/PHPExcel/IOFactory.php';
-      
+
       try {
          //load the excel file
          $excelFileType = PHPExcel_IOFactory::identify($excelFileLoc);
          $objReader = PHPExcel_IOFactory::createReader($excelFileType);
          $excelFileObj = $objReader->load($excelFileLoc);
-         
+
          //check if excel file has external_choices sheet
          $sheetNames = $excelFileObj->getSheetnames();//returns an array of sheet names with the indexes usable in $excelObject->getSheet($index)
          $ecSheetIndex = array_search("external_choices", $sheetNames);
@@ -522,15 +517,15 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                return 2;
             }
          }
-         
-      } 
+
+      }
       catch (Exception $ex) {
          $this->Dbase->CreateLogEntry("An error occurred while loading ".$excelFileLoc." into a PHPExcel file. \n".$ex->getMessage(), "fatal");
       }
-      
+
       return 1;//fuction returns error by default. Return 0 when you are sure you are done and everything is fine
    }
-   
+
    private function emptyMediaDir(){
       $mediaFiles = glob($this->tmpDir."/media/*");
       foreach($mediaFiles as $file){
@@ -560,7 +555,7 @@ $this->Dbase->CreateLogEntry("python " . OPTIONS_COMMON_FOLDER_PATH . "pyxform/p
                $query = "insert into preload_queries(query, preload_id) values(:query, :preloadId)";
                $this->Dbase->ExecuteQuery($query, array("query" => $currQuery, "preloadId" => $preloadId));
             }
-         } 
+         }
       }
       else {
          $this->Dbase->CreateLogEntry("Could not record preload with name $preloadName with odk form with id = $formId because we couldn't get the preload id from the database","fatal");
