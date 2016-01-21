@@ -449,7 +449,7 @@ class Parser {
       $dictionary->getProperties()->setLastModifiedBy($_POST['creator']);
       $dictionary->getProperties()->setTitle("dictionary");
       $dictionary->getProperties()->setSubject("Created using ODK Parser");
-      $dictionary->getProperties()->setDescription("This Excel file has been generated using ODK Parser that utilizes the PHPExcel library on PHP. ODK Parse was created by Jason Rogena (j.rogena@cgiar.org)");
+      $dictionary->getProperties()->setDescription("This Excel file has been generated using ODK Parser that utilizes the PHPExcel library on PHP. ODK Parse was created by the Azizi Biorepository team (azizibiorepository@cgiar.org)");
 
       $dictionary->setActiveSheetIndex(0);
       $dictionary->getActiveSheet()->setTitle("dictionary");
@@ -505,19 +505,30 @@ class Parser {
                   $schemaData = $this->initializeDMPSchema($dataPayload, $authToken);
                   if($schemaData['status']['healthy'] == true){
                      $this->logHandler->log(3, $this->TAG, "Successfully created DMP project with id '$workflowId' for '{$_POST['fileName']}'");
-                     $this->sendEmail("DMP Project for ".$_POST['fileName']." (".$workflowId.")", "Successfully created a DMP project for {$_POST['fileName']}. You can access this project by visiting the Biorepository site.");
+                     $message = "A DMP project for {$_POST['fileName']} has been created successfully. Log in to http://azizi.ilri.org/repository/ to access the project.\n\n"
+                     . "In case of any queries, please contact the Azizi team.\n\n"
+                     . "Regards\nThe Azizi Team";
+                     $this->sendEmail("Successfully created a DMP Project for ".$_POST['fileName']." (".$workflowId.")", $message);
                   }
                   else {
                      $this->logHandler->log(1, $this->TAG, "Unable to create a DMP schema for '{$_POST['fileName']}' ($workflowId). An error occurred.");
                      $this->logHandler->log(1, $this->TAG, print_r($dmpData['status'], true));
-                     $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not generate the database schema for {$_POST['fileName']}. An system error occurred. Please contact the system administrators for assistance.\n".print_r($dmpData['status']['errors'], true));
+                     $this->logHandler->log(1, $this->TAG, 'Errors: '.print_r($dmpData['status']['errors'], true));
+                     $message = "There was an error while trying to create a DMP project for {$_POST['fileName']}.\n\n"
+                     . "Please contact the system administrators for assistance.\n\n"
+                     . "Regards\nThe Azizi Team";
+                     $this->sendEmail("Error while creating DMP project - ".$_POST['fileName'], $message);
                   }
                   //TODO: send the images and dictionary
                }
                else {
                   $this->logHandler->log(1, $this->TAG, "Unable to create the DMP project for '{$_POST['fileName']}'. An error occurred while creating the project");
                   $this->logHandler->log(1, $this->TAG, print_r($dmpData['status'], true));
-                  $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. An system error occurred while trying to initialize the project. Please contact the system administrators for assistance.\n".print_r($dmpData['status']['errors'], true));
+                  $this->logHandler->log(1, $this->TAG, 'Errors: '.print_r($dmpData['status']['errors'], true));
+                  $message = "There was an error while creating a DMP project for for {$_POST['fileName']}. An system error occurred while trying to initialize the project.\n\n"
+                  . "Please contact the system administrators for assistance.\n\n"
+                  . "Regards\nThe Azizi Team";
+                  $this->sendEmail("Error while creating DMP project - ".$_POST['fileName'], $message);
                }
             }
          }
@@ -1280,7 +1291,8 @@ class Parser {
             array_unshift($headings, "secondary_key");
             $cleanCSVRows = array();
             $cleanCSVRows[0] = array();
-            for ($i = 0; $i < sizeof($headings); $i++) {
+            $headingsCount = sizeof($headings);
+            for ($i = 0; $i < $headingsCount; $i++) {
                if ($i > 1) {//current heading is not primary_key or secondary_key
                   $headings[$i] = $sheetName . "-" . $headings[$i];
                }
@@ -1293,7 +1305,8 @@ class Parser {
 
             if (sizeof($tr) === 1) {
                $rows = explode("</tr>", $tr[0]);
-               for ($rowIndex = 0; $rowIndex < sizeof($rows); $rowIndex++) {
+               $rowCount = sizeof($rows);
+               for ($rowIndex = 0; $rowIndex < $rowCount; $rowIndex++) {
                   //check if row is actual table row
                   if (strpos($rows[$rowIndex], '<tr>') !== false) {
                      $rows[$rowIndex] = str_replace("<tr>", "", $rows[$rowIndex]);
@@ -1304,11 +1317,13 @@ class Parser {
                      $this->primaryKeys[$sheetName] = $this->primaryKeys[$sheetName] + 1;
                      if($parentSheetName == "main_sheet") $skPrefix = $this->odkInstance;
                      else $skPrefix = $this->odkInstance."_".$parentSheetName;
+
                      array_unshift($rowColumns, $skPrefix . "_" . $secondaryKey);//insert secondary key
 
-                     if ((sizeof($headings) + 1) === sizeof($rowColumns)) {
-                        for ($columnIndex = 0; $columnIndex < sizeof($rowColumns); $columnIndex++) {
-                           if ($columnIndex < sizeof($headings)) {
+                     $rowColumnsCount = sizeof($rowColumns);
+                     if (($headingsCount + 1) === $rowColumnsCount) {
+                        for ($columnIndex = 0; $columnIndex < $rowColumnsCount; $columnIndex++) {
+                           if ($columnIndex < $headingsCount) {
                               $rowColumns[$columnIndex] = str_replace("<td>", "", $rowColumns[$columnIndex]);
 
                               //check if contents of cell is a link (<a></a>) to image
@@ -1343,7 +1358,7 @@ class Parser {
                      }
                      else {
                         $this->logHandler->log(4, $this->TAG, 'Badly parsed tables were fetched from: '. $url);
-                        $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: ' . sizeof($headings) . ' ' . sizeof($rowColumns) . ' ' . $html);
+                        $this->logHandler->log(4, $this->TAG, 'Badly parsed tables look like this: ' . $headingsCount . ' ' . $rowColumnsCount . ' ' . $html);
                         $this->logHandler->log(1, $this->TAG, 'it appears the rows in html table were parsed badly, exiting');
                         exit();
                      }
@@ -1356,12 +1371,14 @@ class Parser {
                /*if (in_array($sheetName, $sheetNames)) {//sheet had already been previously created
                   $cleanCSVRows = array_slice($cleanCSVRows, 1); //delete the first row (containing headings)
                }*/
-               for ($rowIndex = 0; $rowIndex < count($cleanCSVRows); $rowIndex++) {
+               $cleanCSVRowsCount = count($cleanCSVRows);
+               for ($rowIndex = 0; $rowIndex < $cleanCSVRowsCount; $rowIndex++) {
                   if($this->nextRowName[$sheetName] > 0 && $rowIndex == 0){//not the first time inserting into sheet
                      continue;//no need to reinsert headings in excel file
                   }
                   $currRow = $cleanCSVRows[$rowIndex];
-                  for ($columnIndex = 0; $columnIndex < count($currRow); $columnIndex++) {
+                  $currRowCount = count($currRow);
+                  for ($columnIndex = 0; $columnIndex < $currRowCount; $columnIndex++) {
                      $this->insertCSVCell($currRow[$columnIndex], $this->nextRowName[$sheetName], $cleanCSVRows[0][$columnIndex], $sheetName);
                   }
                   $this->nextRowName[$sheetName]++;
