@@ -428,8 +428,11 @@ class WASheet {
             $columnsProvided = true;
          }
          if($linkSheets == true) {
-            $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
-            array_push($mysqlColumns, $primayKey);
+            // only add a new primary key if we have none defined in the list of column names
+            if(!in_array($this->sheetName."_gen_pk", $columnNames)){
+               $primayKey = array("name" => $this->sheetName."_gen_pk" , "type"=>  Database::$TYPE_SERIAL , "length"=>null , "nullable"=>false, "default" => null , "key"=>Database::$KEY_PRIMARY);
+               array_push($mysqlColumns, $primayKey);
+            }
          }
          if($columnsProvided == false){
             $this->processColumns();
@@ -437,9 +440,15 @@ class WASheet {
               && count($this->columnArray) > 0) {
                $this->switchToThisSheet();
                $columnCount = count($columnNames);
+
+
                for($index = 0; $index < $columnCount; $index++) {
                   $currColumn = new WAColumn($this->config, $this->database, $columnNames[$index], $this->lH, $this->columnArray[$columnNames[$index]]);
                   $currMySQLColumn = $currColumn->getMySQLDetails($workflow, $this->sheetName, $linkSheets);
+                  if($linkSheets == true && $columnNames[$index] == $this->sheetName."_gen_pk"){
+                     // if the column name is like sheetName_gen_pk, define it as a primary key
+                     $currMySQLColumn['key'] = Database::$KEY_PRIMARY;
+                  }
                   array_push($mysqlColumns, $currMySQLColumn);
                }
             }
@@ -450,7 +459,7 @@ class WASheet {
          }
 
          $columnCount = count($columnNames);
-         if($linkSheets == true && $columnsProvided == false) $columnCount++;
+         if($linkSheets == true && $columnsProvided == false && !in_array($this->sheetName."_gen_pk", $columnNames)) $columnCount++;
 
          if($columnsProvided == false && (count($mysqlColumns) == 0 || $columnCount != count($mysqlColumns))) {
             $this->lH->log(1, $this->TAG, "Number of MySQL columns for sheet with name = '{$this->sheetName}' does not match the number of columns in excel file for workflow with id = '{$this->database->getDatabaseName()}'");
