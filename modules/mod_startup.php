@@ -65,8 +65,8 @@ if(Config::$logSettings['loglevel'] == 'extensive'){
       if(count($_FILES) != 0)
          $Repository->Dbase->CreateLogEntry("Files: \n".print_r($_FILES, true), 'debug');
    }
-//      if(count($_GET) != 0)
-//         $Repository->Dbase->CreateLogEntry("GET User request: \n".print_r($_GET, true), 'debug');
+      if(count($_SESSION) != 0)
+         $Repository->Dbase->CreateLogEntry("SESSION request: \n".print_r($_SESSION, true), 'debug');
 }
 
 if(Config::$downloadFile) $Repository->TrafficController();

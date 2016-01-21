@@ -90,6 +90,7 @@ class ODKWorkflowAPI extends Repository {
                   $this->lH->log(4, $this->TAG, "We have a valid session, please proceed");
                   // we have a valid session so lets go to the necessary sub module
                   if (OPTIONS_REQUESTED_SUB_MODULE == "init_workflow") $this->handleInitWorkflowEndpoint();
+                  else if (OPTIONS_REQUESTED_SUB_MODULE == "update_workflow") $this->handleUpdateWorkflowEndpoint();
                   else if(OPTIONS_REQUESTED_SUB_MODULE == "register") $this->handleRegisterEndpoint();
                   else if (OPTIONS_REQUESTED_SUB_MODULE == "get_workflows") $this->handleGetWorkflowsEndpoint();
                   else if (OPTIONS_REQUESTED_SUB_MODULE == "process_mysql_schema") $this->handleProcessMysqlSchemaEndpoint();
@@ -246,7 +247,8 @@ class ODKWorkflowAPI extends Repository {
                     && array_search("workflow_name", $jsonKeys) !== false){
 
                //initialize a workflow object
-               $workflow = new Workflow($this->config, $json['workflow_name'], $this->uuid, NULL);
+               $odkInstance = (isset($json['odk_instance'])) ? $json['odk_instance'] : NULL;
+               $workflow = new Workflow($this->config, $json['workflow_name'], $this->uuid, NULL, $odkInstance);
 
                //fetch the form data file from the client
                $workflow->addRawDataFile($json['data_file_url']);
@@ -1534,6 +1536,9 @@ class ODKWorkflowAPI extends Repository {
       return null;
    }
 
+   /**
+    * Handles the function of getting grouped data from a workflow
+    */
    private function handleGetColumnsDataEndpoint(){
       include_once 'mod_wa_column.php';
 
@@ -1559,6 +1564,13 @@ class ODKWorkflowAPI extends Repository {
          $this->lH->log(2, $this->TAG, "data variable not set in data provided to get_columns_data endpoint");
          $this->setStatusCode(ODKWorkflowAPI::$STATUS_CODE_BAD_REQUEST);
       }
+   }
+
+   /**
+    * Update an existing workflow with new submissions
+    */
+   private function handleUpdateWorkflowEndpoint(){
+
    }
 }
 ?>

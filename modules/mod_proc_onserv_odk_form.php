@@ -47,15 +47,38 @@ class ProcODKForm {
    private $tableIndexes;
    private $sendToDMP;
    private $dmpUser;
+   private $dmpPass;
    private $dmpServer;
    private $dmpSession;
    private $dmpLinkSheets;
+
+   private $updateSubmissions;         // When set to yes, instruct the processor to fetch only submissions which are not yet in the DMP
+   private $tempConn;
 
 
    public function __construct($Dbase){
       $this->Dbase = $Dbase;
 
+      // for testing, lets open a db connection to the main server
+      $this->tempConn = new DBase('mysql');
+      $config = array(
+         'user' => 'akihara',                  //username to use to connect to the dbase
+         'pass' => 'w4QJCZBe49Mr',           //password of the defined user
+         'dbase' => 'azizi_miscdb',                      //database name
+         'azizi_db' => 'azizi_lims',                      //azizi database name
+         'lims_extension' => 'azizi_lcmods',              //database storing extra info for data on the lims database (azizi_lims) -- to be removed from here
+         'dbloc' => 'boran.ilri.cgiar.org',               //database location
+         'session_dbase' => 'azizi_miscdb',              //the table in the database which has the sessions
+      );
+//      $this->tempConn->InitializeConnection($config);
+//      if(is_null($this->tempConn->dbcon)) {
+//         $this->Dbase->CreateLogEntry("Error while creating connection to the server", "fatal");
+//         return;
+//      }
+//      $this->tempConn->InitializeLogs();
+
       $this->Dbase->CreateLogEntry("great success .... :)", "debug");
+      $this->Dbase->CreateLogEntry("great success .... :)", "fatal");
       /*
        *  creator: window.parse.name,
          email: window.parse.email,
@@ -70,17 +93,21 @@ class ProcODKForm {
       $this->formID = $_POST['formOnServerID'];
       $this->parseType = $_POST['parseType'];
       $this->dwnldImages = $_POST['dwnldImages'];
+      $this->updateSubmissions = 'no';
       $this->sendToDMP = "no";      //default is no
       $this->dmpUser = "";
+      $this->dmpPass = "";
       $this->dmpServer = "";
       $this->dmpSession = "";
       $this->dmpLinkSheets = "no";  //default is no
       if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
       if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
+      if(isset($_POST['dmpPass'])) $this->dmpPass = $_POST['dmpPass'];
       if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
       if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
       if(isset($_POST['dmpLinkSheets'])) $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
       if(isset($_POST['includeSubId'])) $this->includeSubId = $_POST['includeSubId'];
+      if(isset($_POST['updateSubmissions'])) $this->updateSubmissions = $_POST['updateSubmissions'];
 
       $this->sessionID = session_id();
       if($this->sessionID == NULL || $this->sessionID == "") {
@@ -116,11 +143,37 @@ class ProcODKForm {
          $submissionsCount = count($this->submissionIDs);
          $this->Dbase->CreateLogEntry("Found $submissionsCount submissions for the form {$this->formName} ({$this->instanceID})", 'info');
 
+         // if we have 0 submissions and we are meant to update the submissions, just end here and send an email
+         if($this->updateSubmissions == 'yes' && $submissionsCount == 0){
+            $this->Dbase->CreateLogEntry("Found $submissionsCount submissions for the form {$this->formName} ({$this->instanceID}). Exiting this thread.", 'debug');
+            $this->sendEmailNoSubmissions();
+            return;
+         }
+         if($this->updateSubmissions == 'yes'){
+            // we need to update the submissions in the server, so select the already existing submissions
+            $dmpSubmissions = $this->getDMPSubmissions();
+            if($dmpSubmissions == 1){
+               return;
+            }
+         }
+
+         // if we are meant to update submissions but we don't have a current project, we will need to create a new project instead of updating submissions
+         if($this->updateSubmissions == 'yes' && count($dmpSubmissions) == 0){
+            $this->updateSubmissions = 'no';
+         }
+
          //3. download submission data
          $this->json = "";
          $this->submissionXObjects = array();
          foreach($this->submissionIDs as $currSubmissionID){
-            $this->downloadSubmissionData($currSubmissionID);
+            if($this->updateSubmissions == 'no'){        // if we are not updating the submissions, we just get the submissions from aggregate
+               $this->downloadSubmissionData($currSubmissionID);
+            }
+            else if(!in_array($currSubmissionID, $dmpSubmissions) && $this->updateSubmissions == 'yes'){
+               // we are meant to update submissions and this submission is not in the DMP... so get it
+               $this->Dbase->CreateLogEntry("Found a new submission, $currSubmissionID. Now going to fetch it...", 'info');
+               $this->downloadSubmissionData($currSubmissionID);
+            }
          }
          if(strlen($this->json) !== 0)
             $this->json = $this->json."]";
@@ -177,6 +230,7 @@ class ProcODKForm {
       $instanceID = $this->Dbase->ExecuteQuery($query, array("id" => $this->formID));
       if(is_array($instanceID) && count($instanceID) == 1){
          $topElement = $instanceID[0]['top_element'];
+         $formName = $instanceID[0]['form_name'];
          $instanceID = $instanceID[0]['instance_id'];
 
          $this->authUser();
@@ -196,7 +250,7 @@ class ProcODKForm {
          if($http_status == 200){
             $this->instanceID = $instanceID;
             $this->topElement = $topElement;
-            $this->formName = $instanceID[0]['form_name'];
+            $this->formName = $formName;
 
             $this->Dbase->CreateLogEntry("Form xml obtained successfully!","info");
             $this->xmlString = $curlResult;
@@ -642,8 +696,10 @@ class ProcODKForm {
          "fromWithin" => "yes",
          "odkInstanceId" => $this->instanceID,
          "sendToDMP" => $this->sendToDMP,
+         "updateSubmissions" => $this->updateSubmissions,
          "dmpServer" => $this->dmpServer,
          "dmpUser" => $this->dmpUser,
+         "dmpPass" => $this->dmpPass,
          "dmpSession" => $this->dmpSession,
          "dmpLinkSheets" => $this->dmpLinkSheets
       );
@@ -662,6 +718,84 @@ class ProcODKForm {
       curl_close($ch);
 
       $this->Dbase->CreateLogEntry("http_status = ".print_r($http_status, true), "debug");
+   }
+
+   /**
+    * Send an email message when there are zero submissions
+    */
+   private function sendEmailNoSubmissions(){
+      $subject = "Zero submissions found for {$this->fileName}";
+      $message = "Dear {$this->creator},\n\nThere are zero submissions found for the form {$this->fileName} with id {$this->formID}. "
+      . "I am meant to create a DMP project for this form, but since there are no submissions, the project will not be created.\n\n"
+      . "In case of any queries, please contact the system administrators.\n\n"
+      . "The Azizi Team";
+      $this->Dbase->CreateLogEntry("$subject. Emailing the user <{$this->email}>", 'info');
+      shell_exec('echo "'.$message.'"|'.$this->config['mutt_bin'].' -F '.$this->config['mutt_config'].' -s "'.$subject.'" -- '.$this->email);
+   }
+
+   /**
+    * Get the uuids of submissions which are already in the DMP.
+    *
+    * While doing this, we are going to assume that the main table is main_sheet and the uuids are in the column meta-instanceID
+    */
+   private function getDMPSubmissions(){
+      if(!file_exists("config/main.ini")) {
+         $this->Dbase->CreateLogEntry("Cannot find the setting file 'main.ini'", 'fatal');
+         return 1;
+      }
+      $settings = parse_ini_file("config/main.ini");
+      // dmp db settings
+      $this->Dbase->CreateLogEntry(print_r($settings, true), 'fatal');
+      if(!parse_ini_file($settings['dmp_dbsettings_file'])) {
+         $this->Dbase->CreateLogEntry("Cannot parse the db settings file {$settings['dmp_dbsettings_file']}", 'fatal');
+         return 1;
+      }
+      $dmp_settings = parse_ini_file($settings['dmp_dbsettings_file'], true);
+      $config = $dmp_settings['odk_autoprocessing'];
+
+      $tempConn = new DBase('pgsql');
+      $tempConn->InitializeConnection($config);
+      if(is_null($tempConn->dbcon)) {
+         $this->Dbase->CreateLogEntry("Error while creating connection to the server", "fatal");
+         return 1;
+      }
+
+      // get the database that we are to use. The name of the database is found in the database dmp_master and the table projects
+      $query = 'select db_name from projects where odk_instance_id = :instance_id';
+      $dbName = $tempConn->ExecuteQuery($query, array('instance_id' => $this->formID));
+      if($dbName == 1){
+         $this->Dbase->CreateLogEntry("Error fetching the database name from the server. ".$tempConn->lastError, "fatal");
+         return 1;
+      }
+      elseif(count($dbName) == 0){
+         $this->Dbase->CreateLogEntry("The instance {$this->instanceID} has no project in the DMP.", "info");
+         $this->Dbase->CreateLogEntry("The instance {$this->instanceID} has no project in the DMP. Will return an empty array to force it to fetch the submissions", "debug");
+         return array();
+      }
+      $dbName = $dbName[0]['db_name'];
+
+      // now get the submissions from the database
+      $config['pg_dbase'] = $dbName;
+      $tempConn->InitializeConnection($config);
+      if(is_null($tempConn->dbcon)) {
+         $this->Dbase->CreateLogEntry("Error while creating connection to the server", "fatal");
+         return 1;
+      }
+
+
+      $dmpSubmissionsQuery = 'select "meta-instanceID" as uuid from main_sheet';
+      $dmpSubmissions = $tempConn->ExecuteQuery($dmpSubmissionsQuery);
+      if($dmpSubmissions == 1){
+         $this->Dbase->CreateLogEntry("Error fetching the database name from the server. ".$tempConn->lastError, "fatal");
+         return 1;
+      }
+
+      $submissionsCount = count($dmpSubmissions);
+      $dmpSubmissionsArray = array();
+      for($i = 0; $i < $submissionsCount; $i++){
+         $dmpSubmissionsArray[] = $dmpSubmissions[$i]['uuid'];
+      }
+      return $dmpSubmissionsArray;
    }
 }
 ?>

@@ -60,7 +60,7 @@ class Workflow {
       $this->workflowName = $workflowName;
       $this->processing = false;
       $this->dataTables = NULL;
-      $this->odkInstance = ($odkInstance != null) ? $odkInstance : "";
+      $this->odkInstance = ($odkInstance != null) ? $odkInstance : NULL;
 
       $this->instanceId = $instanceId;
 

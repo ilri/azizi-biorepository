@@ -167,7 +167,13 @@ class Parser {
    private $primaryKeys;
 
    private $sendToDMP;
+
+   /**
+    * Variable that determines whether to update the submissions or not
+    */
+   private $updateSubmissions;
    private $dmpUser;
+   private $dmpPass;
    private $dmpServer;
    private $dmpSession;
    private $dmpLinkSheets;
@@ -181,112 +187,6 @@ class Parser {
     * The number of seconds to pause between failed fetches of data from aggregate
     */
    private $sleepBetweenTries = 1;
-
-   /**
-    * This function does XML parsing of the XML structure file to obtain
-    *  - The instance id and id prefix for the form
-    *  - Multiple selects in the form
-    */
-   private function parseXML(){
-      $this->logHandler->log(3, $this->TAG, "Getting all mutiselect questions");
-      $xml = new DOMDocument();
-      $xml->loadHTML($_POST['xmlString']);
-      if($xml == FALSE){
-         $this->logHandler->log(2, $this->TAG, 'There was an error while parsing the xml using the DOM parser...');
-      }
-      else {
-         $this->logHandler->log(3, $this->TAG, 'Successfully parsed the form\'s XML file');
-      }
-
-      $allInstanceNodes = $xml->getElementsByTagName('instance');
-      //get the instance id for the form
-      /**/
-
-      $optionsFromOldODK = array();//support for older odk forms
-      $nodesLength = $allInstanceNodes->length;
-      for($i = 0; $i < $nodesLength; $i++) {
-         $node = $allInstanceNodes->item($i);
-         //check if the instance has no attributes (probably means it holds the from's instance id)
-         if($node->attributes->length == 0) {
-            if($this->odkInstance == NULL) {//the instance has not been initialized before
-               $allChildElements = $node->getElementsByTagName('*');
-               foreach($allChildElements as $currChildElement) {
-                  $this->idPrefix = $currChildElement->tagName;
-                  $this->odkInstance = $currChildElement->getAttribute('id');
-                  break;//we are expecting only one child element in such an instance tag
-               }
-            }
-         }
-
-         $instanceId = $node->attributes->item(0)->value;
-         //check if instance has <options> child
-         $optionsInInstance = $node->getElementsByTagName('options');
-         //expecting at most one <options> tag in each instance tag
-         $noOptions = $optionsInInstance->length;
-         if($noOptions == 1) {
-            $rawValues = $optionsInInstance->item(0)->getElementsByTagName('value');
-            $values = array();
-            for($index = 0; $index < $rawValues->length; $index++) {
-               $values[] = $rawValues->item($index)->nodeValue;
-            }
-            $optionsFromOldODK[$instanceId] = $values;
-         }
-      }
-
-      $allSelectNodes = $xml->getElementsByTagName('select');
-      $nodesLength = $allSelectNodes->length;
-      $allNodes = array();
-
-      // traverse all nodes and get the name of the node and the possible options
-      for($i = 0; $i < $nodesLength; $i++){
-         //$nodeName = $allSelectNodes[$i]->attributes->item(0)->value;
-         $node = $allSelectNodes->item($i);
-         $nodeName = $node->attributes->item(0)->value;
-
-         // format the nodeName by removing the leading form name before the first / and then replace the rest of the / with '-' to match the column names as per the csv files
-         $nodeName = substr($nodeName, strpos($nodeName, '/', 1)+1);
-         $nodeName = str_replace('/', '-', $nodeName);
-         $allNodes[$nodeName]['options'] = array();
-         //check if select created using old way of creating ODK forms or new way
-         $itemsets = $node->getElementsByTagName("itemset");
-         if($itemsets->length == 0) {//select defined using the new way
-            // get the number of select options in this particular node by selecting the elements with the item tag
-            $selectNodes = $node->getElementsByTagName('item');
-            $allNodes[$nodeName]['noSelects'] = $selectNodes->length;
-
-            $this->logHandler->log(3, $this->TAG, "Extracting selects for $nodeName($i/$nodesLength) with {$selectNodes->length} selects");
-            for($j = 0; $j < $selectNodes->length; $j++){
-               // get the actual select options
-               $allNodes[$nodeName]['options'][] = $selectNodes->item($j)->childNodes->item(2)->childNodes->item(0)->nodeValue;
-            }
-         }
-         else if($itemsets->length == 1) {//select defined using the old way. Expecting only one itemsets tag in a select tag
-            //get the instance id for the itemset
-            $itemset = $itemsets->item(0);
-            $rawInstanceId = $itemset->getAttribute("nodeset");
-            $instanceParts = explode("'", $rawInstanceId);
-            if(count($instanceParts) == 3) {
-               $instanceId = $instanceParts[1];
-               if(isset($optionsFromOldODK[$instanceId])) {
-                  $allNodes[$nodeName]['noSelects'] = count($optionsFromOldODK[$instanceId]);
-                  $allNodes[$nodeName]['options'] = $optionsFromOldODK[$instanceId];
-               }
-               else {
-                  $this->logHandler->log(2, $this->TAG, "Was unable to get options corresponding to option group '$instanceId'");
-               }
-            }
-            else {
-               $this->logHandler->log(2, $this->TAG, "Was unable to extract the instance id from a select tag's nodeset");
-            }
-         }
-         else {
-            $this->logHandler->log(2, $this->TAG, "Select tag has more than one itemset tag. This is not expected");
-         }
-      }
-      $this->selectNodesOptions = $allNodes;
-      $this->logHandler->log(3, $this->TAG, "Done getting all multiselect questions");
-      return;
-   }
 
    public function __construct() {
       //load settings
@@ -305,20 +205,36 @@ class Parser {
       $this->idPrefix = null;
       $this->odkInstance = null;
       $this->parseType = $_POST['parseType'];
-      $this->sendToDMP = "no";//default is no
+      $this->sendToDMP = "no";      //default is no
+      $this->updateSubmissions = "no";      //default is no
       $this->dmpUser = "";
+      $this->dmpPass = "";
       $this->dmpServer = "";
       $this->dmpSession = "";
       $this->odkInstanceId = "";
       $this->dmpLinkSheets = false;
       if(isset($_POST['sendToDMP'])) $this->sendToDMP = $_POST['sendToDMP'];
+      if(isset($_POST['updateSubmissions'])) $this->updateSubmissions = $_POST['updateSubmissions'];
       if(isset($_POST['dmpUser'])) $this->dmpUser = $_POST['dmpUser'];
+      if(isset($_POST['dmpPass'])) $this->dmpPass = $_POST['dmpPass'];
       if(isset($_POST['dmpServer'])) $this->dmpServer = $_POST['dmpServer'];
       if(isset($_POST['dmpSession'])) $this->dmpSession = $_POST['dmpSession'];
       if(isset($_POST['dmpLinkSheets'])) {
          $this->dmpLinkSheets = $_POST['dmpLinkSheets'];
          if($this->dmpLinkSheets == "yes") $this->dmpLinkSheets = true;
          else $this->dmpLinkSheets = false;
+      }
+
+      if($this->dmpSession == '' && ($this->dmpUser != '' && $this->dmpPass != '')){
+         // we don't have a valid session, but we have a valid username and password
+         $res = $this->authenticateUser();
+         if($res == 1){
+            $this->logHandler->log(1, $this->TAG, 'There was an error while authenticating the user: '.$this->dmpUser);
+            return;
+         }
+      }
+      else{
+         $this->logHandler->log(1, $this->TAG, 'Seems all is clear in terms of authentication...');
       }
       $this->logHandler->log(3, $this->TAG, 'requested parse type is '.$this->parseType);
       $this->sheetIndexes = array();
@@ -492,9 +408,13 @@ class Parser {
             );
             $dataPayload = array(
                "data_file_url" => str_replace($this->ROOT, "", $dataFileLoc),
+               "odk_instance" => $this->odkInstance,
                "workflow_name" => $_POST['fileName']
             );
-            $dmpData = $this->sendDataFileToDMP($dataPayload, $authToken);
+
+            if($this->updateSubmissions == 'yes') $dmpData = $this->updateDMPRecords($dataPayload, $authToken);
+            else $dmpData = $this->sendDataFileToDMP($dataPayload, $authToken);
+
             if($dmpData != null) {
                if($dmpData['status']['healthy'] == true) {
                   $workflowId = $dmpData['workflow_id'];
@@ -554,10 +474,173 @@ class Parser {
       }
    }
 
+   /**
+    * Authenticate a user
+    */
+   private function authenticateUser(){
+      $this->logHandler->log(4, $this->TAG, 'Authenticating the user...');
+      $postData = array(
+         "token" => array(
+            "server" => $this->dmpServer,
+            "user" => $this->dmpUser,
+            "auth_mode" => 'local',
+            "secret" => $this->dmpPass
+         )
+      );
+      $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=auth");
+
+      curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+
+      $result = curl_exec($ch);
+      $http_status = curl_getinfo($ch);
+      curl_close($ch);
+
+      if($http_status == 400) {//bad request
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Bad request");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. The data provided to the server is incomplete. Please contact the system administrators for assistance.");
+         return 1;
+      }
+      else if($http_status == 403) {//forbidden
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 403 - Forbidden");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. Your account was denied permission to create the project. Please contact the system administrators for assistance.");
+         return 1;
+      }
+      else if($http_status == 500) {//server error
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Server error");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. An error occurred while processing the parsed data file. Please contact the system administrators for assistance.");
+         return 1;
+      }
+      else {
+         $res = json_decode($result, true);
+         if(is_null($res['session'])){
+            // something went wrong
+            if(count($res['status']['errors']) != 0){
+               $errors = implode("\n", $res['status']['errors']);
+               $this->logHandler->log(1, $this->TAG, $errors);
+               return 1;
+            }
+         }
+         // seems all is clear
+         $this->logHandler->log(4, $this->TAG, 'User authenticated successfully');
+         $this->dmpSession = $res['session'];
+         return 0;
+      }
+   }
+
+   /**
+    * This function does XML parsing of the XML structure file to obtain
+    *  - The instance id and id prefix for the form
+    *  - Multiple selects in the form
+    */
+   private function parseXML(){
+      $this->logHandler->log(3, $this->TAG, "Getting all mutiselect questions");
+      $xml = new DOMDocument();
+      $xml->loadHTML($_POST['xmlString']);
+      if($xml == FALSE){
+         $this->logHandler->log(2, $this->TAG, 'There was an error while parsing the xml using the DOM parser...');
+      }
+      else {
+         $this->logHandler->log(3, $this->TAG, 'Successfully parsed the form\'s XML file');
+      }
+
+      $allInstanceNodes = $xml->getElementsByTagName('instance');
+      //get the instance id for the form
+      /**/
+
+      $optionsFromOldODK = array();//support for older odk forms
+      $nodesLength = $allInstanceNodes->length;
+      for($i = 0; $i < $nodesLength; $i++) {
+         $node = $allInstanceNodes->item($i);
+         //check if the instance has no attributes (probably means it holds the from's instance id)
+         if($node->attributes->length == 0) {
+            if($this->odkInstance == NULL) {//the instance has not been initialized before
+               $allChildElements = $node->getElementsByTagName('*');
+               foreach($allChildElements as $currChildElement) {
+                  $this->idPrefix = $currChildElement->tagName;
+                  $this->odkInstance = $currChildElement->getAttribute('id');
+                  break;//we are expecting only one child element in such an instance tag
+               }
+            }
+         }
+
+         $instanceId = $node->attributes->item(0)->value;
+         //check if instance has <options> child
+         $optionsInInstance = $node->getElementsByTagName('options');
+         //expecting at most one <options> tag in each instance tag
+         $noOptions = $optionsInInstance->length;
+         if($noOptions == 1) {
+            $rawValues = $optionsInInstance->item(0)->getElementsByTagName('value');
+            $values = array();
+            for($index = 0; $index < $rawValues->length; $index++) {
+               $values[] = $rawValues->item($index)->nodeValue;
+            }
+            $optionsFromOldODK[$instanceId] = $values;
+         }
+      }
+
+      $allSelectNodes = $xml->getElementsByTagName('select');
+      $nodesLength = $allSelectNodes->length;
+      $allNodes = array();
+
+      // traverse all nodes and get the name of the node and the possible options
+      for($i = 0; $i < $nodesLength; $i++){
+         //$nodeName = $allSelectNodes[$i]->attributes->item(0)->value;
+         $node = $allSelectNodes->item($i);
+         $nodeName = $node->attributes->item(0)->value;
+
+         // format the nodeName by removing the leading form name before the first / and then replace the rest of the / with '-' to match the column names as per the csv files
+         $nodeName = substr($nodeName, strpos($nodeName, '/', 1)+1);
+         $nodeName = str_replace('/', '-', $nodeName);
+         $allNodes[$nodeName]['options'] = array();
+         //check if select created using old way of creating ODK forms or new way
+         $itemsets = $node->getElementsByTagName("itemset");
+         if($itemsets->length == 0) {//select defined using the new way
+            // get the number of select options in this particular node by selecting the elements with the item tag
+            $selectNodes = $node->getElementsByTagName('item');
+            $allNodes[$nodeName]['noSelects'] = $selectNodes->length;
+
+            $this->logHandler->log(3, $this->TAG, "Extracting selects for $nodeName($i/$nodesLength) with {$selectNodes->length} selects");
+            for($j = 0; $j < $selectNodes->length; $j++){
+               // get the actual select options
+               $allNodes[$nodeName]['options'][] = $selectNodes->item($j)->childNodes->item(2)->childNodes->item(0)->nodeValue;
+            }
+         }
+         else if($itemsets->length == 1) {//select defined using the old way. Expecting only one itemsets tag in a select tag
+            //get the instance id for the itemset
+            $itemset = $itemsets->item(0);
+            $rawInstanceId = $itemset->getAttribute("nodeset");
+            $instanceParts = explode("'", $rawInstanceId);
+            if(count($instanceParts) == 3) {
+               $instanceId = $instanceParts[1];
+               if(isset($optionsFromOldODK[$instanceId])) {
+                  $allNodes[$nodeName]['noSelects'] = count($optionsFromOldODK[$instanceId]);
+                  $allNodes[$nodeName]['options'] = $optionsFromOldODK[$instanceId];
+               }
+               else {
+                  $this->logHandler->log(2, $this->TAG, "Was unable to get options corresponding to option group '$instanceId'");
+               }
+            }
+            else {
+               $this->logHandler->log(2, $this->TAG, "Was unable to extract the instance id from a select tag's nodeset");
+            }
+         }
+         else {
+            $this->logHandler->log(2, $this->TAG, "Select tag has more than one itemset tag. This is not expected");
+         }
+      }
+      $this->selectNodesOptions = $allNodes;
+      $this->logHandler->log(3, $this->TAG, "Done getting all multiselect questions");
+      return;
+   }
+
    private function sendDataFileToDMP($dataPayload, $authToken) {
       $postData = array(
          "data" => $dataPayload,
-         "odkInstanceId" => $this->odkInstance,
          "token" => $authToken
       );
       $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=init_workflow");
@@ -1661,6 +1744,49 @@ class Parser {
       shell_exec('echo "'."Hi {$_POST['creator']},\n".$message.'"|'.$this->settings['mutt_bin'].' -F '.$this->settings['mutt_config'].' -s "'.$subject.'" -- '.$_POST['email']);
    }
 
+   /**
+    *
+    * @param type $dataPayload
+    * @param type $authToken
+    * @return type
+    */
+   private function updateDMPRecords($dataPayload, $authToken) {
+      $this->logHandler->log(3, $this->TAG, "Create a request to the workflow api to update the submissions");
+      $postData = array(
+         "data" => $dataPayload,
+         "token" => $authToken
+      );
+      $ch = curl_init("http://".$_SERVER['HTTP_HOST']."/repository/mod_ajax.php?page=odk_workflow&do=update_workflow");
+
+      curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, TRUE);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+
+      $result = curl_exec($ch);
+      $http_status = curl_getinfo($ch);
+      curl_close($ch);
+      if($http_status == 400) {//bad request
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Bad request");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. The data provided to the server is incomplete. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 403) {//forbidden
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 403 - Forbidden");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. Your account was denied permission to create the project. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else if($http_status == 500) {//server error
+         $this->logHandler->log(1, $this->TAG, "Could not create DMP project for {$_POST['fileName']}. DMP returned status code 400 - Server error");
+         $this->sendEmail("DMP Error for ".$_POST['fileName'], "Could not create a Data Management Portal project for {$_POST['fileName']}. An error occurred while processing the parsed data file. Please contact the system administrators for assistance.");
+         return null;
+      }
+      else {
+         return json_decode($result, true);
+      }
+   }
 }
 
 $obj = new Parser();
