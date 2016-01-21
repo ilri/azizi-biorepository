@@ -6,8 +6,6 @@
  * @author     Jason Rogena <j.rogena@cgiar.org>
  * @since      v0.1
  */
-error_reporting(E_ALL);
-
 class Parser {
    /**
     * @var string    Tag to be used in logging
@@ -1005,7 +1003,7 @@ class Parser {
         if (filter_var($cellString, FILTER_VALIDATE_URL) && $isCellImage === FALSE) {
             // is non-image url. Expecting a table with data... parse the HTML table
             $this->phpExcel->getActiveSheet()->setCellValue($cellID, "Check " . $this->shortenSheetName($columnHeading) . " sheet");
-            $this->parseHTMLTable($cellString, $columnHeading, $rowIndex, $this->shortenSheetName($parentSheetName));
+            $this->parseHTMLTable($cellString, $columnHeading, $rowIndex, $parentSheetName);
         }
         else if(filter_var($cellString, FILTER_VALIDATE_URL) &&  $isCellImage ===TRUE && $this->dwnldImages === "yes"){
             //is an image
