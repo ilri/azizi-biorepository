@@ -1393,7 +1393,8 @@ class Parser {
                   //check if row is actual table row
                   if (strpos($rows[$rowIndex], '<tr>') !== false) {
                      $rows[$rowIndex] = str_replace("<tr>", "", $rows[$rowIndex]);
-                     $rowColumns = explode("</td>", $rows[$rowIndex]);
+                     $rowColumns = explode("</td><td>", $rows[$rowIndex]);
+                     $rowColumns = str_replace(array('<td>', '</td>'), '', $rowColumns);
 
                      //array_unshift($rowColumns, $this->odkInstance . "_" . $secondaryKey);
                      array_unshift($rowColumns, $this->odkInstance."_".$sheetName."_" . $this->primaryKeys[$sheetName]);//insert primary key
@@ -1404,11 +1405,9 @@ class Parser {
                      array_unshift($rowColumns, $skPrefix . "_" . $secondaryKey);//insert secondary key
 
                      $rowColumnsCount = sizeof($rowColumns);
-                     if (($headingsCount + 1) === $rowColumnsCount) {
+                     if (($headingsCount) === $rowColumnsCount) {
                         for ($columnIndex = 0; $columnIndex < $rowColumnsCount; $columnIndex++) {
                            if ($columnIndex < $headingsCount) {
-                              $rowColumns[$columnIndex] = str_replace("<td>", "", $rowColumns[$columnIndex]);
-
                               //check if contents of cell is a link (<a></a>) to image
                               if (preg_match('/<a\s*href/i', $rowColumns[$columnIndex]) === 1) {//cell value is a link to image
                                  //using preg_split for extracting the image url instead of preg_match inorder to avoid a gready fetch at '.*' in the regex /<a\s*href\s*=\s*['\"].*/
@@ -1432,10 +1431,15 @@ class Parser {
                                  } else
                                     $this->logHandler->log(2, $this->TAG, 'Problem occured when extracting image url in cell (removing first part)');
                               }
-                              if (!isset($cleanCSVRows[$rowIndex + 1]))
+                              if (!isset($cleanCSVRows[$rowIndex + 1])){
                                  $cleanCSVRows[$rowIndex + 1] = array();
+                              }
                               $cleanCSVRows[$rowIndex + 1][$columnIndex] = $rowColumns[$columnIndex];
+
                               //$this->insertCSVCell($rowColumns[$columnIndex], $this->nextRowName[$sheetName], $headings[$columnIndex], $sheetName);
+                           }
+                           else{
+                              $this->logHandler->log(4, $this->TAG, "Skipping some rows coz of some reasons.. $columnIndex -- $headingsCount");
                            }
                         }
                      }
@@ -1484,38 +1488,50 @@ class Parser {
    private function expandMultiSelectQuestions($originalCSVRows){
        if($this->parseType !== "viewing"){
           $multiSelectQuestions = array_keys($this->selectNodesOptions);//includes those in main_sheet and other sheets
-          for ($i = 0; $i < count($originalCSVRows[0]); $i++) {
+
+          $headersCount = count($originalCSVRows[0]);
+          for ($i = 0; $i < $headersCount; $i++) {
            //check if current cell is a multi select question
            if (array_search($originalCSVRows[0][$i], $multiSelectQuestions) !== false) {//current cell contains the heading of a multi select question
+
               //get the options in multiselect question
               $toBeInserted = array(); //array containing new columns for all the csv rows
               $options = $this->selectNodesOptions[$originalCSVRows[0][$i]]['options'];
-              $countOptions = count($options);
-              $blankArray = array();
-              $noRows = count($originalCSVRows);
-              for ($index = 0; $index < $countOptions; $index++) {
-                 //append the question name as the prefix for each of the options
-                 $rawValue = $options[$index];
-                 $options[$index] = $originalCSVRows[0][$i] . "-" . $options[$index];
 
-                 if (!isset($toBeInserted[0]))
-                    $toBeInserted[0] = array();
-                 $toBeInserted[0][$index] = $options[$index];
-                 for ($rowIndex = 1; $rowIndex < $noRows; $rowIndex++) {
-                    if (!isset($toBeInserted[$rowIndex]))
-                       $toBeInserted[$rowIndex] = array();
-                    $stringValue = $originalCSVRows[$rowIndex][$i];
-                    if (strpos($stringValue, $rawValue) !== false) {//for current row, choice was not selected
-                       $toBeInserted[$rowIndex][$index] = 1;
-                       $this->logHandler->log(4, $this->TAG, $rawValue . " in " . $stringValue);
-                    } else {
-                       $this->logHandler->log(4, $this->TAG, $rawValue . " not in " . $stringValue);
-                       $toBeInserted[$rowIndex][$index] = 0;
+              $countOptions = count($options);
+              $noRows = count($originalCSVRows);
+              if($countOptions != 0){
+                 for ($index = 0; $index < $countOptions; $index++) {
+                    //append the question name as the prefix for each of the options
+                    $rawValue = $options[$index];
+                    $options[$index] = $originalCSVRows[0][$i] . "-" . $options[$index];
+
+                    if (!isset($toBeInserted[0])) $toBeInserted[0] = array();
+
+                    $toBeInserted[0][$index] = $options[$index];
+                    for ($rowIndex = 1; $rowIndex < $noRows; $rowIndex++) {
+                       if (!isset($toBeInserted[$rowIndex])) $toBeInserted[$rowIndex] = array();
+
+                       $stringValue = $originalCSVRows[$rowIndex][$i];
+
+                       if (strpos($stringValue, $rawValue) !== false) {//for current row, choice was not selected
+                          $toBeInserted[$rowIndex][$index] = 1;
+                          $this->logHandler->log(4, $this->TAG, $rawValue . " in " . $stringValue);
+                       }
+                       else {
+                          $this->logHandler->log(4, $this->TAG, $rawValue . " not in " . $stringValue);
+                          $toBeInserted[$rowIndex][$index] = 0;
+                       }
                     }
                  }
+                 $toBeInserted[0] = $options;
+                 $originalCSVRows = $this->addColumnsToRows($originalCSVRows, $i + 1, $toBeInserted);
               }
-              $toBeInserted[0] = $options;
-              $originalCSVRows = $this->addColumnsToRows($originalCSVRows, $i + 1, $toBeInserted);
+              else{
+                 $this->logHandler->log(4, $this->TAG, "The current column {$originalCSVRows[0][$i]} is a multi select column but I didn't find any of its options. I will not attempt to expand the columns.");
+                 $this->logHandler->log(3, $this->TAG, "The current column {$originalCSVRows[0][$i]} is a multi select column but I didn't find any of its options. I will not attempt to expand the columns.");
+                 $this->logHandler->log(1, $this->TAG, "The current column {$originalCSVRows[0][$i]} is a multi select column but I didn't find any of its options. I will not attempt to expand the columns.");
+              }
            }
         }
        }
