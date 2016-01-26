@@ -109,6 +109,11 @@ class FarmAnimals{
          if(OPTIONS_REQUESTED_ACTION == '') $this->fileUploadsHome();
          else if(OPTIONS_REQUESTED_ACTION == 'save') $this->processAndSaveUploads();
       }
+      else if(OPTIONS_REQUESTED_SUB_MODULE == 'batch_upload'){
+         if(OPTIONS_REQUESTED_ACTION == '') $this->batchUploadsHome();
+         else if(OPTIONS_REQUESTED_ACTION == 'save') $this->processAndSaveBatchUploads();
+
+      }
    }
 
    /**
@@ -134,7 +139,8 @@ class FarmAnimals{
                <li><a href="?page=farm_animals&do=events&action=quick_events">Add Quick Events</a></li>
                <li><a href="?page=farm_animals&do=experiments">Experiments</a></li>
                <li><a href="?page=farm_animals&do=images">Picture Uploads</a></li>
-               <li><a href="?page=farm_animals&do=graphs&action=weights">Weight Graphs</a></li>';
+               <li><a href="?page=farm_animals&do=graphs&action=weights">Weight Graphs</a></li>
+               <li><a href="?page=farm_animals&do=batch_upload">Allflex Batch Uploads</a></li>';
          }
 ?>
       </ul>
@@ -1068,7 +1074,7 @@ class FarmAnimals{
           . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_animals as b on a.animal_id=b.id '
           . 'inner join '. Config::$farm_db .'.farm_events as c on a.event_type_id=c.id '
           . 'left join '. Config::$farm_db .'.farm_sub_events as d on a.sub_event_type_id=d.id '
-          . 'group by a.event_type_id, a.sub_event_type_id, a.event_date, performed_by order by event_date desc';
+          . 'group by a.event_type_id, a.sub_event_type_id, date(a.event_date), performed_by order by event_date desc';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
       if($events == 1) { die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
       $owners = $this->getAllOwners(PDO::FETCH_GROUP | PDO::FETCH_UNIQUE);
@@ -1840,5 +1846,175 @@ class FarmAnimals{
       $weightsEventName = $this->Dbase->ExecuteQuery($weightsEventQ, array('event_name' => $eventName));
       if($weightsEventName == 1) return $this->Dbase->lastError;
       else return $weightsEventName[0]['id'];
+   }
+
+   /**
+    * Create a page for batch uploads of scans from the RFID stick
+    */
+   private function batchUploadsHome(){
+      $allOwners = $this->getAllOwners();
+      if(is_string($allOwners)){
+         $this->homePage($allOwners);
+         return;
+      }
+
+      // get a list of all events
+      $eventsQuery = 'select id, event_name as `name` from '. Config::$farm_db .'.farm_events order by event_name';
+      $events = $this->Dbase->ExecuteQuery($eventsQuery);
+      if($events == 1) {
+         $this->homePage($this->Dbase->lastError);
+         return;
+      }
+?>
+<script type="text/javascript" src="js/farm_animals.js"></script>
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>azizi-shared-libs/customMessageBox/mssg_box.css" />
+<link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxcore.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxdata.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxnotification.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxbuttons.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxfileupload.js"></script>
+
+<div id="batch_upload">
+   <div id="info">
+      Use the placeholder below to upload a batch of animals of which a certain event was carried out
+      <ol>
+         <li>You can only select 1 file at a time. The file should correspond to the format <a href='resources/dummy_allflex_scans.csv'>Sample Allflex Scans</a></li>
+      </ol>
+   </div>
+   <div id="upload"></div>
+   <div id="details">
+      <div class='control-group'>
+         <label class='control-label' for='performed_by'>Event</label>
+         <div id="eventsCombo"></div>
+      </div>
+      <div class='control-group'>
+         <label class='control-label' for='events'>Performed By</label>
+         <div id="performedBy_pl"></div>
+      </div>
+      <div class='control-group'>
+         <label class='control-label' for='comments'>Event Comments</label>
+         <div id='comments_pl' class='animal_input controls'><textarea id='event_comments' class='span6' rows='3'></textarea></div>
+      </div>
+   </div>
+</div>
+<div id="messageNotification"><div></div></div>
+
+<script type="text/javascript">
+   $('#whoisme .back').html('<a href=\'?page=farm_animals\'>Back</a>');       //back link
+
+   var animals = new Animals();
+   animals.allEvents = <?php echo json_encode($events, true); ?>;
+   animals.allOwners = <?php echo json_encode($allOwners, true); ?>;
+   animals.initiateBatchFileUpload();
+</script>
+<?php
+   }
+
+   /**
+    * Process a file with a batch upload of scans
+    */
+   private function processAndSaveBatchUploads(){
+      $this->Dbase->CreateLogEntry('Processing a batch upload of events', 'info');
+      // if we dont have the event and person who did it reject it
+      if($_POST['performed_by'] == 0) die(json_encode(array('error' => true, 'mssg' => 'Please specify the person who carried out this event. The update has been cancelled')));
+      if($_POST['event'] == 0) die(json_encode(array('error' => true, 'mssg' => 'Please specify the event for this update. The update has been cancelled')));
+
+      // save the file and process it
+      $uploaded = GeneralTasks::CustomSaveUploads('tmp/', 'file_2_upload', array('text/csv'), true);
+      if(!is_array($uploaded)){
+         $this->Dbase->CreateLogEntry($uploaded, 'debug');
+         $this->Dbase->CreateLogEntry($uploaded, 'fatal');
+         if(is_string($uploaded)) die(json_encode(array('error' => true, 'mssg' => $uploaded)));
+         else die(json_encode(array('error' => true, 'mssg' => 'No files were selected for upload.')));
+      }
+
+      $this->Dbase->StartTrans();
+      $fd = fopen($uploaded[0], 'rt');
+      if(!$fd) die(json_encode(array('error' => true, 'mssg' => 'There was an error while opening the file for reading')));
+      $count = -1;
+      $headers = array();
+      $data = array();
+      while($curLine = fgets($fd)){
+         $curLine = trim($curLine);
+         $parts = explode(',', $curLine);
+         if($parts[0] == '') continue;    // empty string don't process it
+
+         if($count == -1) $headers = $parts;
+         else $data[] = $parts;
+
+         $count++;
+      }
+      fclose($fd);
+      $this->Dbase->CreateLogEntry("Found $count records in the file, now processing them", 'debug');
+
+      $insertQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, record_date, performed_by, recorded_by, comments) '
+          . 'values(:animal_id, :event_type_id, :event_date, :record_date, :performed_by, :recorded_by, :comments)';
+      $animalQuery = 'select id, rfid, animal_id from '. Config::$farm_db .'.farm_animals where rfid = :rfid';
+      $animalEventQuery = 'select id from '. Config::$farm_db .'.farm_animal_events where animal_id = :animal_id and event_type_id = :event_type_id and event_date = :event_date';
+
+      $headerCount = count($headers);
+      $messages = array();
+      $count1 = 0;
+      for($i = 0; $i < $count; $i++){
+         $this->Dbase->CreateLogEntry("Adding ". implode(', ', $data[$i]) ." to the database..", 'debug');
+         // create a proper hash and then use it
+         $propData = array();
+         for($j = 0; $j < $headerCount; $j++){
+            $propData[$headers[$j]] = $data[$i][$j];
+         }
+
+         // get the animal particulars
+         $rfid = $this->Dbase->ExecuteQuery($animalQuery, array('rfid' => $propData['EID']));
+         if($rfid == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+         }
+         else if(count($rfid) == 0){
+            $messages[] = "Couldn't find the animal with RFID '{$propData['EID']}' in the database. Will skip this record.";
+            continue;
+         }
+         $rfid = $rfid[0];
+
+         // if the TAG is set, confirm that we are dealing with the right animal
+         if(isset($propData['TAG']) && $propData['TAG'] != '' && strtolower($propData['TAG']) != strtolower($rfid['animal_id'])){
+            $this->Dbase->CreateLogEntry("Error: The animal id with RFID '{$propData['EID']}', {$propData['TAG']} does not match with the database record of {$rfid['rfid']}, {$rfid['animal_id']}", 'fatal');
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => true, 'mssg' => "Error: The animal id with RFID {$propData['EID']}, {$propData['TAG']} does not match with the database record of {$rfid['rfid']}, {$rfid['animal_id']}")));
+         }
+
+         $comments = date('y-m-d H:i:s'). ': Batch upload from the Allflex stick';
+         $event_date = DateTime::createFromFormat('n/j/Y H:i A', $propData['Date Time']);
+
+         // get the animal particulars
+         $savedEvents = $this->Dbase->ExecuteQuery($animalEventQuery, array('animal_id' => $rfid['id'], 'event_date' => $event_date->format('Y-m-d H:i:s'), 'event_type_id' => $_POST['event']));
+         if($savedEvents == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+         }
+         else if(count($savedEvents) == 1){
+            $this->Dbase->CreateLogEntry("This event has already been added; ". implode(', ', $data[$i]) ." skipping it...", 'debug');
+            continue;
+         }
+
+         // all is good so update the database
+         $vals = array('animal_id' => $rfid['id'], 'event_type_id' => $_POST['event'], 'event_date' => $event_date->format('Y-m-d H:i:s'), 'record_date' => date('Y-m-d H:i:s'), 'performed_by' => $_POST['performed_by'], 'recorded_by' => $_SESSION['user_id'], 'comments' => $comments);
+         $rfid = $this->Dbase->ExecuteQuery($insertQuery, $vals);
+         if($rfid == 1){
+            $this->Dbase->RollBackTrans();
+            die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
+         }
+         $count1++;
+      }
+      $this->Dbase->CommitTrans();
+      unlink($uploaded[0]);
+      $this->Dbase->CreateLogEntry("Found $count and/but added $count1 records to the database", 'debug');
+
+      $escapers =     array("\\",     "/",   "\"",  "\n",  "\r",  "\t", "\x08", "\x0c");
+      $replacements = array("\\\\", "\\/", "\\\"", "\\n", "\\r", "\\t",  "\\f",  "\\b");
+      $result = str_replace($escapers, $replacements, implode("---", $messages));
+
+      if(count($messages) == 0) die(json_encode(array('error' => false, 'mssg' => 'Uploaded successfully without any messages.')));
+      else die(json_encode(array('error' => false, 'mssg' => 'Messages from the upload: '. $result)));
    }
 }

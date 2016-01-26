@@ -989,14 +989,15 @@ Animals.prototype.saveChanges = function (){
  * @param   message     The message to be shown
  * @param   type        The type of message
  */
-Animals.prototype.showNotification = function(message, type){
+Animals.prototype.showNotification = function(message, type, autoclose){
    if(type === undefined) { type = 'error'; }
+   if(autoclose === undefined) { autoclose = true; }
 
    $('#messageNotification div').html(message);
    if($('#messageNotification').jqxNotification('width') === undefined){
       $('#messageNotification').jqxNotification({
          width: 350, position: 'top-right', opacity: 0.9,
-         autoOpen: false, animationOpenDelay: 800, autoClose: true, autoCloseDelay: 3000, template: type
+         autoOpen: false, animationOpenDelay: 800, autoClose: autoclose, template: type
        });
    }
    else{ $('#messageNotification').jqxNotification({template: type}); }
@@ -1831,6 +1832,50 @@ Animals.prototype.initiateWeightsChart = function(event){
        }]
    };
    $('#weight_graph').jqxChart(settings);
+};
+
+Animals.prototype.initiateBatchFileUpload = function(){
+   // create the placeholder for uploading the images
+   $('#upload').jqxFileUpload({
+      browseTemplate: 'success', uploadTemplate: 'primary',  cancelTemplate: 'danger', width: 300, height: '250px', multipleFilesUpload: false,
+      uploadUrl: 'mod_ajax.php?page=farm_animals&do=batch_upload&action=save', fileInputName: 'file_2_upload[]',
+      accept: '.csv'
+   });
+
+   $('#upload').on('uploadStart', function (event) {
+      // ensure that we have the events and performed by
+      var performed_by = $('#performedBy_id').val(), event = $('#eventsId').val();
+      if(performed_by === 0){
+         animals.showNotification('Please select the person who carried out this event.', 'error');
+         $('#upload').jqxFileUpload('cancelAll');
+         return;
+      }
+      if(event === 0){
+         animals.showNotification('Please select the event for this session.', 'error');
+         $('#upload').jqxFileUpload('cancelAll');
+         return;
+      }
+      $('form[action="mod_ajax.php?page=farm_animals&do=batch_upload&action=save"]').append('<input type="hidden" name="performed_by" value="'+performed_by+'" /><input type="hidden" name="event" value="'+event+'" />');
+   });
+
+   // process the response from the server
+   $('#upload').on('uploadEnd', function (event) {
+      var args = event.args;
+      var fileName = args.file;
+      var response = JSON.parse(args.response);
+      var errorType = (response.error) ? 'error' : 'success';
+      animals.showNotification('<b>'+ fileName + '</b>: ' + response.mssg, errorType, false);
+   });
+
+   // populate the performed by field with the respective drop down
+   var settings = {name: 'performed_by', id: 'performedBy_id', data: animals.allOwners, initValue: 'Select One', required: 'true'};
+   var ownersCombo = Common.generateCombo(settings);
+   $('#performedBy_pl').html(ownersCombo);
+
+   // populate the events drop down
+   settings = {name: 'events', id: 'eventsId', data: animals.allEvents, initValue: 'Select One', required: 'true'};
+   var toCombo = Common.generateCombo(settings);
+   $('#eventsCombo').html(toCombo);
 };
 
 // add a trim function

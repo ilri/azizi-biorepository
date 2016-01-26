@@ -405,6 +405,8 @@ ul.ui-autocomplete {z-index: 1000!important; }
 #cows_details{width: 70%; margin: 3px auto; }
 #cow_list{width: 300px; float: left; }
 #weight_graph{ width: 680px; height: 400px; margin-left: 220px; }
+#batch_upload #upload{ float: left; margin: 5px; width: 35%; }
+#batch_upload #details{ margin: 5px; width: 60%; margin-left: 36%; }
 /* ============================== Farm animals module ============================================== */
 
 /* ============================== DMP Visualization ============================================== */
