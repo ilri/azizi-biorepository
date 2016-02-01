@@ -1955,7 +1955,7 @@ class FarmAnimals{
 
       $headerCount = count($headers);
       $messages = array();
-      $count1 = 0;
+      $count1 = 0; $skipped = 0; $alreadyAdded = 0;
       for($i = 0; $i < $count; $i++){
          $this->Dbase->CreateLogEntry("Adding ". implode(', ', $data[$i]) ." to the database..", 'debug');
          // create a proper hash and then use it
@@ -1972,6 +1972,8 @@ class FarmAnimals{
          }
          else if(count($rfid) == 0){
             $messages[] = "Couldn't find the animal with RFID '{$propData['EID']}' in the database. Will skip this record.";
+            $this->Dbase->CreateLogEntry("Couldn't find the animal with RFID '{$propData['EID']}' in the database. Will skip this record...", 'info');
+            $skipped++;
             continue;
          }
          $rfid = $rfid[0];
@@ -1994,6 +1996,7 @@ class FarmAnimals{
          }
          else if(count($savedEvents) == 1){
             $this->Dbase->CreateLogEntry("This event has already been added; ". implode(', ', $data[$i]) ." skipping it...", 'debug');
+            $alreadyAdded++;
             continue;
          }
 
@@ -2008,7 +2011,7 @@ class FarmAnimals{
       }
       $this->Dbase->CommitTrans();
       unlink($uploaded[0]);
-      $this->Dbase->CreateLogEntry("Found $count and/but added $count1 records to the database", 'debug');
+      $this->Dbase->CreateLogEntry("Found $count records, $alreadyAdded were already added, added $count1 to the database and skipped $skipped", 'debug');
 
       $escapers =     array("\\",     "/",   "\"",  "\n",  "\r",  "\t", "\x08", "\x0c");
       $replacements = array("\\\\", "\\/", "\\\"", "\\n", "\\r", "\\t",  "\\f",  "\\b");
