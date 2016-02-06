@@ -39,7 +39,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
             pageable: true,
             autoheight: true,
             sortable: true,
-            showfilterrow: false,
+            showfilterrow: true,
             autoshowfiltericon: true,
             showstatusbar: true,
             renderstatusbar: animals.animalGridStatusBar,
@@ -47,6 +47,7 @@ Animals.prototype.initiateAnimalsGrid = function(){
             columnsresize: true,
             altrows: true,
             touchmode: false,
+            filtermode: 'excel',
             pagesize: 20,
             pagesizeoptions: ['20', '50', '100'],
             rowdetails: true,
@@ -66,12 +67,12 @@ Animals.prototype.initiateAnimalsGrid = function(){
                  }
               },
               { text: 'RFID', datafield: 'rfidd', width: 70 },
-              { text: 'Species', datafield: 'species', width: 60 },
+              { text: 'Species', datafield: 'species', width: 60, filtertype: 'checkedlist' },
               { text: 'Sex', datafield: 'sexd', width: 20 },
-              { text: 'Breed', datafield: 'breed', width: 110 },
-              { text: 'Current Owner', datafield: 'owner', width: 110 },
-              { text: 'Experiment', datafield: 'experiment', width: 140 },
-              { text: 'Location', datafield: 'location', width: 150, filtertype: 'textbox' },
+              { text: 'Breed', datafield: 'breed', width: 110, filtertype: 'input' },
+              { text: 'Current Owner', datafield: 'owner', width: 110, filtertype: 'input' },
+              { text: 'Experiment', datafield: 'experiment', width: 140, filtertype: 'input' },
+              { text: 'Location', datafield: 'location', width: 150, filtertype: 'input' },
               { text: 'Status', datafield: 'status', width: 120 }
             ]
         });
