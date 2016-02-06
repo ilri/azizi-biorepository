@@ -164,7 +164,12 @@ Animals.prototype.initializeInventoryRowDetails = function(index, parentElement,
     };
 
     if (grid !== null) {
-      grid.jqxGrid({source: eventsSource, theme: '', width: 820, height: 140,
+      grid.jqxGrid({
+         source: eventsSource,
+         theme: '',
+         width: 820,
+         height: 140,
+         columnsresize: true,
       columns: [
          {datafield: 'file_name', hidden: true},
          {datafield: 'path', hidden: true},
