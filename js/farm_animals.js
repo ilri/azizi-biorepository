@@ -27,7 +27,7 @@ function Animals(sub_module){
 Animals.prototype.initiateAnimalsGrid = function(){
    // create the source for the grid
    var source = {
-      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}, {name: 'status'}],
+      datatype: 'json', datafields: [ {name: 'animal_id'}, {name: 'id'}, {name: 'breed'}, {name: 'species'}, {name: 'sex'}, {name: 'owner'}, {name: 'experiment'}, {name: 'location'}, {name: 'status'}, {name: 'rfid'}],
          id: 'id', root: 'data', async: false, type: 'POST', data: {action: 'list', showAll: this.showAll}, url: 'mod_ajax.php?page=farm_animals&do=inventory'
      };
      var animalsAdapter = new $.jqx.dataAdapter(source);
@@ -65,10 +65,11 @@ Animals.prototype.initiateAnimalsGrid = function(){
                  }
               },
               { text: 'Species', datafield: 'species', width: 60 },
+              { text: 'RFID', datafield: 'rfid', width: 40 },
               { text: 'Sex', datafield: 'sex', width: 50 },
               { text: 'Breed', datafield: 'breed', width: 110 },
               { text: 'Current Owner', datafield: 'owner', width: 110 },
-              { text: 'Experiment', datafield: 'experiment', width: 190 },
+              { text: 'Experiment', datafield: 'experiment', width: 140 },
               { text: 'Location', datafield: 'location', width: 150, filtertype: 'textbox' },
               { text: 'Status', datafield: 'status', width: 120 }
             ]
