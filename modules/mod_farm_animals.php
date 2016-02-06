@@ -175,6 +175,7 @@ class FarmAnimals{
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.pager.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.selection.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.filter.js"></script>
+<script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.columnsresize.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxwindow.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxtabs.js"></script>
 <script type="text/javascript" src="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/jqxgrid.export.js"></script>
@@ -242,7 +243,7 @@ class FarmAnimals{
       $query = 'select a.id as event_id, b.event_name, a.event_value, a.event_date, a.record_date, a.comments, d.file_name, d.path '
               . 'from '. Config::$farm_db .'.farm_animal_events as a inner join '. Config::$farm_db .'.farm_events as b on a.event_type_id=b.id '
               . 'left join '. Config::$farm_db .'.event_files as c on a.id = c.event_id left join '. Config::$farm_db .'.uploaded_files as d on c.file_id = d.id '
-              . 'where a.animal_id = :animal_id order by a.event_date, a.record_date';
+              . 'where a.animal_id = :animal_id order by a.event_date desc, a.record_date';
 
       $res = $this->Dbase->ExecuteQuery($query, array('animal_id' => $_POST['animal_id']));
       if($res == 1){
