@@ -215,7 +215,7 @@ class FarmAnimals{
     */
    private function inventoryList(){
       $showAll = '';
-      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.iacuc as experiment, concat(e.level1, " >> ", e.level2) as location, f.breed, a.status, right(rfid, 6) as rfidd, left(sex, 1) as sexd '
+      $query = 'select a.*, b.name as species, if(dob = 0, "", dob) as dob, a.current_owner, d.iacuc as experiment, concat(e.level1, " > ", e.level2) as location, f.breed, a.status, right(rfid, 6) as rfidd, left(sex, 1) as sexd '
          . 'from '. Config::$farm_db .'.farm_animals as a inner join '. Config::$farm_db .'.farm_species as b on a.species_id=b.id '
          . 'left join '. Config::$farm_db .'.experiments as d on a.current_exp=d.id '
          . 'left join '. Config::$farm_db .'.farm_locations as e on a.current_location=e.id '
