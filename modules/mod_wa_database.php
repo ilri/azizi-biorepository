@@ -716,16 +716,28 @@ class Database {
       if($existing['key'] === Database::$KEY_PRIMARY || $existing['key'] === Database::$KEY_UNIQUE) $isSpecial = true;
       try {
          if($isSpecial == false) {//column considered special if it is currently part of a key
-            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
-            //
             /**
              * New way of altering a column. Alter the column name and preserve its position
-             * 1. Get the table dump where this column belongs
-             * 2. Alter the column in that dump
-             * 3. Drop the existing table
-             * 4. Re-import the modified table
+             * 1. Drop the foreign key references
+             * 2. Get the table dump where this column belongs
+             * 3. Alter the column in that dump
+             * 4. Drop the existing table
+             * 5. Re-import the modified table
+             * 6. Add the foreign key references
              */
-            $path = "temp/{$tableName}_".date('Y-m-dH:i:s').'.txt';
+             // get the query to dump the foreign keys
+            $fKeys2Drop = $this->getTableForeignKeys($tableName);
+            $this->logH->log(4, $this->TAG, print_r($fKeys2Drop, true));
+
+
+            // now drop all the foreign keys
+            $this->logH->log(4, $this->TAG, "Dropping the foreign keys..", print_r($fKeys2Drop, true));
+            foreach($fKeys2Drop as $fkQuery){
+//               $this->logH->log(4, $this->TAG, "$fkQuery");
+//               $this->runGenericQuery($fkQuery);
+            }
+            $this->logH->log(3, $this->TAG, "Column '{$existing['name']}' not being considered as special during alter");
+            $path = "tmp/{$tableName}_".date('Y-m-dH:i:s').'.txt';
             $command = "export PGPASSWORD='".$this->config['pg_pass']."';".$this->config['pg_dump']." --schema-only --table=".Database::$QUOTE_SI.$tableName.Database::$QUOTE_SI." -U ".$this->config['pg_user']." {$this->getDatabaseName()} -h {$this->config['pg_dbloc']} > $path";
             $this->logH->log(4, $this->TAG, "Creating a dump of the table '$tableName' with the command '$command'");
             $output = shell_exec($command);
@@ -743,6 +755,12 @@ class Database {
             //if column is going to be part of the primary key, first drop the existing primary key then add the column to primary key
             if($new['key'] == Database::$KEY_PRIMARY){
                $this->addColumnsToPrimaryKey($tableName, array($new['name']));
+            }
+            // add the foreign keys
+            $this->logH->log(4, $this->TAG, "Adding the foreign keys");
+            foreach($fKeys2Add as $fkQuery){
+               $this->logH->log(4, $this->TAG, "Adding the foreign keys $fkQuery");
+               $this->runGenericQuery($fkQuery);
             }
          }
          else {//column is special. That means the previous method (deleting existing column and replacing it with a new one wont work. The case for columns that are already part of a key)
