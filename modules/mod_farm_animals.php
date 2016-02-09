@@ -1987,7 +1987,7 @@ class FarmAnimals{
          }
 
          $comments = date('y-m-d H:i:s'). ': Batch upload from the Allflex stick';
-         $event_date = DateTime::createFromFormat('n/j/Y H:i A', $propData['Date Time']);
+         $event_date = DateTime::createFromFormat('n/j/y h:i', $propData['Date Time']);
 
          // get the animal particulars
          $savedEvents = $this->Dbase->ExecuteQuery($animalEventQuery, array('animal_id' => $rfid['id'], 'event_date' => $event_date->format('Y-m-d H:i:s'), 'event_type_id' => $_POST['event']));
