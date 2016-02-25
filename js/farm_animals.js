@@ -1852,7 +1852,7 @@ Animals.prototype.initiateBatchFileUpload = function(){
 
    $('#upload').on('uploadStart', function (event) {
       // ensure that we have the events and performed by
-      var performed_by = $('#performedBy_id').val(), event = $('#eventsId').val();
+      var performed_by = $('#performedBy_id').val(), event = $('#eventsId').val(), comments = $('#event_comments').val();
       if(performed_by === 0){
          animals.showNotification('Please select the person who carried out this event.', 'error');
          $('#upload').jqxFileUpload('cancelAll');
@@ -1863,7 +1863,8 @@ Animals.prototype.initiateBatchFileUpload = function(){
          $('#upload').jqxFileUpload('cancelAll');
          return;
       }
-      $('form[action="mod_ajax.php?page=farm_animals&do=batch_upload&action=save"]').append('<input type="hidden" name="performed_by" value="'+performed_by+'" /><input type="hidden" name="event" value="'+event+'" />');
+      $('form[action="mod_ajax.php?page=farm_animals&do=batch_upload&action=save"]').
+         append('<input type="hidden" name="performed_by" value="'+performed_by+'" /><input type="hidden" name="event" value="'+event+'" /><input type="hidden" name="comments" value="'+comments+'" />');
    });
 
    // process the response from the server

@@ -232,7 +232,7 @@ class FarmAnimals{
       foreach($res as $id => $animal){
          $res[$id]['owner'] = $owners[$animal['current_owner']]['name'];
       }
-      die(json_encode($res));
+      die(json_encode($res, true));
    }
 
    /**
@@ -1987,6 +1987,7 @@ class FarmAnimals{
          }
 
          $comments = date('y-m-d H:i:s'). ': Batch upload from the Allflex stick';
+         $comments .= $_POST['comments'];
          $event_date = DateTime::createFromFormat('n/j/y h:i', $propData['Date Time']);
 
          // get the animal particulars
