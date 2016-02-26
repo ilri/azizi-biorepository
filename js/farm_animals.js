@@ -1853,18 +1853,33 @@ Animals.prototype.initiateBatchFileUpload = function(){
    $('#upload').on('uploadStart', function (event) {
       // ensure that we have the events and performed by
       var performed_by = $('#performedBy_id').val(), event = $('#eventsId').val(), comments = $('#event_comments').val();
+      var data = '';
       if(performed_by === 0){
          animals.showNotification('Please select the person who carried out this event.', 'error');
          $('#upload').jqxFileUpload('cancelAll');
          return;
       }
+      data += '<input type="hidden" name="performed_by" value="'+performed_by+'" />';
       if(event === 0){
          animals.showNotification('Please select the event for this session.', 'error');
          $('#upload').jqxFileUpload('cancelAll');
          return;
       }
+      data += '<input type="hidden" name="event" value="'+event+'" />';
+      if(event === 'loc'){
+         // ensure that we have a location
+         var new_location = $('#locationId').val();
+         if(new_location === 0){
+            animals.showNotification('Please select a new location for the animals.', 'error');
+            $('#upload').jqxFileUpload('cancelAll');
+            return;
+         }
+      }
+      data += '<input type="hidden" name="new_location" value="'+new_location+'" />';
+      data += '<input type="hidden" name="comments" value="'+comments+'" />';
+      
       $('form[action="mod_ajax.php?page=farm_animals&do=batch_upload&action=save"]').
-         append('<input type="hidden" name="performed_by" value="'+performed_by+'" /><input type="hidden" name="event" value="'+event+'" /><input type="hidden" name="comments" value="'+comments+'" />');
+         append(data);
    });
 
    // process the response from the server
@@ -1882,9 +1897,22 @@ Animals.prototype.initiateBatchFileUpload = function(){
    $('#performedBy_pl').html(ownersCombo);
 
    // populate the events drop down
-   settings = {name: 'events', id: 'eventsId', data: animals.allEvents, initValue: 'Select One', required: 'true'};
+   settings = {name: 'events', id: 'eventsId', data: animals.allEvents, initValue: 'Select One', required: 'true', onChange: "animals.updateLocations()"};
    var toCombo = Common.generateCombo(settings);
    $('#eventsCombo').html(toCombo);
+
+   // monitor when the events combo change
+};
+
+Animals.prototype.updateLocations = function(){
+   var selected = $('#eventsId').val();
+   if(selected === 'loc'){
+      // create a placeholder for defining new locations
+      $('#add_ons').html("<label class='control-label' for='locations'>Locations</label><div id='locationCombo'></div>");
+      settings = {name: 'location', id: 'locationId', data: animals.allLocations, initValue: 'Select One', required: 'true'};
+      var locationCombo = Common.generateCombo(settings);
+      $('#locationCombo').html(locationCombo);
+   }
 };
 
 // add a trim function

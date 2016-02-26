@@ -965,31 +965,36 @@ class FarmAnimals{
 
    /**
     * Saves the movement of animals from one paddock to another
+    *
+    * @param array   $eventDates    (Optional) The dates to use when saving the event. This is an associative array with an animal id associated with the event date
     */
-   private function saveAnimalMovement(){
+   private function saveAnimalMovement($eventDates = NULL){
       // lets save the animal new locations
-      $animals = json_decode($_POST['animals']);
+      $animals = json_decode($_POST['animals'], true);
+
       $mvmntQuery = 'insert into '. Config::$farm_db .'.farm_animal_locations(location_id, animal_id, start_date, added_by, added_at) values(:location_id, :animal_id, :start_date, :added_by, :added_at)';
       $updateQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate, updated_by = :updated_by, updated_at = :updated_at where location_id = :location_id and animal_id = :animal_id and end_date is null';
       $updateWOLocationQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate, updated_by = :updated_by, updated_at = :updated_at where animal_id = :animal_id and end_date is null limit 1';
       $updateAnimalLocation = 'update '. Config::$farm_db .'.farm_animals set current_location = :current_loc where id = :animal_id';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
+         $this->Dbase->CreateLogEntry("$id ==> $name", 'debug');
          // update the from locations
+         $end_date = (is_null($eventDates)) ? date('Y-m-d') : $eventDates[$id];
          if(!in_array($_POST['from'], array('floating', 'all', 0)) ){
-            $upcols = array('edate' => date('Y-m-d'), 'location_id' => $_POST['from'], 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
+            $upcols = array('edate' => $end_date, 'location_id' => $_POST['from'], 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
             $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
             $res1 = $this->Dbase->ExecuteQuery($updateQuery, $upcols);
             if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
          }
          // if the origin is from all, then update the end date of the previous record before adding the new record
          if($_POST['from'] == 'all'){
-            $upcols = array('edate' => date('Y-m-d'), 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
+            $upcols = array('edate' => $end_date, 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
             $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
             $res1 = $this->Dbase->ExecuteQuery($updateWOLocationQuery, $upcols);
             if($res1 == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
          }
-         $colvals = array('location_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'), 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']);
+         $colvals = array('location_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => $end_date, 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']);
          $res = $this->Dbase->ExecuteQuery($mvmntQuery, $colvals);
          if($res == 1){
             $this->Dbase->RollBackTrans();
@@ -1859,6 +1864,14 @@ class FarmAnimals{
          return;
       }
 
+      // get a list of all the locations
+      $locationQuery = 'select id, concat(level1, " >> ", level2) as name from '. Config::$farm_db .'.farm_locations order by level1, level2';
+      $locations = $this->Dbase->ExecuteQuery($locationQuery);
+      if($locations == 1) {
+         $this->homePage($this->Dbase->lastError);
+         return;
+      }
+
       // get a list of all events
       $eventsQuery = 'select id, event_name as `name` from '. Config::$farm_db .'.farm_events order by event_name';
       $events = $this->Dbase->ExecuteQuery($eventsQuery);
@@ -1866,6 +1879,7 @@ class FarmAnimals{
          $this->homePage($this->Dbase->lastError);
          return;
       }
+      $events[] = array('id' => 'loc', 'name' => 'New Location');
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>azizi-shared-libs/customMessageBox/mssg_box.css" />
@@ -1889,6 +1903,8 @@ class FarmAnimals{
          <label class='control-label' for='performed_by'>Event</label>
          <div id="eventsCombo"></div>
       </div>
+      <div class="control-group" id='add_ons'>
+      </div>
       <div class='control-group'>
          <label class='control-label' for='events'>Performed By</label>
          <div id="performedBy_pl"></div>
@@ -1907,6 +1923,7 @@ class FarmAnimals{
    var animals = new Animals();
    animals.allEvents = <?php echo json_encode($events, true); ?>;
    animals.allOwners = <?php echo json_encode($allOwners, true); ?>;
+   animals.allLocations = <?php echo json_encode($locations, true); ?>;
    animals.initiateBatchFileUpload();
 </script>
 <?php
@@ -1919,7 +1936,7 @@ class FarmAnimals{
       $this->Dbase->CreateLogEntry('Processing a batch upload of events', 'info');
       // if we dont have the event and person who did it reject it
       if($_POST['performed_by'] == 0) die(json_encode(array('error' => true, 'mssg' => 'Please specify the person who carried out this event. The update has been cancelled')));
-      if($_POST['event'] == 0) die(json_encode(array('error' => true, 'mssg' => 'Please specify the event for this update. The update has been cancelled')));
+      if($_POST['event'] === 0) die(json_encode(array('error' => true, 'mssg' => 'Please specify the event for this update. The update has been cancelled')));
 
       // save the file and process it
       $uploaded = GeneralTasks::CustomSaveUploads('tmp/', 'file_2_upload', array('text/csv'), true);
@@ -1930,25 +1947,69 @@ class FarmAnimals{
          else die(json_encode(array('error' => true, 'mssg' => 'No files were selected for upload.')));
       }
 
-      $this->Dbase->StartTrans();
       $fd = fopen($uploaded[0], 'rt');
       if(!$fd) die(json_encode(array('error' => true, 'mssg' => 'There was an error while opening the file for reading')));
       $count = -1;
+      $info = '';
       $headers = array();
+      $headerCount = 0;
       $data = array();
+      $animalData = array();
+      $animalDates = array();
+      $animalIdQuery = 'select id from '. Config::$farm_db .'.farm_animals where animal_id = :animal_id';
       while($curLine = fgets($fd)){
          $curLine = trim($curLine);
          $parts = explode(',', $curLine);
          if($parts[0] == '') continue;    // empty string don't process it
 
-         if($count == -1) $headers = $parts;
+         if($count == -1){
+            $headers = $parts;
+            $headerCount = count($headers);
+         }
          else $data[] = $parts;
 
+         // if we are dealing with locations get the id of this animal
+         if($_POST['event'] == 'loc' && $count > -1){
+            $propData = array();
+            for($j = 0; $j < $headerCount; $j++){
+               $propData[$headers[$j]] = $parts[$j];
+            }
+            $animalId = $this->Dbase->ExecuteQuery($animalIdQuery, array('animal_id' => $propData['TAG']));
+            if($animalId == 1){
+               die(json_encode(array('error' => true, 'mssg' => "Error: ". $this->Dbase->lastError)));
+            }
+            if(count($animalId) == 0){
+               $this->Dbase->CreateLogEntry("The animal {$propData['TAG']} wasn't found in the db, skipping it", 'debug');
+               $info .= "The animal {$propData['TAG']} wasn't found in the db, skipping it<br />";
+            }
+            else if(count($animalId) > 1){
+               $this->Dbase->CreateLogEntry("The animal {$propData['TAG']} has multiple records in the db, skipping it", 'debug');
+               $info .= "The animal {$propData['TAG']} has multiple records in the db, skipping it<br />";
+            }
+            else{
+               $animalData[$animalId[0]['id']] = $propData['TAG'];
+               $event_date = DateTime::createFromFormat('n/j/Y h:i A', $propData['Date Time']);
+               $this->Dbase->CreateLogEntry("Date string {$propData['Date Time']} -- ", 'debug');
+               $this->Dbase->CreateLogEntry("$curLine -- ", 'debug');
+               $animalDates[$animalId[0]['id']] = $event_date->format('Y-m-d');
+            }
+         }
          $count++;
       }
       fclose($fd);
       $this->Dbase->CreateLogEntry("Found $count records in the file, now processing them", 'debug');
 
+      if($_POST['event'] == 'loc'){
+         $this->Dbase->CreateLogEntry("Processing batch upload of locations data. A total of $count records found.", 'debug');
+         $_POST['animals'] = json_encode($animalData);
+         $_POST['to'] = $_POST['new_location'];
+         $_POST['from'] = 'all';
+         $this->saveAnimalMovement($animalDates);
+//         $this->Dbase->CreateLogEntry("Finished processing of batch upload of locations data.", 'debug');
+//         die(json_encode(array('error' => false, 'mssg' => 'Successfully uploaded. Messages from the upload: '. $info)));
+      }
+
+      $this->Dbase->StartTrans();
       $insertQuery = 'insert into '. Config::$farm_db .'.farm_animal_events(animal_id, event_type_id, event_date, record_date, performed_by, recorded_by, comments) '
           . 'values(:animal_id, :event_type_id, :event_date, :record_date, :performed_by, :recorded_by, :comments)';
       $animalQuery = 'select id, rfid, animal_id from '. Config::$farm_db .'.farm_animals where rfid = :rfid';
