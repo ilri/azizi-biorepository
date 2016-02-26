@@ -907,7 +907,10 @@ class FarmAnimals{
     * Move animals between pens
     */
    private function moveAnimals(){
+      global $Repository;
       $animalLocations = $this->getAnimalLocations(true, true, false);
+      // include the files for creating the date time picker
+      $Repository->DateTimePickerFiles();
 ?>
 <script type="text/javascript" src="js/farm_animals.js"></script>
 <link rel="stylesheet" href="<?php echo OPTIONS_COMMON_FOLDER_PATH?>jqwidgets/jqwidgets/styles/jqx.base.css" type="text/css" />
@@ -934,6 +937,12 @@ class FarmAnimals{
       <div id='to_list'></div>
    </div>
    <div id="actions">
+      <div class="control-group">
+         <label class="control-label" for="dob">Change Date</label>
+         <div class="animal_input controls">
+            <input type="text" name='change_date' id="change_date" placeholder="Change Date" class='input-medium form-control' />
+         </div>
+      </div>
       <button style="padding:4px 16px;" id="save">Save</button>
    </div>
 </div>
@@ -951,6 +960,9 @@ class FarmAnimals{
    animals.includeTopLevels = true;
    animals.locationOrganiser();
 
+   // create the change date widget
+   datePickerController.createDatePicker({ formElements:{"change_date":"%d-%m-%Y"}, fillGrid: true, constraintSelection:false, maxDate: 0 });
+
    // bind the click functions of the buttons
    $("#reset, #remove, #add, #add_all").live('click', function(sender){ animals.moveAnimals(sender); });
    $("#save").live('click', function(){ animals.saveChanges(); });
@@ -967,21 +979,45 @@ class FarmAnimals{
     * Saves the movement of animals from one paddock to another
     *
     * @param array   $eventDates    (Optional) The dates to use when saving the event. This is an associative array with an animal id associated with the event date
+    * @todo Add a check to ensure that the end date is greater than the start date
     */
    private function saveAnimalMovement($eventDates = NULL){
       // lets save the animal new locations
       $animals = json_decode($_POST['animals'], true);
 
+      // if we have a start date specified, use it as the end date for the previous location and the start date for the new location
+      if(isset($_POST['start_date'])){
+         $startDate = DateTime::createFromFormat('d-m-Y', $_POST['start_date']);
+         $startDate = $startDate->format('Y-m-d');
+      }
+      else{
+         $startDate = date('Y-m-d');
+      }
+
       $mvmntQuery = 'insert into '. Config::$farm_db .'.farm_animal_locations(location_id, animal_id, start_date, added_by, added_at) values(:location_id, :animal_id, :start_date, :added_by, :added_at)';
       $updateQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate, updated_by = :updated_by, updated_at = :updated_at where location_id = :location_id and animal_id = :animal_id and end_date is null';
       $updateWOLocationQuery = 'update '. Config::$farm_db .'.farm_animal_locations set end_date = :edate, updated_by = :updated_by, updated_at = :updated_at where animal_id = :animal_id and end_date is null limit 1';
       $updateAnimalLocation = 'update '. Config::$farm_db .'.farm_animals set current_location = :current_loc where id = :animal_id';
+
+      // queries to ensure the dates are being added well
+      $checkQuery = 'select id from '. Config::$farm_db .'.farm_animal_locations where location_id = :location_id and animal_id = :animal_id and end_date is null and start_date > :end_date';
+      $checkWOLocationQuery = 'select id from '. Config::$farm_db .'.farm_animal_locations where animal_id = :animal_id and end_date is null and start_date > :end_date';
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          $this->Dbase->CreateLogEntry("$id ==> $name", 'debug');
          // update the from locations
-         $end_date = (is_null($eventDates)) ? date('Y-m-d') : $eventDates[$id];
+         $end_date = (is_null($eventDates)) ? $startDate : $eventDates[$id];
+
          if(!in_array($_POST['from'], array('floating', 'all', 0)) ){
+            // check that the dates are fine before updating the database
+            $checkVars = array('end_date' => $end_date, 'location_id' => $_POST['from'], 'animal_id' => $id);
+            $check = $this->Dbase->ExecuteQuery($checkQuery, $checkVars);
+            if($check == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
+            else if(count($check) != 0){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => true, 'mssg' => 'The specified end date is less than the start date for this dataset'. print_r($check, true))));
+            }
+
             $upcols = array('edate' => $end_date, 'location_id' => $_POST['from'], 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
             $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
             $res1 = $this->Dbase->ExecuteQuery($updateQuery, $upcols);
@@ -989,6 +1025,15 @@ class FarmAnimals{
          }
          // if the origin is from all, then update the end date of the previous record before adding the new record
          if($_POST['from'] == 'all'){
+            // check that the dates are fine before updating the database
+            $checkVars = array('end_date' => $end_date, 'animal_id' => $id);
+            $check = $this->Dbase->ExecuteQuery($checkWOLocationQuery, $checkVars);
+            if($check == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
+            else if(count($check) != 0){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => true, 'mssg' => 'The specified end date is less than the start date for this dataset'. print_r($check, true))));
+            }
+
             $upcols = array('edate' => $end_date, 'animal_id' => $id, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']);
             $this->Dbase->CreateLogEntry("updating the end date for animal '$id'",  'info');
             $res1 = $this->Dbase->ExecuteQuery($updateWOLocationQuery, $upcols);

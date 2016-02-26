@@ -953,6 +953,18 @@ Animals.prototype.saveChanges = function (){
       var error = animals.confirmEventsExtras();
       if(error === true){ return; }
    }
+
+   // if we are moving animals, ensure that we have the movement date specified
+   if(this.sub_module === 'move_animals'){
+      if(Object.keys(animals.movedAnimals).length === 0){
+         animals.showNotification('Please add animals involved in this movement.', 'error');
+         return;
+      }
+      if($('#change_date').val() === ''){
+         animals.showNotification('Please specify the date of animal movement.', 'error');
+         return;
+      }
+   }
    if(this.sub_module === 'events' && $('#eventId').length !== 0){ toId = $('#eventId').val(); }
    else { toId = $('#toComboId').val(); }
 
@@ -962,6 +974,7 @@ Animals.prototype.saveChanges = function (){
    formData.append('to', toId);
    formData.append('animals', $.toJSON(animals.movedAnimals));
    formData.append('extras', $.toJSON(animals.extraData));
+   formData.append('start_date', $('#change_date').val());
     $.ajax({
       type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', cache: false, contentType: false, processData: false,
       data: formData,
@@ -1877,7 +1890,7 @@ Animals.prototype.initiateBatchFileUpload = function(){
       }
       data += '<input type="hidden" name="new_location" value="'+new_location+'" />';
       data += '<input type="hidden" name="comments" value="'+comments+'" />';
-      
+
       $('form[action="mod_ajax.php?page=farm_animals&do=batch_upload&action=save"]').
          append(data);
    });
@@ -1904,6 +1917,10 @@ Animals.prototype.initiateBatchFileUpload = function(){
    // monitor when the events combo change
 };
 
+/**
+ * Creates a dropdown for defining locations when a batch upload is for uploading new locations
+ * @returns {undefined}
+ */
 Animals.prototype.updateLocations = function(){
    var selected = $('#eventsId').val();
    if(selected === 'loc'){
