@@ -2084,8 +2084,6 @@ class FarmAnimals{
          $_POST['to'] = $_POST['new_location'];
          $_POST['from'] = 'all';
          $this->saveAnimalMovement($animalDates);
-//         $this->Dbase->CreateLogEntry("Finished processing of batch upload of locations data.", 'debug');
-//         die(json_encode(array('error' => false, 'mssg' => 'Successfully uploaded. Messages from the upload: '. $info)));
       }
 
       $this->Dbase->StartTrans();
