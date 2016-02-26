@@ -391,12 +391,21 @@ var mainContent = '\
       <div id="to_list"></div>\
    </div>\n\
    <div id="actions">\n\
+      <div class="control-group">\n\
+         <label class="control-label" for="dob">Change Date</label>\n\
+         <div class="animal_input controls">\n\
+            <input type="text" name="change_date" id="change_date" placeholder="Change Date" class="input-medium form-control" />\n\
+         </div>\n\
+      </div>\n\
       <button style="padding:4px 16px;" id="save">Save</button>\n\
    </div>';
 
    $('#owners_list').html(mainContent);
    $('#links').remove();
    $("#save").live('click', function(){ animals.saveChanges(); });
+
+   // create the change date widget
+   datePickerController.createDatePicker({ formElements:{"change_date":"%d-%m-%Y"}, fillGrid: true, constraintSelection:false, maxDate: 0 });
 
    // now initiate the grids
    $("#add").jqxButton({ width: '150'});
@@ -955,7 +964,7 @@ Animals.prototype.saveChanges = function (){
    }
 
    // if we are moving animals, ensure that we have the movement date specified
-   if(this.sub_module === 'move_animals'){
+   if(this.sub_module === 'move_animals' || this.sub_module === 'ownership'){
       if(Object.keys(animals.movedAnimals).length === 0){
          animals.showNotification('Please add animals involved in this movement.', 'error');
          return;
@@ -964,6 +973,7 @@ Animals.prototype.saveChanges = function (){
          animals.showNotification('Please specify the date of animal movement.', 'error');
          return;
       }
+      formData.append('start_date', $('#change_date').val());
    }
    if(this.sub_module === 'events' && $('#eventId').length !== 0){ toId = $('#eventId').val(); }
    else { toId = $('#toComboId').val(); }
@@ -974,7 +984,7 @@ Animals.prototype.saveChanges = function (){
    formData.append('to', toId);
    formData.append('animals', $.toJSON(animals.movedAnimals));
    formData.append('extras', $.toJSON(animals.extraData));
-   formData.append('start_date', $('#change_date').val());
+
     $.ajax({
       type:"POST", url: 'mod_ajax.php?page=farm_animals&do='+this.sub_module, dataType:'json', cache: false, contentType: false, processData: false,
       data: formData,

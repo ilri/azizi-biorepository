@@ -768,6 +768,9 @@ class FarmAnimals{
     * Create a home page for showing the animal owners
     */
    private function animalOwnersHome(){
+      global $Repository;
+      // include the files for creating the date time picker
+      $Repository->DateTimePickerFiles();
 ?>
 <div id="messageNotification"><div class="">&nbsp;&nbsp;</div></div>
 <script type="text/javascript" src="js/farm_animals.js"></script>
@@ -791,6 +794,7 @@ class FarmAnimals{
    <div id="links" class="center">
       <button type="button" id="add" class='btn btn-primary'>Add Ownership</button>
    </div>
+   <div id="messageNotification"><div></div></div>
 </div>
 
 <script type='text/javascript'>
@@ -868,10 +872,32 @@ class FarmAnimals{
       $updateQuery = 'update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date, updated_at = :updated_at, updated_by = :updated_by where owner_id = :owner_id and animal_id = :animal_id and end_date is null';
       $updateWoOwnerQuery = 'update '. Config::$farm_db .'.farm_animal_owners set end_date = :end_date, updated_at = :updated_at, updated_by = :updated_by where animal_id = :animal_id and end_date is null limit 1';
       $updateOwnerQuery = 'update '. Config::$farm_db .'.farm_animals set current_owner = :current_owner where id = :animal_id';
+
+      // queries to ensure the dates are being added well
+      $checkQuery = 'select id from '. Config::$farm_db .'.farm_animal_owners where owner_id = :owner_id and animal_id = :animal_id and end_date is null and start_date > :end_date';
+      $checkWoOwnerQuery = 'select id from '. Config::$farm_db .'.farm_animal_owners where animal_id = :animal_id and end_date is null and start_date > :end_date';
+
+      // if we have a start date specified, use it as the end date for the previous location and the start date for the new location
+      if(isset($_POST['start_date'])){
+         $startDate = DateTime::createFromFormat('d-m-Y', $_POST['start_date']);
+         $startDate = $startDate->format('Y-m-d');
+      }
+      else{
+         $startDate = date('Y-m-d');
+      }
       $this->Dbase->StartTrans();
       foreach($animals as $id => $name){
          if(!in_array($_POST['from'], array('floating', 'all'))){
-            $res = $this->Dbase->ExecuteQuery($updateQuery, array('owner_id' => $_POST['from'], 'animal_id' => $id, 'end_date' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
+            // check that the dates are fine before updating the database
+            $checkVars = array('end_date' => $startDate, 'owner_id' => $_POST['from'], 'animal_id' => $id);
+            $check = $this->Dbase->ExecuteQuery($checkQuery, $checkVars);
+            if($check == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
+            else if(count($check) != 0){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => true, 'mssg' => 'The specified end date is less than the start date for this ownership'. print_r($check, true))));
+            }
+
+            $res = $this->Dbase->ExecuteQuery($updateQuery, array('owner_id' => $_POST['from'], 'animal_id' => $id, 'end_date' => $startDate, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
             if($res == 1){
                $this->Dbase->RollBackTrans();
                die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
@@ -879,14 +905,22 @@ class FarmAnimals{
          }
          // if we are selecting from all, update the previous ownership
          if($_POST['from'] == 'all'){
-            $res = $this->Dbase->ExecuteQuery($updateWoOwnerQuery, array('animal_id' => $id, 'end_date' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
+            // check that the dates are fine before updating the database
+            $checkVars = array('end_date' => $startDate, 'animal_id' => $id);
+            $check = $this->Dbase->ExecuteQuery($checkWoOwnerQuery, $checkVars);
+            if($check == 1){ $this->Dbase->RollBackTrans(); die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError))); }
+            else if(count($check) != 0){
+               $this->Dbase->RollBackTrans();
+               die(json_encode(array('error' => true, 'mssg' => 'The specified end date is less than the start date for this ownership'. print_r($check, true))));
+            }
+            $res = $this->Dbase->ExecuteQuery($updateWoOwnerQuery, array('animal_id' => $id, 'end_date' => $startDate, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => $_SESSION['user_id']));
             if($res == 1){
                $this->Dbase->RollBackTrans();
                die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
             }
          }
 
-         $res = $this->Dbase->ExecuteQuery($addQuery, array('owner_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => date('Y-m-d'), 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']));
+         $res = $this->Dbase->ExecuteQuery($addQuery, array('owner_id' => $_POST['to'], 'animal_id' => $id, 'start_date' => $startDate, 'added_at' => date('Y-m-d H:i:s'), 'added_by' => $_SESSION['user_id']));
          if($res == 1){
             $this->Dbase->RollBackTrans();
             die(json_encode(array('error' => true, 'mssg' => $this->Dbase->lastError)));
